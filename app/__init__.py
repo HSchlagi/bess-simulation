@@ -6,14 +6,17 @@ from config import Config
 db = SQLAlchemy()
 csrf = CSRFProtect()
 
-app = Flask(__name__)
-app.config.from_object(Config)
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object(Config)
 
-db.init_app(app)
-csrf.init_app(app)
+    db.init_app(app)
+    csrf.init_app(app)
 
-from .routes import main_bp
-app.register_blueprint(main_bp)
+    from .routes import main_bp
+    app.register_blueprint(main_bp)
 
-with app.app_context():
-    db.create_all()
+    with app.app_context():
+        db.create_all()
+
+    return app
