@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Kunde bearbeiten{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Kunde bearbeiten</h1>
+        
+        <form id="editCustomerForm" class="space-y-6">
+            <!-- Kundeninformationen -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Kundeninformationen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" id="customerName" name="name" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Firma</label>
+                        <input type="text" id="customerCompany" name="company" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kontakt</label>
+                        <input type="text" id="customerContact" name="contact" 
+                               placeholder="E-Mail, Telefon, etc."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projekte des Kunden -->
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">Projekte des Kunden</h3>
+                <div id="customerProjects">
+                    <div class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                        <p class="mt-2 text-gray-600">Lade Projekte...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aktionen -->
+            <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                <a href="{{ url_for('main.customers') }}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md">
+                    <i class="fas fa-arrow-left mr-2"></i>Zurück
+                </a>
+                <div class="flex space-x-2">
+                    <button type="button" onclick="deleteCustomer()" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md">
+                        <i class="fas fa-trash mr-2"></i>Löschen
+                    </button>
+                    <button type="submit" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                        <i class="fas fa-save mr-2"></i>Änderungen speichern
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentCustomerId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Kunden-ID aus URL extrahieren
+    const urlParams = new URLSearchParams(window.location.search);
+    currentCustomerId = urlParams.get('id');
+    
+    if (currentCustomerId) {
+        loadCustomerData(currentCustomerId);
+        loadCustomerProjects(currentCustomerId);
+    } else {
+        alert('Keine Kunden-ID angegeben');
+        window.location.href = '/customers';
+    }
+    
+    // Formular-Handler
+    document.getElementById('editCustomerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateCustomer();
+    });
+});
+
+function loadCustomerData(customerId) {
+    fetch(`/api/customers/${customerId}`)
+        .then(response => response.json())
+        .then(customer => {
+            // Formular mit Kundendaten füllen
+            document.getElementById('customerName').value = customer.name || '';
+            document.getElementById('customerCompany').value = customer.company || '';
+            document.getElementById('customerContact').value = customer.contact || '';
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Kundendaten:', error);
+            alert('Fehler beim Laden der Kundendaten');
+        });
+}
+
+function loadCustomerProjects(customerId) {
+    fetch(`/api/customers/${customerId}/projects`)
+        .then(response => response.json())
+        .then(data => {
+            displayCustomerProjects(data.projects);
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Projekte:', error);
+            document.getElementById('customerProjects').innerHTML = 
+                '<div class="text-center py-4 text-red-600">Fehler beim Laden der Projekte</div>';
+        });
+}
+
+function displayCustomerProjects(projects) {
+    if (projects.length === 0) {
+        document.getElementById('customerProjects').innerHTML = 
+            '<div class="text-center py-4 text-gray-600">Keine Projekte vorhanden</div>';
+        return;
+    }
+    
+    const projectsHtml = projects.map(project => `
+        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h4 class="font-medium text-gray-900">${project.name}</h4>
+                    <p class="text-sm text-gray-600">${project.location || 'Kein Standort angegeben'}</p>
+                    <p class="text-xs text-gray-500">Erstellt: ${new Date(project.created_at).toLocaleDateString('de-DE')}</p>
+                </div>
+                <a href="/view_project?id=${project.id}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">
+                    <i class="fas fa-eye mr-1"></i>Anzeigen
+                </a>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('customerProjects').innerHTML = projectsHtml;
+}
+
+function updateCustomer() {
+    const formData = new FormData(document.getElementById('editCustomerForm'));
+    const customerData = {
+        name: formData.get('name'),
+        company: formData.get('company') || null,
+        contact: formData.get('contact') || null
+    };
+
+    fetch(`/api/customers/${currentCustomerId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(customerData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Kunde erfolgreich aktualisiert!');
+            window.location.href = `/view_customer?id=${currentCustomerId}`;
+        } else {
+            alert('Fehler beim Aktualisieren des Kunden: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        alert('Fehler beim Aktualisieren des Kunden');
+    });
+}
+
+function deleteCustomer() {
+    if (confirm('Sind Sie sicher, dass Sie diesen Kunden löschen möchten? Alle zugehörigen Projekte werden ebenfalls gelöscht.')) {
+        fetch(`/api/customers/${currentCustomerId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Kunde erfolgreich gelöscht!');
+                window.location.href = '/customers';
+            } else {
+                alert('Fehler beim Löschen des Kunden: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fehler:', error);
+            alert('Fehler beim Löschen des Kunden');
+        });
+    }
+}
+</script>
+{% endblock %} 
