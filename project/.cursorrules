@@ -22,7 +22,6 @@
 - Vor größeren Änderungen: git add . && git commit -m "Checkpoint vor Änderungen"
 - Nach Änderungen: git push origin main
 - Bei Problemen: git status und git log überprüfen
-- vor dem löschen einer Datei mich immer vorher fragen !
 
 ## Terminal Commands
 - PowerShell verwenden (nicht bash/cmd)

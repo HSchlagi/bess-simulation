@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block title %}Referenzpreise - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Referenzpreise</h1>
+            <button onclick="openNewPriceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                <i class="fas fa-plus mr-2"></i>Neuer Referenzpreis
+            </button>
+        </div>
+
+        <!-- Preis-Übersicht -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600" id="avgElectricityPrice">0</div>
+                <div class="text-sm text-blue-700">Ø Strompreis (€/MWh)</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-green-600" id="avgGasPrice">0</div>
+                <div class="text-sm text-green-700">Ø Gaspreis (€/MWh)</div>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600" id="avgHeatingPrice">0</div>
+                <div class="text-sm text-purple-700">Ø Heizpreis (€/MWh)</div>
+            </div>
+            <div class="bg-orange-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-orange-600" id="priceCount">0</div>
+                <div class="text-sm text-orange-700">Anzahl Preise</div>
+            </div>
+        </div>
+
+        <!-- Preis-Tabelle -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Typ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preis (€/MWh)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gültig von</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gültig bis</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="pricesTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Preise werden hier dynamisch geladen -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Neuer Preis Modal -->
+<div id="newPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Neuen Referenzpreis hinzufügen</h3>
+            <form id="newPriceForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                    <input type="text" id="priceName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Typ</label>
+                    <select id="priceType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <option value="">Typ auswählen...</option>
+                        <option value="electricity">Strom</option>
+                        <option value="gas">Gas</option>
+                        <option value="heating">Heizung</option>
+                        <option value="other">Sonstiges</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preis (€/MWh)</label>
+                    <input type="number" id="priceValue" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Region</label>
+                    <input type="text" id="priceRegion" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gültig von</label>
+                        <input type="date" id="validFrom" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Gültig bis</label>
+                        <input type="date" id="validTo" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeNewPriceModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Hinzufügen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Referenzpreise laden
+async function loadReferencePrices() {
+    try {
+        const response = await fetch('/api/reference-prices');
+        
+        if (response.ok) {
+            const prices = await response.json();
+            updatePricesDisplay(prices);
+        } else {
+            console.error('Fehler beim Laden der Referenzpreise');
+            // Demo-Daten verwenden
+            updatePricesDisplay(generateDemoPrices());
+        }
+    } catch (error) {
+        console.error('Fehler:', error);
+        // Demo-Daten verwenden
+        updatePricesDisplay(generateDemoPrices());
+    }
+}
+
+// Demo-Preise generieren
+function generateDemoPrices() {
+    return [
+        {
+            id: 1,
+            name: 'Standard-Strompreis AT',
+            price_type: 'electricity',
+            price_eur_mwh: 85.50,
+            region: 'AT',
+            valid_from: '2025-01-01',
+            valid_to: '2025-12-31'
+        },
+        {
+            id: 2,
+            name: 'Standard-Gaspreis AT',
+            price_type: 'gas',
+            price_eur_mwh: 65.20,
+            region: 'AT',
+            valid_from: '2025-01-01',
+            valid_to: '2025-12-31'
+        },
+        {
+            id: 3,
+            name: 'Fernwärme-Preis Hinterstoder',
+            price_type: 'heating',
+            price_eur_mwh: 45.80,
+            region: 'AT-OÖ',
+            valid_from: '2025-01-01',
+            valid_to: '2025-12-31'
+        }
+    ];
+}
+
+// Preise-Anzeige aktualisieren
+function updatePricesDisplay(prices) {
+    // Statistiken aktualisieren
+    const electricityPrices = prices.filter(p => p.price_type === 'electricity');
+    const gasPrices = prices.filter(p => p.price_type === 'gas');
+    const heatingPrices = prices.filter(p => p.price_type === 'heating');
+    
+    const avgElectricity = electricityPrices.length > 0 ? 
+        electricityPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / electricityPrices.length : 0;
+    const avgGas = gasPrices.length > 0 ? 
+        gasPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / gasPrices.length : 0;
+    const avgHeating = heatingPrices.length > 0 ? 
+        heatingPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / heatingPrices.length : 0;
+    
+    document.getElementById('avgElectricityPrice').textContent = avgElectricity.toFixed(2);
+    document.getElementById('avgGasPrice').textContent = avgGas.toFixed(2);
+    document.getElementById('avgHeatingPrice').textContent = avgHeating.toFixed(2);
+    document.getElementById('priceCount').textContent = prices.length;
+    
+    // Tabelle aktualisieren
+    const tableBody = document.getElementById('pricesTableBody');
+    tableBody.innerHTML = '';
+    
+    prices.forEach(price => {
+        const typeNames = {
+            'electricity': 'Strom',
+            'gas': 'Gas',
+            'heating': 'Heizung',
+            'other': 'Sonstiges'
+        };
+        
+        const row = `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.name}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${typeNames[price.price_type]}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.price_eur_mwh.toFixed(2)} €/MWh</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.region || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.valid_from || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.valid_to || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button onclick="editPrice(${price.id})" class="text-blue-600 hover:text-blue-800 mr-2">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deletePrice(${price.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        tableBody.insertAdjacentHTML('beforeend', row);
+    });
+}
+
+// Modal Funktionen
+function openNewPriceModal() {
+    document.getElementById('newPriceModal').classList.remove('hidden');
+}
+
+function closeNewPriceModal() {
+    document.getElementById('newPriceModal').classList.add('hidden');
+    document.getElementById('newPriceForm').reset();
+}
+
+// Neuen Preis hinzufügen
+document.getElementById('newPriceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('priceName').value,
+        price_type: document.getElementById('priceType').value,
+        price_eur_mwh: parseFloat(document.getElementById('priceValue').value),
+        region: document.getElementById('priceRegion').value,
+        valid_from: document.getElementById('validFrom').value,
+        valid_to: document.getElementById('validTo').value
+    };
+    
+    try {
+        const response = await fetch('/api/reference-prices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            closeNewPriceModal();
+            loadReferencePrices();
+        } else {
+            alert('Fehler beim Hinzufügen des Preises');
+        }
+    } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Hinzufügen des Preises');
+    }
+});
+
+// Preis bearbeiten
+function editPrice(priceId) {
+    console.log('Preis bearbeiten:', priceId);
+}
+
+// Preis löschen
+function deletePrice(priceId) {
+    if (confirm('Preis wirklich löschen?')) {
+        console.log('Preis löschen:', priceId);
+    }
+}
+
+// Seite laden
+document.addEventListener('DOMContentLoaded', function() {
+    loadReferencePrices();
+});
+</script>
+{% endblock %} 
