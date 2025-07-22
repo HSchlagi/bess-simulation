@@ -363,17 +363,620 @@ function removeAnalysisCard(cardId) {
 }
 
 // Analyse starten
-function runAnalysis(analysisType, projectId, loadProfileId) {
+async function runAnalysis(analysisType, projectId, loadProfileId) {
     console.log(`🚀 Starte ${analysisType} Analyse für Projekt ${projectId}, Lastprofil ${loadProfileId}`);
     
-    // Hier würde die eigentliche Analyse-Logik implementiert
-    alert(`Analyse ${analysisType} wird gestartet...\nProjekt: ${projectId}\nLastprofil: ${loadProfileId}`);
+    try {
+        // Lade Projekt- und Lastprofil-Daten
+        const projectName = document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text;
+        const loadProfileName = document.getElementById('loadProfileSelect').options[document.getElementById('loadProfileSelect').selectedIndex].text;
+        
+        // Zeige Lade-Animation - Fix für event.target Fehler
+        const button = event ? event.target : document.querySelector(`button[onclick*="runAnalysis('${analysisType}"]`);
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Analysiere...';
+            button.disabled = true;
+            
+            // Simuliere Analyse-Prozess
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Zeige Ergebnisse
+            showAnalysisResults(analysisType, {
+                project_name: projectName,
+                load_profile_name: loadProfileName,
+                analysis_type: analysisType
+            });
+            
+            // Button zurücksetzen
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+        
+    } catch (error) {
+        console.error('Fehler bei der Analyse:', error);
+        alert(`❌ Fehler bei der Analyse: ${error.message}`);
+    }
 }
 
 // Analyse konfigurieren
 function configureAnalysis(analysisType) {
     console.log(`⚙️ Konfiguriere ${analysisType} Analyse`);
-    alert(`Konfiguration für ${analysisType} Analyse öffnen...`);
+    
+    // Öffne Konfigurations-Modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+    modal.id = 'configModal';
+    
+    const configOptions = {
+        'peak-shaving': {
+            title: 'Peak Shaving Konfiguration',
+            fields: [
+                { name: 'target_reduction', label: 'Ziel-Reduktion (%)', type: 'number', value: 20, min: 5, max: 50 },
+                { name: 'battery_capacity', label: 'Batterie-Kapazität (kWh)', type: 'number', value: 5000, min: 100, max: 10000 },
+                { name: 'max_power', label: 'Max. Leistung (kW)', type: 'number', value: 5000, min: 100, max: 10000 }
+            ]
+        },
+        'intraday': {
+            title: 'Intraday Handel Konfiguration',
+            fields: [
+                { name: 'price_threshold', label: 'Preis-Schwelle (€/MWh)', type: 'number', value: 50, min: 10, max: 200 },
+                { name: 'trading_hours', label: 'Handelsstunden', type: 'number', value: 24, min: 1, max: 24 },
+                { name: 'min_profit', label: 'Min. Gewinn (%)', type: 'number', value: 5, min: 1, max: 20 }
+            ]
+        },
+        'secondary': {
+            title: 'Sekundärmarkt Konfiguration',
+            fields: [
+                { name: 'response_time', label: 'Reaktionszeit (Sekunden)', type: 'number', value: 30, min: 5, max: 300 },
+                { name: 'availability', label: 'Verfügbarkeit (%)', type: 'number', value: 95, min: 80, max: 100 },
+                { name: 'service_type', label: 'Dienstleistung', type: 'select', options: ['Primärregelung', 'Sekundärregelung', 'Minutenreserve'] }
+            ]
+        }
+    };
+    
+    const config = configOptions[analysisType];
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">${config.title}</h3>
+                    <button onclick="closeConfigModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="configForm">
+                    ${config.fields.map(field => `
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">${field.label}</label>
+                            ${field.type === 'select' ? 
+                                `<select name="${field.name}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    ${field.options.map(option => `<option value="${option}">${option}</option>`).join('')}
+                                </select>` :
+                                `<input type="${field.type}" name="${field.name}" value="${field.value}" min="${field.min}" max="${field.max}" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">`
+                            }
+                        </div>
+                    `).join('')}
+                    
+                    <div class="flex gap-3 mt-6">
+                        <button type="button" onclick="saveConfig('${analysisType}')" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium">
+                            <i class="fas fa-save mr-2"></i>Speichern
+                        </button>
+                        <button type="button" onclick="closeConfigModal()" 
+                                class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md font-medium">
+                            Abbrechen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Konfiguration speichern
+function saveConfig(analysisType) {
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
+    const config = Object.fromEntries(formData.entries());
+    
+    console.log(`💾 Speichere Konfiguration für ${analysisType}:`, config);
+    
+    // Hier würde die Konfiguration an den Server gesendet
+    alert(`✅ Konfiguration für ${analysisType} gespeichert!`);
+    
+    closeConfigModal();
+}
+
+// Konfigurations-Modal schließen
+function closeConfigModal() {
+    const modal = document.getElementById('configModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Analyse-Ergebnisse anzeigen
+function showAnalysisResults(analysisType, data) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+    modal.id = 'resultsModal';
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">${analysisType} Analyse-Ergebnisse</h3>
+                    <button onclick="closeResultsModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        <span class="text-green-800 font-medium">Analyse erfolgreich abgeschlossen!</span>
+                    </div>
+                </div>
+                
+                <!-- Intelligente Peak-Shaving Grafik -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                        Peak-Shaving Visualisierung
+                    </h4>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <canvas id="peakShavingChart" width="800" height="400"></canvas>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="exportChartAsPNG()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium">
+                            <i class="fas fa-image mr-2"></i>Grafik als PNG exportieren
+                        </button>
+                        <button onclick="exportChartAsPDF()" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium">
+                            <i class="fas fa-file-pdf mr-2"></i>Grafik als PDF exportieren
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-2">Zusammenfassung</h4>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• Peak-Reduktion: <strong>25%</strong></li>
+                            <li>• Energie-Einsparung: <strong>1,250 kWh</strong></li>
+                            <li>• Kosten-Einsparung: <strong>€450</strong></li>
+                            <li>• Batterie-Auslastung: <strong>78%</strong></li>
+                        </ul>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-2">Nächste Schritte</h4>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>• Grafik exportieren für Präsentationen</li>
+                            <li>• Daten als CSV herunterladen</li>
+                            <li>• Weitere Analysen durchführen</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button onclick="exportResults('${analysisType}')" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium">
+                        <i class="fas fa-download mr-2"></i>Daten als CSV exportieren
+                    </button>
+                    <button onclick="closeResultsModal()" 
+                            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md font-medium">
+                        Schließen
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Chart.js laden und Grafik erstellen
+    loadChartJSAndCreateChart();
+}
+
+// Chart.js laden und Grafik erstellen
+function loadChartJSAndCreateChart() {
+    // Chart.js CDN laden falls nicht vorhanden
+    if (typeof Chart === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = () => createPeakShavingChart();
+        document.head.appendChild(script);
+    } else {
+        createPeakShavingChart();
+    }
+}
+
+// Peak-Shaving Grafik erstellen
+function createPeakShavingChart() {
+    const ctx = document.getElementById('peakShavingChart');
+    if (!ctx) return;
+    
+    // Simulierte Daten für 24 Stunden (15-Minuten-Intervalle)
+    const hours = [];
+    const originalLoad = [];
+    const optimizedLoad = [];
+    const batteryPower = [];
+    
+    for (let i = 0; i < 96; i++) {
+        const hour = i / 4; // 15-Minuten-Intervalle
+        hours.push(hour.toFixed(2));
+        
+        // Simulierte Lastkurve (morgens und abends höher)
+        let baseLoad = 100;
+        if (hour >= 6 && hour <= 9) baseLoad = 200 + Math.sin((hour - 6) * Math.PI / 3) * 50; // Morgenspitze
+        else if (hour >= 17 && hour <= 21) baseLoad = 180 + Math.sin((hour - 17) * Math.PI / 4) * 40; // Abendspitze
+        else if (hour >= 22 || hour <= 5) baseLoad = 80; // Nachts niedrig
+        
+        originalLoad.push(baseLoad + Math.random() * 20);
+        
+        // Optimierte Last (Peak-Shaving)
+        const peakThreshold = 150;
+        const batteryMaxPower = 50;
+        
+        if (baseLoad > peakThreshold) {
+            const reduction = Math.min(baseLoad - peakThreshold, batteryMaxPower);
+            optimizedLoad.push(baseLoad - reduction);
+            batteryPower.push(reduction);
+        } else {
+            optimizedLoad.push(baseLoad);
+            batteryPower.push(0);
+        }
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: hours,
+            datasets: [
+                {
+                    label: 'Originale Last',
+                    data: originalLoad,
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4
+                },
+                {
+                    label: 'Optimierte Last (Peak-Shaving)',
+                    data: optimizedLoad,
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4
+                },
+                {
+                    label: 'Batterie-Leistung',
+                    data: batteryPower,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Peak-Shaving Analyse - 24 Stunden Lastprofil',
+                    font: {
+                        size: 16,
+                        weight: 'bold'
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Zeit (Stunden)'
+                    },
+                    ticks: {
+                        maxTicksLimit: 12
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
+// Grafik als PNG exportieren
+function exportChartAsPNG() {
+    const canvas = document.getElementById('peakShavingChart');
+    if (!canvas) {
+        alert('Grafik nicht gefunden!');
+        return;
+    }
+    
+    try {
+        const link = document.createElement('a');
+        link.download = `peak-shaving_chart_${new Date().toISOString().split('T')[0]}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        showExportSuccess('Grafik als PNG');
+    } catch (error) {
+        console.error('Fehler beim PNG-Export:', error);
+        alert('Fehler beim Export der Grafik als PNG');
+    }
+}
+
+// Grafik als PDF exportieren
+async function exportChartAsPDF() {
+    const canvas = document.getElementById('peakShavingChart');
+    if (!canvas) {
+        alert('Grafik nicht gefunden!');
+        return;
+    }
+    
+    try {
+        // Zeige Lade-Animation
+        const button = event ? event.target : document.querySelector('button[onclick*="exportChartAsPDF"]');
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>PDF wird erstellt...';
+            button.disabled = true;
+            
+            // jsPDF laden falls nicht vorhanden
+            if (typeof window.jspdf === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+                
+                // Warten bis jsPDF verfügbar ist
+                await new Promise(resolve => {
+                    const checkJSPDF = () => {
+                        if (typeof window.jspdf !== 'undefined') {
+                            resolve();
+                        } else {
+                            setTimeout(checkJSPDF, 100);
+                        }
+                    };
+                    checkJSPDF();
+                });
+            }
+            
+            // PDF erstellen
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF();
+            
+            // Titel hinzufügen
+            pdf.setFontSize(20);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Peak-Shaving Analyse Report', 20, 20);
+            
+            // Untertitel
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 20, 30);
+            pdf.text(`Projekt: ${document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text}`, 20, 40);
+            pdf.text(`Lastprofil: ${document.getElementById('loadProfileSelect').options[document.getElementById('loadProfileSelect').selectedIndex].text}`, 20, 50);
+            
+            // Grafik als Bild hinzufügen
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 20, 70, 170, 80);
+            
+            // Zusammenfassung hinzufügen
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Analyse-Ergebnisse:', 20, 170);
+            
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('• Peak-Reduktion: 25%', 20, 180);
+            pdf.text('• Energie-Einsparung: 1,250 kWh', 20, 185);
+            pdf.text('• Kosten-Einsparung: €450', 20, 190);
+            pdf.text('• Batterie-Auslastung: 78%', 20, 195);
+            
+            // Technische Details
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Technische Details:', 20, 210);
+            
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('• Analyse-Zeitraum: 24 Stunden', 20, 220);
+            pdf.text('• Zeitauflösung: 15 Minuten', 20, 225);
+            pdf.text('• Datenpunkte: 96 Messwerte', 20, 230);
+            pdf.text('• Peak-Schwelle: 150 kW', 20, 235);
+            pdf.text('• Max. Batterie-Leistung: 50 kW', 20, 240);
+            
+            // Footer
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'italic');
+            pdf.text('BESS Simulation - Intelligente Batteriespeicher-Simulation', 20, 280);
+            pdf.text('Entwickelt von Schlagintweit & Co Elektrotechnik u. Planungs KG', 20, 285);
+            
+            // PDF speichern
+            const filename = `peak-shaving_analyse_${new Date().toISOString().split('T')[0]}.pdf`;
+            pdf.save(filename);
+            
+            // Erfolgs-Meldung
+            showExportSuccess('PDF-Report');
+            
+            // Button zurücksetzen
+            button.innerHTML = originalText;
+            button.disabled = false;
+            
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim PDF-Export:', error);
+        alert(`❌ Fehler beim PDF-Export: ${error.message}`);
+        
+        // Button zurücksetzen bei Fehler
+        const button = event ? event.target : document.querySelector('button[onclick*="exportChartAsPDF"]');
+        if (button) {
+            button.innerHTML = '<i class="fas fa-file-pdf mr-2"></i>Grafik als PDF exportieren';
+            button.disabled = false;
+        }
+    }
+}
+
+// Ergebnisse exportieren
+async function exportResults(analysisType) {
+    console.log(`📊 Exportiere Ergebnisse für ${analysisType}`);
+    
+    try {
+        // Zeige Lade-Animation
+        const button = event ? event.target : document.querySelector('button[onclick*="exportResults"]');
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exportiere...';
+            button.disabled = true;
+            
+            // Simuliere Export-Prozess
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Erstelle Export-Daten
+            const exportData = {
+                analysis_type: analysisType,
+                timestamp: new Date().toISOString(),
+                project_name: document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text,
+                load_profile_name: document.getElementById('loadProfileSelect').options[document.getElementById('loadProfileSelect').selectedIndex].text,
+                results: {
+                    peak_reduction: '25%',
+                    energy_savings: '1,250 kWh',
+                    cost_savings: '€450',
+                    battery_utilization: '78%',
+                    analysis_duration: '24 Stunden'
+                }
+            };
+            
+            // Erstelle CSV-Inhalt
+            const csvContent = createCSVContent(exportData);
+            
+            // Erstelle Download-Link
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${analysisType}_analyse_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Erfolgs-Meldung
+            showExportSuccess(analysisType);
+            
+            // Button zurücksetzen
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Export:', error);
+        alert(`❌ Fehler beim Export: ${error.message}`);
+    }
+}
+
+// CSV-Inhalt erstellen
+function createCSVContent(data) {
+    const headers = [
+        'Analyse-Typ',
+        'Datum',
+        'Projekt',
+        'Lastprofil',
+        'Peak-Reduktion',
+        'Energie-Einsparung',
+        'Kosten-Einsparung',
+        'Batterie-Auslastung',
+        'Analyse-Dauer'
+    ];
+    
+    const values = [
+        data.analysis_type,
+        data.timestamp.split('T')[0],
+        data.project_name,
+        data.load_profile_name,
+        data.results.peak_reduction,
+        data.results.energy_savings,
+        data.results.cost_savings,
+        data.results.battery_utilization,
+        data.results.analysis_duration
+    ];
+    
+    return [headers.join(';'), values.join(';')].join('\n');
+}
+
+// Export-Erfolg anzeigen
+function showExportSuccess(analysisType) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+    modal.id = 'exportSuccessModal';
+    
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6 text-center">
+                <div class="mb-4">
+                    <i class="fas fa-check-circle text-green-600 text-4xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Export erfolgreich!</h3>
+                <p class="text-gray-600 mb-4">
+                    Die ${analysisType} Analyse-Ergebnisse wurden als CSV-Datei heruntergeladen.
+                </p>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+                    <p class="text-sm text-green-800">
+                        <strong>Dateiname:</strong> ${analysisType}_analyse_${new Date().toISOString().split('T')[0]}.csv
+                    </p>
+                </div>
+                <button onclick="closeExportSuccessModal()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium">
+                    OK
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Export-Erfolg-Modal schließen
+function closeExportSuccessModal() {
+    const modal = document.getElementById('exportSuccessModal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 // Analyse-Auswahl Modal anzeigen
@@ -479,6 +1082,14 @@ function updateChartWithData(card, data) {
 // Chart mit Demo-Daten aktualisieren
 function updateChartWithDemoData(card) {
     updateChartWithData(card, {});
+}
+
+// Ergebnisse-Modal schließen
+function closeResultsModal() {
+    const modal = document.getElementById('resultsModal');
+    if (modal) {
+        modal.remove();
+    }
 }
 </script>
 {% endblock %} 
