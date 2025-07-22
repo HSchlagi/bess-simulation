@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}BESS Simulation - Startseite{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Willkommen zur BESS Simulation</h1>
+        <p class="text-lg text-gray-600 mb-8">
+            Professionelle Energiespeicher-Simulation für Ihre Projekte.
+        </p>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-blue-900 mb-2">Projekte</h3>
+                <p class="text-blue-700">Verwalten Sie Ihre BESS-Projekte</p>
+            </div>
+            
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-green-900 mb-2">BESS-Analyse</h3>
+                <p class="text-green-700">Peak Shaving Simulation</p>
+            </div>
+            
+            <div class="bg-purple-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-purple-900 mb-2">Wirtschaftlichkeit</h3>
+                <p class="text-purple-700">Kosten-Nutzen-Analyse</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
