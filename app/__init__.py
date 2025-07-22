@@ -17,6 +17,8 @@ def create_app():
     app.register_blueprint(main_bp)
 
     with app.app_context():
+        # Import models to ensure they are registered
+        import models
         db.create_all()
 
     return app

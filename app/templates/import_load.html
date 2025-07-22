@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Lastprofile Import{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Lastprofile Import</h1>
+            <a href="{{ url_for('main.import_data') }}" 
+               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md">
+                <i class="fas fa-arrow-left mr-2"></i>Zurück
+            </a>
+        </div>
+
+        <div class="space-y-6">
+            <!-- Projektauswahl -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Projekt auswählen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="projectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Lastprofil Name *</label>
+                        <input type="text" id="loadProfileName" required 
+                               placeholder="z.B. Tageslastprofil 2024"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datei-Upload -->
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">Datei-Upload</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Datei auswählen *</label>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-sm text-gray-600 mt-1">Unterstützte Formate: CSV, Excel (XLSX, XLS)</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zeitauflösung (Minuten)</label>
+                        <select id="timeResolution" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">1 Minute</option>
+                            <option value="5">5 Minuten</option>
+                            <option value="15" selected>15 Minuten</option>
+                            <option value="30">30 Minuten</option>
+                            <option value="60">1 Stunde</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datenvorschau -->
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-green-900 mb-4">Datenvorschau</h3>
+                <div id="dataPreview">
+                    <div class="text-center py-8 text-gray-600">
+                        <i class="fas fa-file-upload text-3xl mb-2"></i>
+                        <p>Wählen Sie eine Datei aus, um eine Vorschau zu sehen</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import-Optionen -->
+            <div class="bg-yellow-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-yellow-900 mb-4">Import-Optionen</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="overwriteData" class="mr-3">
+                        <label for="overwriteData" class="text-sm text-gray-700">Bestehende Daten überschreiben</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="validateData" checked class="mr-3">
+                        <label for="validateData" class="text-sm text-gray-700">Daten vor Import validieren</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aktionen -->
+            <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                <button onclick="previewData()" 
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md">
+                    <i class="fas fa-eye mr-2"></i>Vorschau
+                </button>
+                <button onclick="importData()" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                    <i class="fas fa-upload mr-2"></i>Import starten
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    
+    // Datei-Upload Handler
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            previewData();
+        }
+    });
+});
+
+function loadProjects() {
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            const select = document.getElementById('projectSelect');
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = `${project.name}${project.location ? ' - ' + project.location : ''}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Fehler beim Laden der Projekte:', error));
+}
+
+function previewData() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Bitte wählen Sie eine Datei aus');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Demo-Vorschau (in der echten Implementierung würde hier ein API-Call stehen)
+    const previewHtml = `
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h4 class="font-medium text-gray-900 mb-2">Vorschau: ${file.name}</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-3 py-2 text-left">Zeitstempel</th>
+                            <th class="px-3 py-2 text-left">Leistung (kW)</th>
+                            <th class="px-3 py-2 text-left">Energie (kWh)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td class="px-3 py-2">2024-01-01 00:00</td><td class="px-3 py-2">1250.5</td><td class="px-3 py-2">312.6</td></tr>
+                        <tr><td class="px-3 py-2">2024-01-01 00:15</td><td class="px-3 py-2">1180.2</td><td class="px-3 py-2">295.1</td></tr>
+                        <tr><td class="px-3 py-2">2024-01-01 00:30</td><td class="px-3 py-2">1320.8</td><td class="px-3 py-2">330.2</td></tr>
+                        <tr><td class="px-3 py-2">...</td><td class="px-3 py-2">...</td><td class="px-3 py-2">...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">Zeige 3 von 3504 Datensätzen</p>
+        </div>
+    `;
+    
+    document.getElementById('dataPreview').innerHTML = previewHtml;
+}
+
+function importData() {
+    const projectId = document.getElementById('projectSelect').value;
+    const loadProfileName = document.getElementById('loadProfileName').value;
+    const fileInput = document.getElementById('fileInput');
+    const timeResolution = document.getElementById('timeResolution').value;
+    const overwriteData = document.getElementById('overwriteData').checked;
+    const validateData = document.getElementById('validateData').checked;
+    
+    if (!projectId || !loadProfileName || !fileInput.files[0]) {
+        alert('Bitte füllen Sie alle erforderlichen Felder aus');
+        return;
+    }
+    
+    // Demo-Import (in der echten Implementierung würde hier ein API-Call stehen)
+    alert('Import erfolgreich! (Demo)');
+    window.location.href = '/projects';
+}
+</script>
+{% endblock %} 

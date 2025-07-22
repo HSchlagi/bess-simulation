@@ -4,145 +4,193 @@
 
 {% block content %}
 <div class="max-w-7xl mx-auto">
-    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">Projekte</h1>
-            <button onclick="openNewProjectModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                <i class="fas fa-plus mr-2"></i>Neues Projekt
-            </button>
-        </div>
-        
-        <!-- Projekt-Liste -->
-        <div id="projectList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Projekte werden hier dynamisch geladen -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Projekte</h1>
+        <a href="{{ url_for('main.new_project') }}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+            <i class="fas fa-plus mr-2"></i>Neues Projekt
+        </a>
+    </div>
+
+    <!-- Filter und Suche -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Suche</label>
+                <input type="text" id="searchInput" placeholder="Projektname oder Standort..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Kunde</label>
+                <select id="customerFilter" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Alle Kunden</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sortierung</label>
+                <select id="sortSelect" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                    <option value="date">Datum (Neueste)</option>
+                    <option value="date_old">Datum (Älteste)</option>
+                </select>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Neues Projekt Modal -->
-<div id="newProjectModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen">
-        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h3 class="text-lg font-semibold mb-4">Neues Projekt erstellen</h3>
-            <form id="newProjectForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Projektname</label>
-                    <input type="text" id="projectName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Standort</label>
-                    <input type="text" id="projectLocation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Kunde</label>
-                    <select id="projectCustomer" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Kunde auswählen...</option>
-                    </select>
-                </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeNewProjectModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
-                        Abbrechen
-                    </button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                        Erstellen
-                    </button>
-                </div>
-            </form>
+    <!-- Projekte Liste -->
+    <div id="projectsList" class="space-y-4">
+        <!-- Projekte werden hier dynamisch geladen -->
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+            <p class="mt-2 text-gray-600">Lade Projekte...</p>
         </div>
+    </div>
+
+    <!-- Keine Projekte Nachricht -->
+    <div id="noProjectsMessage" class="hidden text-center py-12">
+        <i class="fas fa-folder text-gray-400 text-6xl mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Keine Projekte vorhanden</h3>
+        <p class="text-gray-600 mb-6">Erstellen Sie Ihr erstes BESS-Simulationsprojekt</p>
+        <a href="{{ url_for('main.new_project') }}" 
+           class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md">
+            <i class="fas fa-plus mr-2"></i>+ Neues Projekt erstellen
+        </a>
     </div>
 </div>
 
 <script>
-// Projekte laden
-async function loadProjects() {
-    try {
-        const response = await fetch('/api/projects');
-        const projects = await response.json();
-        
-        const projectList = document.getElementById('projectList');
-        projectList.innerHTML = '';
-        
-        projects.forEach(project => {
-            const projectCard = `
-                <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">${project.name}</h3>
-                    <p class="text-gray-600 mb-4">${project.location}</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500">Aktiv</span>
-                        <div class="space-x-2">
-                            <button onclick="editProject(${project.id})" class="text-blue-600 hover:text-blue-800">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="viewProject(${project.id})" class="text-green-600 hover:text-green-800">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            projectList.insertAdjacentHTML('beforeend', projectCard);
-        });
-    } catch (error) {
-        console.error('Fehler beim Laden der Projekte:', error);
-    }
-}
-
-// Modal Funktionen
-function openNewProjectModal() {
-    document.getElementById('newProjectModal').classList.remove('hidden');
-}
-
-function closeNewProjectModal() {
-    document.getElementById('newProjectModal').classList.add('hidden');
-    document.getElementById('newProjectForm').reset();
-}
-
-// Neues Projekt erstellen
-document.getElementById('newProjectForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        name: document.getElementById('projectName').value,
-        location: document.getElementById('projectLocation').value,
-        customer_id: document.getElementById('projectCustomer').value
-    };
-    
-    try {
-        const response = await fetch('/api/projects', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-        
-        if (response.ok) {
-            closeNewProjectModal();
-            loadProjects();
-        } else {
-            alert('Fehler beim Erstellen des Projekts');
-        }
-    } catch (error) {
-        console.error('Fehler:', error);
-        alert('Fehler beim Erstellen des Projekts');
-    }
-});
-
-// Projekt bearbeiten
-function editProject(projectId) {
-    // Implementierung für Projekt bearbeiten
-    console.log('Projekt bearbeiten:', projectId);
-}
-
-// Projekt anzeigen
-function viewProject(projectId) {
-    // Implementierung für Projekt anzeigen
-    console.log('Projekt anzeigen:', projectId);
-}
-
-// Seite laden
 document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
+    loadCustomers();
+    
+    // Event Listeners
+    document.getElementById('searchInput').addEventListener('input', filterProjects);
+    document.getElementById('customerFilter').addEventListener('change', filterProjects);
+    document.getElementById('sortSelect').addEventListener('change', filterProjects);
 });
+
+function loadProjects() {
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            displayProjects(projects);
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Projekte:', error);
+            document.getElementById('projectsList').innerHTML = 
+                '<div class="text-center py-8 text-red-600">Fehler beim Laden der Projekte</div>';
+        });
+}
+
+function loadCustomers() {
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customerFilter');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Fehler beim Laden der Kunden:', error));
+}
+
+function displayProjects(projects) {
+    if (projects.length === 0) {
+        document.getElementById('projectsList').classList.add('hidden');
+        document.getElementById('noProjectsMessage').classList.remove('hidden');
+        return;
+    }
+    
+    document.getElementById('projectsList').classList.remove('hidden');
+    document.getElementById('noProjectsMessage').classList.add('hidden');
+    
+    const projectsHtml = projects.map(project => `
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <h3 class="text-xl font-semibold text-gray-900">${project.name}</h3>
+                        <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Aktiv</span>
+                    </div>
+                    <p class="text-gray-600 mb-3">${project.location || 'Kein Standort angegeben'}</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="text-sm">
+                            <span class="text-gray-500">BESS:</span>
+                            <span class="font-medium">${project.bess_size ? project.bess_size + ' kWh' : 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">PV:</span>
+                            <span class="font-medium">${project.pv_power ? project.pv_power + ' kW' : 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">Wind:</span>
+                            <span class="font-medium">${project.wind_power ? project.wind_power + ' kW' : 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">Hydro:</span>
+                            <span class="font-medium">${project.hydro_power ? project.hydro_power + ' kW' : 'Nicht angegeben'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-calendar mr-1"></i>
+                        <span>Erstellt: ${new Date(project.created_at).toLocaleDateString('de-DE')}</span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-2 ml-4">
+                    <a href="/view_project?id=${project.id}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">
+                        <i class="fas fa-eye mr-1"></i>Anzeigen
+                    </a>
+                    <a href="/edit_project?id=${project.id}" 
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-md text-sm">
+                        <i class="fas fa-edit mr-1"></i>Bearbeiten
+                    </a>
+                    <button onclick="deleteProject(${project.id})" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm">
+                        <i class="fas fa-trash mr-1"></i>Löschen
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('projectsList').innerHTML = projectsHtml;
+}
+
+function filterProjects() {
+    // Implementierung der Filterlogik würde hier stehen
+    // Für jetzt laden wir einfach alle Projekte neu
+    loadProjects();
+}
+
+function deleteProject(projectId) {
+    if (confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        fetch(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Projekt erfolgreich gelöscht!');
+                loadProjects(); // Liste neu laden
+            } else {
+                alert('Fehler beim Löschen des Projekts: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fehler:', error);
+            alert('Fehler beim Löschen des Projekts');
+        });
+    }
+}
 </script>
 {% endblock %} 

@@ -42,9 +42,45 @@ def economic_analysis():
 def preview_data():
     return render_template('preview_data.html')
 
+@main_bp.route('/import_data')
+def import_data():
+    return render_template('import_data.html')
+
+@main_bp.route('/new_project')
+def new_project():
+    return render_template('new_project.html')
+
+@main_bp.route('/new_customer')
+def new_customer():
+    return render_template('new_customer.html')
+
+@main_bp.route('/view_project')
+def view_project():
+    return render_template('view_project.html')
+
+@main_bp.route('/edit_project')
+def edit_project():
+    return render_template('edit_project.html')
+
+@main_bp.route('/view_customer')
+def view_customer():
+    return render_template('view_customer.html')
+
+@main_bp.route('/edit_customer')
+def edit_customer():
+    return render_template('edit_customer.html')
+
+@main_bp.route('/import_load')
+def import_load():
+    return render_template('import_load.html')
+
 @main_bp.route('/bess-peak-shaving-analysis')
 def bess_peak_shaving_analysis():
     return render_template('bess_peak_shaving_analysis.html')
+
+@main_bp.route('/data_import_center')
+def data_import_center():
+    return render_template('data_import_center.html')
 
 # API Routes für Projekte
 @main_bp.route('/api/projects')
@@ -62,12 +98,83 @@ def api_create_project():
         data = request.get_json()
         project = Project(
             name=data['name'],
-            location=data['location'],
-            customer_id=data.get('customer_id')
+            location=data.get('location'),
+            customer_id=data.get('customer_id'),
+            date=datetime.fromisoformat(data['date']) if data.get('date') else None,
+            bess_size=data.get('bess_size'),
+            bess_power=data.get('bess_power'),
+            pv_power=data.get('pv_power'),
+            hp_power=data.get('hp_power'),
+            wind_power=data.get('wind_power'),
+            hydro_power=data.get('hydro_power')
         )
         db.session.add(project)
         db.session.commit()
         return jsonify({'success': True, 'id': project.id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/projects/<int:project_id>')
+def api_get_project(project_id):
+    project = Project.query.get_or_404(project_id)
+    return jsonify({
+        'id': project.id,
+        'name': project.name,
+        'location': project.location,
+        'date': project.date.isoformat() if project.date else None,
+        'bess_size': project.bess_size,
+        'bess_power': project.bess_power,
+        'pv_power': project.pv_power,
+        'hp_power': project.hp_power,
+        'wind_power': project.wind_power,
+        'hydro_power': project.hydro_power,
+        'customer_id': project.customer_id,
+        'customer': {
+            'id': project.customer.id,
+            'name': project.customer.name
+        } if project.customer else None,
+        'created_at': project.created_at.isoformat()
+    })
+
+@main_bp.route('/api/projects/<int:project_id>', methods=['PUT'])
+def api_update_project(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+        data = request.get_json()
+        
+        project.name = data['name']
+        project.location = data.get('location')
+        project.customer_id = data.get('customer_id')
+        
+        # Datum sicher parsen
+        if data.get('date') and data['date'].strip():
+            try:
+                project.date = datetime.fromisoformat(data['date'])
+            except ValueError:
+                project.date = None
+        else:
+            project.date = None
+            
+        project.bess_size = data.get('bess_size')
+        project.bess_power = data.get('bess_power')
+        project.pv_power = data.get('pv_power')
+        project.hp_power = data.get('hp_power')
+        project.wind_power = data.get('wind_power')
+        project.hydro_power = data.get('hydro_power')
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/projects/<int:project_id>', methods=['DELETE'])
+def api_delete_project(project_id):
+    try:
+        project = Project.query.get_or_404(project_id)
+        db.session.delete(project)
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -100,18 +207,61 @@ def api_customers():
 
 @main_bp.route('/api/customers', methods=['POST'])
 def api_create_customer():
+    print("=== CUSTOMER API CALLED ===")
+    return jsonify({'success': True, 'id': 1}), 201
+
+@main_bp.route('/api/customers/<int:customer_id>')
+def api_get_customer(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    return jsonify({
+        'id': customer.id,
+        'name': customer.name,
+        'company': customer.company,
+        'contact': customer.contact,
+        'created_at': customer.created_at.isoformat()
+    })
+
+@main_bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
+def api_update_customer(customer_id):
     try:
+        customer = Customer.query.get_or_404(customer_id)
         data = request.get_json()
-        customer = Customer(
-            name=data['name'],
-            company=data.get('company'),
-            contact=data.get('contact')
-        )
-        db.session.add(customer)
+        
+        customer.name = data['name']
+        customer.company = data.get('company')
+        customer.contact = data.get('contact')
+        
         db.session.commit()
-        return jsonify({'success': True, 'id': customer.id}), 201
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/customers/<int:customer_id>', methods=['DELETE'])
+def api_delete_customer(customer_id):
+    try:
+        customer = Customer.query.get_or_404(customer_id)
+        db.session.delete(customer)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/customers/<int:customer_id>/projects')
+def api_customer_projects(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    projects = Project.query.filter_by(customer_id=customer_id).all()
+    return jsonify({
+        'customer': {
+            'id': customer.id,
+            'name': customer.name
+        },
+        'projects': [{
+            'id': p.id,
+            'name': p.name,
+            'location': p.location,
+            'created_at': p.created_at.isoformat()
+        } for p in projects]
+    })
 
 # API Routes für Investitionskosten
 @main_bp.route('/api/investment-costs')
@@ -142,6 +292,43 @@ def api_create_investment_cost():
         db.session.add(cost)
         db.session.commit()
         return jsonify({'success': True, 'id': cost.id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/investment-costs/<int:cost_id>')
+def api_get_investment_cost(cost_id):
+    cost = InvestmentCost.query.get_or_404(cost_id)
+    return jsonify({
+        'id': cost.id,
+        'project_id': cost.project_id,
+        'component_type': cost.component_type,
+        'cost_eur': cost.cost_eur,
+        'description': cost.description
+    })
+
+@main_bp.route('/api/investment-costs/<int:cost_id>', methods=['PUT'])
+def api_update_investment_cost(cost_id):
+    try:
+        cost = InvestmentCost.query.get_or_404(cost_id)
+        data = request.get_json()
+        
+        cost.component_type = data['component_type']
+        cost.cost_eur = data['cost_eur']
+        cost.description = data.get('description')
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/investment-costs/<int:cost_id>', methods=['DELETE'])
+def api_delete_investment_cost(cost_id):
+    try:
+        cost = InvestmentCost.query.get_or_404(cost_id)
+        db.session.delete(cost)
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
@@ -321,3 +508,15 @@ def api_load_profile_data_range(load_profile_id):
         
     except Exception as e:
         return jsonify({'error': f'Server-Fehler: {str(e)}'}), 500 
+
+@main_bp.route('/api/test-customer', methods=['POST'])
+def test_customer():
+    try:
+        data = request.get_json()
+        return jsonify({
+            'success': True, 
+            'received_data': data,
+            'message': 'Test customer endpoint working'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400 
