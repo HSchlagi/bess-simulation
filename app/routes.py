@@ -142,6 +142,10 @@ def api_update_project(project_id):
         project = Project.query.get_or_404(project_id)
         data = request.get_json()
         
+        # Validierung der erforderlichen Felder
+        if not data.get('name'):
+            return jsonify({'error': 'Projektname ist erforderlich'}), 400
+        
         project.name = data['name']
         project.location = data.get('location')
         project.customer_id = data.get('customer_id')
@@ -155,17 +159,19 @@ def api_update_project(project_id):
         else:
             project.date = None
             
-        project.bess_size = data.get('bess_size')
-        project.bess_power = data.get('bess_power')
-        project.pv_power = data.get('pv_power')
-        project.hp_power = data.get('hp_power')
-        project.wind_power = data.get('wind_power')
-        project.hydro_power = data.get('hydro_power')
+        # Numerische Werte sicher konvertieren
+        project.bess_size = float(data.get('bess_size')) if data.get('bess_size') is not None else None
+        project.bess_power = float(data.get('bess_power')) if data.get('bess_power') is not None else None
+        project.pv_power = float(data.get('pv_power')) if data.get('pv_power') is not None else None
+        project.hp_power = float(data.get('hp_power')) if data.get('hp_power') is not None else None
+        project.wind_power = float(data.get('wind_power')) if data.get('wind_power') is not None else None
+        project.hydro_power = float(data.get('hydro_power')) if data.get('hydro_power') is not None else None
         
         db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
+        print(f"Fehler beim Aktualisieren des Projekts: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/projects/<int:project_id>', methods=['DELETE'])
