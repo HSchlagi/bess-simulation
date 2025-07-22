@@ -3,9 +3,6 @@
 {% block title %}Datenimport-Center{% endblock %}
 
 {% block content %}
-<!-- CSRF-Token für AJAX-Requests -->
-<meta name="csrf-token" content="{{ csrf_token() }}">
-
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-800 mb-4">
@@ -306,51 +303,25 @@ document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
 });
 
-// Datei-Upload behandeln
-function handleFileUpload(file, dataType) {
-    console.log('📁 Datei-Upload gestartet:', {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        dataType: dataType
-    });
+// Datei-Upload verarbeiten
+async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
     
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    
-    if (fileExtension === 'csv') {
-        // CSV-Datei verarbeiten
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const csvData = e.target.result;
-            const data = parseCSVData(csvData, dataType);
-            
-            if (data.length > 0) {
-                showDataPreview(data, file.name);
-                showNotification(`CSV-Datei erfolgreich geladen: ${data.length} Datensätze`, 'success');
-            } else {
-                showNotification('Keine gültigen Daten in der CSV-Datei gefunden', 'error');
-            }
-        };
-        reader.readAsText(file);
-        
-    } else if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-        // Excel-Datei verarbeiten
-        processExcelFile(file, dataType)
-            .then(data => {
-                if (data.length > 0) {
-                    showDataPreview(data, file.name);
-                    showNotification(`Excel-Datei erfolgreich geladen: ${data.length} Datensätze`, 'success');
-                } else {
-                    showNotification('Keine gültigen Daten in der Excel-Datei gefunden', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('❌ Excel-Import-Fehler:', error);
-                showNotification(`Excel-Import-Fehler: ${error.message}`, 'error');
-            });
-        
-    } else {
-        showNotification('Nicht unterstütztes Dateiformat. Bitte verwenden Sie CSV oder Excel-Dateien.', 'error');
+    try {
+        if (file.name.endsWith('.csv')) {
+            const csvText = await file.text();
+            const data = parseCSV(csvText, currentDataType);
+            showDataPreview(data);
+        } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+            const arrayBuffer = await file.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const data = parseExcel(workbook, currentDataType);
+            showDataPreview(data);
+        }
+    } catch (error) {
+        console.error('Fehler beim Verarbeiten der Datei:', error);
+        alert('Fehler beim Verarbeiten der Datei');
     }
 }
 
@@ -474,114 +445,73 @@ function parseDateTime(value) {
 }
 
 // Datenvorschau anzeigen
-function showDataPreview(data, fileName = '') {
-    console.log('📊 Zeige Datenvorschau:', data);
-    
-    const previewContainer = document.getElementById('dataPreview');
-    const importButton = document.getElementById('importButton');
-    
-    if (!data || data.length === 0) {
-        previewContainer.innerHTML = '<div class="text-red-600">❌ Keine Daten zum Anzeigen</div>';
-        importButton.style.display = 'none';
+function showDataPreview(data) {
+    if (data.length === 0) {
+        alert('Keine gültigen Daten gefunden');
         return;
     }
     
-    // Statistiken berechnen
-    const values = data.map(d => parseFloat(d.value)).filter(v => !isNaN(v));
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
-    const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
+    // Vorschau-Tabelle erstellen
+    const header = document.getElementById('previewHeader');
+    const body = document.getElementById('previewBody');
     
-    // Zeitraum
-    const firstDate = new Date(data[0].timestamp);
-    const lastDate = new Date(data[data.length - 1].timestamp);
-    
-    let previewHTML = `
-        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-            <h3 class="text-lg font-semibold text-green-800 mb-3">✅ Daten erfolgreich erkannt!</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="bg-white p-3 rounded border">
-                    <h4 class="font-medium text-gray-700 mb-2">📊 Statistiken</h4>
-                    <p><strong>Datenpunkte:</strong> ${data.length}</p>
-                    <p><strong>Minimal:</strong> ${minValue.toFixed(2)} kW</p>
-                    <p><strong>Maximal:</strong> ${maxValue.toFixed(2)} kW</p>
-                    <p><strong>Durchschnitt:</strong> ${avgValue.toFixed(2)} kW</p>
-                </div>
-                
-                <div class="bg-white p-3 rounded border">
-                    <h4 class="font-medium text-gray-700 mb-2">📅 Zeitraum</h4>
-                    <p><strong>Von:</strong> ${firstDate.toLocaleString('de-DE')}</p>
-                    <p><strong>Bis:</strong> ${lastDate.toLocaleString('de-DE')}</p>
-                    <p><strong>Dauer:</strong> ${Math.round((lastDate - firstDate) / (1000 * 60 * 60 * 24))} Tage</p>
-                </div>
-            </div>
-            
-            <div class="bg-white p-3 rounded border mb-4">
-                <h4 class="font-medium text-gray-700 mb-2">Erste 5 Datensätze</h4>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-2 py-1 text-left">Zeitstempel</th>
-                                <th class="px-2 py-1 text-left">Wert (kW)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-        `;
-        
-        // Erste 5 Datensätze anzeigen
-        data.slice(0, 5).forEach(row => {
-            const date = new Date(row.timestamp);
-            previewHTML += `
-                <tr class="border-b">
-                    <td class="px-2 py-1">${date.toLocaleString('de-DE')}</td>
-                    <td class="px-2 py-1">${parseFloat(row.value).toFixed(2)}</td>
-                </tr>
-            `;
-        });
-        
-        previewHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="text-lg font-semibold text-blue-800 mb-2">🚀 Import bereit!</h4>
-                    <p class="text-blue-700 mb-3">
-                        Die Daten wurden erfolgreich erkannt und können jetzt importiert werden. 
-                        Möchten Sie diese Lastprofil-Daten in die Datenbank importieren?
-                    </p>
-                    <div class="flex gap-3">
-                        <button id="confirmImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
-                            ✅ Ja, Daten importieren
-                        </button>
-                        <button id="cancelImport" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium">
-                            ❌ Abbrechen
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    header.innerHTML = `
+        <th class="text-left py-2">Zeitstempel</th>
+        <th class="text-left py-2">Wert</th>
+        <th class="text-left py-2">Einheit</th>
+        <th class="text-left py-2">Typ</th>
     `;
     
-    previewContainer.innerHTML = previewHTML;
+    body.innerHTML = '';
     
-    // Import-Button verstecken (wird durch Abfrage ersetzt)
-    importButton.style.display = 'none';
-    
-    // Event-Listener für Import-Abfrage
-    document.getElementById('confirmImport').addEventListener('click', () => {
-        console.log('🚀 Import bestätigt, starte Upload...');
-        uploadDataToServer(data);
+    // Erste 10 Zeilen anzeigen
+    data.slice(0, 10).forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-gray-200';
+        tr.innerHTML = `
+            <td class="py-2">${row.timestamp ? row.timestamp.toLocaleString() : 'N/A'}</td>
+            <td class="py-2">${row.value}</td>
+            <td class="py-2">${row.unit}</td>
+            <td class="py-2">${row.data_type}</td>
+        `;
+        body.appendChild(tr);
     });
     
-    document.getElementById('cancelImport').addEventListener('click', () => {
-        console.log('❌ Import abgebrochen');
-        previewContainer.innerHTML = '<div class="text-gray-600">Import abgebrochen</div>';
-        importButton.style.display = 'none';
-    });
+    if (data.length > 10) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="4" class="py-2 text-center text-gray-500">... und ${data.length - 10} weitere Zeilen</td>`;
+        body.appendChild(tr);
+    }
+    
+    document.getElementById('dataPreview').classList.remove('hidden');
+    
+    // Daten für Import speichern
+    importedData[currentDataType] = data;
+}
+
+// Manuellen Wert hinzufügen
+function addLoadValue() {
+    const dateTime = document.getElementById('loadDateTime').value;
+    const value = parseFloat(document.getElementById('loadValue').value);
+    
+    if (!dateTime || isNaN(value)) {
+        alert('Bitte fülle alle Felder aus');
+        return;
+    }
+    
+    const data = [{
+        timestamp: new Date(dateTime),
+        value: value,
+        unit: 'kW',
+        data_type: 'load'
+    }];
+    
+    importedData.load.push(...data);
+    showDataPreview(importedData.load);
+    
+    // Felder zurücksetzen
+    document.getElementById('loadDateTime').value = '';
+    document.getElementById('loadValue').value = '';
 }
 
 // Daten importieren
@@ -734,52 +664,25 @@ document.addEventListener('DOMContentLoaded', function() {
 // Datei verarbeiten
 async function processDroppedFile(file, fileType, dataType) {
     try {
-        console.log(`📁 Verarbeite ${fileType}-Datei für ${dataType}:`, file.name);
+        console.log(`Verarbeite ${fileType}-Datei für ${dataType}:`, file.name);
         
         // Datei lesen
         const data = await readFile(file, fileType);
         
         // Daten parsen und validieren
-        let parsedData = [];
-        
-        if (fileType === 'csv') {
-            parsedData = parseCSVData(data, dataType);
-        } else if (fileType === 'excel') {
-            try {
-                parsedData = await parseExcelData(data, dataType);
-            } catch (excelError) {
-                console.error('❌ Excel-Parsing-Fehler:', excelError);
-                showNotification(`Excel-Parsing-Fehler: ${excelError.message}`, 'error');
-                return;
-            }
-        }
-        
-        // Array-Validierung
-        if (!Array.isArray(parsedData)) {
-            console.error('❌ Parsed data ist kein Array:', typeof parsedData, parsedData);
-            showNotification('Fehler: Daten konnten nicht korrekt verarbeitet werden', 'error');
-            return;
-        }
-        
-        if (parsedData.length === 0) {
-            console.warn('⚠️ Keine Daten gefunden');
-            showNotification('Keine gültigen Daten in der Datei gefunden', 'warning');
-            return;
-        }
-        
-        console.log(`✅ Daten erfolgreich verarbeitet: ${parsedData.length} Datensätze`);
+        const parsedData = parseFileData(data, fileType, dataType);
         
         // Daten zum entsprechenden Array hinzufügen
         importedData[dataType] = parsedData;
         
         // Vorschau anzeigen
-        showDataPreview(parsedData, file.name);
+        showDataPreview(parsedData);
         
         // Erfolgsmeldung
         showNotification(`Datei "${file.name}" erfolgreich geladen! ${parsedData.length} Datenpunkte erkannt.`, 'success');
         
     } catch (error) {
-        console.error('❌ Fehler beim Verarbeiten der Datei:', error);
+        console.error('Fehler beim Verarbeiten der Datei:', error);
         showNotification(`Fehler beim Verarbeiten der Datei: ${error.message}`, 'error');
     }
 }
@@ -850,196 +753,118 @@ function parseCSVData(csvText, dataType) {
 
 // Excel-Daten parsen
 function parseExcelData(arrayBuffer, dataType) {
-    return new Promise((resolve, reject) => {
-        try {
-            console.log('🔍 Starte Excel-Parsing...');
-            console.log('📁 ArrayBuffer Größe:', arrayBuffer.byteLength);
-            
-            const data = new Uint8Array(arrayBuffer);
-            console.log('📊 Uint8Array erstellt, Länge:', data.length);
-            
-            const workbook = XLSX.read(data, { type: 'array' });
-            console.log('📋 Workbook erstellt:', workbook);
-            
-            if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
-                console.error('❌ Keine Sheets in der Excel-Datei gefunden');
-                reject(new Error('Keine Sheets in der Excel-Datei gefunden'));
-                return;
-            }
-            
-            console.log('📋 Verfügbare Sheets:', workbook.SheetNames);
-            
-            const allData = [];
-            
-            // Nur das erste Sheet verarbeiten
-            const sheetName = workbook.SheetNames[0];
+    try {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const data = [];
+        
+        // Alle Blätter durchgehen
+        workbook.SheetNames.forEach(sheetName => {
             const worksheet = workbook.Sheets[sheetName];
-            
-            console.log(`📊 Verarbeite Sheet: "${sheetName}"`);
-            console.log('📋 Worksheet:', worksheet);
-            
-            if (!worksheet) {
-                console.error('❌ Worksheet ist leer');
-                reject(new Error('Worksheet ist leer'));
-                return;
-            }
-            
             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-            console.log('📊 JSON-Daten:', jsonData);
             
-            if (!jsonData || jsonData.length < 2) {
-                console.error('❌ Zu wenig Daten in der Excel-Datei');
-                reject(new Error('Zu wenig Daten in der Excel-Datei (mindestens Header + 1 Zeile erforderlich)'));
-                return;
-            }
-            
-            const headers = jsonData[0];
-            console.log('📋 Headers:', headers);
-            
-            if (!headers || headers.length === 0) {
-                console.error('❌ Keine Header gefunden');
-                reject(new Error('Keine Header in der Excel-Datei gefunden'));
-                return;
-            }
-            
-            // Einfache Spalten-Erkennung
-            let timestampCol = -1;
-            let valueCol = -1;
-            
-            console.log('🔍 Starte Spalten-Erkennung...');
-            console.log('📋 Alle Headers:', headers);
-            
-            // Zeitstempel-Spalte finden - erweiterte Suche
-            headers.forEach((header, index) => {
-                const headerStr = String(header).toLowerCase();
-                console.log(`🔍 Prüfe Header ${index}: "${header}" -> "${headerStr}"`);
+            if (jsonData.length > 1) {
+                const headers = jsonData[0];
                 
-                if (headerStr.includes('datum') || 
-                    headerStr.includes('date') || 
-                    headerStr.includes('zeit') || 
-                    headerStr.includes('time') ||
-                    headerStr.includes('timestamp') ||
-                    headerStr.includes('uhrzeit')) {
-                    timestampCol = index;
-                    console.log(`⏰ Zeitstempel-Spalte gefunden: "${header}" (Index ${index})`);
-                }
-            });
-            
-            // Wert-Spalte finden - erweiterte Suche
-            headers.forEach((header, index) => {
-                const headerStr = String(header).toLowerCase();
+                // Spalten für Zeitstempel und Werte finden
+                let timestampCol = -1;
+                let valueCol = -1;
                 
-                if (headerStr.includes('kw') || 
-                    headerStr.includes('power') || 
-                    headerStr.includes('last') || 
-                    headerStr.includes('leistung') ||
-                    headerStr.includes('verbrauch') ||
-                    headerStr.includes('pumpsation') ||
-                    headerStr.includes('berg')) {
-                    valueCol = index;
-                    console.log(`⚡ Wert-Spalte gefunden: "${header}" (Index ${index})`);
+                headers.forEach((header, index) => {
+                    const headerStr = String(header).toLowerCase();
+                    
+                    // Zeitstempel-Spalte finden
+                    if (timestampCol === -1 && (
+                        headerStr.includes('zeit') || 
+                        headerStr.includes('time') || 
+                        headerStr.includes('datum') || 
+                        headerStr.includes('date')
+                    )) {
+                        timestampCol = index;
+                    }
+                    
+                    // Wert-Spalte finden (abhängig vom Datentyp)
+                    if (valueCol === -1) {
+                        switch (dataType) {
+                            case 'load':
+                                if (headerStr.includes('pumpsation') || 
+                                    headerStr.includes('last') || 
+                                    headerStr.includes('power') || 
+                                    headerStr.includes('kw')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'solar':
+                                if (headerStr.includes('strahlung') || 
+                                    headerStr.includes('irradiation') || 
+                                    headerStr.includes('w/m²')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'hydro':
+                                if (headerStr.includes('pegel') || 
+                                    headerStr.includes('wasser') || 
+                                    headerStr.includes('level')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'pvsol':
+                                if (headerStr.includes('leistung') || 
+                                    headerStr.includes('power') || 
+                                    headerStr.includes('kw')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'weather':
+                                if (headerStr.includes('temp') || 
+                                    headerStr.includes('temperatur')) {
+                                    valueCol = index;
+                                }
+                                break;
+                        }
+                    }
+                });
+                
+                // Wenn keine spezifische Spalte gefunden, erste numerische Spalte verwenden
+                if (valueCol === -1) {
+                    for (let i = 0; i < headers.length; i++) {
+                        if (i !== timestampCol && !String(headers[i]).toLowerCase().includes('zeit') && 
+                            !String(headers[i]).toLowerCase().includes('datum')) {
+                            valueCol = i;
+                            break;
+                        }
+                    }
                 }
-            });
-            
-            // Fallback: Erste numerische Spalte als Wert verwenden
-            if (valueCol === -1) {
-                console.log('⚠️ Keine Wert-Spalte gefunden, suche nach numerischen Spalten...');
-                for (let i = 0; i < headers.length; i++) {
-                    const headerStr = String(headers[i]).toLowerCase();
-                    if (!headerStr.includes('datum') && 
-                        !headerStr.includes('date') && 
-                        !headerStr.includes('zeit') && 
-                        !headerStr.includes('time') &&
-                        !headerStr.includes('status') &&
-                        !headerStr.includes('unnamed')) {
-                        valueCol = i;
-                        console.log(`🔍 Fallback-Wert-Spalte: "${headers[i]}" (Index ${i})`);
-                        break;
+                
+                // Daten verarbeiten
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    
+                    if (timestampCol >= 0 && valueCol >= 0 && 
+                        row[timestampCol] !== undefined && row[valueCol] !== undefined) {
+                        
+                        const timestamp = parseExcelTimestamp(row[timestampCol]);
+                        const value = parseFloat(row[valueCol]);
+                        
+                        if (timestamp && !isNaN(value)) {
+                            data.push({
+                                timestamp: timestamp,
+                                value: value,
+                                unit: getUnitForDataType(dataType),
+                                data_type: dataType,
+                                sheet: sheetName
+                            });
+                        }
                     }
                 }
             }
-            
-            // Fallback: Erste Spalte als Zeitstempel verwenden
-            if (timestampCol === -1) {
-                console.log('⚠️ Keine Zeitstempel-Spalte gefunden, verwende erste Spalte');
-                timestampCol = 0;
-            }
-            
-            console.log(`📊 Spalten-Erkennung: timestamp=${timestampCol}, value=${valueCol}`);
-            console.log(`📋 Zeitstempel-Spalte: "${headers[timestampCol]}"`);
-            console.log(`📋 Wert-Spalte: "${headers[valueCol]}"`);
-            
-            if (timestampCol === -1 || valueCol === -1) {
-                console.error('❌ Zeitstempel oder Wert-Spalte nicht gefunden');
-                console.error('📋 Verfügbare Spalten:', headers);
-                reject(new Error('Zeitstempel oder Wert-Spalte nicht gefunden. Verfügbare Spalten: ' + headers.join(', ')));
-                return;
-            }
-            
-            // Daten verarbeiten
-            let validDataCount = 0;
-            for (let i = 1; i < jsonData.length; i++) {
-                const row = jsonData[i];
-                console.log(`📊 Verarbeite Zeile ${i}:`, row);
-                
-                if (row && row[timestampCol] !== undefined && row[valueCol] !== undefined) {
-                    const timestamp = parseExcelTimestamp(row[timestampCol]);
-                    const value = parseGermanNumber(row[valueCol]);
-                    
-                    console.log(`📊 Zeile ${i}: timestamp="${row[timestampCol]}" -> ${timestamp}, value="${row[valueCol]}" -> ${value}`);
-                    
-                    if (timestamp && !isNaN(value)) {
-                        allData.push({
-                            timestamp: timestamp,
-                            value: value,
-                            unit: 'kW',
-                            data_type: 'load',
-                            sheet: sheetName,
-                            source: 'Excel Import'
-                        });
-                        validDataCount++;
-                        console.log(`✅ Zeile ${i} erfolgreich verarbeitet`);
-                    } else {
-                        console.warn(`⚠️ Zeile ${i} ungültig: timestamp=${timestamp}, value=${value}`);
-                    }
-                } else {
-                    console.warn(`⚠️ Zeile ${i} unvollständig:`, row);
-                }
-            }
-            
-            console.log(`✅ Excel-Verarbeitung abgeschlossen: ${validDataCount} gültige Datensätze`);
-            
-            if (validDataCount === 0) {
-                console.error('❌ Keine gültigen Daten gefunden');
-                reject(new Error('Keine gültigen Daten gefunden. Bitte überprüfen Sie das Excel-Format.'));
-                return;
-            }
-            
-            console.log(`🎉 Excel-Import erfolgreich: ${allData.length} Datensätze`);
-            resolve(allData);
-            
-        } catch (error) {
-            console.error('❌ Fehler beim Excel-Import:', error);
-            reject(new Error(`Excel-Import-Fehler: ${error.message}`));
-        }
-    });
-}
-
-// Deutsche Zahlen parsen (Komma als Dezimaltrennzeichen)
-function parseGermanNumber(value) {
-    if (value === null || value === undefined || value === '') {
-        return NaN;
+        });
+        
+        return data;
+        
+    } catch (error) {
+        console.error('Fehler beim Parsen der Excel-Datei:', error);
+        return [];
     }
-    
-    const str = String(value).trim();
-    
-    // Komma durch Punkt ersetzen
-    const normalized = str.replace(',', '.');
-    
-    // Numerischen Wert parsen
-    const parsed = parseFloat(normalized);
-    
-    return isNaN(parsed) ? NaN : parsed;
 }
 
 // Excel-Zeitstempel parsen
@@ -1183,113 +1008,6 @@ function showNotification(message, type = 'info') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
-}
-
-// Daten an Server uploaden
-function uploadDataToServer(data) {
-    console.log('📤 Starte Upload an Server...');
-    
-    // Loading-Zustand anzeigen
-    const previewContainer = document.getElementById('dataPreview');
-    previewContainer.innerHTML = `
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div class="flex items-center">
-                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-3"></div>
-                <div>
-                    <h4 class="text-lg font-semibold text-blue-800">📤 Import läuft...</h4>
-                    <p class="text-blue-700">Lade ${data.length} Datensätze in die Datenbank...</p>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Daten für Server vorbereiten
-    const uploadData = {
-        data_type: 'load_profile',
-        data: data.map(row => ({
-            timestamp: row.timestamp,
-            value: parseFloat(row.value),
-            unit: 'kW'
-        }))
-    };
-    
-    console.log('📋 Upload-Daten:', uploadData);
-    
-    // CSRF-Token holen
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // AJAX-Request an Server
-    fetch('/api/import-data', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken
-        },
-        body: JSON.stringify(uploadData)
-    })
-    .then(response => {
-        console.log('📡 Server-Antwort Status:', response.status);
-        return response.json();
-    })
-    .then(result => {
-        console.log('✅ Server-Antwort:', result);
-        
-        if (result.success) {
-            // Erfolg anzeigen
-            previewContainer.innerHTML = `
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div class="flex items-center">
-                        <div class="text-green-600 text-2xl mr-3">✅</div>
-                        <div>
-                            <h4 class="text-lg font-semibold text-green-800">Import erfolgreich!</h4>
-                            <p class="text-green-700">
-                                ${result.message || `${data.length} Datensätze wurden erfolgreich importiert.`}
-                            </p>
-                            ${result.redirect_url ? `
-                                <div class="mt-3">
-                                    <a href="${result.redirect_url}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
-                                        📊 Zu den Projekten
-                                    </a>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Import-Button wieder anzeigen
-            document.getElementById('importButton').style.display = 'block';
-            
-        } else {
-            // Fehler anzeigen
-            throw new Error(result.error || 'Unbekannter Fehler beim Import');
-        }
-    })
-    .catch(error => {
-        console.error('❌ Upload-Fehler:', error);
-        
-        previewContainer.innerHTML = `
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div class="flex items-center">
-                    <div class="text-red-600 text-2xl mr-3">❌</div>
-                    <div>
-                        <h4 class="text-lg font-semibold text-red-800">Import fehlgeschlagen!</h4>
-                        <p class="text-red-700">
-                            ${error.message || 'Fehler beim Upload der Daten.'}
-                        </p>
-                        <div class="mt-3">
-                            <button onclick="location.reload()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
-                                🔄 Erneut versuchen
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Import-Button wieder anzeigen
-        document.getElementById('importButton').style.display = 'block';
-    });
 }
 </script>
 

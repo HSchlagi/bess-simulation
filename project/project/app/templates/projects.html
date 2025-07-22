@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Projekte - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">Projekte</h1>
+        <a href="{{ url_for('main.new_project') }}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+            <i class="fas fa-plus mr-2"></i>Neues Projekt
+        </a>
+    </div>
+
+    <!-- Filter und Suche -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Suche</label>
+                <input type="text" id="searchInput" placeholder="Projektname oder Standort..."
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Kunde</label>
+                <select id="customerFilter" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Alle Kunden</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sortierung</label>
+                <select id="sortSelect" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="name">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                    <option value="date">Datum (Neueste)</option>
+                    <option value="date_old">Datum (Älteste)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projekte Liste -->
+    <div id="projectsList" class="space-y-4">
+        <!-- Projekte werden hier dynamisch geladen -->
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+            <p class="mt-2 text-gray-600">Lade Projekte...</p>
+        </div>
+    </div>
+
+    <!-- Keine Projekte Nachricht -->
+    <div id="noProjectsMessage" class="hidden text-center py-12">
+        <i class="fas fa-folder text-gray-400 text-6xl mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Keine Projekte vorhanden</h3>
+        <p class="text-gray-600 mb-6">Erstellen Sie Ihr erstes BESS-Simulationsprojekt</p>
+        <a href="{{ url_for('main.new_project') }}" 
+           class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md">
+            <i class="fas fa-plus mr-2"></i>+ Neues Projekt erstellen
+        </a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    loadCustomers();
+    
+    // Event Listeners
+    document.getElementById('searchInput').addEventListener('input', filterProjects);
+    document.getElementById('customerFilter').addEventListener('change', filterProjects);
+    document.getElementById('sortSelect').addEventListener('change', filterProjects);
+});
+
+function loadProjects() {
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            displayProjects(projects);
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Projekte:', error);
+            document.getElementById('projectsList').innerHTML = 
+                '<div class="text-center py-8 text-red-600">Fehler beim Laden der Projekte</div>';
+        });
+}
+
+function loadCustomers() {
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customerFilter');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Fehler beim Laden der Kunden:', error));
+}
+
+function displayProjects(projects) {
+    if (projects.length === 0) {
+        document.getElementById('projectsList').classList.add('hidden');
+        document.getElementById('noProjectsMessage').classList.remove('hidden');
+        return;
+    }
+    
+    document.getElementById('projectsList').classList.remove('hidden');
+    document.getElementById('noProjectsMessage').classList.add('hidden');
+    
+    const projectsHtml = projects.map(project => `
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <h3 class="text-xl font-semibold text-gray-900">${project.name}</h3>
+                        <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Aktiv</span>
+                    </div>
+                    <p class="text-gray-600 mb-3">${project.location || 'Kein Standort angegeben'}</p>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div class="text-sm">
+                            <span class="text-gray-500">BESS:</span>
+                            <span class="font-medium">${project.bess_size ? project.bess_size + ' kWh' : 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">PV:</span>
+                            <span class="font-medium">${project.pv_power ? project.pv_power + ' kW' : 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">Wind:</span>
+                            <span class="font-medium">${project.wind_power ? project.wind_power + ' kW' : 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="text-gray-500">Hydro:</span>
+                            <span class="font-medium">${project.hydro_power ? project.hydro_power + ' kW' : 'Nicht angegeben'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-calendar mr-1"></i>
+                        <span>Erstellt: ${new Date(project.created_at).toLocaleDateString('de-DE')}</span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-2 ml-4">
+                    <a href="/view_project?id=${project.id}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">
+                        <i class="fas fa-eye mr-1"></i>Anzeigen
+                    </a>
+                    <a href="/edit_project?id=${project.id}" 
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-md text-sm">
+                        <i class="fas fa-edit mr-1"></i>Bearbeiten
+                    </a>
+                    <div class="relative group">
+                        <button class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm">
+                            <i class="fas fa-calculator mr-1"></i>Wirtschaftlichkeit
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <a href="/investment_costs?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50">
+                                <i class="fas fa-euro-sign mr-2"></i>Investitionskosten
+                            </a>
+                            <a href="/reference_prices?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50">
+                                <i class="fas fa-cog mr-2"></i>Referenzpreise
+                            </a>
+                            <a href="/economic_analysis?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 rounded-b-md">
+                                <i class="fas fa-chart-line mr-2"></i>Analyse
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    document.getElementById('projectsList').innerHTML = projectsHtml;
+}
+
+function filterProjects() {
+    // Implementierung der Filterlogik würde hier stehen
+    // Für jetzt laden wir einfach alle Projekte neu
+    loadProjects();
+}
+
+function deleteProject(projectId) {
+    if (confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        fetch(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Projekt erfolgreich gelöscht!');
+                loadProjects(); // Liste neu laden
+            } else {
+                alert('Fehler beim Löschen des Projekts: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fehler:', error);
+            alert('Fehler beim Löschen des Projekts');
+        });
+    }
+}
+</script>
+{% endblock %} 

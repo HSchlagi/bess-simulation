@@ -2,16 +2,9 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from config import Config
-import sqlite3
 
 db = SQLAlchemy()
 csrf = CSRFProtect()
-
-def get_db():
-    """Datenbankverbindung für SQLite"""
-    conn = sqlite3.connect('instance/bess.db')
-    conn.row_factory = sqlite3.Row
-    return conn
 
 def create_app():
     app = Flask(__name__)

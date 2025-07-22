@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
-from app import db, get_db
+from app import db
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -43,7 +43,6 @@ def economic_analysis():
 
 @main_bp.route('/preview_data')
 def preview_data():
-    """Intelligente Datenvorschau-Seite"""
     return render_template('preview_data.html')
 
 @main_bp.route('/import_data')
@@ -752,67 +751,4 @@ def calculate_grid_stability_bonus(project):
     # Netzstabilitäts-Bonus für BESS
     stability_bonus_eur_kw_year = 50  # 50€ pro kW pro Jahr
     
-    return project.bess_power * stability_bonus_eur_kw_year
-
-@main_bp.route('/api/projects/<int:project_id>/data/<data_type>', methods=['POST'])
-def get_project_data(project_id, data_type):
-    """API-Endpoint für projekt- und datentyp-spezifische Daten"""
-    try:
-        data = request.get_json()
-        time_range = data.get('time_range', 'all')
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
-        
-        # Zeitbereich-Filter erstellen
-        time_filter = ""
-        if time_range == 'week':
-            time_filter = "AND timestamp >= datetime('now', '-7 days')"
-        elif time_range == 'month':
-            time_filter = "AND timestamp >= datetime('now', '-1 month')"
-        elif time_range == 'year':
-            time_filter = "AND timestamp >= datetime('now', '-1 year')"
-        elif start_date and end_date:
-            time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
-        
-        # Datenart-spezifische Tabellen
-        table_mapping = {
-            'load_profile': 'load_profiles',
-            'solar_radiation': 'solar_data',
-            'water_level': 'water_levels',
-            'pvsol_export': 'pvsol_data',
-            'weather': 'weather_data'
-        }
-        
-        table_name = table_mapping.get(data_type)
-        if not table_name:
-            return jsonify({'success': False, 'error': 'Unbekannte Datenart'})
-        
-        # SQL-Query für die entsprechende Tabelle
-        query = f"""
-        SELECT timestamp, value 
-        FROM {table_name} 
-        WHERE project_id = ? {time_filter}
-        ORDER BY timestamp
-        """
-        
-        cursor = get_db().cursor()
-        cursor.execute(query, (project_id,))
-        rows = cursor.fetchall()
-        
-        # Daten formatieren
-        data = []
-        for row in rows:
-            data.append({
-                'timestamp': row[0],
-                'value': float(row[1]) if row[1] is not None else 0.0
-            })
-        
-        return jsonify({
-            'success': True,
-            'data': data,
-            'count': len(data)
-        })
-        
-    except Exception as e:
-        print(f"Fehler beim Laden der Daten: {e}")
-        return jsonify({'success': False, 'error': str(e)}) 
+    return project.bess_power * stability_bonus_eur_kw_year 

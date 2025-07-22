@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% block title %}Spot-Preise - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Spot-Preise</h1>
+            <div class="space-x-3">
+                <button onclick="openImportModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-upload mr-2"></i>Import
+                </button>
+                <button onclick="openNewPriceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-plus mr-2"></i>Neuer Preis
+                </button>
+            </div>
+        </div>
+        
+        <!-- Filter -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
+                <select id="timeRange" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="today">Heute</option>
+                    <option value="week">Diese Woche</option>
+                    <option value="month" selected>Dieser Monat</option>
+                    <option value="year">Dieses Jahr</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Startdatum</label>
+                <input type="date" id="startDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
+                <input type="date" id="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-end">
+                <button onclick="loadSpotPrices()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-search mr-2"></i>Filtern
+                </button>
+            </div>
+        </div>
+        
+        <!-- Statistiken -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600" id="avgPrice">0</div>
+                <div class="text-sm text-blue-700">Durchschnittspreis (€/MWh)</div>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-green-600" id="maxPrice">0</div>
+                <div class="text-sm text-green-700">Höchstpreis (€/MWh)</div>
+            </div>
+            <div class="bg-red-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-red-600" id="minPrice">0</div>
+                <div class="text-sm text-red-700">Niedrigstpreis (€/MWh)</div>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600" id="priceCount">0</div>
+                <div class="text-sm text-purple-700">Anzahl Preise</div>
+            </div>
+        </div>
+        
+        <!-- Datenquelle Info -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                <div>
+                    <h4 class="font-medium text-yellow-800">Datenquelle</h4>
+                    <p class="text-sm text-yellow-700" id="dataSource">
+                        <span class="font-medium">APG (Austrian Power Grid)</span> - 
+                        <a href="https://markt.apg.at/transparenz/uebertragung/day-ahead-preise/" 
+                           target="_blank" class="underline hover:text-yellow-900">
+                            Offizielle österreichische Day-Ahead Preise
+                        </a>
+                    </p>
+                    <p class="text-xs text-yellow-600 mt-1" id="dataStatus">
+                        Status: <span class="font-medium">Demo-Daten basierend auf APG-Mustern</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart -->
+        <div class="mb-6">
+            <canvas id="spotPriceChart" width="400" height="200"></canvas>
+        </div>
+        
+        <!-- Preis-Tabelle -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Zeit</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preis (€/MWh)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="priceTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Preise werden hier dynamisch geladen -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Neuer Preis Modal -->
+<div id="newPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Neuen Spot-Preis hinzufügen</h3>
+            <form id="newPriceForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Datum</label>
+                    <input type="date" id="priceDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Stunde</label>
+                    <input type="number" id="priceHour" min="0" max="23" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preis (€/MWh)</label>
+                    <input type="number" id="priceValue" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeNewPriceModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Hinzufügen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div id="importModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 class="text-lg font-semibold mb-4">Spot-Preise importieren</h3>
+            <form id="importForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Datei auswählen</label>
+                    <input type="file" id="importFile" accept=".csv,.xlsx" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
+                    <select id="importTimeRange" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="replace">Ersetzen</option>
+                        <option value="append">Hinzufügen</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Importieren
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let spotPriceChart;
+
+// Spot-Preise laden
+async function loadSpotPrices() {
+    try {
+        const timeRange = document.getElementById('timeRange').value;
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        
+        const response = await fetch('/api/spot-prices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                time_range: timeRange,
+                start_date: startDate,
+                end_date: endDate
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            updateSpotPriceDisplay(data);
+        } else {
+            console.error('Fehler beim Laden der Spot-Preise');
+            // Demo-Daten verwenden
+            updateSpotPriceDisplay(generateDemoSpotPrices());
+        }
+    } catch (error) {
+        console.error('Fehler:', error);
+        // Demo-Daten verwenden
+        updateSpotPriceDisplay(generateDemoSpotPrices());
+    }
+}
+
+// Demo Spot-Preise generieren
+function generateDemoSpotPrices() {
+    const prices = [];
+    const startDate = new Date('2025-01-01');
+    
+    for (let i = 0; i < 24 * 7; i++) { // 1 Woche
+        const date = new Date(startDate);
+        date.setHours(i % 24, 0, 0, 0);
+        date.setDate(startDate.getDate() + Math.floor(i / 24));
+        
+        // Basis-Preis mit Tageszeit-Schwankungen
+        let basePrice = 50 + 30 * Math.sin((i % 24 - 6) * Math.PI / 12);
+        basePrice += Math.random() * 20 - 10; // Zufällige Schwankungen
+        
+        prices.push({
+            id: i + 1,
+            timestamp: date.toISOString(),
+            price: Math.round(basePrice * 100) / 100
+        });
+    }
+    
+    return prices;
+}
+
+// Spot-Preis Anzeige aktualisieren
+function updateSpotPriceDisplay(prices) {
+    // Statistiken aktualisieren
+    const priceValues = prices.map(p => p.price);
+    document.getElementById('avgPrice').textContent = (priceValues.reduce((a, b) => a + b, 0) / priceValues.length).toFixed(2);
+    document.getElementById('maxPrice').textContent = Math.max(...priceValues).toFixed(2);
+    document.getElementById('minPrice').textContent = Math.min(...priceValues).toFixed(2);
+    document.getElementById('priceCount').textContent = prices.length;
+    
+    // Datenquelle-Status aktualisieren
+    if (prices.length > 0 && prices[0].source) {
+        const source = prices[0].source;
+        const statusElement = document.getElementById('dataStatus');
+        
+        if (source.includes('APG') && !source.includes('Demo')) {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">Echte APG-Daten</span>';
+        } else if (source.includes('APG (Demo)')) {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">Demo-Daten basierend auf APG-Mustern</span>';
+        } else {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">Demo-Daten (Legacy)</span>';
+        }
+    }
+    
+    // Tabelle aktualisieren
+    const tableBody = document.getElementById('priceTableBody');
+    tableBody.innerHTML = '';
+    
+    prices.slice(0, 20).forEach(price => { // Nur erste 20 anzeigen
+        const date = new Date(price.timestamp);
+        const row = `
+            <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${date.toLocaleDateString('de-DE')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${date.getHours()}:00</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.price}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <button onclick="editPrice(${price.id})" class="text-blue-600 hover:text-blue-800 mr-2">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deletePrice(${price.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        tableBody.insertAdjacentHTML('beforeend', row);
+    });
+    
+    // Chart aktualisieren
+    updateSpotPriceChart(prices);
+}
+
+// Spot-Preis Chart aktualisieren
+function updateSpotPriceChart(prices) {
+    const ctx = document.getElementById('spotPriceChart').getContext('2d');
+    
+    if (spotPriceChart) {
+        spotPriceChart.destroy();
+    }
+    
+    const labels = prices.map(p => {
+        const date = new Date(p.timestamp);
+        return date.toLocaleDateString('de-DE', { 
+            month: 'short', 
+            day: 'numeric',
+            hour: '2-digit'
+        });
+    });
+    
+    const data = prices.map(p => p.price);
+    
+    spotPriceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Spot-Preis (€/MWh)',
+                data: data,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Preis (€/MWh)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Modal Funktionen
+function openNewPriceModal() {
+    document.getElementById('newPriceModal').classList.remove('hidden');
+}
+
+function closeNewPriceModal() {
+    document.getElementById('newPriceModal').classList.add('hidden');
+    document.getElementById('newPriceForm').reset();
+}
+
+function openImportModal() {
+    document.getElementById('importModal').classList.remove('hidden');
+}
+
+function closeImportModal() {
+    document.getElementById('importModal').classList.add('hidden');
+    document.getElementById('importForm').reset();
+}
+
+// Neuen Preis hinzufügen
+document.getElementById('newPriceForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        date: document.getElementById('priceDate').value,
+        hour: document.getElementById('priceHour').value,
+        price: document.getElementById('priceValue').value
+    };
+    
+    try {
+        const response = await fetch('/api/spot-prices', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        if (response.ok) {
+            closeNewPriceModal();
+            loadSpotPrices();
+        } else {
+            alert('Fehler beim Hinzufügen des Preises');
+        }
+    } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Hinzufügen des Preises');
+    }
+});
+
+// Import
+document.getElementById('importForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    formData.append('file', document.getElementById('importFile').files[0]);
+    formData.append('time_range', document.getElementById('importTimeRange').value);
+    
+    try {
+        const response = await fetch('/api/spot-prices/import', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            closeImportModal();
+            loadSpotPrices();
+        } else {
+            alert('Fehler beim Importieren');
+        }
+    } catch (error) {
+        console.error('Fehler:', error);
+        alert('Fehler beim Importieren');
+    }
+});
+
+// Preis bearbeiten
+function editPrice(priceId) {
+    console.log('Preis bearbeiten:', priceId);
+}
+
+// Preis löschen
+function deletePrice(priceId) {
+    if (confirm('Preis wirklich löschen?')) {
+        console.log('Preis löschen:', priceId);
+    }
+}
+
+// Seite laden
+document.addEventListener('DOMContentLoaded', function() {
+    // Standard-Datum setzen
+    const today = new Date();
+    document.getElementById('startDate').value = today.toISOString().split('T')[0];
+    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    
+    loadSpotPrices();
+});
+</script>
+{% endblock %} 

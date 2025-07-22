@@ -184,3 +184,246 @@ python run.py
 **Erstellt:** $(Get-Date -Format "dd.MM.yyyy HH:mm")
 **Für:** BESS Simulation Projekt
 **Status:** ✅ Aktiv 
+
+# BESS Simulation - Troubleshooting Anleitung
+
+## 🚨 Häufige Probleme und Lösungen
+
+### 1. **Flask-SQLAlchemy Import-Fehler**
+```
+ModuleNotFoundError: No module named 'flask_sqlalchemy'
+```
+
+**Lösung:**
+```bash
+# Virtual Environment aktivieren
+.\venv\Scripts\Activate.ps1
+
+# Dependencies installieren
+pip install flask-sqlalchemy flask-wtf pandas openpyxl
+
+# Server starten
+cd project
+python run.py
+```
+
+### 2. **Excel-Import "Keine gültigen Daten gefunden"**
+
+**Ursachen:**
+- Falsche Spaltennamen in Excel-Datei
+- Ungültige Zeitstempel-Formate
+- Leere oder beschädigte Excel-Datei
+- Fehlende SheetJS-Bibliothek
+
+**Lösungen:**
+
+#### A) **Spaltennamen überprüfen**
+Excel-Datei sollte folgende Spalten enthalten:
+- **Zeitstempel**: `Datum`, `Zeit`, `Timestamp`, `Date`, `Time`
+- **Lastwerte**: `Last_kW`, `Leistung`, `Power`, `kW`, `Verbrauch`
+
+#### B) **Demo-Excel-Datei verwenden**
+```bash
+# Demo-Datei erstellen
+python create_demo_excel_load_profile.py
+
+# Verwende: demo_load_profile.xlsx oder simple_load_profile.xlsx
+```
+
+#### C) **Browser-Konsole überprüfen**
+1. F12 drücken (Entwicklertools)
+2. Console-Tab öffnen
+3. Excel-Datei hochladen
+4. Debug-Ausgaben prüfen:
+   ```
+   🔍 Excel-Datei analysiert: {sheets: [...], firstSheet: {...}}
+   📋 Headers: ['Datum', 'Zeit', 'Last_kW', 'Energie_kWh']
+   ⏰ Zeitstempel-Spalte gefunden: 'Datum' (Index 0)
+   ⚡ Last-Spalte gefunden: 'Last_kW' (Index 2)
+   ```
+
+#### D) **SheetJS-Bibliothek prüfen**
+```html
+<!-- In data_import_center.html sollte enthalten sein: -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+```
+
+### 3. **CSV-Import-Probleme**
+
+**Ursachen:**
+- Falsche Trennzeichen (Komma vs. Semikolon)
+- Fehlende Header-Zeile
+- Ungültige Zeichenkodierung
+
+**Lösungen:**
+```bash
+# CSV-Format prüfen
+# Erste Zeile sollte Header enthalten: timestamp,power_kw
+# Trennzeichen: Komma (,)
+# Zeichenkodierung: UTF-8
+```
+
+### 4. **CSRF Token Fehler**
+
+**Ursache:**
+```
+CSRF token missing or incorrect
+```
+
+**Lösung:**
+```python
+# In routes.py CSRF-Schutz für API-Routes deaktivieren
+@main_bp.route('/api/import', methods=['POST'])
+@csrf.exempt  # CSRF-Schutz deaktivieren
+def api_import():
+    # Import-Logik
+```
+
+### 5. **Datenbank-Fehler**
+
+**Ursachen:**
+- Fehlende Datenbank-Datei
+- Ungültige Migrationen
+- Berechtigungsprobleme
+
+**Lösungen:**
+```bash
+# Datenbank neu erstellen
+cd project
+python
+>>> from app import create_app, db
+>>> app = create_app()
+>>> with app.app_context():
+...     db.create_all()
+>>> exit()
+
+# Oder Datenbank-Datei löschen und neu erstellen
+rm instance/bess.db
+python run.py
+```
+
+### 6. **Server-Start-Probleme**
+
+**Ursachen:**
+- Port bereits belegt
+- Fehlende Dependencies
+- Falsche Python-Version
+
+**Lösungen:**
+```bash
+# Port prüfen
+netstat -an | findstr :5000
+
+# Anderen Port verwenden
+python run.py --port 5001
+
+# Dependencies prüfen
+pip list | findstr flask
+```
+
+## 🔧 Debugging-Schritte
+
+### 1. **System-Status prüfen**
+```bash
+# Python-Version
+python --version
+
+# Virtual Environment
+echo $env:VIRTUAL_ENV
+
+# Dependencies
+pip list
+
+# Server-Status
+curl http://localhost:5000
+```
+
+### 2. **Logs überprüfen**
+```bash
+# Flask-Logs
+python run.py --debug
+
+# Browser-Entwicklertools
+F12 → Console → Fehler prüfen
+```
+
+### 3. **Datenbank-Status**
+```bash
+# SQLite-Datenbank prüfen
+sqlite3 instance/bess.db
+.tables
+SELECT * FROM project LIMIT 5;
+.quit
+```
+
+## 📋 Checkliste für Excel-Import
+
+### ✅ **Vor dem Import:**
+- [ ] Virtual Environment aktiviert
+- [ ] Server läuft (http://localhost:5000)
+- [ ] Projekt ausgewählt
+- [ ] Excel-Datei hat gültige Spaltennamen
+- [ ] Browser-Konsole geöffnet (F12)
+
+### ✅ **Während des Imports:**
+- [ ] Excel-Datei per Drag & Drop oder Button auswählen
+- [ ] Console-Ausgaben prüfen
+- [ ] Keine JavaScript-Fehler
+- [ ] "Keine gültigen Daten gefunden" nicht angezeigt
+
+### ✅ **Nach dem Import:**
+- [ ] Erfolgsmeldung angezeigt
+- [ ] Datenvorschau sichtbar
+- [ ] Datensätze in Übersicht aufgeführt
+- [ ] Daten in Datenbank gespeichert
+
+## 🆘 Notfall-Lösungen
+
+### **Kompletter Reset:**
+```bash
+# 1. Server stoppen (Ctrl+C)
+# 2. Virtual Environment deaktivieren
+deactivate
+
+# 3. Dependencies neu installieren
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# 4. Datenbank neu erstellen
+cd project
+rm instance/bess.db
+python run.py
+
+# 5. Demo-Daten erstellen
+python create_demo_excel_load_profile.py
+```
+
+### **Alternative Import-Methoden:**
+1. **CSV statt Excel** verwenden
+2. **Manuelle Eingabe** nutzen
+3. **Demo-Dateien** testen
+4. **Anderen Browser** verwenden
+
+## 📞 Support
+
+### **Bei anhaltenden Problemen:**
+1. **Screenshot** des Fehlers machen
+2. **Console-Logs** kopieren
+3. **Excel-Datei** bereitstellen
+4. **System-Informationen** sammeln
+
+### **Nützliche Befehle:**
+```bash
+# System-Info
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version"
+
+# Python-Info
+python -c "import sys; print(sys.version)"
+
+# Flask-Info
+python -c "import flask; print(flask.__version__)"
+```
+
+---
+
+**💡 Tipp:** Verwende immer die Demo-Dateien zum Testen, bevor du eigene Daten importierst! 
