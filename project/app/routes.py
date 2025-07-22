@@ -368,17 +368,22 @@ def api_customer_projects(customer_id):
 # API Routes für Investitionskosten
 @main_bp.route('/api/investment-costs')
 def api_investment_costs():
-    project_id = request.args.get('project_id')
+    project_id = request.args.get('project_id', type=int)
+    
     if project_id:
+        # Nur Kosten für spezifisches Projekt
         costs = InvestmentCost.query.filter_by(project_id=project_id).all()
     else:
+        # Alle Kosten
         costs = InvestmentCost.query.all()
     
     return jsonify([{
         'id': c.id,
+        'project_id': c.project_id,
         'component_type': c.component_type,
         'cost_eur': c.cost_eur,
-        'description': c.description
+        'description': c.description,
+        'created_at': c.created_at.isoformat() if c.created_at else None
     } for c in costs])
 
 @main_bp.route('/api/investment-costs', methods=['POST'])
@@ -480,7 +485,6 @@ def api_spot_prices():
             start_date = datetime.fromisoformat(start_date_str)
             end_date = datetime.fromisoformat(end_date_str)
         else:
-            # Standard: Heute
             start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             end_date = start_date + timedelta(days=1)
         
@@ -588,4 +592,163 @@ def test_customer():
             'message': 'Test customer endpoint working'
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 400 
+        return jsonify({'error': str(e)}), 400
+
+# API Routes für Wirtschaftlichkeitsanalyse
+@main_bp.route('/api/economic-analysis/<int:project_id>')
+def api_economic_analysis(project_id):
+    """Wirtschaftlichkeitsanalyse für ein Projekt"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Investitionskosten laden
+        investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
+        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Referenzpreise laden
+        reference_prices = ReferencePrice.query.all()
+        
+        # Einfache Wirtschaftlichkeitsberechnung
+        # (Hier würde eine komplexere Berechnung stehen)
+        annual_savings = calculate_annual_savings(project, reference_prices)
+        payback_years = total_investment / annual_savings if annual_savings > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'total_investment': total_investment,
+            'annual_savings': annual_savings,
+            'payback_years': round(payback_years, 1),
+            'roi_percent': (annual_savings / total_investment * 100) if total_investment > 0 else 0
+        })
+        
+    except Exception as e:
+        print(f"Fehler in Wirtschaftlichkeitsanalyse: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/economic-simulation/<int:project_id>', methods=['POST'])
+def api_economic_simulation(project_id):
+    """Wirtschaftlichkeitssimulation für ein Projekt"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Komplexe Simulation durchführen
+        simulation_results = run_economic_simulation(project)
+        
+        return jsonify({
+            'success': True,
+            'results': simulation_results
+        })
+        
+    except Exception as e:
+        print(f"Fehler in Wirtschaftlichkeitssimulation: {e}")
+        return jsonify({'error': str(e)}), 400
+
+def calculate_annual_savings(project, reference_prices):
+    """Berechnet jährliche Ersparnisse basierend auf Projekt und Referenzpreisen"""
+    try:
+        # Basis-Berechnung (vereinfacht)
+        base_savings = 0
+        
+        # BESS-basierte Ersparnisse
+        if project.bess_size and project.bess_power:
+            # Peak Shaving Ersparnis
+            peak_shaving_savings = project.bess_power * 1000 * 0.15  # 15% Peak-Reduktion
+            
+            # Arbitrage Ersparnis
+            arbitrage_savings = project.bess_size * 365 * 0.05  # 5% tägliche Arbitrage
+            
+            base_savings = peak_shaving_savings + arbitrage_savings
+        
+        # PV-basierte Ersparnisse
+        if project.pv_power:
+            pv_savings = project.pv_power * 1000 * 0.12  # 12% Eigenverbrauch
+            base_savings += pv_savings
+        
+        # Wärmepumpe Ersparnisse
+        if project.hp_power:
+            hp_savings = project.hp_power * 2000 * 0.20  # 20% Heizkosten-Reduktion
+            base_savings += hp_savings
+        
+        return round(base_savings, 2)
+        
+    except Exception as e:
+        print(f"Fehler bei Ersparnis-Berechnung: {e}")
+        return 0
+
+def run_economic_simulation(project):
+    """Führt eine detaillierte Wirtschaftlichkeitssimulation durch"""
+    try:
+        # Investitionskosten
+        investment_costs = InvestmentCost.query.filter_by(project_id=project.id).all()
+        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Referenzpreise
+        reference_prices = ReferencePrice.query.all()
+        
+        # Detaillierte Berechnungen
+        peak_shaving_savings = calculate_peak_shaving_savings(project)
+        arbitrage_savings = calculate_arbitrage_savings(project)
+        grid_stability_bonus = calculate_grid_stability_bonus(project)
+        
+        annual_savings = peak_shaving_savings + arbitrage_savings + grid_stability_bonus
+        payback_years = total_investment / annual_savings if annual_savings > 0 else 0
+        
+        return {
+            'total_investment': total_investment,
+            'annual_savings': round(annual_savings, 2),
+            'payback_years': round(payback_years, 1),
+            'peak_shaving_savings': round(peak_shaving_savings, 2),
+            'arbitrage_savings': round(arbitrage_savings, 2),
+            'grid_stability_bonus': round(grid_stability_bonus, 2),
+            'roi_percent': round((annual_savings / total_investment * 100), 1) if total_investment > 0 else 0
+        }
+        
+    except Exception as e:
+        print(f"Fehler bei Wirtschaftlichkeitssimulation: {e}")
+        return {
+            'total_investment': 0,
+            'annual_savings': 0,
+            'payback_years': 0,
+            'peak_shaving_savings': 0,
+            'arbitrage_savings': 0,
+            'grid_stability_bonus': 0,
+            'roi_percent': 0
+        }
+
+def calculate_peak_shaving_savings(project):
+    """Berechnet Peak Shaving Ersparnisse"""
+    if not project.bess_power:
+        return 0
+    
+    # Vereinfachte Peak Shaving Berechnung
+    peak_reduction_kw = project.bess_power * 0.15  # 15% Peak-Reduktion
+    peak_price_eur_mwh = 150  # Hoher Peak-Preis
+    hours_per_year = 8760
+    
+    return peak_reduction_kw * peak_price_eur_mwh * 0.1  # 10% der Zeit im Peak
+
+def calculate_arbitrage_savings(project):
+    """Berechnet Arbitrage Ersparnisse"""
+    if not project.bess_size:
+        return 0
+    
+    # Vereinfachte Arbitrage Berechnung
+    daily_cycles = 1  # 1 Zyklus pro Tag
+    price_spread_eur_mwh = 50  # Preisunterschied zwischen Peak und Off-Peak
+    days_per_year = 365
+    
+    return project.bess_size * daily_cycles * price_spread_eur_mwh * days_per_year / 1000
+
+def calculate_grid_stability_bonus(project):
+    """Berechnet Netzstabilitäts-Bonus"""
+    if not project.bess_power:
+        return 0
+    
+    # Netzstabilitäts-Bonus für BESS
+    stability_bonus_eur_kw_year = 50  # 50€ pro kW pro Jahr
+    
+    return project.bess_power * stability_bonus_eur_kw_year 
