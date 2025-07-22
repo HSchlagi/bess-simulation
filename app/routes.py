@@ -155,7 +155,20 @@ def api_update_project(project_id):
         try:
             project.name = str(data['name']).strip()
             project.location = str(data.get('location', '')).strip() if data.get('location') else None
-            project.customer_id = int(data['customer_id']) if data.get('customer_id') and data['customer_id'] != '' else None
+            
+            # Customer ID - EINFACHE LÖSUNG
+            customer_id_raw = data.get('customer_id')
+            print(f"DEBUG: customer_id raw: {customer_id_raw} (type: {type(customer_id_raw)})")
+            
+            if customer_id_raw is None or customer_id_raw == '' or customer_id_raw == 'null':
+                project.customer_id = None
+            else:
+                try:
+                    project.customer_id = int(customer_id_raw)
+                except (ValueError, TypeError):
+                    project.customer_id = None
+            
+            print(f"DEBUG: customer_id final: {project.customer_id}")
             
             # Datum sicher parsen
             if data.get('date') and str(data['date']).strip():

@@ -174,7 +174,14 @@ function updateProject() {
     const projectData = {
         name: name.trim(),
         location: formData.get('location') || '',
-        customer_id: formData.get('customer_id') || null,
+        customer_id: (() => {
+            const customerId = formData.get('customer_id');
+            console.log('DEBUG: customer_id raw:', customerId);
+            if (customerId && customerId !== '' && customerId !== 'null') {
+                return parseInt(customerId);
+            }
+            return null;
+        })(),
         date: formData.get('date') || null,
         bess_size: formData.get('bess_size') ? parseFloat(formData.get('bess_size')) : null,
         bess_power: formData.get('bess_power') ? parseFloat(formData.get('bess_power')) : null,
