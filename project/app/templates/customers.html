@@ -98,7 +98,8 @@ function displayCustomers(customers) {
                     </div>
                     
                     ${customer.company ? `<p class="text-gray-600 mb-2"><i class="fas fa-building mr-1"></i>${customer.company}</p>` : ''}
-                    ${customer.contact ? `<p class="text-gray-600 mb-3"><i class="fas fa-envelope mr-1"></i>${customer.contact}</p>` : ''}
+                    ${customer.contact ? `<p class="text-gray-600 mb-2"><i class="fas fa-envelope mr-1"></i>${customer.contact}</p>` : ''}
+                    ${customer.phone ? `<p class="text-gray-600 mb-3"><i class="fas fa-phone mr-1"></i>${customer.phone}</p>` : ''}
                     
                     <div class="flex items-center text-sm text-gray-500">
                         <i class="fas fa-calendar mr-1"></i>

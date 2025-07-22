@@ -22,10 +22,16 @@
                         <input type="text" id="customerCompany" name="company" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div class="md:col-span-2">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Kontakt</label>
                         <input type="text" id="customerContact" name="contact" 
-                               placeholder="E-Mail, Telefon, etc."
+                               placeholder="E-Mail, etc."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Telefonnummer</label>
+                        <input type="tel" id="customerPhone" name="phone" 
+                               placeholder="+43 123 456 789"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
@@ -94,6 +100,7 @@ function loadCustomerData(customerId) {
             document.getElementById('customerName').value = customer.name || '';
             document.getElementById('customerCompany').value = customer.company || '';
             document.getElementById('customerContact').value = customer.contact || '';
+            document.getElementById('customerPhone').value = customer.phone || '';
         })
         .catch(error => {
             console.error('Fehler beim Laden der Kundendaten:', error);
@@ -145,7 +152,8 @@ function updateCustomer() {
     const customerData = {
         name: formData.get('name'),
         company: formData.get('company') || null,
-        contact: formData.get('contact') || null
+        contact: formData.get('contact') || null,
+        phone: formData.get('phone') || null
     };
 
     fetch(`/api/customers/${currentCustomerId}`, {

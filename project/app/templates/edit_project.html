@@ -157,18 +157,48 @@ function loadCustomers() {
 
 function updateProject() {
     const formData = new FormData(document.getElementById('editProjectForm'));
+    
+    // Validierung
+    const name = formData.get('name');
+    if (!name || name.trim() === '') {
+        alert('Projektname ist erforderlich!');
+        return;
+    }
+    
+    // Debug-Ausgabe
+    console.log('=== DEBUG: Formular-Daten ===');
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+    }
+    
     const projectData = {
-        name: formData.get('name'),
-        location: formData.get('location'),
-        customer_id: formData.get('customer_id') || null,
+        name: name.trim(),
+        location: formData.get('location') || '',
+        customer_id: (() => {
+            const customerId = formData.get('customer_id');
+            console.log('DEBUG: customer_id raw:', customerId);
+            if (customerId && customerId !== '' && customerId !== 'null') {
+                return parseInt(customerId);
+            }
+            return null;
+        })(),
         date: formData.get('date') || null,
-        bess_size: parseFloat(formData.get('bess_size')) || null,
-        bess_power: parseFloat(formData.get('bess_power')) || null,
-        pv_power: parseFloat(formData.get('pv_power')) || null,
-        hp_power: parseFloat(formData.get('hp_power')) || null,
-        wind_power: parseFloat(formData.get('wind_power')) || null,
-        hydro_power: parseFloat(formData.get('hydro_power')) || null
+        bess_size: formData.get('bess_size') ? parseFloat(formData.get('bess_size')) : null,
+        bess_power: formData.get('bess_power') ? parseFloat(formData.get('bess_power')) : null,
+        pv_power: formData.get('pv_power') ? parseFloat(formData.get('pv_power')) : null,
+        hp_power: formData.get('hp_power') ? parseFloat(formData.get('hp_power')) : null,
+        wind_power: formData.get('wind_power') ? parseFloat(formData.get('wind_power')) : null,
+        hydro_power: formData.get('hydro_power') ? parseFloat(formData.get('hydro_power')) : null
     };
+    
+    console.log('=== DEBUG: Gesendete Daten ===');
+    console.log(JSON.stringify(projectData, null, 2));
+
+    // Loading-Zustand anzeigen
+    const submitButton = document.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Speichern...';
+    submitButton.disabled = true;
 
     fetch(`/api/projects/${currentProjectId}`, {
         method: 'PUT',
@@ -177,18 +207,28 @@ function updateProject() {
         },
         body: JSON.stringify(projectData)
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('Projekt erfolgreich aktualisiert!');
             window.location.href = `/view_project?id=${currentProjectId}`;
         } else {
-            alert('Fehler beim Aktualisieren des Projekts: ' + data.error);
+            throw new Error(data.error || 'Unbekannter Fehler');
         }
     })
     .catch(error => {
         console.error('Fehler:', error);
-        alert('Fehler beim Aktualisieren des Projekts');
+        alert('Fehler beim Aktualisieren des Projekts: ' + error.message);
+    })
+    .finally(() => {
+        // Loading-Zustand zurücksetzen
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
     });
 }
 

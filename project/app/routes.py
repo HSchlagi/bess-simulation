@@ -1,5 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from app import db
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice
 from datetime import datetime, timedelta
 import random
@@ -78,6 +81,10 @@ def import_load():
 def bess_peak_shaving_analysis():
     return render_template('bess_peak_shaving_analysis.html')
 
+@main_bp.route('/data_import_center')
+def data_import_center():
+    return render_template('data_import_center.html')
+
 # API Routes für Projekte
 @main_bp.route('/api/projects')
 def api_projects():
@@ -138,30 +145,79 @@ def api_update_project(project_id):
         project = Project.query.get_or_404(project_id)
         data = request.get_json()
         
-        project.name = data['name']
-        project.location = data.get('location')
-        project.customer_id = data.get('customer_id')
+        print(f"=== DEBUG: Projekt Update ===")
+        print(f"Projekt ID: {project_id}")
+        print(f"Empfangene Daten: {data}")
         
-        # Datum sicher parsen
-        if data.get('date') and data['date'].strip():
-            try:
-                project.date = datetime.fromisoformat(data['date'])
-            except ValueError:
-                project.date = None
-        else:
-            project.date = None
+        # Validierung der erforderlichen Felder
+        if not data or not data.get('name'):
+            print(f"Fehler: Kein Name angegeben")
+            return jsonify({'error': 'Projektname ist erforderlich'}), 400
+        
+        # Sichere Datentyp-Konvertierung
+        try:
+            project.name = str(data['name']).strip()
+            project.location = str(data.get('location', '')).strip() if data.get('location') else None
             
-        project.bess_size = data.get('bess_size')
-        project.bess_power = data.get('bess_power')
-        project.pv_power = data.get('pv_power')
-        project.hp_power = data.get('hp_power')
-        project.wind_power = data.get('wind_power')
-        project.hydro_power = data.get('hydro_power')
-        
-        db.session.commit()
-        return jsonify({'success': True})
+            # Customer ID - MIT FOREIGN KEY VALIDIERUNG
+            customer_id_raw = data.get('customer_id')
+            print(f"DEBUG: customer_id raw: {customer_id_raw} (type: {type(customer_id_raw)})")
+            
+            if customer_id_raw is None or customer_id_raw == '' or customer_id_raw == 'null':
+                project.customer_id = None
+            else:
+                try:
+                    customer_id = int(customer_id_raw)
+                    # Prüfe ob der Kunde existiert
+                    customer = Customer.query.get(customer_id)
+                    if customer:
+                        project.customer_id = customer_id
+                        print(f"DEBUG: Kunde gefunden: {customer.name}")
+                    else:
+                        print(f"DEBUG: Kunde mit ID {customer_id} nicht gefunden!")
+                        return jsonify({'error': f'Kunde mit ID {customer_id} existiert nicht'}), 422
+                except (ValueError, TypeError):
+                    project.customer_id = None
+            
+            print(f"DEBUG: customer_id final: {project.customer_id}")
+            
+            # Datum sicher parsen
+            if data.get('date') and str(data['date']).strip():
+                try:
+                    project.date = datetime.fromisoformat(str(data['date']))
+                except ValueError:
+                    project.date = None
+            else:
+                project.date = None
+                
+            # Numerische Werte sicher konvertieren
+            project.bess_size = float(data['bess_size']) if data.get('bess_size') and str(data['bess_size']).strip() else None
+            project.bess_power = float(data['bess_power']) if data.get('bess_power') and str(data['bess_power']).strip() else None
+            project.pv_power = float(data['pv_power']) if data.get('pv_power') and str(data['pv_power']).strip() else None
+            project.hp_power = float(data['hp_power']) if data.get('hp_power') and str(data['hp_power']).strip() else None
+            project.wind_power = float(data['wind_power']) if data.get('wind_power') and str(data['wind_power']).strip() else None
+            project.hydro_power = float(data['hydro_power']) if data.get('hydro_power') and str(data['hydro_power']).strip() else None
+            
+            print(f"Verarbeitete Daten:")
+            print(f"  Name: {project.name}")
+            print(f"  Location: {project.location}")
+            print(f"  Customer ID: {project.customer_id}")
+            print(f"  Date: {project.date}")
+            print(f"  BESS Size: {project.bess_size}")
+            print(f"  BESS Power: {project.bess_power}")
+            print(f"  PV Power: {project.pv_power}")
+            
+            db.session.commit()
+            print(f"Projekt erfolgreich aktualisiert!")
+            return jsonify({'success': True})
+            
+        except (ValueError, TypeError) as e:
+            print(f"Datentyp-Fehler: {str(e)}")
+            return jsonify({'error': f'Ungültige Daten: {str(e)}'}), 400
+            
     except Exception as e:
         db.session.rollback()
+        print(f"Allgemeiner Fehler beim Aktualisieren des Projekts: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/projects/<int:project_id>', methods=['DELETE'])
@@ -198,13 +254,36 @@ def api_customers():
         'name': c.name,
         'company': c.company,
         'contact': c.contact,
+        'phone': c.phone,
         'projects_count': len(c.projects)
     } for c in customers])
 
 @main_bp.route('/api/customers', methods=['POST'])
 def api_create_customer():
-    print("=== CUSTOMER API CALLED ===")
-    return jsonify({'success': True, 'id': 1}), 201
+    try:
+        data = request.get_json()
+        
+        # Validierung
+        if not data or not data.get('name'):
+            return jsonify({'error': 'Name ist erforderlich'}), 400
+        
+        # Neuen Kunden erstellen
+        customer = Customer(
+            name=data['name'],
+            company=data.get('company'),
+            contact=data.get('contact'),
+            phone=data.get('phone')
+        )
+        
+        db.session.add(customer)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'id': customer.id}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Fehler beim Erstellen des Kunden: {str(e)}")
+        return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/customers/<int:customer_id>')
 def api_get_customer(customer_id):
@@ -214,6 +293,7 @@ def api_get_customer(customer_id):
         'name': customer.name,
         'company': customer.company,
         'contact': customer.contact,
+        'phone': customer.phone,
         'created_at': customer.created_at.isoformat()
     })
 
@@ -223,14 +303,36 @@ def api_update_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         data = request.get_json()
         
-        customer.name = data['name']
-        customer.company = data.get('company')
-        customer.contact = data.get('contact')
+        print(f"=== DEBUG: Customer Update ===")
+        print(f"Customer ID: {customer_id}")
+        print(f"Empfangene Daten: {data}")
+        
+        # Validierung
+        if not data or not data.get('name'):
+            return jsonify({'error': 'Name ist erforderlich'}), 400
+        
+        # Daten aktualisieren
+        customer.name = str(data['name']).strip()
+        customer.company = str(data.get('company', '')).strip() if data.get('company') else None
+        customer.contact = str(data.get('contact', '')).strip() if data.get('contact') else None
+        customer.phone = str(data.get('phone', '')).strip() if data.get('phone') else None
+        
+        print(f"Verarbeitete Daten:")
+        print(f"  Name: {customer.name}")
+        print(f"  Company: {customer.company}")
+        print(f"  Contact: {customer.contact}")
+        print(f"  Phone: {customer.phone}")
         
         db.session.commit()
+        print(f"Kunde erfolgreich aktualisiert!")
+        
         return jsonify({'success': True})
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        db.session.rollback()
+        print(f"Fehler beim Aktualisieren des Kunden: {str(e)}")
+        # Stelle sicher, dass immer JSON zurückgegeben wird
+        return jsonify({'error': f'Server-Fehler: {str(e)}'}), 500
 
 @main_bp.route('/api/customers/<int:customer_id>', methods=['DELETE'])
 def api_delete_customer(customer_id):
@@ -288,6 +390,43 @@ def api_create_investment_cost():
         db.session.add(cost)
         db.session.commit()
         return jsonify({'success': True, 'id': cost.id}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/investment-costs/<int:cost_id>')
+def api_get_investment_cost(cost_id):
+    cost = InvestmentCost.query.get_or_404(cost_id)
+    return jsonify({
+        'id': cost.id,
+        'project_id': cost.project_id,
+        'component_type': cost.component_type,
+        'cost_eur': cost.cost_eur,
+        'description': cost.description
+    })
+
+@main_bp.route('/api/investment-costs/<int:cost_id>', methods=['PUT'])
+def api_update_investment_cost(cost_id):
+    try:
+        cost = InvestmentCost.query.get_or_404(cost_id)
+        data = request.get_json()
+        
+        cost.component_type = data['component_type']
+        cost.cost_eur = data['cost_eur']
+        cost.description = data.get('description')
+        
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/investment-costs/<int:cost_id>', methods=['DELETE'])
+def api_delete_investment_cost(cost_id):
+    try:
+        cost = InvestmentCost.query.get_or_404(cost_id)
+        db.session.delete(cost)
+        db.session.commit()
+        return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 

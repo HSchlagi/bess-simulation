@@ -1,0 +1,1019 @@
+{% extends "base.html" %}
+
+{% block title %}Datenimport-Center{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-database text-blue-600 mr-3"></i>
+            Intelligentes Datenimport-Center
+        </h1>
+        <p class="text-gray-600">Importiere und verarbeite verschiedene Energie- und Umweltdaten intelligent und effizient.</p>
+    </div>
+
+    <!-- Projekt-Auswahl -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-project-diagram text-green-600 mr-2"></i>
+            Projekt auswählen
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt</label>
+                <select id="projectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Projekt auswählen...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Importierte Datensätze</label>
+                <div id="importedData" class="text-sm text-gray-600">
+                    Keine Daten importiert
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datenarten-Tabs -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <button onclick="showTab('load')" id="tab-load" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                    <i class="fas fa-chart-line mr-2"></i>Lastprofile
+                </button>
+                <button onclick="showTab('solar')" id="tab-solar" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-sun mr-2"></i>Einstrahlung
+                </button>
+                <button onclick="showTab('hydro')" id="tab-hydro" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-water mr-2"></i>Pegelstände
+                </button>
+                <button onclick="showTab('pvsol')" id="tab-pvsol" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-solar-panel mr-2"></i>PVSol Export
+                </button>
+                <button onclick="showTab('weather')" id="tab-weather" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-cloud mr-2"></i>Wetterdaten
+                </button>
+            </nav>
+        </div>
+
+        <!-- Lastprofile Tab -->
+        <div id="tab-content-load" class="tab-content p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- CSV Import -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center drag-drop-area" 
+                     data-file-type="csv" data-data-type="load">
+                    <i class="fas fa-file-csv text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">CSV-Datei</h3>
+                    <p class="text-sm text-gray-600 mb-4">Standard CSV mit Zeitstempel und Lastwerten</p>
+                    <p class="text-xs text-blue-600 mb-4">📁 Datei hier hineinziehen oder klicken</p>
+                    <input type="file" id="loadCsvFile" accept=".csv" class="hidden">
+                    <button onclick="document.getElementById('loadCsvFile').click()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        CSV auswählen
+                    </button>
+                </div>
+
+                <!-- Excel Import -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center drag-drop-area" 
+                     data-file-type="excel" data-data-type="load">
+                    <i class="fas fa-file-excel text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Excel-Datei</h3>
+                    <p class="text-sm text-gray-600 mb-4">Daten aus mehreren Zählpunkten möglich</p>
+                    <p class="text-xs text-green-600 mb-4">📁 Datei hier hineinziehen oder klicken</p>
+                    <input type="file" id="loadExcelFile" accept=".xlsx,.xls" class="hidden">
+                    <button onclick="document.getElementById('loadExcelFile').click()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Excel auswählen
+                    </button>
+                </div>
+
+                <!-- Manuelle Eingabe -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <i class="fas fa-keyboard text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Manuelle Eingabe</h3>
+                    <p class="text-sm text-gray-600 mb-4">Einzelne Werte hinzufügen</p>
+                    
+                    <div class="space-y-3">
+                        <input type="datetime-local" id="loadDateTime" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <input type="number" id="loadValue" step="0.01" placeholder="Last (kW)" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <button onclick="addLoadValue()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                            Wert hinzufügen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weitere Tabs für andere Datentypen -->
+        <div id="tab-content-solar" class="tab-content p-6 hidden">
+            <div class="text-center py-8">
+                <i class="fas fa-sun text-4xl text-yellow-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">Einstrahlungsdaten</h3>
+                <p class="text-gray-600">Import-Funktionalität wird implementiert...</p>
+            </div>
+        </div>
+
+        <div id="tab-content-hydro" class="tab-content p-6 hidden">
+            <div class="text-center py-8">
+                <i class="fas fa-water text-4xl text-blue-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">Pegelstände</h3>
+                <p class="text-gray-600">Import-Funktionalität wird implementiert...</p>
+            </div>
+        </div>
+
+        <div id="tab-content-pvsol" class="tab-content p-6 hidden">
+            <div class="text-center py-8">
+                <i class="fas fa-solar-panel text-4xl text-orange-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">PVSol Export</h3>
+                <p class="text-gray-600">Import-Funktionalität wird implementiert...</p>
+            </div>
+        </div>
+
+        <div id="tab-content-weather" class="tab-content p-6 hidden">
+            <div class="text-center py-8">
+                <i class="fas fa-cloud text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-800 mb-2">Wetterdaten</h3>
+                <p class="text-gray-600">Import-Funktionalität wird implementiert...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Intelligente Verarbeitung -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-brain text-purple-600 mr-2"></i>
+            Intelligente Datenverarbeitung
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Zeitintervall</label>
+                <select id="timeInterval" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="15">15 Minuten</option>
+                    <option value="30">30 Minuten</option>
+                    <option value="60">1 Stunde</option>
+                    <option value="1440">1 Tag</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Datum-Format</label>
+                <select id="dateFormat" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="auto">Automatisch erkennen</option>
+                    <option value="DD.MM.YYYY">DD.MM.YYYY</option>
+                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Datenkombination</label>
+                <select id="dataCombination" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="sum">Summe</option>
+                    <option value="max">Maximum</option>
+                    <option value="average">Durchschnitt</option>
+                    <option value="weighted">Gewichtet</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Qualitätsprüfung</label>
+                <select id="qualityCheck" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="strict">Streng</option>
+                    <option value="normal">Normal</option>
+                    <option value="loose">Locker</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Vorschau -->
+        <div id="dataPreview" class="hidden">
+            <h3 class="text-lg font-medium text-gray-800 mb-4">Datenvorschau</h3>
+            <div class="bg-gray-50 p-4 rounded-lg overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr id="previewHeader" class="border-b border-gray-200"></tr>
+                    </thead>
+                    <tbody id="previewBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Import-Button -->
+        <div class="mt-6 text-center">
+            <button id="importButton" onclick="importData()" class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-md text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-upload mr-2"></i>
+                Daten intelligent importieren
+            </button>
+        </div>
+    </div>
+
+    <!-- Datenübersicht -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+            Importierte Datenübersicht
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-blue-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-blue-600" id="loadDataCount">0</div>
+                <div class="text-sm text-gray-600">Lastprofile</div>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-yellow-600" id="solarDataCount">0</div>
+                <div class="text-sm text-gray-600">Einstrahlung</div>
+            </div>
+            <div class="bg-cyan-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-cyan-600" id="hydroDataCount">0</div>
+                <div class="text-sm text-gray-600">Pegelstände</div>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-purple-600" id="pvsolDataCount">0</div>
+                <div class="text-sm text-gray-600">PVSol Export</div>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-lg text-center">
+                <div class="text-2xl font-bold text-gray-600" id="weatherDataCount">0</div>
+                <div class="text-sm text-gray-600">Wetterdaten</div>
+            </div>
+        </div>
+
+        <!-- Datenqualität -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <h3 class="text-lg font-medium text-gray-800 mb-4">Datenqualität & Statistiken</h3>
+            <div id="dataQuality" class="text-sm text-gray-600">
+                Keine Daten importiert
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentProjectId = null;
+let currentDataType = 'load';
+let importedData = {
+    load: [],
+    solar: [],
+    hydro: [],
+    pvsol: [],
+    weather: []
+};
+
+// Tab-Funktionalität
+function showTab(dataType) {
+    // Alle Tabs ausblenden
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Alle Tab-Buttons zurücksetzen
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById(`tab-content-${dataType}`).classList.remove('hidden');
+    document.getElementById(`tab-${dataType}`).classList.add('active', 'border-blue-500', 'text-blue-600');
+    
+    currentDataType = dataType;
+}
+
+// Projekte laden
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '<option value="">Projekt auswählen...</option>';
+        
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der Projekte:', error);
+    }
+}
+
+// Datei-Upload-Handler
+document.addEventListener('DOMContentLoaded', function() {
+    // Lastprofile
+    document.getElementById('loadCsvFile').addEventListener('change', handleFileUpload);
+    document.getElementById('loadExcelFile').addEventListener('change', handleFileUpload);
+    
+    loadProjects();
+});
+
+// Datei-Upload verarbeiten
+async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    try {
+        if (file.name.endsWith('.csv')) {
+            const csvText = await file.text();
+            const data = parseCSV(csvText, currentDataType);
+            showDataPreview(data);
+        } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+            const arrayBuffer = await file.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const data = parseExcel(workbook, currentDataType);
+            showDataPreview(data);
+        }
+    } catch (error) {
+        console.error('Fehler beim Verarbeiten der Datei:', error);
+        alert('Fehler beim Verarbeiten der Datei');
+    }
+}
+
+// CSV parsen
+function parseCSV(csvText, dataType) {
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim());
+    const data = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line) {
+            const values = line.split(',').map(v => v.trim());
+            const row = {};
+            
+            headers.forEach((header, index) => {
+                row[header] = values[index] || '';
+            });
+            
+            data.push(row);
+        }
+    }
+    
+    return processData(data, dataType);
+}
+
+// Excel parsen
+function parseExcel(workbook, dataType) {
+    const data = [];
+    
+    // Alle Blätter verarbeiten
+    workbook.SheetNames.forEach(sheetName => {
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (jsonData.length > 1) {
+            const headers = jsonData[0];
+            
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = {};
+                headers.forEach((header, index) => {
+                    row[header] = jsonData[i][index] || '';
+                });
+                data.push(row);
+            }
+        }
+    });
+    
+    return processData(data, dataType);
+}
+
+// Daten verarbeiten
+function processData(rawData, dataType) {
+    const processedData = [];
+    
+    rawData.forEach(row => {
+        const processedRow = {
+            timestamp: parseDateTime(row.Datum || row.Zeitstempel || row.Time),
+            data_type: dataType
+        };
+        
+        switch (dataType) {
+            case 'load':
+                processedRow.value = parseFloat(row.kWh || row.Load || row['Last (kW)'] || 0);
+                processedRow.unit = 'kW';
+                break;
+            case 'solar':
+                processedRow.value = parseFloat(row['Globalstrahlung (W/m²)'] || row.Irradiation || row['Einstrahlung'] || 0);
+                processedRow.unit = 'W/m²';
+                break;
+            case 'hydro':
+                processedRow.value = parseFloat(row['Wasserstand (m)'] || row.Level || row['Pegel'] || 0);
+                processedRow.unit = 'm';
+                break;
+            case 'pvsol':
+                processedRow.value = parseFloat(row['Leistung (kW)'] || row.Power || row['PV-Leistung'] || 0);
+                processedRow.unit = 'kW';
+                break;
+            case 'weather':
+                processedRow.value = parseFloat(row['Temperatur (°C)'] || row.Temperature || row['Temp'] || 0);
+                processedRow.unit = '°C';
+                break;
+        }
+        
+        if (processedRow.timestamp && !isNaN(processedRow.value)) {
+            processedData.push(processedRow);
+        }
+    });
+    
+    return processedData;
+}
+
+// Datum/Zeit parsen
+function parseDateTime(value) {
+    if (!value) return null;
+    
+    try {
+        // Verschiedene Formate versuchen
+        if (value.includes('T')) {
+            return new Date(value);
+        } else if (value.includes('.')) {
+            // DD.MM.YYYY Format
+            const parts = value.split('.');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+        } else if (value.includes('-')) {
+            return new Date(value);
+        } else if (value.includes('/')) {
+            const parts = value.split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[0] - 1, parts[1]);
+            }
+        }
+        
+        return new Date(value);
+    } catch (error) {
+        console.error('Fehler beim Parsen des Datums:', value, error);
+        return null;
+    }
+}
+
+// Datenvorschau anzeigen
+function showDataPreview(data) {
+    if (data.length === 0) {
+        alert('Keine gültigen Daten gefunden');
+        return;
+    }
+    
+    // Vorschau-Tabelle erstellen
+    const header = document.getElementById('previewHeader');
+    const body = document.getElementById('previewBody');
+    
+    header.innerHTML = `
+        <th class="text-left py-2">Zeitstempel</th>
+        <th class="text-left py-2">Wert</th>
+        <th class="text-left py-2">Einheit</th>
+        <th class="text-left py-2">Typ</th>
+    `;
+    
+    body.innerHTML = '';
+    
+    // Erste 10 Zeilen anzeigen
+    data.slice(0, 10).forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-gray-200';
+        tr.innerHTML = `
+            <td class="py-2">${row.timestamp ? row.timestamp.toLocaleString() : 'N/A'}</td>
+            <td class="py-2">${row.value}</td>
+            <td class="py-2">${row.unit}</td>
+            <td class="py-2">${row.data_type}</td>
+        `;
+        body.appendChild(tr);
+    });
+    
+    if (data.length > 10) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="4" class="py-2 text-center text-gray-500">... und ${data.length - 10} weitere Zeilen</td>`;
+        body.appendChild(tr);
+    }
+    
+    document.getElementById('dataPreview').classList.remove('hidden');
+    
+    // Daten für Import speichern
+    importedData[currentDataType] = data;
+}
+
+// Manuellen Wert hinzufügen
+function addLoadValue() {
+    const dateTime = document.getElementById('loadDateTime').value;
+    const value = parseFloat(document.getElementById('loadValue').value);
+    
+    if (!dateTime || isNaN(value)) {
+        alert('Bitte fülle alle Felder aus');
+        return;
+    }
+    
+    const data = [{
+        timestamp: new Date(dateTime),
+        value: value,
+        unit: 'kW',
+        data_type: 'load'
+    }];
+    
+    importedData.load.push(...data);
+    showDataPreview(importedData.load);
+    
+    // Felder zurücksetzen
+    document.getElementById('loadDateTime').value = '';
+    document.getElementById('loadValue').value = '';
+}
+
+// Daten importieren
+async function importData() {
+    if (!currentProjectId) {
+        alert('Bitte wähle ein Projekt aus');
+        return;
+    }
+    
+    const hasData = Object.values(importedData).some(data => data.length > 0);
+    if (!hasData) {
+        alert('Bitte wähle Daten zum Importieren aus');
+        return;
+    }
+    
+    try {
+        const importSettings = {
+            project_id: currentProjectId,
+            time_interval: parseInt(document.getElementById('timeInterval').value),
+            date_format: document.getElementById('dateFormat').value,
+            data_combination: document.getElementById('dataCombination').value,
+            quality_check: document.getElementById('qualityCheck').value
+        };
+        
+        // Alle Datentypen importieren
+        for (const [dataType, data] of Object.entries(importedData)) {
+            if (data.length > 0) {
+                await importDataType(dataType, data, importSettings);
+            }
+        }
+        
+        alert('Daten erfolgreich importiert!');
+        updateDataOverview();
+        
+    } catch (error) {
+        console.error('Fehler beim Import:', error);
+        alert('Fehler beim Importieren der Daten');
+    }
+}
+
+// Einzelnen Datentyp importieren
+async function importDataType(dataType, data, settings) {
+    const response = await fetch(`/api/data-import/${dataType}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            project_id: settings.project_id,
+            data: data,
+            settings: settings
+        })
+    });
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+        throw new Error(`Fehler beim Import von ${dataType}: ${result.error}`);
+    }
+    
+    return result;
+}
+
+// Datenübersicht aktualisieren
+function updateDataOverview() {
+    document.getElementById('loadDataCount').textContent = importedData.load.length;
+    document.getElementById('solarDataCount').textContent = importedData.solar.length;
+    document.getElementById('hydroDataCount').textContent = importedData.hydro.length;
+    document.getElementById('pvsolDataCount').textContent = importedData.pvsol.length;
+    document.getElementById('weatherDataCount').textContent = importedData.weather.length;
+    
+    // Datenqualität anzeigen
+    const totalData = Object.values(importedData).reduce((sum, data) => sum + data.length, 0);
+    const qualityText = totalData > 0 ? 
+        `${totalData} Datenpunkte importiert. Alle Daten wurden validiert und normalisiert.` :
+        'Keine Daten importiert';
+    
+    document.getElementById('dataQuality').textContent = qualityText;
+}
+
+// Event Listeners
+document.getElementById('projectSelect').addEventListener('change', function(e) {
+    currentProjectId = e.target.value;
+    if (currentProjectId) {
+        updateDataOverview();
+    }
+});
+
+// Drag & Drop Funktionalität
+document.addEventListener('DOMContentLoaded', function() {
+    const dragDropAreas = document.querySelectorAll('.drag-drop-area');
+    
+    dragDropAreas.forEach(area => {
+        // Drag-Events
+        area.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('border-blue-500', 'bg-blue-50');
+        });
+        
+        area.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('border-blue-500', 'bg-blue-50');
+        });
+        
+        area.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('border-blue-500', 'bg-blue-50');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const fileType = this.getAttribute('data-file-type');
+                const dataType = this.getAttribute('data-data-type');
+                
+                // Datei verarbeiten
+                processDroppedFile(file, fileType, dataType);
+            }
+        });
+        
+        // Klick-Events für normale Dateiauswahl
+        area.addEventListener('click', function(e) {
+            // Nur auslösen, wenn nicht auf Button geklickt wurde
+            if (!e.target.closest('button') && !e.target.closest('input')) {
+                const fileInput = this.querySelector('input[type="file"]');
+                if (fileInput) {
+                    fileInput.click();
+                }
+            }
+        });
+    });
+    
+    // Datei-Input-Events
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => {
+        input.addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const fileType = this.id.includes('Csv') ? 'csv' : 'excel';
+                const dataType = getDataTypeFromInputId(this.id);
+                
+                processDroppedFile(file, fileType, dataType);
+            }
+        });
+    });
+});
+
+// Datei verarbeiten
+async function processDroppedFile(file, fileType, dataType) {
+    try {
+        console.log(`Verarbeite ${fileType}-Datei für ${dataType}:`, file.name);
+        
+        // Datei lesen
+        const data = await readFile(file, fileType);
+        
+        // Daten parsen und validieren
+        const parsedData = parseFileData(data, fileType, dataType);
+        
+        // Daten zum entsprechenden Array hinzufügen
+        importedData[dataType] = parsedData;
+        
+        // Vorschau anzeigen
+        showDataPreview(parsedData);
+        
+        // Erfolgsmeldung
+        showNotification(`Datei "${file.name}" erfolgreich geladen! ${parsedData.length} Datenpunkte erkannt.`, 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Verarbeiten der Datei:', error);
+        showNotification(`Fehler beim Verarbeiten der Datei: ${error.message}`, 'error');
+    }
+}
+
+// Datei lesen
+function readFile(file, fileType) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            resolve(e.target.result);
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('Fehler beim Lesen der Datei'));
+        };
+        
+        if (fileType === 'csv') {
+            reader.readAsText(file);
+        } else {
+            reader.readAsArrayBuffer(file);
+        }
+    });
+}
+
+// Daten parsen
+function parseFileData(data, fileType, dataType) {
+    if (fileType === 'csv') {
+        return parseCSVData(data, dataType);
+    } else {
+        return parseExcelData(data, dataType);
+    }
+}
+
+// CSV-Daten parsen
+function parseCSVData(csvText, dataType) {
+    const lines = csvText.split('\n');
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const data = [];
+    
+    for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+        const row = {};
+        
+        headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+        });
+        
+        // Zeitstempel und Wert extrahieren
+        const timestamp = extractTimestamp(row, headers);
+        const value = extractValue(row, headers, dataType);
+        
+        if (timestamp && value !== null) {
+            data.push({
+                timestamp: timestamp,
+                value: value,
+                unit: getUnitForDataType(dataType),
+                data_type: dataType
+            });
+        }
+    }
+    
+    return data;
+}
+
+// Excel-Daten parsen
+function parseExcelData(arrayBuffer, dataType) {
+    try {
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const data = [];
+        
+        // Alle Blätter durchgehen
+        workbook.SheetNames.forEach(sheetName => {
+            const worksheet = workbook.Sheets[sheetName];
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (jsonData.length > 1) {
+                const headers = jsonData[0];
+                
+                // Spalten für Zeitstempel und Werte finden
+                let timestampCol = -1;
+                let valueCol = -1;
+                
+                headers.forEach((header, index) => {
+                    const headerStr = String(header).toLowerCase();
+                    
+                    // Zeitstempel-Spalte finden
+                    if (timestampCol === -1 && (
+                        headerStr.includes('zeit') || 
+                        headerStr.includes('time') || 
+                        headerStr.includes('datum') || 
+                        headerStr.includes('date')
+                    )) {
+                        timestampCol = index;
+                    }
+                    
+                    // Wert-Spalte finden (abhängig vom Datentyp)
+                    if (valueCol === -1) {
+                        switch (dataType) {
+                            case 'load':
+                                if (headerStr.includes('pumpsation') || 
+                                    headerStr.includes('last') || 
+                                    headerStr.includes('power') || 
+                                    headerStr.includes('kw')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'solar':
+                                if (headerStr.includes('strahlung') || 
+                                    headerStr.includes('irradiation') || 
+                                    headerStr.includes('w/m²')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'hydro':
+                                if (headerStr.includes('pegel') || 
+                                    headerStr.includes('wasser') || 
+                                    headerStr.includes('level')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'pvsol':
+                                if (headerStr.includes('leistung') || 
+                                    headerStr.includes('power') || 
+                                    headerStr.includes('kw')) {
+                                    valueCol = index;
+                                }
+                                break;
+                            case 'weather':
+                                if (headerStr.includes('temp') || 
+                                    headerStr.includes('temperatur')) {
+                                    valueCol = index;
+                                }
+                                break;
+                        }
+                    }
+                });
+                
+                // Wenn keine spezifische Spalte gefunden, erste numerische Spalte verwenden
+                if (valueCol === -1) {
+                    for (let i = 0; i < headers.length; i++) {
+                        if (i !== timestampCol && !String(headers[i]).toLowerCase().includes('zeit') && 
+                            !String(headers[i]).toLowerCase().includes('datum')) {
+                            valueCol = i;
+                            break;
+                        }
+                    }
+                }
+                
+                // Daten verarbeiten
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    
+                    if (timestampCol >= 0 && valueCol >= 0 && 
+                        row[timestampCol] !== undefined && row[valueCol] !== undefined) {
+                        
+                        const timestamp = parseExcelTimestamp(row[timestampCol]);
+                        const value = parseFloat(row[valueCol]);
+                        
+                        if (timestamp && !isNaN(value)) {
+                            data.push({
+                                timestamp: timestamp,
+                                value: value,
+                                unit: getUnitForDataType(dataType),
+                                data_type: dataType,
+                                sheet: sheetName
+                            });
+                        }
+                    }
+                }
+            }
+        });
+        
+        return data;
+        
+    } catch (error) {
+        console.error('Fehler beim Parsen der Excel-Datei:', error);
+        return [];
+    }
+}
+
+// Excel-Zeitstempel parsen
+function parseExcelTimestamp(value) {
+    if (!value) return null;
+    
+    try {
+        // Excel-Datum als Zahl (Tage seit 1900-01-01)
+        if (typeof value === 'number') {
+            const excelEpoch = new Date(1900, 0, 1);
+            const millisecondsPerDay = 24 * 60 * 60 * 1000;
+            return new Date(excelEpoch.getTime() + (value - 2) * millisecondsPerDay);
+        }
+        
+        // Als String versuchen
+        if (typeof value === 'string') {
+            return new Date(value);
+        }
+        
+        // Als Date-Objekt
+        if (value instanceof Date) {
+            return value;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Fehler beim Parsen des Excel-Zeitstempels:', value, error);
+        return null;
+    }
+}
+
+// Zeitstempel extrahieren
+function extractTimestamp(row, headers) {
+    // Verschiedene Zeitstempel-Formate erkennen
+    const timestampHeaders = headers.filter(h => 
+        h.toLowerCase().includes('zeit') || 
+        h.toLowerCase().includes('time') || 
+        h.toLowerCase().includes('datum') || 
+        h.toLowerCase().includes('date')
+    );
+    
+    for (const header of timestampHeaders) {
+        const value = row[header];
+        if (value) {
+            try {
+                // Verschiedene Datumsformate versuchen
+                const date = new Date(value);
+                if (!isNaN(date.getTime())) {
+                    return date;
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+    }
+    
+    return null;
+}
+
+// Wert extrahieren
+function extractValue(row, headers, dataType) {
+    // Verschiedene Wert-Header je nach Datentyp
+    let valueHeaders = [];
+    
+    switch (dataType) {
+        case 'load':
+            valueHeaders = headers.filter(h => 
+                h.toLowerCase().includes('last') || 
+                h.toLowerCase().includes('power') || 
+                h.toLowerCase().includes('kw') ||
+                h.toLowerCase().includes('pumpsation')
+            );
+            break;
+        case 'solar':
+            valueHeaders = headers.filter(h => 
+                h.toLowerCase().includes('strahlung') || 
+                h.toLowerCase().includes('irradiation') || 
+                h.toLowerCase().includes('w/m²')
+            );
+            break;
+        case 'hydro':
+            valueHeaders = headers.filter(h => 
+                h.toLowerCase().includes('pegel') || 
+                h.toLowerCase().includes('wasser') || 
+                h.toLowerCase().includes('level')
+            );
+            break;
+        default:
+            valueHeaders = headers.filter(h => 
+                !h.toLowerCase().includes('zeit') && 
+                !h.toLowerCase().includes('time') && 
+                !h.toLowerCase().includes('datum') && 
+                !h.toLowerCase().includes('date')
+            );
+    }
+    
+    for (const header of valueHeaders) {
+        const value = parseFloat(row[header]);
+        if (!isNaN(value)) {
+            return value;
+        }
+    }
+    
+    return null;
+}
+
+// Einheit für Datentyp
+function getUnitForDataType(dataType) {
+    switch (dataType) {
+        case 'load': return 'kW';
+        case 'solar': return 'W/m²';
+        case 'hydro': return 'm';
+        case 'pvsol': return 'kW';
+        case 'weather': return '°C';
+        default: return '';
+    }
+}
+
+// Datentyp aus Input-ID extrahieren
+function getDataTypeFromInputId(inputId) {
+    if (inputId.includes('load')) return 'load';
+    if (inputId.includes('solar')) return 'solar';
+    if (inputId.includes('hydro')) return 'hydro';
+    if (inputId.includes('pvsol')) return 'pvsol';
+    if (inputId.includes('weather')) return 'weather';
+    return 'load';
+}
+
+// Benachrichtigung anzeigen
+function showNotification(message, type = 'info') {
+    // Einfache Benachrichtigung
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${
+        type === 'success' ? 'bg-green-600' : 
+        type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+</script>
+
+<style>
+.tab-button.active {
+    @apply border-blue-500 text-blue-600;
+}
+</style>
+{% endblock %} 
