@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Neues Projekt erstellen{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-6">Neues Projekt erstellen</h1>
+        
+        <form id="newProjectForm" class="space-y-6">
+            <!-- Grundinformationen -->
+            <div class="bg-gray-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Grundinformationen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projektname *</label>
+                        <input type="text" id="projectName" name="name" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Standort</label>
+                        <input type="text" id="projectLocation" name="location" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kunde</label>
+                        <select id="customerSelect" name="customer_id" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Kunde auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projektdatum</label>
+                        <input type="date" id="projectDate" name="date" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technische Spezifikationen -->
+            <div class="bg-blue-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-blue-900 mb-4">Technische Spezifikationen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BESS Größe (kWh)</label>
+                        <input type="number" id="bessSize" name="bess_size" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BESS Leistung (kW)</label>
+                        <input type="number" id="bessPower" name="bess_power" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">PV Leistung (kW)</label>
+                        <input type="number" id="pvPower" name="pv_power" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wärmepumpe (kW)</label>
+                        <input type="number" id="hpPower" name="hp_power" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Windkraft (kW)</label>
+                        <input type="number" id="windPower" name="wind_power" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wasserkraft (kW)</label>
+                        <input type="number" id="hydroPower" name="hydro_power" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aktionen -->
+            <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                <a href="{{ url_for('main.projects') }}" 
+                   class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md">
+                    <i class="fas fa-arrow-left mr-2"></i>Zurück
+                </a>
+                <button type="submit" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                    <i class="fas fa-save mr-2"></i>Projekt speichern
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Kunden laden
+    loadCustomers();
+    
+    // Formular-Handler
+    document.getElementById('newProjectForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        createProject();
+    });
+});
+
+function loadCustomers() {
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(customers => {
+            const select = document.getElementById('customerSelect');
+            customers.forEach(customer => {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = `${customer.name}${customer.company ? ' - ' + customer.company : ''}`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Fehler beim Laden der Kunden:', error));
+}
+
+function createProject() {
+    const formData = new FormData(document.getElementById('newProjectForm'));
+    const projectData = {
+        name: formData.get('name'),
+        location: formData.get('location'),
+        customer_id: formData.get('customer_id') || null,
+        date: formData.get('date') || null,
+        bess_size: parseFloat(formData.get('bess_size')) || null,
+        bess_power: parseFloat(formData.get('bess_power')) || null,
+        pv_power: parseFloat(formData.get('pv_power')) || null,
+        hp_power: parseFloat(formData.get('hp_power')) || null,
+        wind_power: parseFloat(formData.get('wind_power')) || null,
+        hydro_power: parseFloat(formData.get('hydro_power')) || null
+    };
+
+    fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(projectData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Projekt erfolgreich erstellt!');
+            window.location.href = '/projects';
+        } else {
+            alert('Fehler beim Erstellen des Projekts: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        alert('Fehler beim Erstellen des Projekts');
+    });
+}
+</script>
+{% endblock %} 

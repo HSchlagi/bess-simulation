@@ -63,6 +63,26 @@
             </div>
         </div>
         
+        <!-- Datenquelle Info -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-yellow-600 mr-2"></i>
+                <div>
+                    <h4 class="font-medium text-yellow-800">Datenquelle</h4>
+                    <p class="text-sm text-yellow-700" id="dataSource">
+                        <span class="font-medium">APG (Austrian Power Grid)</span> - 
+                        <a href="https://markt.apg.at/transparenz/uebertragung/day-ahead-preise/" 
+                           target="_blank" class="underline hover:text-yellow-900">
+                            Offizielle österreichische Day-Ahead Preise
+                        </a>
+                    </p>
+                    <p class="text-xs text-yellow-600 mt-1" id="dataStatus">
+                        Status: <span class="font-medium">Demo-Daten basierend auf APG-Mustern</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
         <!-- Chart -->
         <div class="mb-6">
             <canvas id="spotPriceChart" width="400" height="200"></canvas>
@@ -218,6 +238,20 @@ function updateSpotPriceDisplay(prices) {
     document.getElementById('maxPrice').textContent = Math.max(...priceValues).toFixed(2);
     document.getElementById('minPrice').textContent = Math.min(...priceValues).toFixed(2);
     document.getElementById('priceCount').textContent = prices.length;
+    
+    // Datenquelle-Status aktualisieren
+    if (prices.length > 0 && prices[0].source) {
+        const source = prices[0].source;
+        const statusElement = document.getElementById('dataStatus');
+        
+        if (source.includes('APG') && !source.includes('Demo')) {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">Echte APG-Daten</span>';
+        } else if (source.includes('APG (Demo)')) {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">Demo-Daten basierend auf APG-Mustern</span>';
+        } else {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">Demo-Daten (Legacy)</span>';
+        }
+    }
     
     // Tabelle aktualisieren
     const tableBody = document.getElementById('priceTableBody');
