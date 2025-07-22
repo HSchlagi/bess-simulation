@@ -165,6 +165,12 @@ function updateProject() {
         return;
     }
     
+    // Debug-Ausgabe
+    console.log('=== DEBUG: Formular-Daten ===');
+    for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+    }
+    
     const projectData = {
         name: name.trim(),
         location: formData.get('location') || '',
@@ -177,6 +183,9 @@ function updateProject() {
         wind_power: formData.get('wind_power') ? parseFloat(formData.get('wind_power')) : null,
         hydro_power: formData.get('hydro_power') ? parseFloat(formData.get('hydro_power')) : null
     };
+    
+    console.log('=== DEBUG: Gesendete Daten ===');
+    console.log(JSON.stringify(projectData, null, 2));
 
     // Loading-Zustand anzeigen
     const submitButton = document.querySelector('button[type="submit"]');

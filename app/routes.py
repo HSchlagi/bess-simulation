@@ -142,36 +142,58 @@ def api_update_project(project_id):
         project = Project.query.get_or_404(project_id)
         data = request.get_json()
         
+        print(f"=== DEBUG: Projekt Update ===")
+        print(f"Projekt ID: {project_id}")
+        print(f"Empfangene Daten: {data}")
+        
         # Validierung der erforderlichen Felder
-        if not data.get('name'):
+        if not data or not data.get('name'):
+            print(f"Fehler: Kein Name angegeben")
             return jsonify({'error': 'Projektname ist erforderlich'}), 400
         
-        project.name = data['name']
-        project.location = data.get('location')
-        project.customer_id = data.get('customer_id')
-        
-        # Datum sicher parsen
-        if data.get('date') and data['date'].strip():
-            try:
-                project.date = datetime.fromisoformat(data['date'])
-            except ValueError:
-                project.date = None
-        else:
-            project.date = None
+        # Sichere Datentyp-Konvertierung
+        try:
+            project.name = str(data['name']).strip()
+            project.location = str(data.get('location', '')).strip() if data.get('location') else None
+            project.customer_id = int(data['customer_id']) if data.get('customer_id') and data['customer_id'] != '' else None
             
-        # Numerische Werte sicher konvertieren
-        project.bess_size = float(data.get('bess_size')) if data.get('bess_size') is not None else None
-        project.bess_power = float(data.get('bess_power')) if data.get('bess_power') is not None else None
-        project.pv_power = float(data.get('pv_power')) if data.get('pv_power') is not None else None
-        project.hp_power = float(data.get('hp_power')) if data.get('hp_power') is not None else None
-        project.wind_power = float(data.get('wind_power')) if data.get('wind_power') is not None else None
-        project.hydro_power = float(data.get('hydro_power')) if data.get('hydro_power') is not None else None
-        
-        db.session.commit()
-        return jsonify({'success': True})
+            # Datum sicher parsen
+            if data.get('date') and str(data['date']).strip():
+                try:
+                    project.date = datetime.fromisoformat(str(data['date']))
+                except ValueError:
+                    project.date = None
+            else:
+                project.date = None
+                
+            # Numerische Werte sicher konvertieren
+            project.bess_size = float(data['bess_size']) if data.get('bess_size') and str(data['bess_size']).strip() else None
+            project.bess_power = float(data['bess_power']) if data.get('bess_power') and str(data['bess_power']).strip() else None
+            project.pv_power = float(data['pv_power']) if data.get('pv_power') and str(data['pv_power']).strip() else None
+            project.hp_power = float(data['hp_power']) if data.get('hp_power') and str(data['hp_power']).strip() else None
+            project.wind_power = float(data['wind_power']) if data.get('wind_power') and str(data['wind_power']).strip() else None
+            project.hydro_power = float(data['hydro_power']) if data.get('hydro_power') and str(data['hydro_power']).strip() else None
+            
+            print(f"Verarbeitete Daten:")
+            print(f"  Name: {project.name}")
+            print(f"  Location: {project.location}")
+            print(f"  Customer ID: {project.customer_id}")
+            print(f"  Date: {project.date}")
+            print(f"  BESS Size: {project.bess_size}")
+            print(f"  BESS Power: {project.bess_power}")
+            print(f"  PV Power: {project.pv_power}")
+            
+            db.session.commit()
+            print(f"Projekt erfolgreich aktualisiert!")
+            return jsonify({'success': True})
+            
+        except (ValueError, TypeError) as e:
+            print(f"Datentyp-Fehler: {str(e)}")
+            return jsonify({'error': f'Ungültige Daten: {str(e)}'}), 400
+            
     except Exception as e:
         db.session.rollback()
-        print(f"Fehler beim Aktualisieren des Projekts: {str(e)}")
+        print(f"Allgemeiner Fehler beim Aktualisieren des Projekts: {str(e)}")
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/projects/<int:project_id>', methods=['DELETE'])
