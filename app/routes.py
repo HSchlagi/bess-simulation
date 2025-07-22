@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
-from app import db
+from app import db, get_db
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -43,6 +43,7 @@ def economic_analysis():
 
 @main_bp.route('/preview_data')
 def preview_data():
+    """Intelligente Datenvorschau-Seite"""
     return render_template('preview_data.html')
 
 @main_bp.route('/import_data')
@@ -92,12 +93,19 @@ def load_profile_detail():
 # API Routes für Projekte
 @main_bp.route('/api/projects')
 def api_projects():
-    projects = Project.query.all()
-    return jsonify([{
-        'id': p.id,
-        'name': p.name,
-        'location': p.location
-    } for p in projects])
+    try:
+        cursor = get_db().cursor()
+        cursor.execute("SELECT id, name, location FROM project")
+        projects = cursor.fetchall()
+        
+        return jsonify([{
+            'id': p[0],
+            'name': p[1],
+            'location': p[2]
+        } for p in projects])
+    except Exception as e:
+        print(f"Fehler beim Laden der Projekte: {e}")
+        return jsonify([])
 
 @main_bp.route('/api/projects', methods=['POST'])
 def api_create_project():
@@ -235,19 +243,39 @@ def api_delete_project(project_id):
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/projects/<int:project_id>/load-profiles')
-def api_project_load_profiles(project_id):
-    project = Project.query.get_or_404(project_id)
-    load_profiles = LoadProfile.query.filter_by(project_id=project_id).all()
-    return jsonify({
-        'project': {
-            'id': project.id,
-            'name': project.name
-        },
-        'load_profiles': [{
-            'id': lp.id,
-            'name': lp.name
-        } for lp in load_profiles]
-    })
+def api_load_profiles(project_id):
+    """API-Endpoint für Lastprofile eines Projekts"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Alle Lastprofile des Projekts abrufen
+        cursor.execute("""
+            SELECT id, name, created_at, 
+                   (SELECT COUNT(*) FROM load_value WHERE load_profile_id = load_profile.id) as data_points
+            FROM load_profile 
+            WHERE project_id = ?
+            ORDER BY created_at DESC
+        """, (project_id,))
+        
+        profiles = []
+        for row in cursor.fetchall():
+            profiles.append({
+                'id': row[0],
+                'name': row[1],
+                'created_at': row[2],
+                'data_points': row[3]
+            })
+        
+        print(f"📊 {len(profiles)} Lastprofile für Projekt {project_id} gefunden")
+        
+        return jsonify({
+            'success': True,
+            'profiles': profiles
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Lastprofile: {e}")
+        return jsonify({'success': False, 'error': str(e)})
 
 # API Routes für Kunden
 @main_bp.route('/api/customers')
@@ -751,4 +779,371 @@ def calculate_grid_stability_bonus(project):
     # Netzstabilitäts-Bonus für BESS
     stability_bonus_eur_kw_year = 50  # 50€ pro kW pro Jahr
     
-    return project.bess_power * stability_bonus_eur_kw_year 
+    return project.bess_power * stability_bonus_eur_kw_year
+
+@main_bp.route('/api/import-data', methods=['POST'])
+def api_import_data():
+    """API-Endpoint für Datenimport"""
+    try:
+        data = request.get_json()
+        data_type = data.get('data_type')
+        data_points = data.get('data', [])
+        profile_name = data.get('profile_name')  # Neuer Parameter für Lastprofil-Namen
+
+        if not data_type or not data_points:
+            return jsonify({'success': False, 'error': 'Keine Daten zum Importieren'})
+
+        print(f"📥 Importiere {len(data_points)} Datensätze vom Typ: {data_type}")
+        if profile_name:
+            print(f"📝 Profilname: {profile_name}")
+
+        project_id = 1  # Default-Projekt
+        cursor = get_db().cursor()
+
+        if data_type == 'load_profile':
+            # Profilname verwenden oder Standard-Name generieren
+            if profile_name:
+                profile_display_name = profile_name
+            else:
+                profile_display_name = f"Importiertes Lastprofil {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+            
+            print(f"📋 Erstelle Lastprofil: {profile_display_name}")
+            
+            cursor.execute("""
+                INSERT INTO load_profile (name, project_id, created_at)
+                VALUES (?, ?, datetime('now'))
+            """, (profile_display_name, project_id))
+            load_profile_id = cursor.lastrowid
+            
+            print(f"✅ Lastprofil erstellt mit ID: {load_profile_id}")
+            
+            # Datumstruktur validieren und korrigieren
+            valid_data_points = 0
+            for i, point in enumerate(data_points):
+                try:
+                    # Timestamp validieren und korrigieren
+                    timestamp = point['timestamp']
+                    value = point['value']
+                    
+                    # Prüfen ob Timestamp ein gültiges Datum ist
+                    if isinstance(timestamp, str):
+                        # Entferne Zeitzonen-Informationen und bereinige Format
+                        timestamp_clean = timestamp.replace('T', ' ').replace('Z', '').strip()
+                        
+                        # Ersetze Komma durch Leerzeichen für bessere Kompatibilität
+                        timestamp_clean = timestamp_clean.replace(',', ' ')
+                        
+                        # Versuche verschiedene Formate
+                        parsed_date = None
+                        formats_to_try = [
+                            '%Y-%m-%d %H:%M:%S',
+                            '%Y-%m-%d %H:%M',
+                            '%d.%m.%Y %H:%M:%S',
+                            '%d.%m.%Y %H:%M',
+                            '%d.%m.%Y %H:%M:%S',
+                            '%d.%m.%Y %H:%M',
+                            '%d.%m.%y %H:%M:%S',  # 2-stelliges Jahr
+                            '%d.%m.%y %H:%M',
+                            '%Y-%m-%d %H:%M:%S.%f',  # Mit Mikrosekunden
+                            '%Y-%m-%d %H:%M:%S.%f'
+                        ]
+                        
+                        for fmt in formats_to_try:
+                            try:
+                                parsed_date = datetime.strptime(timestamp_clean, fmt)
+                                break
+                            except ValueError:
+                                continue
+                        
+                        # Excel-Datum-Korrektur NACH dem Standard-Parsing
+                        if parsed_date and parsed_date.year < 2000:
+                            print(f"   ✅ Excel-Datum korrigiert: {timestamp} -> {parsed_date.year} -> 2024")
+                            # Korrigiere das Jahr zu 2024
+                            parsed_date = datetime(2024, parsed_date.month, parsed_date.day, 
+                                                parsed_date.hour, parsed_date.minute, parsed_date.second)
+                        
+                        # Wenn immer noch kein Datum gefunden wurde, versuche Excel-Datum-Format
+                        if parsed_date is None:
+                            try:
+                                # Excel-Datum-Format: "21.2.1900, 12:07:12" -> Tag 21, Februar 1900
+                                # Das ist wahrscheinlich ein Excel-Serial-Datum
+                                parts = timestamp_clean.split()
+                                if len(parts) >= 2:
+                                    date_part = parts[0]  # "21.2.1900"
+                                    time_part = parts[1] if len(parts) > 1 else "00:00:00"
+                                    
+                                    # Parse Datum-Teil
+                                    date_parts = date_part.split('.')
+                                    if len(date_parts) == 3:
+                                        day = int(date_parts[0])
+                                        month = int(date_parts[1])
+                                        year = int(date_parts[2])
+                                        
+                                        # Prüfe ob Jahr realistisch ist (nicht 1900)
+                                        if year < 2000:
+                                            # Wahrscheinlich Excel-Serial-Datum, versuche 2024
+                                            year = 2024
+                                        
+                                        # Parse Zeit-Teil
+                                        time_parts = time_part.split(':')
+                                        hour = int(time_parts[0]) if len(time_parts) > 0 else 0
+                                        minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                                        second = int(time_parts[2]) if len(time_parts) > 2 else 0
+                                        
+                                        parsed_date = datetime(year, month, day, hour, minute, second)
+                                print(f"   ✅ Excel-Datum korrigiert: {timestamp} -> {parsed_date}")
+                            except Exception as e:
+                                print(f"   ❌ Excel-Datum-Parsing fehlgeschlagen: {e}")
+                        
+                        if parsed_date is None:
+                            print(f"⚠️ Ungültiges Datum in Zeile {i+1}: {timestamp}")
+                            continue
+                        
+                        # Formatiere als SQLite-kompatibles Datum
+                        formatted_timestamp = parsed_date.strftime('%Y-%m-%d %H:%M:%S')
+                        
+                        # Wert validieren
+                        try:
+                            float_value = float(value)
+                        except (ValueError, TypeError):
+                            print(f"⚠️ Ungültiger Wert in Zeile {i+1}: {value}")
+                            continue
+                        
+                        # In Datenbank einfügen
+                        cursor.execute("""
+                            INSERT INTO load_value (load_profile_id, timestamp, power_kw, created_at)
+                            VALUES (?, ?, ?, datetime('now'))
+                        """, (load_profile_id, formatted_timestamp, float_value))
+                        
+                        valid_data_points += 1
+                        
+                        # Fortschritt anzeigen
+                        if valid_data_points % 1000 == 0:
+                            print(f"📊 {valid_data_points} Datensätze verarbeitet...")
+                            
+                    else:
+                        print(f"⚠️ Ungültiger Timestamp-Typ in Zeile {i+1}: {type(timestamp)}")
+                        
+                except Exception as e:
+                    print(f"❌ Fehler in Zeile {i+1}: {e}")
+                    continue
+                
+            print(f"✅ {valid_data_points} von {len(data_points)} Datensätzen erfolgreich importiert")
+            
+            # Commit nur wenn Daten erfolgreich eingefügt wurden
+            if valid_data_points > 0:
+                get_db().commit()
+                print(f"💾 Änderungen in Datenbank gespeichert")
+            else:
+                print(f"❌ Keine gültigen Daten zum Speichern")
+                return jsonify({'success': False, 'error': 'Keine gültigen Daten gefunden'})
+            
+        elif data_type == 'solar_radiation':
+            cursor.execute("""
+                INSERT INTO solar_data (project_id, timestamp, value, created_at)
+                VALUES (?, ?, ?, datetime('now'))
+            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
+            
+        elif data_type == 'water_level':
+            cursor.execute("""
+                INSERT INTO hydro_data (project_id, timestamp, value, created_at)
+                VALUES (?, ?, ?, datetime('now'))
+            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
+            
+        elif data_type == 'pvsol_export':
+            cursor.execute("""
+                INSERT INTO pv_sol_data (project_id, timestamp, value, created_at)
+                VALUES (?, ?, ?, datetime('now'))
+            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
+            
+        elif data_type == 'weather':
+            cursor.execute("""
+                INSERT INTO weather_data (project_id, timestamp, value, created_at)
+                VALUES (?, ?, ?, datetime('now'))
+            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
+
+        success_message = f'{valid_data_points if data_type == "load_profile" else len(data_points)} Datensätze erfolgreich importiert'
+        if profile_name:
+            success_message += f' als "{profile_name}"'
+            
+        return jsonify({
+            'success': True,
+            'message': success_message,
+            'redirect_url': '/preview_data'
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Datenimport: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/projects/<int:project_id>/data/<data_type>', methods=['POST'])
+def get_project_data(project_id, data_type):
+    """API-Endpoint für projekt- und datentyp-spezifische Daten"""
+    try:
+        data = request.get_json()
+        time_range = data.get('time_range', 'all')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        # Zeitbereich-Filter erstellen
+        time_filter = ""
+        if time_range == 'week':
+            time_filter = "AND timestamp >= datetime('now', '-7 days')"
+        elif time_range == 'month':
+            time_filter = "AND timestamp >= datetime('now', '-1 month')"
+        elif time_range == 'year':
+            time_filter = "AND timestamp >= datetime('now', '-1 year')"
+        elif start_date and end_date:
+            time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
+        
+        # Datenart-spezifische Tabellen
+        table_mapping = {
+            'load_profile': 'load_value',
+            'solar_radiation': 'solar_value',
+            'water_level': 'hydro_value',
+            'pvsol_export': 'pv_sol_value',
+            'weather': 'weather_value'
+        }
+        
+        table_name = table_mapping.get(data_type)
+        if not table_name:
+            return jsonify({'success': False, 'error': 'Unbekannte Datenart'})
+        
+        # SQL-Query für die entsprechende Tabelle
+        if data_type == 'load_profile':
+            query = f"""
+            SELECT lv.timestamp, lv.power_kw as value 
+            FROM {table_name} lv
+            JOIN load_profile lp ON lv.load_profile_id = lp.id
+            WHERE lp.project_id = ? {time_filter}
+            ORDER BY lv.timestamp
+            """
+        else:
+            query = f"""
+            SELECT timestamp, value 
+            FROM {table_name} 
+            WHERE project_id = ? {time_filter}
+            ORDER BY timestamp
+            """
+        
+        cursor = get_db().cursor()
+        cursor.execute(query, (project_id,))
+        rows = cursor.fetchall()
+        
+        # Daten formatieren
+        data = []
+        for row in rows:
+            data.append({
+                'timestamp': row[0],
+                'value': float(row[1]) if row[1] is not None else 0.0
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': data,
+            'count': len(data)
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Daten: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/projects/<int:project_id>/data-overview')
+def api_data_overview(project_id):
+    """API-Endpoint für Datenübersicht"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Lastprofile zählen (aus load_profile Tabelle)
+        cursor.execute("""
+            SELECT COUNT(*) FROM load_profile WHERE project_id = ?
+        """, (project_id,))
+        load_profiles = cursor.fetchone()[0]
+        
+        # Solar-Daten zählen (aus solar_data Tabelle)
+        cursor.execute("""
+            SELECT COUNT(*) FROM solar_data WHERE project_id = ?
+        """, (project_id,))
+        solar_data = cursor.fetchone()[0]
+        
+        # Hydro-Daten zählen (aus hydro_data Tabelle)
+        cursor.execute("""
+            SELECT COUNT(*) FROM hydro_data WHERE project_id = ?
+        """, (project_id,))
+        hydro_data = cursor.fetchone()[0]
+        
+        # Wetter-Daten zählen (aus weather_data Tabelle)
+        cursor.execute("""
+            SELECT COUNT(*) FROM weather_data WHERE project_id = ?
+        """, (project_id,))
+        weather_data = cursor.fetchone()[0]
+        
+        # PVSol-Daten zählen (aus pv_sol_data Tabelle)
+        cursor.execute("""
+            SELECT COUNT(*) FROM pv_sol_data WHERE project_id = ?
+        """, (project_id,))
+        pvsol_data = cursor.fetchone()[0]
+        
+        print(f"📊 Datenübersicht für Projekt {project_id}:")
+        print(f"  - Lastprofile: {load_profiles}")
+        print(f"  - Solar-Daten: {solar_data}")
+        print(f"  - Hydro-Daten: {hydro_data}")
+        print(f"  - Wetter-Daten: {weather_data}")
+        print(f"  - PVSol-Daten: {pvsol_data}")
+        
+        return jsonify({
+            'success': True,
+            'load_profiles': load_profiles,
+            'solar_data': solar_data,
+            'hydro_data': hydro_data,
+            'weather_data': weather_data,
+            'pvsol_data': pvsol_data
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Datenübersicht: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/load-profiles/<int:profile_id>', methods=['DELETE'])
+def api_delete_load_profile(profile_id):
+    """API-Endpoint zum Löschen eines Lastprofils"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Prüfen ob Lastprofil existiert
+        cursor.execute("SELECT name, project_id FROM load_profile WHERE id = ?", (profile_id,))
+        profile = cursor.fetchone()
+        
+        if not profile:
+            return jsonify({'success': False, 'error': 'Lastprofil nicht gefunden'})
+        
+        profile_name, project_id = profile
+        
+        # Anzahl Datenpunkte ermitteln
+        cursor.execute("SELECT COUNT(*) FROM load_value WHERE load_profile_id = ?", (profile_id,))
+        data_points = cursor.fetchone()[0]
+        
+        # Alle zugehörigen Datenpunkte löschen
+        cursor.execute("DELETE FROM load_value WHERE load_profile_id = ?", (profile_id,))
+        deleted_values = cursor.rowcount
+        
+        # Lastprofil selbst löschen
+        cursor.execute("DELETE FROM load_profile WHERE id = ?", (profile_id,))
+        deleted_profile = cursor.rowcount
+        
+        get_db().commit()
+        
+        print(f"🗑️ Lastprofil '{profile_name}' (ID: {profile_id}) gelöscht")
+        print(f"   - {deleted_values} Datenpunkte gelöscht")
+        print(f"   - {deleted_profile} Profil-Eintrag gelöscht")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Lastprofil "{profile_name}" erfolgreich gelöscht',
+            'deleted_profile': deleted_profile,
+            'deleted_values': deleted_values
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Löschen des Lastprofils: {e}")
+        return jsonify({'success': False, 'error': str(e)}) 

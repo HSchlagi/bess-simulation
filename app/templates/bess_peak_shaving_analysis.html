@@ -28,9 +28,16 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Lastprofil auswählen</label>
-                <select id="loadProfileSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
-                    <option value="">Zuerst Projekt auswählen...</option>
-                </select>
+                <div class="flex gap-2">
+                    <select id="loadProfileSelect" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                        <option value="">Zuerst Projekt auswählen...</option>
+                    </select>
+                    <button id="deleteProfileBtn" onclick="deleteSelectedProfile()" 
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed" 
+                            disabled title="Lastprofil löschen">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -131,148 +138,250 @@
 let charts = {};
 let cardCounter = 1;
 
+// Projekte und Lastprofile laden
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+});
+
 // Projekte laden
 async function loadProjects() {
     try {
         const response = await fetch('/api/projects');
         const projects = await response.json();
         
-        const projectSelect = document.getElementById('projectSelect');
-        projectSelect.innerHTML = '<option value="">Projekt auswählen...</option>';
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '<option value="">Projekt auswählen...</option>';
         
         projects.forEach(project => {
             const option = document.createElement('option');
             option.value = project.id;
             option.textContent = project.name;
-            projectSelect.appendChild(option);
+            select.appendChild(option);
         });
+        
+        // Event-Listener für Projekt-Auswahl
+        select.addEventListener('change', function() {
+            const projectId = this.value;
+            if (projectId) {
+                loadLoadProfiles(projectId);
+            } else {
+                // Lastprofil-Auswahl zurücksetzen
+                const loadProfileSelect = document.getElementById('loadProfileSelect');
+                loadProfileSelect.innerHTML = '<option value="">Zuerst Projekt auswählen...</option>';
+                loadProfileSelect.disabled = true;
+            }
+        });
+        
     } catch (error) {
         console.error('Fehler beim Laden der Projekte:', error);
     }
 }
 
-// Lastprofile laden
+// Lastprofile für ein Projekt laden
 async function loadLoadProfiles(projectId) {
     try {
         const response = await fetch(`/api/projects/${projectId}/load-profiles`);
         const data = await response.json();
         
-        const loadProfileSelect = document.getElementById('loadProfileSelect');
-        loadProfileSelect.innerHTML = '<option value="">Lastprofil auswählen...</option>';
+        const select = document.getElementById('loadProfileSelect');
+        const deleteBtn = document.getElementById('deleteProfileBtn');
         
-        if (data.load_profiles) {
-            data.load_profiles.forEach(profile => {
+        select.innerHTML = '<option value="">Lastprofil auswählen...</option>';
+        
+        if (data.success && data.profiles.length > 0) {
+            data.profiles.forEach(profile => {
                 const option = document.createElement('option');
                 option.value = profile.id;
-                option.textContent = profile.name;
-                loadProfileSelect.appendChild(option);
+                option.textContent = `${profile.name} (${profile.data_points} Datenpunkte)`;
+                select.appendChild(option);
             });
+            select.disabled = false;
+            deleteBtn.disabled = false;
+            
+            console.log(`✅ ${data.profiles.length} Lastprofile für Projekt ${projectId} geladen`);
+        } else {
+            select.innerHTML = '<option value="">Keine Lastprofile verfügbar</option>';
+            select.disabled = true;
+            deleteBtn.disabled = true;
+            console.log(`⚠️ Keine Lastprofile für Projekt ${projectId} gefunden`);
         }
         
-        loadProfileSelect.disabled = false;
     } catch (error) {
         console.error('Fehler beim Laden der Lastprofile:', error);
+        const select = document.getElementById('loadProfileSelect');
+        const deleteBtn = document.getElementById('deleteProfileBtn');
+        select.innerHTML = '<option value="">Fehler beim Laden</option>';
+        select.disabled = true;
+        deleteBtn.disabled = true;
+    }
+}
+
+// Ausgewähltes Lastprofil löschen
+async function deleteSelectedProfile() {
+    const profileSelect = document.getElementById('loadProfileSelect');
+    const profileId = profileSelect.value;
+    
+    if (!profileId) {
+        alert('Bitte wählen Sie zuerst ein Lastprofil aus!');
+        return;
+    }
+    
+    const profileName = profileSelect.options[profileSelect.selectedIndex].text;
+    
+    // Bestätigung anfordern
+    if (!confirm(`Möchten Sie das Lastprofil "${profileName}" wirklich löschen?\n\nDiese Aktion kann nicht rückgängig gemacht werden!`)) {
+        return;
+    }
+    
+    try {
+        console.log(`🗑️ Lösche Lastprofil ID: ${profileId}`);
+        
+        const response = await fetch(`/api/load-profiles/${profileId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert(`✅ ${result.message}\n\n${result.deleted_values} Datenpunkte wurden gelöscht.`);
+            
+            // Lastprofil-Liste neu laden
+            const projectId = document.getElementById('projectSelect').value;
+            if (projectId) {
+                loadLoadProfiles(projectId);
+            }
+            
+            console.log(`✅ Lastprofil erfolgreich gelöscht`);
+        } else {
+            alert(`❌ Fehler beim Löschen: ${result.error}`);
+            console.error('❌ Fehler beim Löschen des Lastprofils:', result.error);
+        }
+        
+    } catch (error) {
+        alert(`❌ Fehler beim Löschen: ${error.message}`);
+        console.error('❌ Fehler beim Löschen des Lastprofils:', error);
     }
 }
 
 // Analyse-Karte hinzufügen
 function addAnalysisCard(analysisType) {
-    const cardId = `card-${cardCounter++}`;
-    const cardConfig = getCardConfig(analysisType);
+    const projectId = document.getElementById('projectSelect').value;
+    const loadProfileId = document.getElementById('loadProfileSelect').value;
     
-    const cardHtml = `
-        <div id="${cardId}" class="bg-gradient-to-r ${cardConfig.gradient} border ${cardConfig.border} rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold ${cardConfig.textColor}">${cardConfig.title}</h3>
-                <button onclick="removeCard('${cardId}')" class="text-red-600 hover:text-red-800">
-                    <i class="fas fa-trash"></i>
+    if (!projectId) {
+        alert('Bitte wählen Sie zuerst ein Projekt aus!');
+        return;
+    }
+    
+    if (!loadProfileId) {
+        alert('Bitte wählen Sie ein Lastprofil aus!');
+        return;
+    }
+    
+    const analysisCards = document.getElementById('analysisCards');
+    const cardId = `analysis-${Date.now()}`;
+    
+    const analysisConfig = {
+        'peak-shaving': {
+            title: 'Peak Shaving',
+            icon: 'fas fa-mountain',
+            color: 'blue',
+            description: 'Lastspitzen reduzieren und Netzstabilität verbessern'
+        },
+        'intraday': {
+            title: 'Intraday Handel',
+            icon: 'fas fa-clock',
+            color: 'green',
+            description: 'Tageshandel mit Strompreisen und Arbitrage'
+        },
+        'secondary': {
+            title: 'Sekundärmarkt',
+            icon: 'fas fa-exchange-alt',
+            color: 'purple',
+            description: 'Regelleistung und Systemdienstleistungen'
+        }
+    };
+    
+    const config = analysisConfig[analysisType];
+    
+    const cardHTML = `
+        <div id="${cardId}" class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <i class="${config.icon} text-${config.color}-600 text-xl mr-3"></i>
+                    <h3 class="text-lg font-semibold text-gray-800">${config.title}</h3>
+                </div>
+                <button onclick="removeAnalysisCard('${cardId}')" class="text-red-500 hover:text-red-700">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Zeitraum</label>
-                    <select class="dateRangeSelect w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="week">Woche</option>
-                        <option value="month" selected>Monat</option>
-                        <option value="quarter">Quartal</option>
-                        <option value="year">Jahr</option>
-                    </select>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="bg-gray-50 p-3 rounded">
+                    <p class="text-sm text-gray-600">Projekt: <span class="font-medium">${document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text}</span></p>
+                    <p class="text-sm text-gray-600">Lastprofil: <span class="font-medium">${document.getElementById('loadProfileSelect').options[document.getElementById('loadProfileSelect').selectedIndex].text}</span></p>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Startdatum</label>
-                    <input type="date" class="startDateInput w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="2025-01-01">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Enddatum</label>
-                    <input type="date" class="endDateInput w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" value="2025-01-31">
+                <div class="bg-gray-50 p-3 rounded">
+                    <p class="text-sm text-gray-600">Status: <span class="text-yellow-600 font-medium">Bereit zur Analyse</span></p>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center mb-4">
-                <button onclick="loadDataForCard('${cardId}')" class="${cardConfig.buttonClass} text-white px-4 py-2 rounded-md">
-                    <i class="fas fa-sync-alt mr-2"></i>Analyse aktualisieren
+            <p class="text-gray-600 mb-4">${config.description}</p>
+            
+            <div class="flex gap-3">
+                <button onclick="runAnalysis('${analysisType}', ${projectId}, ${loadProfileId})" class="bg-${config.color}-600 hover:bg-${config.color}-700 text-white px-4 py-2 rounded-lg font-medium">
+                    <i class="fas fa-play mr-2"></i>Analyse starten
                 </button>
-                <div class="text-sm text-gray-600">
-                    <span class="font-medium">${cardConfig.metricLabel}:</span> <span class="metricValue">0</span> ${cardConfig.metricUnit}
-                </div>
-            </div>
-            
-            <div class="mt-4">
-                <canvas class="analysisChart" width="400" height="200"></canvas>
+                <button onclick="configureAnalysis('${analysisType}')" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium">
+                    <i class="fas fa-cog mr-2"></i>Konfigurieren
+                </button>
             </div>
         </div>
     `;
     
-    document.getElementById('analysisCards').insertAdjacentHTML('beforeend', cardHtml);
-    hideAnalysisSelector();
+    analysisCards.insertAdjacentHTML('beforeend', cardHTML);
+    
+    // Modal schließen falls offen
+    const modal = document.getElementById('analysisModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    console.log(`✅ ${config.title} Analyse-Karte hinzugefügt`);
 }
 
-// Karten-Konfiguration
-function getCardConfig(analysisType) {
-    const configs = {
-        'peak-shaving': {
-            title: 'Peak Shaving Analyse',
-            gradient: 'from-blue-50 to-indigo-50',
-            border: 'border-blue-200',
-            textColor: 'text-blue-900',
-            buttonClass: 'bg-blue-600 hover:bg-blue-700',
-            metricLabel: 'Peak Shaving',
-            metricUnit: 'kW'
-        },
-        'intraday': {
-            title: 'Intraday Handel Analyse',
-            gradient: 'from-green-50 to-emerald-50',
-            border: 'border-green-200',
-            textColor: 'text-green-900',
-            buttonClass: 'bg-green-600 hover:bg-green-700',
-            metricLabel: 'Gewinn',
-            metricUnit: '€'
-        },
-        'secondary': {
-            title: 'Sekundärmarkt Analyse',
-            gradient: 'from-purple-50 to-violet-50',
-            border: 'border-purple-200',
-            textColor: 'text-purple-900',
-            buttonClass: 'bg-purple-600 hover:bg-purple-700',
-            metricLabel: 'Regelleistung',
-            metricUnit: 'MW'
-        }
-    };
-    return configs[analysisType] || configs['peak-shaving'];
-}
-
-// Karte entfernen
-function removeCard(cardId) {
+// Analyse-Karte entfernen
+function removeAnalysisCard(cardId) {
     const card = document.getElementById(cardId);
     if (card) {
         card.remove();
+        console.log('🗑️ Analyse-Karte entfernt');
     }
 }
 
-// Modal-Funktionen
+// Analyse starten
+function runAnalysis(analysisType, projectId, loadProfileId) {
+    console.log(`🚀 Starte ${analysisType} Analyse für Projekt ${projectId}, Lastprofil ${loadProfileId}`);
+    
+    // Hier würde die eigentliche Analyse-Logik implementiert
+    alert(`Analyse ${analysisType} wird gestartet...\nProjekt: ${projectId}\nLastprofil: ${loadProfileId}`);
+}
+
+// Analyse konfigurieren
+function configureAnalysis(analysisType) {
+    console.log(`⚙️ Konfiguriere ${analysisType} Analyse`);
+    alert(`Konfiguration für ${analysisType} Analyse öffnen...`);
+}
+
+// Analyse-Auswahl Modal anzeigen
 function showAnalysisSelector() {
-    document.getElementById('analysisModal').classList.remove('hidden');
+    const modal = document.getElementById('analysisModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
 }
 
 function hideAnalysisSelector() {
@@ -371,26 +480,5 @@ function updateChartWithData(card, data) {
 function updateChartWithDemoData(card) {
     updateChartWithData(card, {});
 }
-
-// Event Listeners
-document.addEventListener('DOMContentLoaded', function() {
-    loadProjects();
-    
-    document.getElementById('projectSelect').addEventListener('change', function(e) {
-        if (e.target.value) {
-            loadLoadProfiles(e.target.value);
-        } else {
-            document.getElementById('loadProfileSelect').innerHTML = '<option value="">Zuerst Projekt auswählen...</option>';
-            document.getElementById('loadProfileSelect').disabled = true;
-        }
-    });
-    
-    // Modal schließen bei Klick außerhalb
-    document.getElementById('analysisModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            hideAnalysisSelector();
-        }
-    });
-});
 </script>
 {% endblock %} 

@@ -31,7 +31,12 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Importierte Datensätze</label>
                 <div id="importedData" class="text-sm text-gray-600">
-                    Keine Daten importiert
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>Lastprofile: <span id="loadCount">0</span></div>
+                        <div>Einstrahlung: <span id="solarCount">0</span></div>
+                        <div>Pegelstände: <span id="hydroCount">0</span></div>
+                        <div>Wetterdaten: <span id="weatherCount">0</span></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -206,42 +211,21 @@
         </div>
     </div>
 
-    <!-- Datenübersicht -->
+    <!-- Status-Anzeige -->
     <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">
-            <i class="fas fa-chart-bar text-green-600 mr-2"></i>
-            Importierte Datenübersicht
+            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+            Import-Status
         </h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-            <div class="bg-blue-50 p-4 rounded-lg text-center">
-                <div class="text-2xl font-bold text-blue-600" id="loadDataCount">0</div>
-                <div class="text-sm text-gray-600">Lastprofile</div>
-            </div>
-            <div class="bg-yellow-50 p-4 rounded-lg text-center">
-                <div class="text-2xl font-bold text-yellow-600" id="solarDataCount">0</div>
-                <div class="text-sm text-gray-600">Einstrahlung</div>
-            </div>
-            <div class="bg-cyan-50 p-4 rounded-lg text-center">
-                <div class="text-2xl font-bold text-cyan-600" id="hydroDataCount">0</div>
-                <div class="text-sm text-gray-600">Pegelstände</div>
-            </div>
-            <div class="bg-purple-50 p-4 rounded-lg text-center">
-                <div class="text-2xl font-bold text-purple-600" id="pvsolDataCount">0</div>
-                <div class="text-sm text-gray-600">PVSol Export</div>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-lg text-center">
-                <div class="text-2xl font-bold text-gray-600" id="weatherDataCount">0</div>
-                <div class="text-sm text-gray-600">Wetterdaten</div>
-            </div>
-        </div>
-
-        <!-- Datenqualität -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-            <h3 class="text-lg font-medium text-gray-800 mb-4">Datenqualität & Statistiken</h3>
-            <div id="dataQuality" class="text-sm text-gray-600">
-                Keine Daten importiert
-            </div>
+        <div class="bg-blue-50 p-4 rounded-lg">
+            <p class="text-blue-800">
+                <i class="fas fa-check-circle mr-2"></i>
+                Datenimport-Center bereit für neue Importe
+            </p>
+            <p class="text-sm text-blue-600 mt-2">
+                Wählen Sie ein Projekt und eine Datenart aus, um mit dem Import zu beginnen.
+            </p>
         </div>
     </div>
 </div>
@@ -473,6 +457,26 @@ function parseDateTime(value) {
     }
 }
 
+// Excel-Datum-Korrektur für Vorschau
+function correctExcelDate(timestamp) {
+    try {
+        const date = new Date(timestamp);
+        
+        // Prüfe ob Jahr < 2000 (Excel-Problem)
+        if (date.getFullYear() < 2000) {
+            console.log(`   ✅ Excel-Datum korrigiert: ${timestamp} -> ${date.getFullYear()} -> 2024`);
+            // Korrigiere zu 2024
+            return new Date(2024, date.getMonth(), date.getDate(), 
+                          date.getHours(), date.getMinutes(), date.getSeconds());
+        }
+        
+        return date;
+    } catch (error) {
+        console.error('Fehler bei Excel-Datum-Korrektur:', error);
+        return new Date(timestamp);
+    }
+}
+
 // Datenvorschau anzeigen
 function showDataPreview(data, fileName = '') {
     console.log('📊 Zeige Datenvorschau:', data);
@@ -482,6 +486,7 @@ function showDataPreview(data, fileName = '') {
     
     if (!data || data.length === 0) {
         previewContainer.innerHTML = '<div class="text-red-600">❌ Keine Daten zum Anzeigen</div>';
+        previewContainer.classList.remove('hidden');
         importButton.style.display = 'none';
         return;
     }
@@ -492,9 +497,14 @@ function showDataPreview(data, fileName = '') {
     const maxValue = Math.max(...values);
     const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
     
-    // Zeitraum
-    const firstDate = new Date(data[0].timestamp);
-    const lastDate = new Date(data[data.length - 1].timestamp);
+    // Zeitraum mit Excel-Datum-Korrektur
+    const firstDate = correctExcelDate(data[0].timestamp);
+    const lastDate = correctExcelDate(data[data.length - 1].timestamp);
+    
+    // Standard-Profilname aus Dateiname oder Zeitstempel
+    const defaultProfileName = fileName ? 
+        fileName.replace(/\.[^/.]+$/, '') : 
+        `Lastprofil ${new Date().toLocaleDateString('de-DE')}`;
     
     let previewHTML = `
         <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -504,9 +514,9 @@ function showDataPreview(data, fileName = '') {
                 <div class="bg-white p-3 rounded border">
                     <h4 class="font-medium text-gray-700 mb-2">📊 Statistiken</h4>
                     <p><strong>Datenpunkte:</strong> ${data.length}</p>
-                    <p><strong>Minimal:</strong> ${minValue.toFixed(2)} kW</p>
-                    <p><strong>Maximal:</strong> ${maxValue.toFixed(2)} kW</p>
-                    <p><strong>Durchschnitt:</strong> ${avgValue.toFixed(2)} kW</p>
+                    <p><strong>Minimal:</strong> ${minValue.toFixed(2)} ${data[0].unit || 'kW'}</p>
+                    <p><strong>Maximal:</strong> ${maxValue.toFixed(2)} ${data[0].unit || 'kW'}</p>
+                    <p><strong>Durchschnitt:</strong> ${avgValue.toFixed(2)} ${data[0].unit || 'kW'}</p>
                 </div>
                 
                 <div class="bg-white p-3 rounded border">
@@ -518,55 +528,71 @@ function showDataPreview(data, fileName = '') {
             </div>
             
             <div class="bg-white p-3 rounded border mb-4">
-                <h4 class="font-medium text-gray-700 mb-2">Erste 5 Datensätze</h4>
+                <h4 class="font-medium text-gray-700 mb-2">📋 Erste 5 Datensätze</h4>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-sm">
                         <thead>
                             <tr class="bg-gray-50">
                                 <th class="px-2 py-1 text-left">Zeitstempel</th>
-                                <th class="px-2 py-1 text-left">Wert (kW)</th>
+                                <th class="px-2 py-1 text-left">Wert</th>
                             </tr>
                         </thead>
                         <tbody>
         `;
         
-        // Erste 5 Datensätze anzeigen
+        // Erste 5 Datensätze anzeigen (mit Excel-Datum-Korrektur)
         data.slice(0, 5).forEach(row => {
-            const date = new Date(row.timestamp);
+            const date = correctExcelDate(row.timestamp);
             previewHTML += `
                 <tr class="border-b">
                     <td class="px-2 py-1">${date.toLocaleString('de-DE')}</td>
-                    <td class="px-2 py-1">${parseFloat(row.value).toFixed(2)}</td>
+                    <td class="px-2 py-1">${parseFloat(row.value).toFixed(2)} ${row.unit || 'kW'}</td>
                 </tr>
             `;
         });
         
         previewHTML += `
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
-                
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="text-lg font-semibold text-blue-800 mb-2">🚀 Import bereit!</h4>
-                    <p class="text-blue-700 mb-3">
-                        Die Daten wurden erfolgreich erkannt und können jetzt importiert werden. 
-                        Möchten Sie diese Lastprofil-Daten in die Datenbank importieren?
-                    </p>
-                    <div class="flex gap-3">
-                        <button id="confirmImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
-                            ✅ Ja, Daten importieren
-                        </button>
-                        <button id="cancelImport" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium">
-                            ❌ Abbrechen
-                        </button>
-                    </div>
+            </div>
+            
+            ${currentDataType === 'load' ? `
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <h4 class="text-lg font-semibold text-yellow-800 mb-2">📝 Lastprofil benennen</h4>
+                <p class="text-yellow-700 mb-3">
+                    Geben Sie einen aussagekräftigen Namen für dieses Lastprofil ein. 
+                    Dieser Name wird in den BESS Analysen zur Auswahl angezeigt.
+                </p>
+                <div class="flex gap-3 items-center">
+                    <label class="text-sm font-medium text-gray-700">Profilname:</label>
+                    <input type="text" id="profileNameInput" value="${defaultProfileName}" 
+                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="z.B. Winter-Lastprofil 2024">
+                </div>
+            </div>
+            ` : ''}
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="text-lg font-semibold text-blue-800 mb-2">🚀 Import bereit!</h4>
+                <p class="text-blue-700 mb-3">
+                    Die Daten wurden erfolgreich erkannt und können jetzt importiert werden. 
+                    Möchten Sie diese Daten in die Datenbank importieren?
+                </p>
+                <div class="flex gap-3">
+                    <button id="confirmImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
+                        ✅ Ja, Daten importieren
+                    </button>
+                    <button id="cancelImport" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium">
+                        ❌ Abbrechen
+                    </button>
                 </div>
             </div>
         </div>
     `;
     
     previewContainer.innerHTML = previewHTML;
+    previewContainer.classList.remove('hidden');
     
     // Import-Button verstecken (wird durch Abfrage ersetzt)
     importButton.style.display = 'none';
@@ -574,12 +600,23 @@ function showDataPreview(data, fileName = '') {
     // Event-Listener für Import-Abfrage
     document.getElementById('confirmImport').addEventListener('click', () => {
         console.log('🚀 Import bestätigt, starte Upload...');
-        uploadDataToServer(data);
+        
+        // Profilname für Lastprofile extrahieren
+        let profileName = null;
+        if (currentDataType === 'load') {
+            profileName = document.getElementById('profileNameInput').value.trim();
+            if (!profileName) {
+                alert('Bitte geben Sie einen Namen für das Lastprofil ein!');
+                return;
+            }
+        }
+        
+        uploadDataToServer(data, profileName);
     });
-    
+
     document.getElementById('cancelImport').addEventListener('click', () => {
         console.log('❌ Import abgebrochen');
-        previewContainer.innerHTML = '<div class="text-gray-600">Import abgebrochen</div>';
+        previewContainer.classList.add('hidden');
         importButton.style.display = 'none';
     });
 }
@@ -647,20 +684,59 @@ async function importDataType(dataType, data, settings) {
 
 // Datenübersicht aktualisieren
 function updateDataOverview() {
-    document.getElementById('loadDataCount').textContent = importedData.load.length;
-    document.getElementById('solarDataCount').textContent = importedData.solar.length;
-    document.getElementById('hydroDataCount').textContent = importedData.hydro.length;
-    document.getElementById('pvsolDataCount').textContent = importedData.pvsol.length;
-    document.getElementById('weatherDataCount').textContent = importedData.weather.length;
+    console.log('🔄 Aktualisiere Datenübersicht...');
     
-    // Datenqualität anzeigen
-    const totalData = Object.values(importedData).reduce((sum, data) => sum + data.length, 0);
-    const qualityText = totalData > 0 ? 
-        `${totalData} Datenpunkte importiert. Alle Daten wurden validiert und normalisiert.` :
-        'Keine Daten importiert';
+    // Projekt-ID aus der Auswahl holen
+    const projectSelect = document.getElementById('projectSelect');
+    const projectId = projectSelect.value || 1; // Default zu Projekt 1
     
-    document.getElementById('dataQuality').textContent = qualityText;
+    fetch(`/api/projects/${projectId}/data-overview`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('📊 Datenübersicht:', data);
+            
+            if (data.success) {
+                // Obere Datenübersicht aktualisieren
+                document.getElementById('loadCount').textContent = data.load_profiles || 0;
+                document.getElementById('solarCount').textContent = data.solar_data || 0;
+                document.getElementById('hydroCount').textContent = data.hydro_data || 0;
+                document.getElementById('weatherCount').textContent = data.weather_data || 0;
+                
+                // Untere Datenübersicht aktualisieren (falls vorhanden)
+                const loadDataCount = document.getElementById('loadDataCount');
+                const solarDataCount = document.getElementById('solarDataCount');
+                const hydroDataCount = document.getElementById('hydroDataCount');
+                const weatherDataCount = document.getElementById('weatherDataCount');
+                
+                if (loadDataCount) loadDataCount.textContent = data.load_profiles || 0;
+                if (solarDataCount) solarDataCount.textContent = data.solar_data || 0;
+                if (hydroDataCount) hydroDataCount.textContent = data.hydro_data || 0;
+                if (weatherDataCount) weatherDataCount.textContent = data.weather_data || 0;
+                
+                console.log('✅ Datenübersicht aktualisiert');
+            } else {
+                console.error('❌ Fehler beim Laden der Datenübersicht:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Fehler beim Laden der Datenübersicht:', error);
+        });
 }
+
+// Beim Laden der Seite Datenübersicht aktualisieren
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Datenimport-Center geladen, aktualisiere Datenübersicht...');
+    updateDataOverview();
+    
+    // Event-Listener für Projekt-Auswahl
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect) {
+        projectSelect.addEventListener('change', function() {
+            console.log('📋 Projekt gewechselt, aktualisiere Datenübersicht...');
+            updateDataOverview();
+        });
+    }
+});
 
 // Event Listeners
 document.getElementById('projectSelect').addEventListener('change', function(e) {
@@ -1186,7 +1262,7 @@ function showNotification(message, type = 'info') {
 }
 
 // Daten an Server uploaden
-function uploadDataToServer(data) {
+function uploadDataToServer(data, profileName = null) {
     console.log('📤 Starte Upload an Server...');
     
     // Loading-Zustand anzeigen
@@ -1198,19 +1274,21 @@ function uploadDataToServer(data) {
                 <div>
                     <h4 class="text-lg font-semibold text-blue-800">📤 Import läuft...</h4>
                     <p class="text-blue-700">Lade ${data.length} Datensätze in die Datenbank...</p>
+                    <p class="text-sm text-blue-600 mt-1">Bitte warten Sie, dies kann einige Sekunden dauern.</p>
                 </div>
             </div>
         </div>
     `;
     
-    // Daten für Server vorbereiten
+    // Daten für Server vorbereiten - Verwende die aktuelle Datenart
     const uploadData = {
-        data_type: 'load_profile',
+        data_type: currentDataType || 'load_profile',
         data: data.map(row => ({
             timestamp: row.timestamp,
             value: parseFloat(row.value),
-            unit: 'kW'
-        }))
+            unit: row.unit || 'kW'
+        })),
+        profile_name: profileName
     };
     
     console.log('📋 Upload-Daten:', uploadData);
@@ -1235,23 +1313,35 @@ function uploadDataToServer(data) {
         console.log('✅ Server-Antwort:', result);
         
         if (result.success) {
-            // Erfolg anzeigen
+            // Erfolg anzeigen mit detaillierten Informationen
             previewContainer.innerHTML = `
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div class="flex items-center">
-                        <div class="text-green-600 text-2xl mr-3">✅</div>
-                        <div>
-                            <h4 class="text-lg font-semibold text-green-800">Import erfolgreich!</h4>
-                            <p class="text-green-700">
-                                ${result.message || `${data.length} Datensätze wurden erfolgreich importiert.`}
-                            </p>
-                            ${result.redirect_url ? `
-                                <div class="mt-3">
-                                    <a href="${result.redirect_url}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
-                                        📊 Zu den Projekten
-                                    </a>
-                                </div>
-                            ` : ''}
+                    <div class="flex items-start">
+                        <div class="text-green-600 text-2xl mr-3 mt-1">✅</div>
+                        <div class="flex-1">
+                            <h4 class="text-lg font-semibold text-green-800">Import erfolgreich abgeschlossen!</h4>
+                            <div class="mt-3 space-y-2">
+                                <p class="text-green-700">
+                                    <strong>${data.length} Datensätze</strong> wurden erfolgreich in die Datenbank importiert.
+                                </p>
+                                <p class="text-green-700">
+                                    <strong>Datenart:</strong> ${getDataTypeName(currentDataType)}
+                                </p>
+                                <p class="text-green-700">
+                                    <strong>Projekt:</strong> ${document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text}
+                                </p>
+                                <p class="text-green-700">
+                                    <strong>Zeitraum:</strong> ${correctExcelDate(data[0].timestamp).toLocaleDateString('de-DE')} - ${correctExcelDate(data[data.length-1].timestamp).toLocaleDateString('de-DE')}
+                                </p>
+                            </div>
+                            <div class="mt-4 flex space-x-3">
+                                <button onclick="viewImportedData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium">
+                                    📊 Daten anzeigen
+                                </button>
+                                <button onclick="importMoreData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium">
+                                    ➕ Weitere Daten importieren
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1259,6 +1349,12 @@ function uploadDataToServer(data) {
             
             // Import-Button wieder anzeigen
             document.getElementById('importButton').style.display = 'block';
+            
+            // Datenübersicht aktualisieren
+            updateDataOverview();
+            
+            // Erfolgs-Benachrichtigung anzeigen
+            showNotification(`✅ ${data.length} Datensätze erfolgreich importiert!`, 'success');
             
         } else {
             // Fehler anzeigen
@@ -1270,16 +1366,22 @@ function uploadDataToServer(data) {
         
         previewContainer.innerHTML = `
             <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div class="flex items-center">
-                    <div class="text-red-600 text-2xl mr-3">❌</div>
-                    <div>
+                <div class="flex items-start">
+                    <div class="text-red-600 text-2xl mr-3 mt-1">❌</div>
+                    <div class="flex-1">
                         <h4 class="text-lg font-semibold text-red-800">Import fehlgeschlagen!</h4>
-                        <p class="text-red-700">
-                            ${error.message || 'Fehler beim Upload der Daten.'}
+                        <p class="text-red-700 mt-2">
+                            <strong>Fehler:</strong> ${error.message || 'Unbekannter Fehler beim Upload der Daten.'}
                         </p>
-                        <div class="mt-3">
+                        <p class="text-red-600 text-sm mt-2">
+                            Bitte überprüfen Sie die Daten und versuchen Sie es erneut.
+                        </p>
+                        <div class="mt-4 flex space-x-3">
                             <button onclick="location.reload()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg font-medium">
                                 🔄 Erneut versuchen
+                            </button>
+                            <button onclick="clearImportData()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium">
+                                🗑️ Daten löschen
                             </button>
                         </div>
                     </div>
@@ -1289,7 +1391,62 @@ function uploadDataToServer(data) {
         
         // Import-Button wieder anzeigen
         document.getElementById('importButton').style.display = 'block';
+        
+        // Fehler-Benachrichtigung anzeigen
+        showNotification(`❌ Import fehlgeschlagen: ${error.message}`, 'error');
     });
+}
+
+// Datenart-Name abrufen
+function getDataTypeName(dataType) {
+    const dataTypeNames = {
+        'load': 'Lastprofile',
+        'solar': 'Einstrahlung',
+        'hydro': 'Pegelstände',
+        'pvsol': 'PVSol Export',
+        'weather': 'Wetterdaten',
+        'load_profile': 'Lastprofile',
+        'solar_radiation': 'Einstrahlung',
+        'water_level': 'Pegelstände',
+        'pvsol_export': 'PVSol Export'
+    };
+    return dataTypeNames[dataType] || dataType;
+}
+
+// Importierte Daten anzeigen
+function viewImportedData() {
+    window.location.href = '/preview_data';
+}
+
+// Weitere Daten importieren
+function importMoreData() {
+    // Datenvorschau zurücksetzen
+    const previewContainer = document.getElementById('dataPreview');
+    previewContainer.innerHTML = '';
+    
+    // Import-Button verstecken
+    document.getElementById('importButton').style.display = 'none';
+    
+    // Datei-Inputs zurücksetzen
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => input.value = '');
+    
+    showNotification('✅ Bereit für neuen Import!', 'success');
+}
+
+// Import-Daten löschen
+function clearImportData() {
+    const previewContainer = document.getElementById('dataPreview');
+    previewContainer.innerHTML = '';
+    
+    // Import-Button verstecken
+    document.getElementById('importButton').style.display = 'none';
+    
+    // Datei-Inputs zurücksetzen
+    const fileInputs = document.querySelectorAll('input[type="file"]');
+    fileInputs.forEach(input => input.value = '');
+    
+    showNotification('🗑️ Import-Daten gelöscht', 'info');
 }
 </script>
 
