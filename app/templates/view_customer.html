@@ -70,9 +70,13 @@ function displayCustomerDetails(customer) {
                     <label class="block text-sm font-medium text-gray-700">Firma</label>
                     <p class="text-lg text-gray-900">${customer.company || 'Nicht angegeben'}</p>
                 </div>
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-sm font-medium text-gray-700">Kontakt</label>
                     <p class="text-lg text-gray-900">${customer.contact || 'Nicht angegeben'}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Telefonnummer</label>
+                    <p class="text-lg text-gray-900">${customer.phone || 'Nicht angegeben'}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Registriert am</label>

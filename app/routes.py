@@ -1,5 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from app import db
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice
 from datetime import datetime, timedelta
 import random
@@ -82,6 +85,10 @@ def bess_peak_shaving_analysis():
 def data_import_center():
     return render_template('data_import_center.html')
 
+@main_bp.route('/load_profile_detail')
+def load_profile_detail():
+    return render_template('load_profile_detail.html')
+
 # API Routes für Projekte
 @main_bp.route('/api/projects')
 def api_projects():
@@ -156,7 +163,7 @@ def api_update_project(project_id):
             project.name = str(data['name']).strip()
             project.location = str(data.get('location', '')).strip() if data.get('location') else None
             
-            # Customer ID - EINFACHE LÖSUNG
+            # Customer ID - MIT FOREIGN KEY VALIDIERUNG
             customer_id_raw = data.get('customer_id')
             print(f"DEBUG: customer_id raw: {customer_id_raw} (type: {type(customer_id_raw)})")
             
@@ -164,7 +171,15 @@ def api_update_project(project_id):
                 project.customer_id = None
             else:
                 try:
-                    project.customer_id = int(customer_id_raw)
+                    customer_id = int(customer_id_raw)
+                    # Prüfe ob der Kunde existiert
+                    customer = Customer.query.get(customer_id)
+                    if customer:
+                        project.customer_id = customer_id
+                        print(f"DEBUG: Kunde gefunden: {customer.name}")
+                    else:
+                        print(f"DEBUG: Kunde mit ID {customer_id} nicht gefunden!")
+                        return jsonify({'error': f'Kunde mit ID {customer_id} existiert nicht'}), 422
                 except (ValueError, TypeError):
                     project.customer_id = None
             
@@ -243,13 +258,36 @@ def api_customers():
         'name': c.name,
         'company': c.company,
         'contact': c.contact,
+        'phone': c.phone,
         'projects_count': len(c.projects)
     } for c in customers])
 
 @main_bp.route('/api/customers', methods=['POST'])
 def api_create_customer():
-    print("=== CUSTOMER API CALLED ===")
-    return jsonify({'success': True, 'id': 1}), 201
+    try:
+        data = request.get_json()
+        
+        # Validierung
+        if not data or not data.get('name'):
+            return jsonify({'error': 'Name ist erforderlich'}), 400
+        
+        # Neuen Kunden erstellen
+        customer = Customer(
+            name=data['name'],
+            company=data.get('company'),
+            contact=data.get('contact'),
+            phone=data.get('phone')
+        )
+        
+        db.session.add(customer)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'id': customer.id}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Fehler beim Erstellen des Kunden: {str(e)}")
+        return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/customers/<int:customer_id>')
 def api_get_customer(customer_id):
@@ -259,6 +297,7 @@ def api_get_customer(customer_id):
         'name': customer.name,
         'company': customer.company,
         'contact': customer.contact,
+        'phone': customer.phone,
         'created_at': customer.created_at.isoformat()
     })
 
@@ -268,14 +307,36 @@ def api_update_customer(customer_id):
         customer = Customer.query.get_or_404(customer_id)
         data = request.get_json()
         
-        customer.name = data['name']
-        customer.company = data.get('company')
-        customer.contact = data.get('contact')
+        print(f"=== DEBUG: Customer Update ===")
+        print(f"Customer ID: {customer_id}")
+        print(f"Empfangene Daten: {data}")
+        
+        # Validierung
+        if not data or not data.get('name'):
+            return jsonify({'error': 'Name ist erforderlich'}), 400
+        
+        # Daten aktualisieren
+        customer.name = str(data['name']).strip()
+        customer.company = str(data.get('company', '')).strip() if data.get('company') else None
+        customer.contact = str(data.get('contact', '')).strip() if data.get('contact') else None
+        customer.phone = str(data.get('phone', '')).strip() if data.get('phone') else None
+        
+        print(f"Verarbeitete Daten:")
+        print(f"  Name: {customer.name}")
+        print(f"  Company: {customer.company}")
+        print(f"  Contact: {customer.contact}")
+        print(f"  Phone: {customer.phone}")
         
         db.session.commit()
+        print(f"Kunde erfolgreich aktualisiert!")
+        
         return jsonify({'success': True})
+        
     except Exception as e:
-        return jsonify({'error': str(e)}), 400
+        db.session.rollback()
+        print(f"Fehler beim Aktualisieren des Kunden: {str(e)}")
+        # Stelle sicher, dass immer JSON zurückgegeben wird
+        return jsonify({'error': f'Server-Fehler: {str(e)}'}), 500
 
 @main_bp.route('/api/customers/<int:customer_id>', methods=['DELETE'])
 def api_delete_customer(customer_id):
@@ -307,17 +368,22 @@ def api_customer_projects(customer_id):
 # API Routes für Investitionskosten
 @main_bp.route('/api/investment-costs')
 def api_investment_costs():
-    project_id = request.args.get('project_id')
+    project_id = request.args.get('project_id', type=int)
+    
     if project_id:
+        # Nur Kosten für spezifisches Projekt
         costs = InvestmentCost.query.filter_by(project_id=project_id).all()
     else:
+        # Alle Kosten
         costs = InvestmentCost.query.all()
     
     return jsonify([{
         'id': c.id,
+        'project_id': c.project_id,
         'component_type': c.component_type,
         'cost_eur': c.cost_eur,
-        'description': c.description
+        'description': c.description,
+        'created_at': c.created_at.isoformat() if c.created_at else None
     } for c in costs])
 
 @main_bp.route('/api/investment-costs', methods=['POST'])
@@ -410,63 +476,64 @@ def api_create_reference_price():
 def api_spot_prices():
     try:
         data = request.get_json()
-        
-        # Demo-Daten generieren basierend auf Zeitraum
         time_range = data.get('time_range', 'month')
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date')
         
-        if start_date and end_date:
-            start = datetime.fromisoformat(start_date)
-            end = datetime.fromisoformat(end_date)
+        # Datum-Parsing
+        if start_date_str and end_date_str:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         else:
-            # Standard-Zeitraum
-            end = datetime.now()
-            if time_range == 'today':
-                start = end.replace(hour=0, minute=0, second=0, microsecond=0)
-            elif time_range == 'week':
-                start = end - timedelta(days=7)
-            elif time_range == 'month':
-                start = end - timedelta(days=30)
-            else:  # year
-                start = end - timedelta(days=365)
+            start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date + timedelta(days=1)
         
-        # Demo Spot-Preise generieren
-        prices = []
-        current = start
-        price_id = 1
-        
-        while current <= end:
-            for hour in range(24):
-                # Basis-Preis mit Tageszeit-Schwankungen
-                base_price = 50 + 30 * (0.5 + 0.5 * (hour - 6) / 12)
-                if hour >= 6 and hour <= 18:
-                    base_price += 20
-                
-                # Jahreszeitliche Anpassungen
-                month = current.month
-                if month in [12, 1, 2]:  # Winter
-                    base_price *= 1.3
-                elif month in [6, 7, 8]:  # Sommer
-                    base_price *= 0.8
-                
-                # Zufällige Schwankungen
-                random_factor = 0.8 + 0.4 * random.random()
-                price = base_price * random_factor
-                
-                prices.append({
-                    'id': price_id,
-                    'timestamp': current.replace(hour=hour).isoformat(),
-                    'price': round(price, 2)
-                })
-                price_id += 1
+        # APG Data Fetcher verwenden
+        try:
+            from apg_data_fetcher import APGDataFetcher
+            fetcher = APGDataFetcher()
             
-            current += timedelta(days=1)
-        
-        return jsonify(prices)
-        
+            # Versuche echte APG-Daten zu laden
+            apg_data = fetcher.fetch_current_prices()
+            
+            if apg_data:
+                # Echte APG-Daten verfügbar
+                return jsonify(apg_data)
+            else:
+                # Fallback: Demo-Daten basierend auf APG-Mustern
+                demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
+                return jsonify(demo_data)
+                
+        except ImportError:
+            # Fallback: Alte Demo-Daten
+            return jsonify(generate_legacy_demo_prices(start_date, end_date))
+            
     except Exception as e:
+        print(f"Fehler in Spot-Preis-API: {e}")
         return jsonify({'error': str(e)}), 400
+
+def generate_legacy_demo_prices(start_date, end_date):
+    """Legacy Demo-Daten (Fallback)"""
+    prices = []
+    current_date = start_date
+    
+    while current_date <= end_date:
+        for hour in range(24):
+            # Basis-Preis mit Tageszeit-Schwankungen
+            base_price = 50 + 30 * (hour - 12) / 12
+            base_price += random.uniform(-10, 10)
+            
+            prices.append({
+                'id': len(prices) + 1,
+                'timestamp': current_date.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat(),
+                'price': round(max(20, min(120, base_price)), 2),
+                'source': 'Demo (Legacy)',
+                'market': 'Day-Ahead'
+            })
+        
+        current_date += timedelta(days=1)
+    
+    return prices
 
 @main_bp.route('/api/spot-prices/import', methods=['POST'])
 def api_spot_prices_import():
@@ -478,77 +545,42 @@ def api_spot_prices_import():
 
 @main_bp.route('/api/load-profiles/<int:load_profile_id>/data-range', methods=['POST'])
 def api_load_profile_data_range(load_profile_id):
-    """API für Lastdaten eines Lastprofils für einen spezifischen Datumsbereich"""
     try:
-        load_profile = LoadProfile.query.get_or_404(load_profile_id)
-        
-        # Request-Daten parsen
         data = request.get_json()
-        if not data:
-            return jsonify({'error': 'Keine JSON-Daten empfangen'}), 400
-            
-        start_date_str = data.get('start_date')
-        end_date_str = data.get('end_date')
-        date_range = data.get('date_range', 'month')
+        start_date = datetime.fromisoformat(data['start_date'])
+        end_date = datetime.fromisoformat(data['end_date'])
         
-        if not start_date_str or not end_date_str:
-            return jsonify({'error': 'Start- und Enddatum erforderlich'}), 400
-        
-        try:
-            start_date = datetime.fromisoformat(start_date_str)
-            end_date = datetime.fromisoformat(end_date_str)
-        except ValueError as e:
-            return jsonify({'error': f'Ungültiges Datumsformat: {e}'}), 400
-        
-        # Generiere Demo-Daten für den Zeitraum
-        demo_data = []
-        current_date = start_date
-        
-        while current_date <= end_date:
-            for hour in range(24):
-                timestamp = current_date + timedelta(hours=hour)
-                
-                # Basis-Last basierend auf Tageszeit und Jahreszeit
-                base_load = 800 + 400 * (0.5 + 0.5 * (hour - 6) / 12)
-                if hour >= 6 and hour <= 18:
-                    base_load += 200
-                
-                # Jahreszeitliche Anpassungen
-                month = timestamp.month
-                if month in [12, 1, 2]:  # Winter
-                    base_load *= 1.2
-                elif month in [6, 7, 8]:  # Sommer
-                    base_load *= 0.9
-                
-                # Zufällige Schwankungen
-                random_factor = 0.8 + 0.4 * random.random()
-                load = base_load * random_factor
-                
-                demo_data.append({
-                    'timestamp': timestamp.isoformat(),
-                    'load_kw': round(load, 2),
-                    'hour': hour,
-                    'day': timestamp.day,
-                    'month': timestamp.month
-                })
-            
-            current_date += timedelta(days=1)
+        # Hier würden Sie die Daten aus der Datenbank laden
+        # Für jetzt geben wir Dummy-Daten zurück
+        dummy_data = []
+        current_time = start_date
+        while current_time <= end_date:
+            dummy_data.append({
+                'timestamp': current_time.isoformat(),
+                'value': random.uniform(100, 1000)  # Zufällige Last zwischen 100-1000 kW
+            })
+            current_time += timedelta(hours=1)
         
         return jsonify({
-            'load_profile': {
-                'id': load_profile.id,
-                'name': load_profile.name
-            },
-            'date_range': {
-                'start': start_date_str,
-                'end': end_date_str,
-                'type': date_range
-            },
-            'data': demo_data
+            'success': True,
+            'data': dummy_data
         })
-        
     except Exception as e:
-        return jsonify({'error': f'Server-Fehler: {str(e)}'}), 500 
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/load-profiles/<int:load_profile_id>')
+def api_get_load_profile(load_profile_id):
+    try:
+        # Hier würden Sie das Lastprofil aus der Datenbank laden
+        # Für jetzt geben wir Dummy-Daten zurück
+        profile = {
+            'id': load_profile_id,
+            'name': f'Lastprofil {load_profile_id}',
+            'data_points': 8760  # 1 Jahr stündliche Daten
+        }
+        return jsonify(profile)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/test-customer', methods=['POST'])
 def test_customer():
@@ -560,4 +592,163 @@ def test_customer():
             'message': 'Test customer endpoint working'
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 400 
+        return jsonify({'error': str(e)}), 400
+
+# API Routes für Wirtschaftlichkeitsanalyse
+@main_bp.route('/api/economic-analysis/<int:project_id>')
+def api_economic_analysis(project_id):
+    """Wirtschaftlichkeitsanalyse für ein Projekt"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Investitionskosten laden
+        investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
+        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Referenzpreise laden
+        reference_prices = ReferencePrice.query.all()
+        
+        # Einfache Wirtschaftlichkeitsberechnung
+        # (Hier würde eine komplexere Berechnung stehen)
+        annual_savings = calculate_annual_savings(project, reference_prices)
+        payback_years = total_investment / annual_savings if annual_savings > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'total_investment': total_investment,
+            'annual_savings': annual_savings,
+            'payback_years': round(payback_years, 1),
+            'roi_percent': (annual_savings / total_investment * 100) if total_investment > 0 else 0
+        })
+        
+    except Exception as e:
+        print(f"Fehler in Wirtschaftlichkeitsanalyse: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/economic-simulation/<int:project_id>', methods=['POST'])
+def api_economic_simulation(project_id):
+    """Wirtschaftlichkeitssimulation für ein Projekt"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Komplexe Simulation durchführen
+        simulation_results = run_economic_simulation(project)
+        
+        return jsonify({
+            'success': True,
+            'results': simulation_results
+        })
+        
+    except Exception as e:
+        print(f"Fehler in Wirtschaftlichkeitssimulation: {e}")
+        return jsonify({'error': str(e)}), 400
+
+def calculate_annual_savings(project, reference_prices):
+    """Berechnet jährliche Ersparnisse basierend auf Projekt und Referenzpreisen"""
+    try:
+        # Basis-Berechnung (vereinfacht)
+        base_savings = 0
+        
+        # BESS-basierte Ersparnisse
+        if project.bess_size and project.bess_power:
+            # Peak Shaving Ersparnis
+            peak_shaving_savings = project.bess_power * 1000 * 0.15  # 15% Peak-Reduktion
+            
+            # Arbitrage Ersparnis
+            arbitrage_savings = project.bess_size * 365 * 0.05  # 5% tägliche Arbitrage
+            
+            base_savings = peak_shaving_savings + arbitrage_savings
+        
+        # PV-basierte Ersparnisse
+        if project.pv_power:
+            pv_savings = project.pv_power * 1000 * 0.12  # 12% Eigenverbrauch
+            base_savings += pv_savings
+        
+        # Wärmepumpe Ersparnisse
+        if project.hp_power:
+            hp_savings = project.hp_power * 2000 * 0.20  # 20% Heizkosten-Reduktion
+            base_savings += hp_savings
+        
+        return round(base_savings, 2)
+        
+    except Exception as e:
+        print(f"Fehler bei Ersparnis-Berechnung: {e}")
+        return 0
+
+def run_economic_simulation(project):
+    """Führt eine detaillierte Wirtschaftlichkeitssimulation durch"""
+    try:
+        # Investitionskosten
+        investment_costs = InvestmentCost.query.filter_by(project_id=project.id).all()
+        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Referenzpreise
+        reference_prices = ReferencePrice.query.all()
+        
+        # Detaillierte Berechnungen
+        peak_shaving_savings = calculate_peak_shaving_savings(project)
+        arbitrage_savings = calculate_arbitrage_savings(project)
+        grid_stability_bonus = calculate_grid_stability_bonus(project)
+        
+        annual_savings = peak_shaving_savings + arbitrage_savings + grid_stability_bonus
+        payback_years = total_investment / annual_savings if annual_savings > 0 else 0
+        
+        return {
+            'total_investment': total_investment,
+            'annual_savings': round(annual_savings, 2),
+            'payback_years': round(payback_years, 1),
+            'peak_shaving_savings': round(peak_shaving_savings, 2),
+            'arbitrage_savings': round(arbitrage_savings, 2),
+            'grid_stability_bonus': round(grid_stability_bonus, 2),
+            'roi_percent': round((annual_savings / total_investment * 100), 1) if total_investment > 0 else 0
+        }
+        
+    except Exception as e:
+        print(f"Fehler bei Wirtschaftlichkeitssimulation: {e}")
+        return {
+            'total_investment': 0,
+            'annual_savings': 0,
+            'payback_years': 0,
+            'peak_shaving_savings': 0,
+            'arbitrage_savings': 0,
+            'grid_stability_bonus': 0,
+            'roi_percent': 0
+        }
+
+def calculate_peak_shaving_savings(project):
+    """Berechnet Peak Shaving Ersparnisse"""
+    if not project.bess_power:
+        return 0
+    
+    # Vereinfachte Peak Shaving Berechnung
+    peak_reduction_kw = project.bess_power * 0.15  # 15% Peak-Reduktion
+    peak_price_eur_mwh = 150  # Hoher Peak-Preis
+    hours_per_year = 8760
+    
+    return peak_reduction_kw * peak_price_eur_mwh * 0.1  # 10% der Zeit im Peak
+
+def calculate_arbitrage_savings(project):
+    """Berechnet Arbitrage Ersparnisse"""
+    if not project.bess_size:
+        return 0
+    
+    # Vereinfachte Arbitrage Berechnung
+    daily_cycles = 1  # 1 Zyklus pro Tag
+    price_spread_eur_mwh = 50  # Preisunterschied zwischen Peak und Off-Peak
+    days_per_year = 365
+    
+    return project.bess_size * daily_cycles * price_spread_eur_mwh * days_per_year / 1000
+
+def calculate_grid_stability_bonus(project):
+    """Berechnet Netzstabilitäts-Bonus"""
+    if not project.bess_power:
+        return 0
+    
+    # Netzstabilitäts-Bonus für BESS
+    stability_bonus_eur_kw_year = 50  # 50€ pro kW pro Jahr
+    
+    return project.bess_power * stability_bonus_eur_kw_year 

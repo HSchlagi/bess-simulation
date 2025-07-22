@@ -154,10 +154,23 @@ function displayProjects(projects) {
                        class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-md text-sm">
                         <i class="fas fa-edit mr-1"></i>Bearbeiten
                     </a>
-                    <button onclick="deleteProject(${project.id})" 
-                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm">
-                        <i class="fas fa-trash mr-1"></i>Löschen
-                    </button>
+                    <div class="relative group">
+                        <button class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md text-sm">
+                            <i class="fas fa-calculator mr-1"></i>Wirtschaftlichkeit
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                            <a href="/investment_costs?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50">
+                                <i class="fas fa-euro-sign mr-2"></i>Investitionskosten
+                            </a>
+                            <a href="/reference_prices?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50">
+                                <i class="fas fa-cog mr-2"></i>Referenzpreise
+                            </a>
+                            <a href="/economic_analysis?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 rounded-b-md">
+                                <i class="fas fa-chart-line mr-2"></i>Analyse
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

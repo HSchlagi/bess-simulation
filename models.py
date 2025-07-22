@@ -6,6 +6,7 @@ class Customer(db.Model):
     name = db.Column(db.String(100), nullable=False)
     company = db.Column(db.String(200))
     contact = db.Column(db.String(200))
+    phone = db.Column(db.String(50))  # Telefonnummer hinzugefügt
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Project(db.Model):
