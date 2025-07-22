@@ -85,6 +85,10 @@ def bess_peak_shaving_analysis():
 def data_import_center():
     return render_template('data_import_center.html')
 
+@main_bp.route('/load_profile_detail')
+def load_profile_detail():
+    return render_template('load_profile_detail.html')
+
 # API Routes für Projekte
 @main_bp.route('/api/projects')
 def api_projects():
@@ -467,63 +471,65 @@ def api_create_reference_price():
 def api_spot_prices():
     try:
         data = request.get_json()
-        
-        # Demo-Daten generieren basierend auf Zeitraum
         time_range = data.get('time_range', 'month')
-        start_date = data.get('start_date')
-        end_date = data.get('end_date')
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date')
         
-        if start_date and end_date:
-            start = datetime.fromisoformat(start_date)
-            end = datetime.fromisoformat(end_date)
+        # Datum-Parsing
+        if start_date_str and end_date_str:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
         else:
-            # Standard-Zeitraum
-            end = datetime.now()
-            if time_range == 'today':
-                start = end.replace(hour=0, minute=0, second=0, microsecond=0)
-            elif time_range == 'week':
-                start = end - timedelta(days=7)
-            elif time_range == 'month':
-                start = end - timedelta(days=30)
-            else:  # year
-                start = end - timedelta(days=365)
+            # Standard: Heute
+            start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date + timedelta(days=1)
         
-        # Demo Spot-Preise generieren
-        prices = []
-        current = start
-        price_id = 1
-        
-        while current <= end:
-            for hour in range(24):
-                # Basis-Preis mit Tageszeit-Schwankungen
-                base_price = 50 + 30 * (0.5 + 0.5 * (hour - 6) / 12)
-                if hour >= 6 and hour <= 18:
-                    base_price += 20
-                
-                # Jahreszeitliche Anpassungen
-                month = current.month
-                if month in [12, 1, 2]:  # Winter
-                    base_price *= 1.3
-                elif month in [6, 7, 8]:  # Sommer
-                    base_price *= 0.8
-                
-                # Zufällige Schwankungen
-                random_factor = 0.8 + 0.4 * random.random()
-                price = base_price * random_factor
-                
-                prices.append({
-                    'id': price_id,
-                    'timestamp': current.replace(hour=hour).isoformat(),
-                    'price': round(price, 2)
-                })
-                price_id += 1
+        # APG Data Fetcher verwenden
+        try:
+            from apg_data_fetcher import APGDataFetcher
+            fetcher = APGDataFetcher()
             
-            current += timedelta(days=1)
-        
-        return jsonify(prices)
-        
+            # Versuche echte APG-Daten zu laden
+            apg_data = fetcher.fetch_current_prices()
+            
+            if apg_data:
+                # Echte APG-Daten verfügbar
+                return jsonify(apg_data)
+            else:
+                # Fallback: Demo-Daten basierend auf APG-Mustern
+                demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
+                return jsonify(demo_data)
+                
+        except ImportError:
+            # Fallback: Alte Demo-Daten
+            return jsonify(generate_legacy_demo_prices(start_date, end_date))
+            
     except Exception as e:
+        print(f"Fehler in Spot-Preis-API: {e}")
         return jsonify({'error': str(e)}), 400
+
+def generate_legacy_demo_prices(start_date, end_date):
+    """Legacy Demo-Daten (Fallback)"""
+    prices = []
+    current_date = start_date
+    
+    while current_date <= end_date:
+        for hour in range(24):
+            # Basis-Preis mit Tageszeit-Schwankungen
+            base_price = 50 + 30 * (hour - 12) / 12
+            base_price += random.uniform(-10, 10)
+            
+            prices.append({
+                'id': len(prices) + 1,
+                'timestamp': current_date.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat(),
+                'price': round(max(20, min(120, base_price)), 2),
+                'source': 'Demo (Legacy)',
+                'market': 'Day-Ahead'
+            })
+        
+        current_date += timedelta(days=1)
+    
+    return prices
 
 @main_bp.route('/api/spot-prices/import', methods=['POST'])
 def api_spot_prices_import():
@@ -535,77 +541,42 @@ def api_spot_prices_import():
 
 @main_bp.route('/api/load-profiles/<int:load_profile_id>/data-range', methods=['POST'])
 def api_load_profile_data_range(load_profile_id):
-    """API für Lastdaten eines Lastprofils für einen spezifischen Datumsbereich"""
     try:
-        load_profile = LoadProfile.query.get_or_404(load_profile_id)
-        
-        # Request-Daten parsen
         data = request.get_json()
-        if not data:
-            return jsonify({'error': 'Keine JSON-Daten empfangen'}), 400
-            
-        start_date_str = data.get('start_date')
-        end_date_str = data.get('end_date')
-        date_range = data.get('date_range', 'month')
+        start_date = datetime.fromisoformat(data['start_date'])
+        end_date = datetime.fromisoformat(data['end_date'])
         
-        if not start_date_str or not end_date_str:
-            return jsonify({'error': 'Start- und Enddatum erforderlich'}), 400
-        
-        try:
-            start_date = datetime.fromisoformat(start_date_str)
-            end_date = datetime.fromisoformat(end_date_str)
-        except ValueError as e:
-            return jsonify({'error': f'Ungültiges Datumsformat: {e}'}), 400
-        
-        # Generiere Demo-Daten für den Zeitraum
-        demo_data = []
-        current_date = start_date
-        
-        while current_date <= end_date:
-            for hour in range(24):
-                timestamp = current_date + timedelta(hours=hour)
-                
-                # Basis-Last basierend auf Tageszeit und Jahreszeit
-                base_load = 800 + 400 * (0.5 + 0.5 * (hour - 6) / 12)
-                if hour >= 6 and hour <= 18:
-                    base_load += 200
-                
-                # Jahreszeitliche Anpassungen
-                month = timestamp.month
-                if month in [12, 1, 2]:  # Winter
-                    base_load *= 1.2
-                elif month in [6, 7, 8]:  # Sommer
-                    base_load *= 0.9
-                
-                # Zufällige Schwankungen
-                random_factor = 0.8 + 0.4 * random.random()
-                load = base_load * random_factor
-                
-                demo_data.append({
-                    'timestamp': timestamp.isoformat(),
-                    'load_kw': round(load, 2),
-                    'hour': hour,
-                    'day': timestamp.day,
-                    'month': timestamp.month
-                })
-            
-            current_date += timedelta(days=1)
+        # Hier würden Sie die Daten aus der Datenbank laden
+        # Für jetzt geben wir Dummy-Daten zurück
+        dummy_data = []
+        current_time = start_date
+        while current_time <= end_date:
+            dummy_data.append({
+                'timestamp': current_time.isoformat(),
+                'value': random.uniform(100, 1000)  # Zufällige Last zwischen 100-1000 kW
+            })
+            current_time += timedelta(hours=1)
         
         return jsonify({
-            'load_profile': {
-                'id': load_profile.id,
-                'name': load_profile.name
-            },
-            'date_range': {
-                'start': start_date_str,
-                'end': end_date_str,
-                'type': date_range
-            },
-            'data': demo_data
+            'success': True,
+            'data': dummy_data
         })
-        
     except Exception as e:
-        return jsonify({'error': f'Server-Fehler: {str(e)}'}), 500 
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/load-profiles/<int:load_profile_id>')
+def api_get_load_profile(load_profile_id):
+    try:
+        # Hier würden Sie das Lastprofil aus der Datenbank laden
+        # Für jetzt geben wir Dummy-Daten zurück
+        profile = {
+            'id': load_profile_id,
+            'name': f'Lastprofil {load_profile_id}',
+            'data_points': 8760  # 1 Jahr stündliche Daten
+        }
+        return jsonify(profile)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/test-customer', methods=['POST'])
 def test_customer():
