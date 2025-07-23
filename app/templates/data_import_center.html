@@ -154,6 +154,20 @@
         <!-- Pegelstände Tab -->
         <div id="tab-content-hydro" class="tab-content p-6 hidden">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- EHYD Live-Daten -->
+                <div class="border-2 border-dashed border-green-300 rounded-lg p-6 text-center">
+                    <i class="fas fa-satellite text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">EHYD Live-Daten</h3>
+                    <p class="text-sm text-gray-600 mb-4">Echte österreichische Pegelstände</p>
+                    <p class="text-xs text-green-600 mb-4">🌊 Von ehyd.gv.at</p>
+                    <button onclick="loadEHYDData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-sync-alt mr-2"></i>EHYD laden
+                    </button>
+                    <div id="ehydStatus" class="text-xs text-gray-500 mt-2">
+                        Status: Bereit
+                    </div>
+                </div>
+
                 <!-- CSV Import -->
                 <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center drag-drop-area" 
                      data-file-type="csv" data-data-type="hydro">
@@ -179,8 +193,35 @@
                         Excel auswählen
                     </button>
                 </div>
+            </div>
 
-                <!-- Intelligente Vorschau -->
+            <!-- EHYD Fluss-Auswahl -->
+            <div id="ehydRiverSelection" class="mt-6 p-4 bg-gray-50 rounded-lg hidden">
+                <h4 class="text-lg font-medium text-gray-800 mb-3">🌊 Österreichische Flüsse (EHYD)</h4>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <button onclick="selectEHYDRiver('donau')" class="ehyd-river-btn bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded-md text-sm">
+                        Donau
+                    </button>
+                    <button onclick="selectEHYDRiver('inn')" class="ehyd-river-btn bg-green-100 hover:bg-green-200 text-green-800 px-3 py-2 rounded-md text-sm">
+                        Inn
+                    </button>
+                    <button onclick="selectEHYDRiver('drau')" class="ehyd-river-btn bg-purple-100 hover:bg-purple-200 text-purple-800 px-3 py-2 rounded-md text-sm">
+                        Drau
+                    </button>
+                    <button onclick="selectEHYDRiver('mur')" class="ehyd-river-btn bg-orange-100 hover:bg-orange-200 text-orange-800 px-3 py-2 rounded-md text-sm">
+                        Mur
+                    </button>
+                    <button onclick="selectEHYDRiver('salzach')" class="ehyd-river-btn bg-red-100 hover:bg-red-200 text-red-800 px-3 py-2 rounded-md text-sm">
+                        Salzach
+                    </button>
+                </div>
+                <div id="ehydStationInfo" class="mt-3 text-sm text-gray-600">
+                    Wählen Sie einen Fluss für detaillierte Pegelstände
+                </div>
+            </div>
+
+            <!-- Intelligente Vorschau -->
+            <div class="mt-6">
                 <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
                     <i class="fas fa-chart-line text-4xl text-cyan-400 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-800 mb-2">Intelligente Vorschau</h3>
@@ -1160,6 +1201,209 @@ function clearImportData() {
     fileInputs.forEach(input => input.value = '');
     
     showNotification('🗑️ Import-Daten gelöscht', 'info');
+}
+
+// EHYD-Daten laden
+async function loadEHYDData() {
+    try {
+        const button = event.target.closest('button');
+        const originalText = button.innerHTML;
+        
+        // Button während des Ladens deaktivieren
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Lade EHYD...';
+        
+        const statusElement = document.getElementById('ehydStatus');
+        statusElement.innerHTML = 'Status: Lade echte österreichische Pegelstände...';
+        
+        const response = await fetch('/api/ehyd-water-levels', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                time_range: 'month',
+                start_date: new Date().toISOString().split('T')[0],
+                end_date: new Date().toISOString().split('T')[0]
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            statusElement.innerHTML = `Status: ✅ ${result.message}`;
+            
+            // Fluss-Auswahl anzeigen
+            document.getElementById('ehydRiverSelection').classList.remove('hidden');
+            
+            // Daten in Vorschau anzeigen
+            updateHydroPreview(result.data);
+            
+            // Daten für Import vorbereiten
+            currentData = result.data.map(item => ({
+                timestamp: item.timestamp,
+                value: item.water_level_m,
+                unit: 'm',
+                river_name: item.river_name,
+                station_name: item.station_name,
+                flow_rate: item.flow_rate_m3s
+            }));
+            
+            currentDataType = 'hydro';
+            
+        } else {
+            showNotification(result.message || 'Fehler beim Laden der EHYD-Daten', 'error');
+            statusElement.innerHTML = 'Status: ❌ Fehler beim Laden';
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der EHYD-Daten:', error);
+        showNotification('Netzwerk-Fehler beim Laden der EHYD-Daten', 'error');
+        document.getElementById('ehydStatus').innerHTML = 'Status: ❌ Netzwerk-Fehler';
+    } finally {
+        // Button wieder aktivieren
+        button.disabled = false;
+        button.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>EHYD laden';
+    }
+}
+
+// EHYD Fluss auswählen
+async function selectEHYDRiver(riverKey) {
+    try {
+        // Alle Fluss-Buttons zurücksetzen
+        document.querySelectorAll('.ehyd-river-btn').forEach(btn => {
+            btn.classList.remove('ring-2', 'ring-blue-500');
+        });
+        
+        // Ausgewählten Button hervorheben
+        event.target.classList.add('ring-2', 'ring-blue-500');
+        
+        const riverNames = {
+            'donau': 'Donau',
+            'inn': 'Inn', 
+            'drau': 'Drau',
+            'mur': 'Mur',
+            'salzach': 'Salzach'
+        };
+        
+        const riverName = riverNames[riverKey];
+        const stationInfo = document.getElementById('ehydStationInfo');
+        
+        // Stationen für den ausgewählten Fluss anzeigen
+        const stations = {
+            'donau': ['Wien', 'Linz', 'Krems', 'Melk', 'Tulln'],
+            'inn': ['Innsbruck', 'Kufstein', 'Rosenheim'],
+            'drau': ['Villach', 'Klagenfurt', 'Spittal'],
+            'mur': ['Graz', 'Bruck', 'Leoben'],
+            'salzach': ['Salzburg', 'Hallein', 'Laufen']
+        };
+        
+        const riverStations = stations[riverKey] || [];
+        
+        stationInfo.innerHTML = `
+            <strong>${riverName}</strong> - Verfügbare Stationen:<br>
+            ${riverStations.map(station => `• ${station}`).join('<br>')}
+        `;
+        
+        // Filtere Daten für den ausgewählten Fluss
+        if (currentData && currentDataType === 'hydro') {
+            const filteredData = currentData.filter(item => 
+                item.river_name && item.river_name.toLowerCase() === riverName.toLowerCase()
+            );
+            
+            if (filteredData.length > 0) {
+                updateHydroPreview(filteredData);
+                showNotification(`${filteredData.length} Pegelstände für ${riverName} gefunden`, 'success');
+            } else {
+                showNotification(`Keine Daten für ${riverName} verfügbar`, 'info');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Fehler bei Fluss-Auswahl:', error);
+        showNotification('Fehler bei der Fluss-Auswahl', 'error');
+    }
+}
+
+// Hydro-Vorschau aktualisieren
+function updateHydroPreview(data) {
+    const previewElement = document.getElementById('hydroPreview');
+    
+    if (!data || data.length === 0) {
+        previewElement.innerHTML = '<span class="text-gray-400">Keine Daten geladen</span>';
+        return;
+    }
+    
+    // Statistiken berechnen
+    const values = data.map(item => parseFloat(item.value));
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
+    
+    // Flüsse gruppieren
+    const rivers = {};
+    data.forEach(item => {
+        if (item.river_name) {
+            if (!rivers[item.river_name]) {
+                rivers[item.river_name] = [];
+            }
+            rivers[item.river_name].push(item);
+        }
+    });
+    
+    let previewHTML = `
+        <div class="space-y-3">
+            <div class="bg-blue-50 p-3 rounded-lg">
+                <h4 class="font-medium text-blue-800 mb-2">📊 Pegelstand-Statistiken</h4>
+                <div class="grid grid-cols-3 gap-2 text-sm">
+                    <div class="text-center">
+                        <div class="font-bold text-blue-600">${minValue.toFixed(3)}m</div>
+                        <div class="text-blue-500">Minimum</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-bold text-blue-600">${avgValue.toFixed(3)}m</div>
+                        <div class="text-blue-500">Durchschnitt</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-bold text-blue-600">${maxValue.toFixed(3)}m</div>
+                        <div class="text-blue-500">Maximum</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-green-50 p-3 rounded-lg">
+                <h4 class="font-medium text-green-800 mb-2">🌊 Verfügbare Flüsse</h4>
+                <div class="space-y-1">
+    `;
+    
+    Object.keys(rivers).forEach(river => {
+        const riverData = rivers[river];
+        const stations = [...new Set(riverData.map(item => item.station_name))];
+        previewHTML += `
+            <div class="text-sm">
+                <span class="font-medium text-green-700">${river}:</span>
+                <span class="text-green-600">${riverData.length} Messungen, ${stations.length} Stationen</span>
+            </div>
+        `;
+    });
+    
+    previewHTML += `
+                </div>
+            </div>
+            
+            <div class="bg-purple-50 p-3 rounded-lg">
+                <h4 class="font-medium text-purple-800 mb-2">📅 Zeitraum</h4>
+                <div class="text-sm text-purple-700">
+                    ${new Date(data[0].timestamp).toLocaleDateString('de-DE')} - 
+                    ${new Date(data[data.length-1].timestamp).toLocaleDateString('de-DE')}
+                    <br><span class="text-purple-600">(${data.length} Datensätze)</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    previewElement.innerHTML = previewHTML;
 }
 </script>
 

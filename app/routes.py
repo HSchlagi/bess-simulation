@@ -1349,3 +1349,196 @@ def api_delete_load_profile(profile_id):
     except Exception as e:
         print(f"❌ Fehler beim Löschen des Lastprofils: {e}")
         return jsonify({'success': False, 'error': str(e)}) 
+
+@main_bp.route('/api/ehyd-water-levels', methods=['POST'])
+def api_ehyd_water_levels():
+    """EHYD Pegelstände API"""
+    try:
+        data = request.get_json()
+        time_range = data.get('time_range', 'month')
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date')
+        river_name = data.get('river_name')
+        
+        # Datum-Parsing
+        if start_date_str and end_date_str:
+            start_date = datetime.fromisoformat(start_date_str)
+            end_date = datetime.fromisoformat(end_date_str)
+        else:
+            start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            end_date = start_date + timedelta(days=1)
+        
+        print(f"🌊 Lade EHYD-Pegelstände für {start_date} bis {end_date}")
+        
+        # EHYD Data Fetcher verwenden
+        try:
+            from ehyd_data_fetcher import EHYDDataFetcher
+            fetcher = EHYDDataFetcher()
+            
+            # Versuche echte EHYD-Daten zu laden
+            print("🌊 Versuche echte EHYD-Daten von ehyd.gv.at zu holen...")
+            ehyd_data = fetcher.fetch_current_levels()
+            
+            if ehyd_data and len(ehyd_data) > 0:
+                print(f"✅ {len(ehyd_data)} echte EHYD-Pegelstände erfolgreich geladen!")
+                # Echte EHYD-Daten verfügbar - in Datenbank speichern
+                save_ehyd_data_to_db(ehyd_data)
+                return jsonify({
+                    'success': True,
+                    'data': ehyd_data,
+                    'source': 'EHYD (Live)',
+                    'message': f'{len(ehyd_data)} echte österreichische Pegelstände geladen'
+                })
+            else:
+                print("⚠️ Keine echten EHYD-Daten verfügbar, verwende intelligente Demo-Daten")
+                # Fallback: Intelligente Demo-Daten basierend auf EHYD-Mustern
+                demo_data = fetcher.get_demo_data_based_on_ehyd(start_date, end_date)
+                return jsonify({
+                    'success': True,
+                    'data': demo_data,
+                    'source': 'EHYD (Demo - basierend auf echten Mustern)',
+                    'message': f'{len(demo_data)} Demo-Pegelstände basierend auf EHYD-Mustern'
+                })
+                
+        except ImportError as e:
+            print(f"❌ EHYD Data Fetcher nicht verfügbar: {e}")
+            # Fallback: Alte Demo-Daten
+            demo_data = generate_legacy_demo_water_levels(start_date, end_date)
+            return jsonify({
+                'success': True,
+                'data': demo_data,
+                'source': 'Demo (Legacy)',
+                'message': f'{len(demo_data)} Legacy Demo-Pegelstände'
+            })
+            
+    except Exception as e:
+        print(f"❌ Fehler in EHYD-Pegelstände-API: {e}")
+        return jsonify({'error': str(e)}), 400
+
+def save_ehyd_data_to_db(ehyd_data):
+    """Speichert EHYD-Daten in der Datenbank"""
+    try:
+        cursor = get_db().cursor()
+        
+        for level_entry in ehyd_data:
+            timestamp = datetime.fromisoformat(level_entry['timestamp'])
+            water_level = level_entry['water_level_m']
+            flow_rate = level_entry.get('flow_rate_m3s', 0)
+            river_name = level_entry.get('river_name', 'Unbekannt')
+            station_name = level_entry.get('station_name', 'Unbekannt')
+            source = level_entry.get('source', 'EHYD')
+            region = level_entry.get('region', 'AT')
+            
+            # Prüfe ob Eintrag bereits existiert
+            cursor.execute("""
+                SELECT id FROM hydro_data 
+                WHERE timestamp = ? AND river_name = ? AND station_name = ?
+            """, (timestamp, river_name, station_name))
+            
+            existing = cursor.fetchone()
+            
+            if existing:
+                # Update existierenden Eintrag
+                cursor.execute("""
+                    UPDATE hydro_data 
+                    SET water_level_m = ?, flow_rate_m3s = ?, source = ?, region = ?, created_at = datetime('now')
+                    WHERE id = ?
+                """, (water_level, flow_rate, source, region, existing[0]))
+            else:
+                # Neuen Eintrag erstellen
+                cursor.execute("""
+                    INSERT INTO hydro_data (timestamp, water_level_m, flow_rate_m3s, river_name, station_name, source, region, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                """, (timestamp, water_level, flow_rate, river_name, station_name, source, region))
+        
+        get_db().commit()
+        print(f"💾 {len(ehyd_data)} EHYD-Daten in Datenbank gespeichert")
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Speichern der EHYD-Daten: {e}")
+        get_db().rollback()
+
+@main_bp.route('/api/ehyd-water-levels/refresh', methods=['POST'])
+def api_refresh_ehyd_water_levels():
+    """Manueller Refresh der EHYD-Daten"""
+    try:
+        print("🔄 Manueller EHYD-Daten-Refresh gestartet...")
+        
+        from ehyd_data_fetcher import EHYDDataFetcher
+        fetcher = EHYDDataFetcher()
+        
+        # Versuche echte EHYD-Daten zu laden
+        ehyd_data = fetcher.fetch_current_levels()
+        
+        if ehyd_data and len(ehyd_data) > 0:
+            # Speichere in Datenbank
+            save_ehyd_data_to_db(ehyd_data)
+            
+            return jsonify({
+                'success': True,
+                'message': f'{len(ehyd_data)} echte EHYD-Pegelstände erfolgreich aktualisiert!',
+                'data': ehyd_data,
+                'source': 'EHYD (Live)'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine echten EHYD-Daten verfügbar. Bitte versuchen Sie es später erneut.',
+                'source': 'EHYD (Nicht verfügbar)'
+            })
+            
+    except Exception as e:
+        print(f"❌ Fehler beim EHYD-Refresh: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Fehler beim Laden der EHYD-Daten: {str(e)}'
+        }), 400
+
+@main_bp.route('/api/ehyd-rivers', methods=['GET'])
+def api_get_ehyd_rivers():
+    """Gibt verfügbare österreichische Flüsse zurück"""
+    try:
+        from ehyd_data_fetcher import EHYDDataFetcher
+        fetcher = EHYDDataFetcher()
+        rivers = fetcher.get_available_rivers()
+        
+        return jsonify({
+            'success': True,
+            'rivers': rivers
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+def generate_legacy_demo_water_levels(start_date, end_date):
+    """Legacy Demo-Pegelstände (Fallback)"""
+    water_levels = []
+    current_date = start_date
+    
+    rivers = ['Donau', 'Inn', 'Drau', 'Mur', 'Salzach']
+    stations = ['Station A', 'Station B', 'Station C']
+    
+    while current_date <= end_date:
+        for hour in range(24):
+            for river in rivers:
+                for station in stations:
+                    # Basis-Pegelstände mit Tageszeit-Schwankungen
+                    base_level = 1.5 + 0.5 * (hour - 12) / 12
+                    base_level += random.uniform(-0.2, 0.2)
+                    
+                    water_levels.append({
+                        'id': len(water_levels) + 1,
+                        'timestamp': current_date.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat(),
+                        'river_name': river,
+                        'station_name': station,
+                        'water_level_m': round(max(0.5, min(3.0, base_level)), 3),
+                        'flow_rate_m3s': round(base_level * 30 + random.uniform(-5, 5), 1),
+                        'source': 'Demo (Legacy)',
+                        'region': 'AT'
+                    })
+        
+        current_date += timedelta(days=1)
+    
+    return water_levels 
