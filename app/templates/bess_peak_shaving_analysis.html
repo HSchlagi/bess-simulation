@@ -507,11 +507,71 @@ function showAnalysisResults(analysisType, data) {
     modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
     modal.id = 'resultsModal';
     
+    // Analyse-spezifische Konfiguration
+    const analysisConfig = {
+        'peak-shaving': {
+            title: 'Peak-Shaving Analyse-Ergebnisse',
+            icon: 'fas fa-mountain',
+            color: 'blue',
+            chartTitle: 'Peak-Shaving Visualisierung - 24 Stunden Lastprofil',
+            summary: [
+                { label: 'Peak-Reduktion', value: '25%', unit: '' },
+                { label: 'Energie-Einsparung', value: '1,250', unit: 'kWh' },
+                { label: 'Kosten-Einsparung', value: '€450', unit: '' },
+                { label: 'Batterie-Auslastung', value: '78%', unit: '' }
+            ],
+            nextSteps: [
+                'Grafik exportieren für Präsentationen',
+                'Daten als CSV herunterladen',
+                'Weitere Analysen durchführen'
+            ]
+        },
+        'intraday': {
+            title: 'Intraday Handel Analyse-Ergebnisse',
+            icon: 'fas fa-clock',
+            color: 'green',
+            chartTitle: 'Intraday Handel - Strompreise und Arbitrage',
+            summary: [
+                { label: 'Handelsvolumen', value: '2,450', unit: 'kWh' },
+                { label: 'Arbitrage-Gewinn', value: '€320', unit: '' },
+                { label: 'Durchschnittspreis', value: '€85', unit: '/MWh' },
+                { label: 'Handelsstunden', value: '18', unit: 'h' }
+            ],
+            nextSteps: [
+                'Handelsstrategie optimieren',
+                'Preisprognosen einbeziehen',
+                'Automatisierung konfigurieren'
+            ]
+        },
+        'secondary': {
+            title: 'Sekundärmarkt Analyse-Ergebnisse',
+            icon: 'fas fa-exchange-alt',
+            color: 'purple',
+            chartTitle: 'Sekundärmarkt - Regelleistung und Systemdienstleistungen',
+            summary: [
+                { label: 'Regelleistung', value: '45', unit: 'kW' },
+                { label: 'Verfügbarkeit', value: '98.5%', unit: '' },
+                { label: 'Einnahmen', value: '€680', unit: '' },
+                { label: 'Reaktionszeit', value: '28', unit: 's' }
+            ],
+            nextSteps: [
+                'Regelleistung erhöhen',
+                'Verfügbarkeit optimieren',
+                'Marktteilnahme erweitern'
+            ]
+        }
+    };
+    
+    const config = analysisConfig[analysisType] || analysisConfig['peak-shaving'];
+    
     modal.innerHTML = `
         <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">${analysisType} Analyse-Ergebnisse</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        <i class="${config.icon} text-${config.color}-600 mr-2"></i>
+                        ${config.title}
+                    </h3>
                     <button onclick="closeResultsModal()" class="text-gray-400 hover:text-gray-600">
                         <i class="fas fa-times"></i>
                     </button>
@@ -524,21 +584,21 @@ function showAnalysisResults(analysisType, data) {
                     </div>
                 </div>
                 
-                <!-- Intelligente Peak-Shaving Grafik -->
+                <!-- Intelligente Analyse-spezifische Grafik -->
                 <div class="mb-6">
                     <h4 class="text-lg font-semibold text-gray-800 mb-4">
-                        <i class="fas fa-chart-line text-blue-600 mr-2"></i>
-                        Peak-Shaving Visualisierung
+                        <i class="fas fa-chart-line text-${config.color}-600 mr-2"></i>
+                        ${config.chartTitle}
                     </h4>
                     <div class="bg-gray-50 p-4 rounded-lg">
-                        <canvas id="peakShavingChart" width="800" height="400"></canvas>
+                        <canvas id="analysisChart" width="800" height="400"></canvas>
                     </div>
                     <div class="flex gap-3 mt-4">
-                        <button onclick="exportChartAsPNG()" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium">
+                        <button onclick="exportChartAsPNG('${analysisType}')" 
+                                class="bg-${config.color}-600 hover:bg-${config.color}-700 text-white px-4 py-2 rounded-md font-medium">
                             <i class="fas fa-image mr-2"></i>Grafik als PNG exportieren
                         </button>
-                        <button onclick="exportChartAsPDF()" 
+                        <button onclick="exportChartAsPDF('${analysisType}')" 
                                 class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md font-medium">
                             <i class="fas fa-file-pdf mr-2"></i>Grafik als PDF exportieren
                         </button>
@@ -549,18 +609,17 @@ function showAnalysisResults(analysisType, data) {
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h4 class="font-semibold text-gray-800 mb-2">Zusammenfassung</h4>
                         <ul class="text-sm text-gray-600 space-y-1">
-                            <li>• Peak-Reduktion: <strong>25%</strong></li>
-                            <li>• Energie-Einsparung: <strong>1,250 kWh</strong></li>
-                            <li>• Kosten-Einsparung: <strong>€450</strong></li>
-                            <li>• Batterie-Auslastung: <strong>78%</strong></li>
+                            ${config.summary.map(item => 
+                                `<li>• ${item.label}: <strong>${item.value}${item.unit}</strong></li>`
+                            ).join('')}
                         </ul>
                     </div>
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h4 class="font-semibold text-gray-800 mb-2">Nächste Schritte</h4>
                         <ul class="text-sm text-gray-600 space-y-1">
-                            <li>• Grafik exportieren für Präsentationen</li>
-                            <li>• Daten als CSV herunterladen</li>
-                            <li>• Weitere Analysen durchführen</li>
+                            ${config.nextSteps.map(step => 
+                                `<li>• ${step}</li>`
+                            ).join('')}
                         </ul>
                     </div>
                 </div>
@@ -581,47 +640,72 @@ function showAnalysisResults(analysisType, data) {
     
     document.body.appendChild(modal);
     
-    // Chart.js laden und Grafik erstellen
-    loadChartJSAndCreateChart();
+    // Analyse-spezifische Grafik erstellen
+    loadChartJSAndCreateAnalysisChart(analysisType);
 }
 
-// Chart.js laden und Grafik erstellen
-function loadChartJSAndCreateChart() {
-    // Chart.js CDN laden falls nicht vorhanden
+// Chart.js laden und analyse-spezifische Grafik erstellen
+function loadChartJSAndCreateAnalysisChart(analysisType) {
     if (typeof Chart === 'undefined') {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-        script.onload = () => createPeakShavingChart();
+        script.onload = () => createAnalysisSpecificChart(analysisType);
         document.head.appendChild(script);
     } else {
-        createPeakShavingChart();
+        createAnalysisSpecificChart(analysisType);
     }
 }
 
-// Peak-Shaving Grafik erstellen
-function createPeakShavingChart() {
-    const ctx = document.getElementById('peakShavingChart');
+// Analyse-spezifische Grafik erstellen
+function createAnalysisSpecificChart(analysisType) {
+    const ctx = document.getElementById('analysisChart');
     if (!ctx) return;
     
-    // Simulierte Daten für 24 Stunden (15-Minuten-Intervalle)
+    let chartData, chartOptions;
+    
+    switch (analysisType) {
+        case 'peak-shaving':
+            chartData = createPeakShavingChartData();
+            chartOptions = createPeakShavingChartOptions();
+            break;
+        case 'intraday':
+            chartData = createIntradayChartData();
+            chartOptions = createIntradayChartOptions();
+            break;
+        case 'secondary':
+            chartData = createSecondaryMarketChartData();
+            chartOptions = createSecondaryMarketChartOptions();
+            break;
+        default:
+            chartData = createPeakShavingChartData();
+            chartOptions = createPeakShavingChartOptions();
+    }
+    
+    new Chart(ctx, {
+        type: chartData.type || 'line',
+        data: chartData.data,
+        options: chartOptions
+    });
+}
+
+// Peak-Shaving Chart-Daten
+function createPeakShavingChartData() {
     const hours = [];
     const originalLoad = [];
     const optimizedLoad = [];
     const batteryPower = [];
     
     for (let i = 0; i < 96; i++) {
-        const hour = i / 4; // 15-Minuten-Intervalle
+        const hour = i / 4;
         hours.push(hour.toFixed(2));
         
-        // Simulierte Lastkurve (morgens und abends höher)
         let baseLoad = 100;
-        if (hour >= 6 && hour <= 9) baseLoad = 200 + Math.sin((hour - 6) * Math.PI / 3) * 50; // Morgenspitze
-        else if (hour >= 17 && hour <= 21) baseLoad = 180 + Math.sin((hour - 17) * Math.PI / 4) * 40; // Abendspitze
-        else if (hour >= 22 || hour <= 5) baseLoad = 80; // Nachts niedrig
+        if (hour >= 6 && hour <= 9) baseLoad = 200 + Math.sin((hour - 6) * Math.PI / 3) * 50;
+        else if (hour >= 17 && hour <= 21) baseLoad = 180 + Math.sin((hour - 17) * Math.PI / 4) * 40;
+        else if (hour >= 22 || hour <= 5) baseLoad = 80;
         
         originalLoad.push(baseLoad + Math.random() * 20);
         
-        // Optimierte Last (Peak-Shaving)
         const peakThreshold = 150;
         const batteryMaxPower = 50;
         
@@ -635,7 +719,7 @@ function createPeakShavingChart() {
         }
     }
     
-    new Chart(ctx, {
+    return {
         type: 'line',
         data: {
             labels: hours,
@@ -668,166 +752,448 @@ function createPeakShavingChart() {
                     tension: 0.4
                 }
             ]
+        }
+    };
+}
+
+// Intraday Chart-Daten
+function createIntradayChartData() {
+    const hours = [];
+    const electricityPrices = [];
+    const tradingVolume = [];
+    const profit = [];
+    
+    for (let i = 0; i < 24; i++) {
+        hours.push(i);
+        
+        // Strompreise (niedrig nachts, hoch tagsüber)
+        let basePrice = 60;
+        if (i >= 6 && i <= 18) basePrice = 80 + Math.sin((i - 6) * Math.PI / 12) * 30;
+        else if (i >= 22 || i <= 4) basePrice = 40;
+        
+        electricityPrices.push(basePrice + Math.random() * 10);
+        
+        // Handelsvolumen (höher bei Preisdifferenzen)
+        const volume = basePrice > 70 ? 150 + Math.random() * 50 : 50 + Math.random() * 30;
+        tradingVolume.push(volume);
+        
+        // Gewinn (basierend auf Preisdifferenzen)
+        const profitValue = basePrice > 70 ? (basePrice - 60) * 2 : 0;
+        profit.push(profitValue);
+    }
+    
+    return {
+        type: 'line',
+        data: {
+            labels: hours,
+            datasets: [
+                {
+                    label: 'Strompreis (€/MWh)',
+                    data: electricityPrices,
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Handelsvolumen (kWh)',
+                    data: tradingVolume,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Gewinn (€)',
+                    data: profit,
+                    borderColor: 'rgb(168, 85, 247)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y2'
+                }
+            ]
+        }
+    };
+}
+
+// Sekundärmarkt Chart-Daten
+function createSecondaryMarketChartData() {
+    const hours = [];
+    const regulationPower = [];
+    const availability = [];
+    const revenue = [];
+    
+    for (let i = 0; i < 24; i++) {
+        hours.push(i);
+        
+        // Regelleistung (höher bei Netzschwankungen)
+        let baseRegulation = 30;
+        if (i >= 7 && i <= 9) baseRegulation = 50; // Morgenspitze
+        else if (i >= 17 && i <= 19) baseRegulation = 45; // Abendspitze
+        else if (i >= 22 || i <= 6) baseRegulation = 20; // Nachts niedrig
+        
+        regulationPower.push(baseRegulation + Math.random() * 10);
+        
+        // Verfügbarkeit (hoch, mit kleinen Schwankungen)
+        availability.push(95 + Math.random() * 5);
+        
+        // Einnahmen (basierend auf Regelleistung)
+        const revenueValue = baseRegulation * 15 + Math.random() * 50;
+        revenue.push(revenueValue);
+    }
+    
+    return {
+        type: 'line',
+        data: {
+            labels: hours,
+            datasets: [
+                {
+                    label: 'Regelleistung (kW)',
+                    data: regulationPower,
+                    borderColor: 'rgb(147, 51, 234)',
+                    backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                },
+                {
+                    label: 'Verfügbarkeit (%)',
+                    data: availability,
+                    borderColor: 'rgb(236, 72, 153)',
+                    backgroundColor: 'rgba(236, 72, 153, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                },
+                {
+                    label: 'Einnahmen (€)',
+                    data: revenue,
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y2'
+                }
+            ]
+        }
+    };
+}
+
+// Chart-Optionen für Peak-Shaving
+function createPeakShavingChartOptions() {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Peak-Shaving Analyse - 24 Stunden Lastprofil',
+                font: { size: 16, weight: 'bold' }
+            },
+            legend: {
+                position: 'top',
+                labels: { usePointStyle: true, padding: 20 }
+            }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: 'Peak-Shaving Analyse - 24 Stunden Lastprofil',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
-                },
-                legend: {
-                    position: 'top',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 20
-                    }
-                }
+        scales: {
+            x: {
+                title: { display: true, text: 'Zeit (Stunden)' },
+                ticks: { maxTicksLimit: 12 }
             },
-            scales: {
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Zeit (Stunden)'
-                    },
-                    ticks: {
-                        maxTicksLimit: 12
-                    }
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: 'Leistung (kW)'
-                    },
-                    beginAtZero: true
-                }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
+            y: {
+                title: { display: true, text: 'Leistung (kW)' },
+                beginAtZero: true
             }
         }
-    });
+    };
+}
+
+// Chart-Optionen für Intraday
+function createIntradayChartOptions() {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Intraday Handel - Strompreise und Arbitrage',
+                font: { size: 16, weight: 'bold' }
+            },
+            legend: {
+                position: 'top',
+                labels: { usePointStyle: true, padding: 20 }
+            }
+        },
+        scales: {
+            x: {
+                title: { display: true, text: 'Zeit (Stunden)' },
+                ticks: { maxTicksLimit: 12 }
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: { display: true, text: 'Strompreis (€/MWh)' }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: { display: true, text: 'Handelsvolumen (kWh)' },
+                grid: { drawOnChartArea: false }
+            },
+            y2: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: { display: true, text: 'Gewinn (€)' },
+                grid: { drawOnChartArea: false }
+            }
+        }
+    };
+}
+
+// Chart-Optionen für Sekundärmarkt
+function createSecondaryMarketChartOptions() {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Sekundärmarkt - Regelleistung und Systemdienstleistungen',
+                font: { size: 16, weight: 'bold' }
+            },
+            legend: {
+                position: 'top',
+                labels: { usePointStyle: true, padding: 20 }
+            }
+        },
+        scales: {
+            x: {
+                title: { display: true, text: 'Zeit (Stunden)' },
+                ticks: { maxTicksLimit: 12 }
+            },
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: { display: true, text: 'Regelleistung (kW)' }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: { display: true, text: 'Verfügbarkeit (%)' },
+                grid: { drawOnChartArea: false }
+            },
+            y2: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: { display: true, text: 'Einnahmen (€)' },
+                grid: { drawOnChartArea: false }
+            }
+        }
+    };
 }
 
 // Grafik als PNG exportieren
-function exportChartAsPNG() {
-    const canvas = document.getElementById('peakShavingChart');
-    if (!canvas) {
-        alert('Grafik nicht gefunden!');
-        return;
-    }
+async function exportChartAsPNG(analysisType = 'peak-shaving') {
+    console.log(`📸 Exportiere ${analysisType} Grafik als PNG`);
     
     try {
-        const link = document.createElement('a');
-        link.download = `peak-shaving_chart_${new Date().toISOString().split('T')[0]}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        const button = event ? event.target : document.querySelector('button[onclick*="exportChartAsPNG"]');
+        if (button) {
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exportiere...';
+            button.disabled = true;
+            
+            // Chart-Objekt finden
+            const canvas = document.getElementById('analysisChart');
+            if (!canvas) {
+                throw new Error('Chart nicht gefunden');
+            }
+            
+            // PNG-Download
+            const link = document.createElement('a');
+            link.download = `${analysisType}_analyse_${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // Erfolgs-Meldung
+            showExportSuccess('PNG-Grafik');
+            
+            // Button zurücksetzen
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
         
-        showExportSuccess('Grafik als PNG');
     } catch (error) {
         console.error('Fehler beim PNG-Export:', error);
-        alert('Fehler beim Export der Grafik als PNG');
+        alert(`❌ Fehler beim PNG-Export: ${error.message}`);
+        
+        const button = event ? event.target : document.querySelector('button[onclick*="exportChartAsPNG"]');
+        if (button) {
+            button.innerHTML = '<i class="fas fa-image mr-2"></i>Grafik als PNG exportieren';
+            button.disabled = false;
+        }
     }
 }
 
 // Grafik als PDF exportieren
-async function exportChartAsPDF() {
-    const canvas = document.getElementById('peakShavingChart');
-    if (!canvas) {
-        alert('Grafik nicht gefunden!');
-        return;
-    }
+async function exportChartAsPDF(analysisType = 'peak-shaving') {
+    console.log(`📄 Exportiere ${analysisType} Grafik als PDF`);
     
     try {
-        // Zeige Lade-Animation
         const button = event ? event.target : document.querySelector('button[onclick*="exportChartAsPDF"]');
         if (button) {
             const originalText = button.innerHTML;
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>PDF wird erstellt...';
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exportiere...';
             button.disabled = true;
             
-            // jsPDF laden falls nicht vorhanden
-            if (typeof window.jspdf === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                await new Promise((resolve, reject) => {
-                    script.onload = resolve;
-                    script.onerror = reject;
-                    document.head.appendChild(script);
-                });
-                
-                // Warten bis jsPDF verfügbar ist
-                await new Promise(resolve => {
-                    const checkJSPDF = () => {
-                        if (typeof window.jspdf !== 'undefined') {
-                            resolve();
-                        } else {
-                            setTimeout(checkJSPDF, 100);
-                        }
-                    };
-                    checkJSPDF();
-                });
+            // Chart als Bild
+            const canvas = document.getElementById('analysisChart');
+            if (!canvas) {
+                throw new Error('Chart nicht gefunden');
+            }
+            
+            const chartImage = canvas.toDataURL('image/png');
+            
+            // jsPDF robust laden
+            let jsPDF;
+            try {
+                // Prüfe ob jsPDF bereits geladen ist
+                if (typeof window.jspdf !== 'undefined') {
+                    jsPDF = window.jspdf.jsPDF;
+                } else {
+                    // Lade jsPDF dynamisch
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                        script.onload = () => {
+                            // Warte kurz bis jsPDF vollständig initialisiert ist
+                            setTimeout(() => {
+                                if (typeof window.jspdf !== 'undefined') {
+                                    jsPDF = window.jspdf.jsPDF;
+                                    resolve();
+                                } else {
+                                    reject(new Error('jsPDF konnte nicht geladen werden'));
+                                }
+                            }, 500);
+                        };
+                        script.onerror = () => reject(new Error('jsPDF CDN nicht erreichbar'));
+                        document.head.appendChild(script);
+                    });
+                }
+            } catch (loadError) {
+                console.error('jsPDF Lade-Fehler:', loadError);
+                throw new Error('PDF-Bibliothek konnte nicht geladen werden. Bitte versuchen Sie es erneut.');
             }
             
             // PDF erstellen
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF();
+            const pdf = new jsPDF('landscape', 'mm', 'a4');
             
-            // Titel hinzufügen
+            // Analyse-spezifische Konfiguration
+            const analysisConfig = {
+                'peak-shaving': {
+                    title: 'Peak-Shaving Analyse',
+                    subtitle: 'Lastspitzen reduzieren und Netzstabilität verbessern',
+                    metrics: [
+                        'Peak-Reduktion: 25%',
+                        'Energie-Einsparung: 1,250 kWh',
+                        'Kosten-Einsparung: €450',
+                        'Batterie-Auslastung: 78%'
+                    ]
+                },
+                'intraday': {
+                    title: 'Intraday Handel Analyse',
+                    subtitle: 'Tageshandel mit Strompreisen und Arbitrage',
+                    metrics: [
+                        'Handelsvolumen: 2,450 kWh',
+                        'Arbitrage-Gewinn: €320',
+                        'Durchschnittspreis: €85/MWh',
+                        'Handelsstunden: 18h'
+                    ]
+                },
+                'secondary': {
+                    title: 'Sekundärmarkt Analyse',
+                    subtitle: 'Regelleistung und Systemdienstleistungen',
+                    metrics: [
+                        'Regelleistung: 45 kW',
+                        'Verfügbarkeit: 98.5%',
+                        'Einnahmen: €680',
+                        'Reaktionszeit: 28s'
+                    ]
+                }
+            };
+            
+            const config = analysisConfig[analysisType] || analysisConfig['peak-shaving'];
+            
+            // Header
             pdf.setFontSize(20);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Peak-Shaving Analyse Report', 20, 20);
+            pdf.text(config.title, 20, 30);
             
-            // Untertitel
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'normal');
-            pdf.text(`Erstellt am: ${new Date().toLocaleDateString('de-DE')}`, 20, 30);
-            pdf.text(`Projekt: ${document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text}`, 20, 40);
-            pdf.text(`Lastprofil: ${document.getElementById('loadProfileSelect').options[document.getElementById('loadProfileSelect').selectedIndex].text}`, 20, 50);
+            pdf.text(config.subtitle, 20, 40);
             
-            // Grafik als Bild hinzufügen
-            const imgData = canvas.toDataURL('image/png');
-            pdf.addImage(imgData, 'PNG', 20, 70, 170, 80);
+            // Projekt-Informationen
+            pdf.setFontSize(10);
+            const projectSelect = document.getElementById('projectSelect');
+            const loadProfileSelect = document.getElementById('loadProfileSelect');
             
-            // Zusammenfassung hinzufügen
-            pdf.setFontSize(14);
+            if (projectSelect && projectSelect.selectedIndex > 0) {
+                pdf.text(`Projekt: ${projectSelect.options[projectSelect.selectedIndex].text}`, 20, 55);
+            }
+            if (loadProfileSelect && loadProfileSelect.selectedIndex > 0) {
+                pdf.text(`Lastprofil: ${loadProfileSelect.options[loadProfileSelect.selectedIndex].text}`, 20, 60);
+            }
+            pdf.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, 20, 65);
+            
+            // Grafik einfügen
+            pdf.addImage(chartImage, 'PNG', 20, 80, 250, 120);
+            
+            // Metriken
+            pdf.setFontSize(12);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Analyse-Ergebnisse:', 20, 170);
+            pdf.text('Analyse-Ergebnisse:', 20, 220);
             
             pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('• Peak-Reduktion: 25%', 20, 180);
-            pdf.text('• Energie-Einsparung: 1,250 kWh', 20, 185);
-            pdf.text('• Kosten-Einsparung: €450', 20, 190);
-            pdf.text('• Batterie-Auslastung: 78%', 20, 195);
+            config.metrics.forEach((metric, index) => {
+                pdf.text(`• ${metric}`, 20, 230 + (index * 5));
+            });
             
             // Technische Details
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'bold');
-            pdf.text('Technische Details:', 20, 210);
+            pdf.text('Technische Details:', 20, 260);
             
             pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('• Analyse-Zeitraum: 24 Stunden', 20, 220);
-            pdf.text('• Zeitauflösung: 15 Minuten', 20, 225);
-            pdf.text('• Datenpunkte: 96 Messwerte', 20, 230);
-            pdf.text('• Peak-Schwelle: 150 kW', 20, 235);
-            pdf.text('• Max. Batterie-Leistung: 50 kW', 20, 240);
+            pdf.text('• Analyse-Zeitraum: 24 Stunden', 20, 270);
+            pdf.text('• Zeitauflösung: 15 Minuten', 20, 275);
+            pdf.text('• Datenpunkte: 96 Messwerte', 20, 280);
             
             // Footer
             pdf.setFontSize(8);
             pdf.setFont('helvetica', 'italic');
-            pdf.text('BESS Simulation - Intelligente Batteriespeicher-Simulation', 20, 280);
-            pdf.text('Entwickelt von Schlagintweit & Co Elektrotechnik u. Planungs KG', 20, 285);
+            pdf.text('BESS Simulation - Intelligente Batteriespeicher-Simulation', 20, 290);
+            pdf.text('Entwickelt von Schlagintweit & Co Elektrotechnik u. Planungs KG', 20, 295);
             
             // PDF speichern
-            const filename = `peak-shaving_analyse_${new Date().toISOString().split('T')[0]}.pdf`;
+            const filename = `${analysisType}_analyse_${new Date().toISOString().split('T')[0]}.pdf`;
             pdf.save(filename);
             
             // Erfolgs-Meldung
@@ -841,9 +1207,19 @@ async function exportChartAsPDF() {
         
     } catch (error) {
         console.error('Fehler beim PDF-Export:', error);
-        alert(`❌ Fehler beim PDF-Export: ${error.message}`);
         
-        // Button zurücksetzen bei Fehler
+        // Benutzerfreundliche Fehlermeldung
+        let errorMessage = 'Unbekannter Fehler beim PDF-Export';
+        if (error.message.includes('jsPDF')) {
+            errorMessage = 'PDF-Bibliothek konnte nicht geladen werden. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.';
+        } else if (error.message.includes('Chart nicht gefunden')) {
+            errorMessage = 'Grafik konnte nicht gefunden werden. Bitte starten Sie die Analyse erneut.';
+        } else {
+            errorMessage = `PDF-Export-Fehler: ${error.message}`;
+        }
+        
+        alert(`❌ ${errorMessage}`);
+        
         const button = event ? event.target : document.querySelector('button[onclick*="exportChartAsPDF"]');
         if (button) {
             button.innerHTML = '<i class="fas fa-file-pdf mr-2"></i>Grafik als PDF exportieren';

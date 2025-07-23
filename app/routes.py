@@ -516,29 +516,129 @@ def api_spot_prices():
             start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
             end_date = start_date + timedelta(days=1)
         
+        print(f"🔍 Lade Spot-Preise für {start_date} bis {end_date}")
+        
         # APG Data Fetcher verwenden
         try:
             from apg_data_fetcher import APGDataFetcher
             fetcher = APGDataFetcher()
             
             # Versuche echte APG-Daten zu laden
+            print("🌐 Versuche echte APG-Daten von markt.apg.at zu holen...")
             apg_data = fetcher.fetch_current_prices()
             
-            if apg_data:
-                # Echte APG-Daten verfügbar
-                return jsonify(apg_data)
+            if apg_data and len(apg_data) > 0:
+                print(f"✅ {len(apg_data)} echte APG-Preise erfolgreich geladen!")
+                # Echte APG-Daten verfügbar - in Datenbank speichern
+                save_apg_data_to_db(apg_data)
+                return jsonify({
+                    'success': True,
+                    'data': apg_data,
+                    'source': 'APG (Live)',
+                    'message': f'{len(apg_data)} echte österreichische Spot-Preise geladen'
+                })
             else:
-                # Fallback: Demo-Daten basierend auf APG-Mustern
+                print("⚠️ Keine echten APG-Daten verfügbar, verwende intelligente Demo-Daten")
+                # Fallback: Intelligente Demo-Daten basierend auf APG-Mustern
                 demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
-                return jsonify(demo_data)
+                return jsonify({
+                    'success': True,
+                    'data': demo_data,
+                    'source': 'APG (Demo - basierend auf echten Mustern)',
+                    'message': f'{len(demo_data)} Demo-Preise basierend auf APG-Mustern'
+                })
                 
-        except ImportError:
+        except ImportError as e:
+            print(f"❌ APG Data Fetcher nicht verfügbar: {e}")
             # Fallback: Alte Demo-Daten
-            return jsonify(generate_legacy_demo_prices(start_date, end_date))
+            demo_data = generate_legacy_demo_prices(start_date, end_date)
+            return jsonify({
+                'success': True,
+                'data': demo_data,
+                'source': 'Demo (Legacy)',
+                'message': f'{len(demo_data)} Legacy Demo-Preise'
+            })
             
     except Exception as e:
-        print(f"Fehler in Spot-Preis-API: {e}")
+        print(f"❌ Fehler in Spot-Preis-API: {e}")
         return jsonify({'error': str(e)}), 400
+
+def save_apg_data_to_db(apg_data):
+    """Speichert APG-Daten in der Datenbank"""
+    try:
+        cursor = get_db().cursor()
+        
+        for price_entry in apg_data:
+            timestamp = datetime.fromisoformat(price_entry['timestamp'])
+            price = price_entry['price']
+            source = price_entry.get('source', 'APG')
+            market = price_entry.get('market', 'Day-Ahead')
+            region = price_entry.get('region', 'AT')
+            
+            # Prüfe ob Eintrag bereits existiert
+            cursor.execute("""
+                SELECT id FROM spot_price 
+                WHERE timestamp = ? AND source = ?
+            """, (timestamp, source))
+            
+            existing = cursor.fetchone()
+            
+            if existing:
+                # Update existierenden Eintrag
+                cursor.execute("""
+                    UPDATE spot_price 
+                    SET price_eur_mwh = ?, market = ?, region = ?, created_at = datetime('now')
+                    WHERE id = ?
+                """, (price, market, region, existing[0]))
+            else:
+                # Neuen Eintrag erstellen
+                cursor.execute("""
+                    INSERT INTO spot_price (timestamp, price_eur_mwh, source, region, market, created_at)
+                    VALUES (?, ?, ?, ?, ?, datetime('now'))
+                """, (timestamp, price, source, region, market))
+        
+        get_db().commit()
+        print(f"💾 {len(apg_data)} APG-Daten in Datenbank gespeichert")
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Speichern der APG-Daten: {e}")
+        get_db().rollback()
+
+@main_bp.route('/api/spot-prices/refresh', methods=['POST'])
+def api_refresh_spot_prices():
+    """Manueller Refresh der APG-Daten"""
+    try:
+        print("🔄 Manueller APG-Daten-Refresh gestartet...")
+        
+        from apg_data_fetcher import APGDataFetcher
+        fetcher = APGDataFetcher()
+        
+        # Versuche echte APG-Daten zu laden
+        apg_data = fetcher.fetch_current_prices()
+        
+        if apg_data and len(apg_data) > 0:
+            # Speichere in Datenbank
+            save_apg_data_to_db(apg_data)
+            
+            return jsonify({
+                'success': True,
+                'message': f'{len(apg_data)} echte APG-Preise erfolgreich aktualisiert!',
+                'data': apg_data,
+                'source': 'APG (Live)'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine echten APG-Daten verfügbar. Bitte versuchen Sie es später erneut.',
+                'source': 'APG (Nicht verfügbar)'
+            })
+            
+    except Exception as e:
+        print(f"❌ Fehler beim APG-Refresh: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Fehler beim Laden der APG-Daten: {str(e)}'
+        }), 400
 
 def generate_legacy_demo_prices(start_date, end_date):
     """Legacy Demo-Daten (Fallback)"""
@@ -562,14 +662,6 @@ def generate_legacy_demo_prices(start_date, end_date):
         current_date += timedelta(days=1)
     
     return prices
-
-@main_bp.route('/api/spot-prices/import', methods=['POST'])
-def api_spot_prices_import():
-    try:
-        # Demo-Import-Funktionalität
-        return jsonify({'success': True, 'message': 'Import erfolgreich (Demo)'})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/load-profiles/<int:load_profile_id>/data-range', methods=['POST'])
 def api_load_profile_data_range(load_profile_id):
@@ -783,12 +875,12 @@ def calculate_grid_stability_bonus(project):
 
 @main_bp.route('/api/import-data', methods=['POST'])
 def api_import_data():
-    """API-Endpoint für Datenimport"""
+    """API-Endpoint für Datenimport - Erweitert für alle Datentypen"""
     try:
         data = request.get_json()
         data_type = data.get('data_type')
         data_points = data.get('data', [])
-        profile_name = data.get('profile_name')  # Neuer Parameter für Lastprofil-Namen
+        profile_name = data.get('profile_name')
 
         if not data_type or not data_points:
             return jsonify({'success': False, 'error': 'Keine Daten zum Importieren'})
@@ -800,181 +892,291 @@ def api_import_data():
         project_id = 1  # Default-Projekt
         cursor = get_db().cursor()
 
-        if data_type == 'load_profile':
-            # Profilname verwenden oder Standard-Name generieren
-            if profile_name:
-                profile_display_name = profile_name
-            else:
-                profile_display_name = f"Importiertes Lastprofil {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-            
-            print(f"📋 Erstelle Lastprofil: {profile_display_name}")
-            
-            cursor.execute("""
-                INSERT INTO load_profile (name, project_id, created_at)
-                VALUES (?, ?, datetime('now'))
-            """, (profile_display_name, project_id))
-            load_profile_id = cursor.lastrowid
-            
-            print(f"✅ Lastprofil erstellt mit ID: {load_profile_id}")
-            
-            # Datumstruktur validieren und korrigieren
-            valid_data_points = 0
-            for i, point in enumerate(data_points):
-                try:
-                    # Timestamp validieren und korrigieren
-                    timestamp = point['timestamp']
-                    value = point['value']
-                    
-                    # Prüfen ob Timestamp ein gültiges Datum ist
-                    if isinstance(timestamp, str):
-                        # Entferne Zeitzonen-Informationen und bereinige Format
-                        timestamp_clean = timestamp.replace('T', ' ').replace('Z', '').strip()
-                        
-                        # Ersetze Komma durch Leerzeichen für bessere Kompatibilität
-                        timestamp_clean = timestamp_clean.replace(',', ' ')
-                        
-                        # Versuche verschiedene Formate
-                        parsed_date = None
-                        formats_to_try = [
-                            '%Y-%m-%d %H:%M:%S',
-                            '%Y-%m-%d %H:%M',
-                            '%d.%m.%Y %H:%M:%S',
-                            '%d.%m.%Y %H:%M',
-                            '%d.%m.%Y %H:%M:%S',
-                            '%d.%m.%Y %H:%M',
-                            '%d.%m.%y %H:%M:%S',  # 2-stelliges Jahr
-                            '%d.%m.%y %H:%M',
-                            '%Y-%m-%d %H:%M:%S.%f',  # Mit Mikrosekunden
-                            '%Y-%m-%d %H:%M:%S.%f'
-                        ]
-                        
-                        for fmt in formats_to_try:
-                            try:
-                                parsed_date = datetime.strptime(timestamp_clean, fmt)
-                                break
-                            except ValueError:
-                                continue
-                        
-                        # Excel-Datum-Korrektur NACH dem Standard-Parsing
-                        if parsed_date and parsed_date.year < 2000:
-                            print(f"   ✅ Excel-Datum korrigiert: {timestamp} -> {parsed_date.year} -> 2024")
-                            # Korrigiere das Jahr zu 2024
-                            parsed_date = datetime(2024, parsed_date.month, parsed_date.day, 
-                                                parsed_date.hour, parsed_date.minute, parsed_date.second)
-                        
-                        # Wenn immer noch kein Datum gefunden wurde, versuche Excel-Datum-Format
-                        if parsed_date is None:
-                            try:
-                                # Excel-Datum-Format: "21.2.1900, 12:07:12" -> Tag 21, Februar 1900
-                                # Das ist wahrscheinlich ein Excel-Serial-Datum
-                                parts = timestamp_clean.split()
-                                if len(parts) >= 2:
-                                    date_part = parts[0]  # "21.2.1900"
-                                    time_part = parts[1] if len(parts) > 1 else "00:00:00"
-                                    
-                                    # Parse Datum-Teil
-                                    date_parts = date_part.split('.')
-                                    if len(date_parts) == 3:
-                                        day = int(date_parts[0])
-                                        month = int(date_parts[1])
-                                        year = int(date_parts[2])
-                                        
-                                        # Prüfe ob Jahr realistisch ist (nicht 1900)
-                                        if year < 2000:
-                                            # Wahrscheinlich Excel-Serial-Datum, versuche 2024
-                                            year = 2024
-                                        
-                                        # Parse Zeit-Teil
-                                        time_parts = time_part.split(':')
-                                        hour = int(time_parts[0]) if len(time_parts) > 0 else 0
-                                        minute = int(time_parts[1]) if len(time_parts) > 1 else 0
-                                        second = int(time_parts[2]) if len(time_parts) > 2 else 0
-                                        
-                                        parsed_date = datetime(year, month, day, hour, minute, second)
-                                print(f"   ✅ Excel-Datum korrigiert: {timestamp} -> {parsed_date}")
-                            except Exception as e:
-                                print(f"   ❌ Excel-Datum-Parsing fehlgeschlagen: {e}")
-                        
-                        if parsed_date is None:
-                            print(f"⚠️ Ungültiges Datum in Zeile {i+1}: {timestamp}")
-                            continue
-                        
-                        # Formatiere als SQLite-kompatibles Datum
-                        formatted_timestamp = parsed_date.strftime('%Y-%m-%d %H:%M:%S')
-                        
-                        # Wert validieren
-                        try:
-                            float_value = float(value)
-                        except (ValueError, TypeError):
-                            print(f"⚠️ Ungültiger Wert in Zeile {i+1}: {value}")
-                            continue
-                        
-                        # In Datenbank einfügen
-                        cursor.execute("""
-                            INSERT INTO load_value (load_profile_id, timestamp, power_kw, created_at)
-                            VALUES (?, ?, ?, datetime('now'))
-                        """, (load_profile_id, formatted_timestamp, float_value))
-                        
-                        valid_data_points += 1
-                        
-                        # Fortschritt anzeigen
-                        if valid_data_points % 1000 == 0:
-                            print(f"📊 {valid_data_points} Datensätze verarbeitet...")
-                            
-                    else:
-                        print(f"⚠️ Ungültiger Timestamp-Typ in Zeile {i+1}: {type(timestamp)}")
-                        
-                except Exception as e:
-                    print(f"❌ Fehler in Zeile {i+1}: {e}")
-                    continue
-                
-            print(f"✅ {valid_data_points} von {len(data_points)} Datensätzen erfolgreich importiert")
-            
-            # Commit nur wenn Daten erfolgreich eingefügt wurden
-            if valid_data_points > 0:
-                get_db().commit()
-                print(f"💾 Änderungen in Datenbank gespeichert")
-            else:
-                print(f"❌ Keine gültigen Daten zum Speichern")
-                return jsonify({'success': False, 'error': 'Keine gültigen Daten gefunden'})
-            
-        elif data_type == 'solar_radiation':
-            cursor.execute("""
-                INSERT INTO solar_data (project_id, timestamp, value, created_at)
-                VALUES (?, ?, ?, datetime('now'))
-            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
-            
-        elif data_type == 'water_level':
-            cursor.execute("""
-                INSERT INTO hydro_data (project_id, timestamp, value, created_at)
-                VALUES (?, ?, ?, datetime('now'))
-            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
-            
-        elif data_type == 'pvsol_export':
-            cursor.execute("""
-                INSERT INTO pv_sol_data (project_id, timestamp, value, created_at)
-                VALUES (?, ?, ?, datetime('now'))
-            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
-            
-        elif data_type == 'weather':
-            cursor.execute("""
-                INSERT INTO weather_data (project_id, timestamp, value, created_at)
-                VALUES (?, ?, ?, datetime('now'))
-            """, (project_id, data_points[0]['timestamp'], data_points[0]['value']))
+        # Intelligente Datenverarbeitung je nach Datentyp
+        if data_type in ['load_profile', 'load']:
+            return import_load_profile(cursor, project_id, data_points, profile_name)
+        elif data_type in ['solar', 'einstrahlung']:
+            return import_solar_data(cursor, project_id, data_points, profile_name)
+        elif data_type in ['hydro', 'pegelstaende']:
+            return import_hydro_data(cursor, project_id, data_points, profile_name)
+        elif data_type in ['pvsol', 'pvsol_export']:
+            return import_pvsol_data(cursor, project_id, data_points, profile_name)
+        elif data_type in ['weather', 'wetterdaten']:
+            return import_weather_data(cursor, project_id, data_points, profile_name)
+        else:
+            return jsonify({'success': False, 'error': f'Unbekannter Datentyp: {data_type}'})
 
-        success_message = f'{valid_data_points if data_type == "load_profile" else len(data_points)} Datensätze erfolgreich importiert'
+    except Exception as e:
+        print(f"❌ Import-Fehler: {str(e)}")
+        return jsonify({'success': False, 'error': f'Import-Fehler: {str(e)}'})
+
+def import_load_profile(cursor, project_id, data_points, profile_name):
+    """Lastprofil-Import"""
+    try:
+        # Profilname verwenden oder Standard-Name generieren
         if profile_name:
-            success_message += f' als "{profile_name}"'
-            
+            profile_display_name = profile_name
+        else:
+            profile_display_name = f"Importiertes Lastprofil {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        print(f"📋 Erstelle Lastprofil: {profile_display_name}")
+        
+        cursor.execute("""
+            INSERT INTO load_profile (name, project_id, created_at)
+            VALUES (?, ?, datetime('now'))
+        """, (profile_display_name, project_id))
+        load_profile_id = cursor.lastrowid
+        
+        print(f"✅ Lastprofil erstellt mit ID: {load_profile_id}")
+        
+        # Daten importieren
+        valid_data_points = import_data_points(cursor, load_profile_id, data_points, 'load')
+        
+        get_db().commit()
+        
         return jsonify({
             'success': True,
-            'message': success_message,
-            'redirect_url': '/preview_data'
+            'message': f'Lastprofil erfolgreich importiert: {valid_data_points} Datensätze',
+            'profile_id': load_profile_id,
+            'profile_name': profile_display_name
         })
         
     except Exception as e:
-        print(f"❌ Fehler beim Datenimport: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        get_db().rollback()
+        raise e
+
+def import_solar_data(cursor, project_id, data_points, profile_name):
+    """Einstrahlungsdaten-Import"""
+    try:
+        if profile_name:
+            profile_display_name = profile_name
+        else:
+            profile_display_name = f"Einstrahlungsdaten {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        print(f"☀️ Erstelle Einstrahlungsprofil: {profile_display_name}")
+        
+        cursor.execute("""
+            INSERT INTO load_profile (name, project_id, data_type, created_at)
+            VALUES (?, ?, 'solar', datetime('now'))
+        """, (profile_display_name, project_id))
+        profile_id = cursor.lastrowid
+        
+        # Daten importieren (mit Einheit W/m²)
+        valid_data_points = import_data_points(cursor, profile_id, data_points, 'solar')
+        
+        get_db().commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Einstrahlungsdaten erfolgreich importiert: {valid_data_points} Datensätze',
+            'profile_id': profile_id,
+            'profile_name': profile_display_name
+        })
+        
+    except Exception as e:
+        get_db().rollback()
+        raise e
+
+def import_hydro_data(cursor, project_id, data_points, profile_name):
+    """Pegelstandsdaten-Import"""
+    try:
+        if profile_name:
+            profile_display_name = profile_name
+        else:
+            profile_display_name = f"Pegelstände {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        print(f"💧 Erstelle Pegelstandsprofil: {profile_display_name}")
+        
+        cursor.execute("""
+            INSERT INTO load_profile (name, project_id, data_type, created_at)
+            VALUES (?, ?, 'hydro', datetime('now'))
+        """, (profile_display_name, project_id))
+        profile_id = cursor.lastrowid
+        
+        # Daten importieren (mit Einheit m)
+        valid_data_points = import_data_points(cursor, profile_id, data_points, 'hydro')
+        
+        get_db().commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Pegelstände erfolgreich importiert: {valid_data_points} Datensätze',
+            'profile_id': profile_id,
+            'profile_name': profile_display_name
+        })
+        
+    except Exception as e:
+        get_db().rollback()
+        raise e
+
+def import_pvsol_data(cursor, project_id, data_points, profile_name):
+    """PVSol-Daten-Import"""
+    try:
+        if profile_name:
+            profile_display_name = profile_name
+        else:
+            profile_display_name = f"PVSol-Ertrag {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        print(f"☀️ Erstelle PVSol-Profil: {profile_display_name}")
+        
+        cursor.execute("""
+            INSERT INTO load_profile (name, project_id, data_type, created_at)
+            VALUES (?, ?, 'pvsol', datetime('now'))
+        """, (profile_display_name, project_id))
+        profile_id = cursor.lastrowid
+        
+        # Daten importieren (mit Einheit kWh)
+        valid_data_points = import_data_points(cursor, profile_id, data_points, 'pvsol')
+        
+        get_db().commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'PVSol-Daten erfolgreich importiert: {valid_data_points} Datensätze',
+            'profile_id': profile_id,
+            'profile_name': profile_display_name
+        })
+        
+    except Exception as e:
+        get_db().rollback()
+        raise e
+
+def import_weather_data(cursor, project_id, data_points, profile_name):
+    """Wetterdaten-Import"""
+    try:
+        if profile_name:
+            profile_display_name = profile_name
+        else:
+            profile_display_name = f"Wetterdaten {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+        
+        print(f"🌤️ Erstelle Wetterprofil: {profile_display_name}")
+        
+        cursor.execute("""
+            INSERT INTO load_profile (name, project_id, data_type, created_at)
+            VALUES (?, ?, 'weather', datetime('now'))
+        """, (profile_display_name, project_id))
+        profile_id = cursor.lastrowid
+        
+        # Daten importieren (mit Einheit °C)
+        valid_data_points = import_data_points(cursor, profile_id, data_points, 'weather')
+        
+        get_db().commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Wetterdaten erfolgreich importiert: {valid_data_points} Datensätze',
+            'profile_id': profile_id,
+            'profile_name': profile_display_name
+        })
+        
+    except Exception as e:
+        get_db().rollback()
+        raise e
+
+def import_data_points(cursor, profile_id, data_points, data_type):
+    """Gemeinsame Datenpunkt-Import-Funktion"""
+    valid_data_points = 0
+    
+    for i, point in enumerate(data_points):
+        try:
+            # Timestamp validieren und korrigieren
+            timestamp = point['timestamp']
+            value = point['value']
+            
+            # Prüfen ob Timestamp ein gültiges Datum ist
+            if isinstance(timestamp, str):
+                # Entferne Zeitzonen-Informationen und bereinige Format
+                timestamp_clean = timestamp.replace('T', ' ').replace('Z', '').strip()
+                timestamp_clean = timestamp_clean.replace(',', ' ')
+                
+                # Versuche verschiedene Formate
+                parsed_date = None
+                formats_to_try = [
+                    '%Y-%m-%d %H:%M:%S',
+                    '%Y-%m-%d %H:%M',
+                    '%d.%m.%Y %H:%M:%S',
+                    '%d.%m.%Y %H:%M',
+                    '%d.%m.%y %H:%M:%S',
+                    '%d.%m.%y %H:%M',
+                    '%Y-%m-%d %H:%M:%S.%f'
+                ]
+                
+                for fmt in formats_to_try:
+                    try:
+                        parsed_date = datetime.strptime(timestamp_clean, fmt)
+                        break
+                    except ValueError:
+                        continue
+                
+                # Excel-Datum-Korrektur
+                if parsed_date and parsed_date.year < 2000:
+                    print(f"   ✅ Excel-Datum korrigiert: {timestamp} -> {parsed_date.year} -> 2024")
+                    parsed_date = datetime(2024, parsed_date.month, parsed_date.day, 
+                                        parsed_date.hour, parsed_date.minute, parsed_date.second)
+                
+                # Excel-Serial-Datum-Format
+                if parsed_date is None:
+                    try:
+                        parts = timestamp_clean.split()
+                        if len(parts) >= 2:
+                            date_part = parts[0]
+                            time_part = parts[1] if len(parts) > 1 else "00:00:00"
+                            
+                            date_parts = date_part.split('.')
+                            if len(date_parts) == 3:
+                                day = int(date_parts[0])
+                                month = int(date_parts[1])
+                                year = int(date_parts[2])
+                                
+                                if year < 2000:
+                                    year = 2024
+                                
+                                time_parts = time_part.split(':')
+                                hour = int(time_parts[0]) if len(time_parts) > 0 else 0
+                                minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                                second = int(time_parts[2]) if len(time_parts) > 2 else 0
+                                
+                                parsed_date = datetime(year, month, day, hour, minute, second)
+                    except Exception as e:
+                        print(f"   ❌ Excel-Datum-Parsing fehlgeschlagen: {e}")
+                
+                if parsed_date is None:
+                    print(f"⚠️ Ungültiges Datum in Zeile {i+1}: {timestamp}")
+                    continue
+                    
+            elif isinstance(timestamp, datetime):
+                parsed_date = timestamp
+            else:
+                print(f"⚠️ Ungültiger Timestamp-Typ in Zeile {i+1}: {type(timestamp)}")
+                continue
+            
+            # Wert validieren
+            if isinstance(value, str):
+                # Deutsche Zahlen (Komma als Dezimaltrennzeichen)
+                value_clean = value.replace(',', '.')
+                try:
+                    value = float(value_clean)
+                except ValueError:
+                    print(f"⚠️ Ungültiger Wert in Zeile {i+1}: {value}")
+                    continue
+            elif not isinstance(value, (int, float)):
+                print(f"⚠️ Ungültiger Wert-Typ in Zeile {i+1}: {type(value)}")
+                continue
+            
+            # Datenpunkt in Datenbank speichern
+            cursor.execute("""
+                INSERT INTO load_value (load_profile_id, timestamp, power_kw, created_at)
+                VALUES (?, ?, ?, datetime('now'))
+            """, (profile_id, parsed_date, value))
+            
+            valid_data_points += 1
+            
+        except Exception as e:
+            print(f"❌ Fehler beim Importieren von Datenpunkt {i+1}: {e}")
+            continue
+    
+    print(f"✅ {valid_data_points} von {len(data_points)} Datenpunkten erfolgreich importiert")
+    return valid_data_points
 
 @main_bp.route('/api/projects/<int:project_id>/data/<data_type>', methods=['POST'])
 def get_project_data(project_id, data_type):

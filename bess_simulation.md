@@ -194,38 +194,44 @@ class SpotPrice(db.Model):
 - **Interaktive Chart.js Grafiken** für Peak-Shaving
 - **Export-Funktionen** (CSV, PNG, PDF)
 
-## 🔄 Datenimport-System
+## 🔄 **DATENIMPORT-SYSTEM - VOLLSTÄNDIG ERWEITERT**
 
-### Unterstützte Formate
-- **CSV**: Komma-getrennte Werte
-- **Excel (.xlsx)**: Mit SheetJS-Integration
-- **ZIP**: Komprimierte Daten-Archive
+### **Intelligentes Datenimport-Center**
+- ✅ **5 Register mit spezialisierten Import-Funktionen:**
+  - **Lastprofile:** CSV/Excel Import für Verbrauchsdaten
+  - **Einstrahlung:** CSV/Excel Import für Solar-Einstrahlungsdaten
+  - **Pegelstände:** CSV/Excel Import für Wasserstandsdaten
+  - **PVSol Export:** Direkte PVSol-Datei-Integration + Excel
+  - **Wetterdaten:** CSV/Excel Import für Temperatur/Luftfeuchtigkeit
 
-### Import-Typen
-- **Lastprofile**: Verbrauchsdaten (kWh/h)
-- **Wetterdaten**: Temperatur, Strahlung
-- **PVSol-Export**: Systemkonfiguration
-- **Wasserkraft**: Durchflussdaten
-- **Windkraft**: Windgeschwindigkeit
-- **Spot-Preise**: Strompreise (€/MWh)
+### **Erweiterte Import-Features**
+- ✅ **Drag & Drop Upload** für alle Datentypen
+- ✅ **Automatische Datum-Korrektur** (1900→2024 Excel-Problem)
+- ✅ **Intelligente Spalten-Erkennung** je nach Datentyp
+- ✅ **Datenqualitäts-Prüfung** mit detailliertem Feedback
+- ✅ **Duplikat-Erkennung** und Validierung
+- ✅ **Projekt-Zuordnung** für alle importierten Daten
 
-### Validierung
-- **Datenqualität**: Plausibilitätsprüfungen
-- **Zeitstempel**: Automatische Parsing mit Excel-Datum-Korrektur
-- **Einheiten**: Konvertierung und Validierung
-- **Duplikate**: Erkennung und Behandlung
+### **Datentyp-spezifische Verarbeitung**
+- ✅ **Lastprofile:** kW-Werte mit Zeitstempel
+- ✅ **Einstrahlung:** W/m²-Werte mit Solar-Kurven
+- ✅ **Pegelstände:** Meter-Werte mit Wasserstand-Logik
+- ✅ **PVSol:** kWh-Werte mit Solar-Ertragsdaten
+- ✅ **Wetterdaten:** °C/%-Werte mit Temperatur/Luftfeuchtigkeit
 
-### Intelligente Datum-Korrektur
-```javascript
-// Excel-Datum-Korrektur (1900 -> 2024)
-function correctExcelDate(dateString) {
-    const date = new Date(dateString);
-    if (date.getFullYear() < 2000) {
-        date.setFullYear(2024);
-    }
-    return date;
-}
-```
+### **Demo-Daten-Generator**
+- ✅ **Vollständige Demo-Dateien** für alle Datentypen
+- ✅ **Realistische Datenkurven** basierend auf physikalischen Modellen
+- ✅ **CSV und Excel-Formate** für alle Datentypen
+- ✅ **PVSol-Textformat** für direkte Integration
+- ✅ **Tägliche, stündliche und 15-Minuten-Intervalle**
+
+### **Backend-Integration**
+- ✅ **Erweiterte API-Routes** für alle Datentypen
+- ✅ **Intelligente Datenverarbeitung** je nach Datentyp
+- ✅ **Robuste Fehlerbehandlung** mit Rollback
+- ✅ **Datenbank-Optimierung** für große Importe
+- ✅ **Transaktionale Sicherheit** für Datenintegrität
 
 ## 📊 BESS Analysen - NEUES MODUL
 

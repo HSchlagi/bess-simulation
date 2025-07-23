@@ -8,6 +8,9 @@
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-900">Spot-Preise</h1>
             <div class="space-x-3">
+                <button onclick="refreshAPGData()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-sync-alt mr-2"></i>APG Refresh
+                </button>
                 <button onclick="openImportModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                     <i class="fas fa-upload mr-2"></i>Import
                 </button>
@@ -174,11 +177,11 @@ let spotPriceChart;
 
 // Spot-Preise laden
 async function loadSpotPrices() {
+    const timeRange = document.getElementById('timeRange').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
     try {
-        const timeRange = document.getElementById('timeRange').value;
-        const startDate = document.getElementById('startDate').value;
-        const endDate = document.getElementById('endDate').value;
-        
         const response = await fetch('/api/spot-prices', {
             method: 'POST',
             headers: {
@@ -192,16 +195,40 @@ async function loadSpotPrices() {
         });
         
         if (response.ok) {
-            const data = await response.json();
-            updateSpotPriceDisplay(data);
+            const result = await response.json();
+            
+            if (result.success) {
+                console.log(`✅ ${result.message}`);
+                updateSpotPriceDisplay(result.data);
+                
+                // Datenquelle-Status aktualisieren
+                const statusElement = document.getElementById('dataStatus');
+                if (result.source.includes('APG (Live)')) {
+                    statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten (Live)</span>';
+                } else if (result.source.includes('APG (Demo')) {
+                    statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">⚠️ Demo-Daten basierend auf APG-Mustern</span>';
+                } else {
+                    statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">📊 Demo-Daten (Legacy)</span>';
+                }
+                
+                // Erfolgsmeldung anzeigen
+                showNotification(result.message, 'success');
+            } else {
+                console.error('API-Fehler:', result.error);
+                showNotification('Fehler beim Laden der Spot-Preise', 'error');
+                // Fallback zu Demo-Daten
+                updateSpotPriceDisplay(generateDemoSpotPrices());
+            }
         } else {
-            console.error('Fehler beim Laden der Spot-Preise');
-            // Demo-Daten verwenden
+            console.error('HTTP-Fehler:', response.status);
+            showNotification('Fehler beim Laden der Spot-Preise', 'error');
+            // Fallback zu Demo-Daten
             updateSpotPriceDisplay(generateDemoSpotPrices());
         }
     } catch (error) {
-        console.error('Fehler:', error);
-        // Demo-Daten verwenden
+        console.error('Netzwerk-Fehler:', error);
+        showNotification('Netzwerk-Fehler beim Laden der Spot-Preise', 'error');
+        // Fallback zu Demo-Daten
         updateSpotPriceDisplay(generateDemoSpotPrices());
     }
 }
@@ -417,6 +444,60 @@ function editPrice(priceId) {
 function deletePrice(priceId) {
     if (confirm('Preis wirklich löschen?')) {
         console.log('Preis löschen:', priceId);
+    }
+}
+
+// APG Daten aktualisieren
+async function refreshAPGData() {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    try {
+        // Button während des Ladens deaktivieren
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Lade APG-Daten...';
+        
+        const response = await fetch('/api/spot-prices/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            
+            // Datenquelle-Status aktualisieren
+            const statusElement = document.getElementById('dataStatus');
+            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten (Live)</span>';
+            
+            // Daten neu laden
+            loadSpotPrices();
+        } else {
+            showNotification(result.message || 'Fehler beim Aktualisieren der APG-Daten', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim APG-Refresh:', error);
+        showNotification('Netzwerk-Fehler beim Aktualisieren der APG-Daten', 'error');
+    } finally {
+        // Button wieder aktivieren
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+}
+
+// Benachrichtigung anzeigen
+function showNotification(message, type = 'info') {
+    // Einfache Benachrichtigung (kann später erweitert werden)
+    const color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue';
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Optional: Toast-Benachrichtigung hinzufügen
+    if (typeof showToast === 'function') {
+        showToast(message, type);
     }
 }
 
