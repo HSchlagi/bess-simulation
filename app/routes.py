@@ -2,10 +2,14 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 from app import db, get_db
 import sys
 import os
+import sqlite3
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice
 from datetime import datetime, timedelta
 import random
+
+# EHYD Data Fetcher importieren
+from ehyd_data_fetcher import EHYDDataFetcher
 
 main_bp = Blueprint('main', __name__)
 
@@ -86,9 +90,21 @@ def bess_peak_shaving_analysis():
 def data_import_center():
     return render_template('data_import_center.html')
 
+@main_bp.route('/data_import_center_fixed')
+def data_import_center_fixed():
+    return render_template('data_import_center_fixed.html')
+
 @main_bp.route('/load_profile_detail')
 def load_profile_detail():
     return render_template('load_profile_detail.html')
+
+@main_bp.route('/chart_vorschau_funktioniert')
+def chart_vorschau_funktioniert():
+    return render_template('chart_vorschau_funktioniert.html')
+
+@main_bp.route('/button_funktioniert')
+def button_funktioniert():
+    return render_template('button_funktioniert.html')
 
 # API Routes für Projekte
 @main_bp.route('/api/projects')
@@ -246,9 +262,12 @@ def api_delete_project(project_id):
 def api_load_profiles(project_id):
     """API-Endpoint für Lastprofile eines Projekts"""
     try:
-        cursor = get_db().cursor()
+        print(f"🔄 Lade Lastprofile für Projekt {project_id}...")
         
-        # Alle Lastprofile des Projekts abrufen
+        cursor = get_db().cursor()
+        profiles = []
+        
+        # 1. Alle Lastprofile aus der alten load_profile Tabelle abrufen
         cursor.execute("""
             SELECT id, name, created_at, 
                    (SELECT COUNT(*) FROM load_value WHERE load_profile_id = load_profile.id) as data_points
@@ -257,16 +276,38 @@ def api_load_profiles(project_id):
             ORDER BY created_at DESC
         """, (project_id,))
         
-        profiles = []
         for row in cursor.fetchall():
             profiles.append({
-                'id': row[0],
+                'id': f"old_{row[0]}",  # Prefix um Konflikte zu vermeiden
                 'name': row[1],
                 'created_at': row[2],
-                'data_points': row[3]
+                'data_points': row[3],
+                'source': 'load_profile'
             })
         
-        print(f"📊 {len(profiles)} Lastprofile für Projekt {project_id} gefunden")
+        # 2. Alle Lastprofile aus der neuen load_profiles Tabelle abrufen
+        cursor.execute("""
+            SELECT id, name, created_at, 
+                   (SELECT COUNT(*) FROM load_profile_data WHERE load_profile_id = load_profiles.id) as data_points,
+                   data_type
+            FROM load_profiles 
+            WHERE project_id = ?
+            ORDER BY created_at DESC
+        """, (project_id,))
+        
+        for row in cursor.fetchall():
+            profiles.append({
+                'id': f"new_{row[0]}",  # Prefix um Konflikte zu vermeiden
+                'name': row[1],
+                'created_at': row[2],
+                'data_points': row[3],
+                'data_type': row[4],
+                'source': 'load_profiles'
+            })
+        
+        print(f"📊 {len(profiles)} Lastprofile für Projekt {project_id} gefunden:")
+        for profile in profiles:
+            print(f"  - ID: {profile['id']}, Name: {profile['name']}, Datenpunkte: {profile['data_points']}, Quelle: {profile['source']}")
         
         return jsonify({
             'success': True,
@@ -518,36 +559,127 @@ def api_spot_prices():
         
         print(f"🔍 Lade Spot-Preise für {start_date} bis {end_date}")
         
-        # APG Data Fetcher verwenden
+        # Versuche echte APG-Daten aus der Datenbank zu laden
         try:
-            from apg_data_fetcher import APGDataFetcher
-            fetcher = APGDataFetcher()
+            cursor = get_db().cursor()
             
-            # Versuche echte APG-Daten zu laden
-            print("🌐 Versuche echte APG-Daten von markt.apg.at zu holen...")
-            apg_data = fetcher.fetch_current_prices()
+            # Lade APG-Daten aus der Datenbank
+            cursor.execute("""
+                SELECT timestamp, price_eur_mwh, source, region, price_type
+                FROM spot_price 
+                WHERE timestamp BETWEEN ? AND ?
+                ORDER BY timestamp ASC
+            """, (start_date, end_date))
             
-            if apg_data and len(apg_data) > 0:
-                print(f"✅ {len(apg_data)} echte APG-Preise erfolgreich geladen!")
-                # Echte APG-Daten verfügbar - in Datenbank speichern
-                save_apg_data_to_db(apg_data)
+            db_data = cursor.fetchall()
+            
+            if db_data and len(db_data) > 0:
+                print(f"✅ {len(db_data)} APG-Daten aus Datenbank geladen")
+                
+                # Konvertiere zu JSON-Format
+                prices = []
+                for row in db_data:
+                    prices.append({
+                        'timestamp': row[0],
+                        'price': float(row[1]),
+                        'source': row[2],
+                        'region': row[3],
+                        'market': row[4]
+                    })
+                
+                # Bestimme Datenquelle basierend auf den gefilterten Daten
+                sources = set(row[2] for row in db_data)
+                print(f"🔍 Gefundene Datenquellen: {sources}")
+                
+                if any('APG' in source for source in sources):
+                    # Prüfe ob die gefilterten Daten aus 2024 sind
+                    cursor.execute("""
+                        SELECT COUNT(*) FROM spot_price 
+                        WHERE timestamp BETWEEN ? AND ? AND timestamp LIKE '2024%'
+                    """, (start_date, end_date))
+                    count_2024_in_range = cursor.fetchone()[0]
+                    print(f"🔍 2024-Daten im Bereich: {count_2024_in_range}")
+                    
+                    if count_2024_in_range > 0:
+                        source_info = "APG (Austrian Power Grid) - Echte österreichische Day-Ahead Preise für 2024"
+                    else:
+                        source_info = "APG (Austrian Power Grid) - Offizielle österreichische Day-Ahead Preise"
+                else:
+                    source_info = "Datenbank - Importierte Spot-Preise"
+                
                 return jsonify({
                     'success': True,
-                    'data': apg_data,
-                    'source': 'APG (Live)',
-                    'message': f'{len(apg_data)} echte österreichische Spot-Preise geladen'
+                    'data': prices,
+                    'source': source_info,
+                    'message': f'{len(prices)} Spot-Preise aus Datenbank geladen'
                 })
             else:
-                print("⚠️ Keine echten APG-Daten verfügbar, verwende intelligente Demo-Daten")
-                # Fallback: Intelligente Demo-Daten basierend auf APG-Mustern
-                demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
-                return jsonify({
-                    'success': True,
-                    'data': demo_data,
-                    'source': 'APG (Demo - basierend auf echten Mustern)',
-                    'message': f'{len(demo_data)} Demo-Preise basierend auf APG-Mustern'
-                })
+                print("⚠️ Keine Daten für den gewählten Zeitraum gefunden")
                 
+                # Versuche 2024-Daten als Fallback zu laden
+                print("🔄 Versuche 2024-Daten als Fallback...")
+                cursor.execute("""
+                    SELECT timestamp, price_eur_mwh, source, region, price_type
+                    FROM spot_price 
+                    WHERE timestamp LIKE '2024%'
+                    ORDER BY timestamp ASC
+                    LIMIT 100
+                """)
+                
+                fallback_data = cursor.fetchall()
+                
+                if fallback_data and len(fallback_data) > 0:
+                    print(f"✅ {len(fallback_data)} 2024-Daten als Fallback geladen")
+                    
+                    # Konvertiere zu JSON-Format
+                    prices = []
+                    for row in fallback_data:
+                        prices.append({
+                            'timestamp': row[0],
+                            'price': float(row[1]),
+                            'source': row[2],
+                            'region': row[3],
+                            'market': row[4]
+                        })
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': prices,
+                        'source': "APG (Austrian Power Grid) - Echte österreichische Day-Ahead Preise für 2024",
+                        'message': f'{len(prices)} 2024-Daten als Fallback geladen (keine Daten für gewählten Zeitraum)'
+                    })
+                else:
+                    print("⚠️ Keine 2024-Daten verfügbar, verwende APG Data Fetcher")
+                    
+                # Fallback: APG Data Fetcher verwenden
+                from apg_data_fetcher import APGDataFetcher
+                fetcher = APGDataFetcher()
+                
+                # Versuche echte APG-Daten zu laden
+                print("🌐 Versuche echte APG-Daten von markt.apg.at zu holen...")
+                apg_data = fetcher.fetch_current_prices()
+                
+                if apg_data and len(apg_data) > 0:
+                    print(f"✅ {len(apg_data)} echte APG-Preise erfolgreich geladen!")
+                    # Echte APG-Daten verfügbar - in Datenbank speichern
+                    save_apg_data_to_db(apg_data)
+                    return jsonify({
+                        'success': True,
+                        'data': apg_data,
+                        'source': 'APG (Live)',
+                        'message': f'{len(apg_data)} echte österreichische Spot-Preise geladen'
+                    })
+                else:
+                    print("⚠️ Keine echten APG-Daten verfügbar, verwende intelligente Demo-Daten")
+                    # Fallback: Intelligente Demo-Daten basierend auf APG-Mustern
+                    demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
+                    return jsonify({
+                        'success': True,
+                        'data': demo_data,
+                        'source': 'APG (Demo - basierend auf echten Mustern)',
+                        'message': f'{len(demo_data)} Demo-Preise basierend auf APG-Mustern'
+                    })
+                    
         except ImportError as e:
             print(f"❌ APG Data Fetcher nicht verfügbar: {e}")
             # Fallback: Alte Demo-Daten
@@ -587,13 +719,13 @@ def save_apg_data_to_db(apg_data):
                 # Update existierenden Eintrag
                 cursor.execute("""
                     UPDATE spot_price 
-                    SET price_eur_mwh = ?, market = ?, region = ?, created_at = datetime('now')
+                    SET price_eur_mwh = ?, price_type = ?, region = ?, created_at = datetime('now')
                     WHERE id = ?
                 """, (price, market, region, existing[0]))
             else:
                 # Neuen Eintrag erstellen
                 cursor.execute("""
-                    INSERT INTO spot_price (timestamp, price_eur_mwh, source, region, market, created_at)
+                    INSERT INTO spot_price (timestamp, price_eur_mwh, source, region, price_type, created_at)
                     VALUES (?, ?, ?, ?, ?, datetime('now'))
                 """, (timestamp, price, source, region, market))
         
@@ -877,24 +1009,50 @@ def calculate_grid_stability_bonus(project):
 def api_import_data():
     """API-Endpoint für Datenimport - Erweitert für alle Datentypen"""
     try:
+        print("=" * 50)
+        print("🚀 IMPORT-START")
+        print("=" * 50)
+        
         data = request.get_json()
+        print(f"📥 Empfangene API-Daten: {data}")
+        
         data_type = data.get('data_type')
-        data_points = data.get('data', [])
+        data_points = data.get('data', [])  # Verwende 'data' statt 'data_points'
         profile_name = data.get('profile_name')
+        project_id = data.get('project_id', 1)  # Default-Projekt-ID
 
-        if not data_type or not data_points:
+        print(f"📊 API-Parameter:")
+        print(f"  - data_type: {data_type}")
+        print(f"  - data_points count: {len(data_points) if data_points else 0}")
+        print(f"  - profile_name: {profile_name}")
+        print(f"  - project_id: {project_id}")
+
+        if not data_type:
+            print("❌ Kein data_type angegeben")
+            return jsonify({'success': False, 'error': 'Kein Datentyp angegeben'})
+            
+        if not data_points or len(data_points) == 0:
+            print("❌ Keine Datenpunkte vorhanden")
             return jsonify({'success': False, 'error': 'Keine Daten zum Importieren'})
 
         print(f"📥 Importiere {len(data_points)} Datensätze vom Typ: {data_type}")
         if profile_name:
             print(f"📝 Profilname: {profile_name}")
 
-        project_id = 1  # Default-Projekt
+        # Erste paar Datenpunkte anzeigen
+        print(f"📋 Erste 3 Datenpunkte:")
+        for i, point in enumerate(data_points[:3]):
+            print(f"  {i+1}: {point}")
+
         cursor = get_db().cursor()
 
         # Intelligente Datenverarbeitung je nach Datentyp
         if data_type in ['load_profile', 'load']:
-            return import_load_profile(cursor, project_id, data_points, profile_name)
+            result = import_load_profile(cursor, project_id, data_points, profile_name)
+            print("=" * 50)
+            print("✅ IMPORT-ERFOLGREICH")
+            print("=" * 50)
+            return result
         elif data_type in ['solar', 'einstrahlung']:
             return import_solar_data(cursor, project_id, data_points, profile_name)
         elif data_type in ['hydro', 'pegelstaende']:
@@ -904,15 +1062,23 @@ def api_import_data():
         elif data_type in ['weather', 'wetterdaten']:
             return import_weather_data(cursor, project_id, data_points, profile_name)
         else:
+            print(f"❌ Unbekannter Datentyp: {data_type}")
             return jsonify({'success': False, 'error': f'Unbekannter Datentyp: {data_type}'})
 
     except Exception as e:
+        print("=" * 50)
+        print("❌ IMPORT-FEHLER")
+        print("=" * 50)
         print(f"❌ Import-Fehler: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': f'Import-Fehler: {str(e)}'})
 
 def import_load_profile(cursor, project_id, data_points, profile_name):
     """Lastprofil-Import"""
     try:
+        print("🔄 Starte Lastprofil-Import...")
+        
         # Profilname verwenden oder Standard-Name generieren
         if profile_name:
             profile_display_name = profile_name
@@ -920,7 +1086,18 @@ def import_load_profile(cursor, project_id, data_points, profile_name):
             profile_display_name = f"Importiertes Lastprofil {datetime.now().strftime('%Y-%m-%d %H:%M')}"
         
         print(f"📋 Erstelle Lastprofil: {profile_display_name}")
+        print(f"📊 Projekt-ID: {project_id}")
+        print(f"📊 Anzahl Datenpunkte: {len(data_points)}")
         
+        # Prüfe ob Projekt existiert
+        cursor.execute("SELECT id FROM project WHERE id = ?", (project_id,))
+        project_exists = cursor.fetchone()
+        if not project_exists:
+            raise Exception(f"Projekt mit ID {project_id} existiert nicht")
+        
+        print(f"✅ Projekt {project_id} existiert")
+        
+        # Lastprofil erstellen
         cursor.execute("""
             INSERT INTO load_profile (name, project_id, created_at)
             VALUES (?, ?, datetime('now'))
@@ -930,9 +1107,20 @@ def import_load_profile(cursor, project_id, data_points, profile_name):
         print(f"✅ Lastprofil erstellt mit ID: {load_profile_id}")
         
         # Daten importieren
+        print(f"🔄 Starte Import von {len(data_points)} Datenpunkten...")
         valid_data_points = import_data_points(cursor, load_profile_id, data_points, 'load')
         
+        print(f"✅ Import abgeschlossen: {valid_data_points} Datenpunkte importiert")
+        
+        # Transaktion explizit committen
+        print("💾 Committe Datenbank-Transaktion...")
         get_db().commit()
+        print(f"✅ Datenbank-Transaktion erfolgreich committet")
+        
+        # Überprüfung nach Commit
+        cursor.execute("SELECT COUNT(*) FROM load_value WHERE load_profile_id = ?", (load_profile_id,))
+        actual_count = cursor.fetchone()[0]
+        print(f"📊 Tatsächliche Datenpunkte in DB: {actual_count}")
         
         return jsonify({
             'success': True,
@@ -942,7 +1130,9 @@ def import_load_profile(cursor, project_id, data_points, profile_name):
         })
         
     except Exception as e:
+        print(f"❌ Fehler beim Lastprofil-Import: {str(e)}")
         get_db().rollback()
+        print(f"🔄 Datenbank-Transaktion zurückgerollt")
         raise e
 
 def import_solar_data(cursor, project_id, data_points, profile_name):
@@ -1076,12 +1266,15 @@ def import_weather_data(cursor, project_id, data_points, profile_name):
 def import_data_points(cursor, profile_id, data_points, data_type):
     """Gemeinsame Datenpunkt-Import-Funktion"""
     valid_data_points = 0
+    print(f"🔄 Importiere {len(data_points)} Datenpunkte für Profil {profile_id}")
     
     for i, point in enumerate(data_points):
         try:
             # Timestamp validieren und korrigieren
             timestamp = point['timestamp']
             value = point['value']
+            
+            print(f"  📊 Verarbeite Punkt {i+1}: timestamp={timestamp}, value={value}")
             
             # Prüfen ob Timestamp ein gültiges Datum ist
             if isinstance(timestamp, str):
@@ -1163,6 +1356,8 @@ def import_data_points(cursor, profile_id, data_points, data_type):
                 print(f"⚠️ Ungültiger Wert-Typ in Zeile {i+1}: {type(value)}")
                 continue
             
+            print(f"  ✅ Punkt {i+1} validiert: {parsed_date} = {value}")
+            
             # Datenpunkt in Datenbank speichern
             cursor.execute("""
                 INSERT INTO load_value (load_profile_id, timestamp, power_kw, created_at)
@@ -1170,6 +1365,11 @@ def import_data_points(cursor, profile_id, data_points, data_type):
             """, (profile_id, parsed_date, value))
             
             valid_data_points += 1
+            
+            # Alle 100 Punkte einen Commit machen
+            if valid_data_points % 100 == 0:
+                get_db().commit()
+                print(f"  💾 Zwischencommit nach {valid_data_points} Punkten")
             
         except Exception as e:
             print(f"❌ Fehler beim Importieren von Datenpunkt {i+1}: {e}")
@@ -1203,7 +1403,7 @@ def get_project_data(project_id, data_type):
             'load_profile': 'load_value',
             'solar_radiation': 'solar_value',
             'water_level': 'hydro_value',
-            'pvsol_export': 'pv_sol_value',
+            'pvsol_export': 'solar_value',
             'weather': 'weather_value'
         }
         
@@ -1280,11 +1480,8 @@ def api_data_overview(project_id):
         """, (project_id,))
         weather_data = cursor.fetchone()[0]
         
-        # PVSol-Daten zählen (aus pv_sol_data Tabelle)
-        cursor.execute("""
-            SELECT COUNT(*) FROM pv_sol_data WHERE project_id = ?
-        """, (project_id,))
-        pvsol_data = cursor.fetchone()[0]
+        # PVSol-Daten sind die gleichen wie Solar-Daten
+        pvsol_data = solar_data
         
         print(f"📊 Datenübersicht für Projekt {project_id}:")
         print(f"  - Lastprofile: {load_profiles}")
@@ -1372,7 +1569,6 @@ def api_ehyd_water_levels():
         
         # EHYD Data Fetcher verwenden
         try:
-            from ehyd_data_fetcher import EHYDDataFetcher
             fetcher = EHYDDataFetcher()
             
             # Versuche echte EHYD-Daten zu laden
@@ -1464,7 +1660,6 @@ def api_refresh_ehyd_water_levels():
     try:
         print("🔄 Manueller EHYD-Daten-Refresh gestartet...")
         
-        from ehyd_data_fetcher import EHYDDataFetcher
         fetcher = EHYDDataFetcher()
         
         # Versuche echte EHYD-Daten zu laden
@@ -1494,51 +1689,252 @@ def api_refresh_ehyd_water_levels():
             'error': f'Fehler beim Laden der EHYD-Daten: {str(e)}'
         }), 400
 
-@main_bp.route('/api/ehyd-rivers', methods=['GET'])
-def api_get_ehyd_rivers():
-    """Gibt verfügbare österreichische Flüsse zurück"""
+@main_bp.route('/api/ehyd/rivers')
+def get_ehyd_rivers():
+    """Gibt alle verfügbaren österreichischen Flüsse zurück"""
     try:
-        from ehyd_data_fetcher import EHYDDataFetcher
         fetcher = EHYDDataFetcher()
-        rivers = fetcher.get_available_rivers()
+        rivers = fetcher.get_rivers()
         
         return jsonify({
             'success': True,
-            'rivers': rivers
+            'rivers': rivers,
+            'message': f'{len(rivers)} österreichische Flüsse verfügbar'
         })
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': str(e)
-        }), 400
+            'error': f'Fehler beim Laden der Flüsse: {str(e)}'
+        }), 500
 
-def generate_legacy_demo_water_levels(start_date, end_date):
-    """Legacy Demo-Pegelstände (Fallback)"""
-    water_levels = []
-    current_date = start_date
-    
-    rivers = ['Donau', 'Inn', 'Drau', 'Mur', 'Salzach']
-    stations = ['Station A', 'Station B', 'Station C']
-    
-    while current_date <= end_date:
-        for hour in range(24):
-            for river in rivers:
-                for station in stations:
-                    # Basis-Pegelstände mit Tageszeit-Schwankungen
-                    base_level = 1.5 + 0.5 * (hour - 12) / 12
-                    base_level += random.uniform(-0.2, 0.2)
-                    
-                    water_levels.append({
-                        'id': len(water_levels) + 1,
-                        'timestamp': current_date.replace(hour=hour, minute=0, second=0, microsecond=0).isoformat(),
-                        'river_name': river,
-                        'station_name': station,
-                        'water_level_m': round(max(0.5, min(3.0, base_level)), 3),
-                        'flow_rate_m3s': round(base_level * 30 + random.uniform(-5, 5), 1),
-                        'source': 'Demo (Legacy)',
-                        'region': 'AT'
-                    })
+@main_bp.route('/api/ehyd/stations/<river_key>')
+def get_ehyd_stations(river_key):
+    """Gibt alle Messstationen für einen Fluss zurück"""
+    try:
+        fetcher = EHYDDataFetcher()
+        stations = fetcher.get_stations_by_river(river_key)
         
-        current_date += timedelta(days=1)
-    
-    return water_levels 
+        if not stations:
+            return jsonify({
+                'success': False,
+                'error': f'Keine Stationen für Fluss {river_key} gefunden'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'river_key': river_key,
+            'stations': stations,
+            'message': f'{len(stations)} Messstationen für {river_key} gefunden'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'Fehler beim Laden der Stationen: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/ehyd/fetch-data', methods=['POST'])
+def fetch_ehyd_data():
+    """Lädt EHYD-Daten für einen Fluss"""
+    try:
+        data = request.get_json()
+        river_key = data.get('river_key')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        project_id = data.get('project_id')
+        profile_name = data.get('profile_name')
+        year = data.get('year')  # Jahr aus Request-Daten extrahieren
+        
+        if not river_key:
+            return jsonify({
+                'success': False,
+                'error': 'Flussschlüssel erforderlich'
+            }), 400
+        
+        print(f"🌊 Lade EHYD-Daten für Fluss: {river_key}")
+        print(f"📅 Zeitraum: {start_date} bis {end_date}")
+        print(f"📋 Projekt: {project_id}, Profil: {profile_name}")
+        
+        fetcher = EHYDDataFetcher()
+        
+        # Versuche echte EHYD-Daten zu laden
+        if year:
+            # Jahresdaten laden
+            river_data = fetcher.fetch_data_for_year(river_key, int(year), project_id, profile_name)
+        else:
+            # Zeitraumdaten laden
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+            days = (end_dt - start_dt).days
+            river_data = fetcher.get_demo_data(river_key, days)
+        
+        if not river_data or not river_data['water_levels']:
+            print("⚠️ Keine echten EHYD-Daten verfügbar, verwende Demo-Daten")
+            # Fallback: Demo-Daten
+            days = 30 if not start_date else (datetime.strptime(end_date, "%Y-%m-%d") - datetime.strptime(start_date, "%Y-%m-%d")).days
+            river_data = fetcher.get_demo_data(river_key, days)
+        
+        if river_data and river_data['water_levels']:
+            # Daten in Datenbank speichern
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            saved_count = 0
+            for level in river_data['water_levels']:
+                try:
+                    cursor.execute('''
+                        INSERT INTO water_level 
+                        (timestamp, water_level_cm, station_id, station_name, river_name, project_id, profile_name, source)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        level['timestamp'],
+                        level['water_level_cm'],
+                        level['station_id'],
+                        level['station_name'],
+                        level['river_name'],
+                        project_id,
+                        profile_name,
+                        'EHYD (Live)' if not river_data.get('demo') else 'EHYD (Demo)'
+                    ))
+                    saved_count += 1
+                except Exception as e:
+                    print(f"⚠️ Fehler beim Speichern von Datenpunkt: {e}")
+                    continue
+            
+            conn.commit()
+            conn.close()
+            
+            print(f"✅ {saved_count} Pegelstanddaten in Datenbank gespeichert")
+            
+            return jsonify({
+                'success': True,
+                'data': {
+                    'river_name': river_data['river_name'],
+                    'total_data_points': river_data['total_data_points'],
+                    'saved_count': saved_count,
+                    'stations_count': river_data['stations_count'],
+                    'successful_stations': river_data['successful_stations'],
+                    'start_date': river_data['start_date'],
+                    'end_date': river_data['end_date'],
+                    'source': 'EHYD (Live)' if not river_data.get('demo') else 'EHYD (Demo)',
+                    'demo': river_data.get('demo', False)
+                },
+                'message': f'{saved_count} Pegelstanddaten für {river_data["river_name"]} erfolgreich importiert'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Keine EHYD-Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der EHYD-Daten: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Fehler beim Laden der EHYD-Daten: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/water-levels')
+def get_water_levels():
+    """Gibt Pegelstanddaten aus der Datenbank zurück"""
+    try:
+        # Parameter aus Query-String
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        river_name = request.args.get('river_name')
+        project_id = request.args.get('project_id')
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # SQL-Query aufbauen
+        query = "SELECT timestamp, water_level_cm, station_name, river_name, source FROM water_level WHERE 1=1"
+        params = []
+        
+        if start_date:
+            query += " AND timestamp >= ?"
+            params.append(start_date)
+        
+        if end_date:
+            query += " AND timestamp <= ?"
+            params.append(end_date + " 23:59:59")
+        
+        if river_name:
+            query += " AND river_name LIKE ?"
+            params.append(f"%{river_name}%")
+        
+        if project_id:
+            query += " AND project_id = ?"
+            params.append(project_id)
+        
+        query += " ORDER BY timestamp ASC"
+        
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        
+        # Daten formatieren
+        water_levels = []
+        for row in rows:
+            water_levels.append({
+                'timestamp': row[0],
+                'water_level_cm': float(row[1]),
+                'station_name': row[2],
+                'river_name': row[3],
+                'source': row[4]
+            })
+        
+        conn.close()
+        
+        # Bestimme Datenquelle
+        sources = set(row[4] for row in rows) if rows else set()
+        if 'EHYD (Live)' in sources:
+            source_info = "EHYD (Austrian Power Grid) - Echte österreichische Pegelstände"
+        elif 'EHYD (Demo)' in sources:
+            source_info = "EHYD (Demo) - Basierend auf echten österreichischen Mustern"
+        else:
+            source_info = "Datenbank - Importierte Pegelstanddaten"
+        
+        return jsonify({
+            'success': True,
+            'data': water_levels,
+            'source': source_info,
+            'message': f'{len(water_levels)} Pegelstanddaten geladen'
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Pegelstanddaten: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Fehler beim Laden der Pegelstanddaten: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/test-db', methods=['GET'])
+def test_db():
+    """Test-Funktion für Datenbank-Verbindung"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Teste Projekte
+        cursor.execute("SELECT COUNT(*) FROM project")
+        project_count = cursor.fetchone()[0]
+        
+        # Teste Lastprofile
+        cursor.execute("SELECT COUNT(*) FROM load_profile")
+        profile_count = cursor.fetchone()[0]
+        
+        # Teste Datenpunkte
+        cursor.execute("SELECT COUNT(*) FROM load_value")
+        data_count = cursor.fetchone()[0]
+        
+        return jsonify({
+            'success': True,
+            'database_status': 'OK',
+            'projects': project_count,
+            'profiles': profile_count,
+            'data_points': data_count
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }) 

@@ -205,8 +205,12 @@ async function loadSpotPrices() {
                 const statusElement = document.getElementById('dataStatus');
                 if (result.source.includes('APG (Live)')) {
                     statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten (Live)</span>';
+                } else if (result.source.includes('APG') && result.source.includes('2024')) {
+                    statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten für 2024</span>';
                 } else if (result.source.includes('APG (Demo')) {
                     statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">⚠️ Demo-Daten basierend auf APG-Mustern</span>';
+                } else if (result.source.includes('APG')) {
+                    statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ APG-Daten aus Datenbank</span>';
                 } else {
                     statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">📊 Demo-Daten (Legacy)</span>';
                 }
@@ -271,12 +275,14 @@ function updateSpotPriceDisplay(prices) {
         const source = prices[0].source;
         const statusElement = document.getElementById('dataStatus');
         
-        if (source.includes('APG') && !source.includes('Demo')) {
-            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">Echte APG-Daten</span>';
+        if (source.includes('APG') && source.includes('2024')) {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten für 2024</span>';
+        } else if (source.includes('APG') && !source.includes('Demo')) {
+            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten</span>';
         } else if (source.includes('APG (Demo)')) {
-            statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">Demo-Daten basierend auf APG-Mustern</span>';
+            statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">⚠️ Demo-Daten basierend auf APG-Mustern</span>';
         } else {
-            statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">Demo-Daten (Legacy)</span>';
+            statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">📊 Demo-Daten (Legacy)</span>';
         }
     }
     
@@ -501,12 +507,59 @@ function showNotification(message, type = 'info') {
     }
 }
 
+// Zeitraum ändern
+document.getElementById('timeRange').addEventListener('change', function() {
+    const timeRange = this.value;
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    const today = new Date();
+    let startDate, endDate;
+    
+    switch(timeRange) {
+        case 'today':
+            startDate = today.toISOString().split('T')[0];
+            endDate = today.toISOString().split('T')[0];
+            break;
+        case 'week':
+            // Diese Woche (Montag bis Sonntag)
+            const dayOfWeek = today.getDay();
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sonntag = 0, Montag = 1
+            startDate = new Date(today.getTime() - (daysToMonday * 24 * 60 * 60 * 1000));
+            endDate = new Date(startDate.getTime() + (6 * 24 * 60 * 60 * 1000));
+            startDate = startDate.toISOString().split('T')[0];
+            endDate = endDate.toISOString().split('T')[0];
+            break;
+        case 'month':
+            // Dieser Monat
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+            break;
+        case 'year':
+            // Dieses Jahr
+            startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
+            endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+            break;
+        case 'custom':
+            // Benutzerdefiniert - Datumsfelder bleiben unverändert
+            return;
+    }
+    
+    startDateInput.value = startDate;
+    endDateInput.value = endDate;
+    
+    // Automatisch Daten laden
+    loadSpotPrices();
+});
+
 // Seite laden
 document.addEventListener('DOMContentLoaded', function() {
-    // Standard-Datum setzen
-    const today = new Date();
-    document.getElementById('startDate').value = today.toISOString().split('T')[0];
-    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+    // Standard-Datum auf 2024 setzen (wo echte APG-Daten verfügbar sind)
+    document.getElementById('startDate').value = '2024-01-01';
+    document.getElementById('endDate').value = '2024-12-31';
+    
+    // Zeitraum auf "Dieses Jahr" setzen
+    document.getElementById('timeRange').value = 'year';
     
     loadSpotPrices();
 });

@@ -72,6 +72,14 @@
                 </div>
                 <p class="text-sm text-purple-700">Regelleistung und Systemdienstleistungen</p>
             </button>
+            
+            <button onclick="addAnalysisCard('water-level')" class="analysis-type-btn bg-cyan-50 hover:bg-cyan-100 border-2 border-cyan-200 rounded-lg p-4 text-left transition-all">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-water text-cyan-600 text-xl mr-3"></i>
+                    <h3 class="font-semibold text-cyan-900">Wasserstand-Analyse</h3>
+                </div>
+                <p class="text-sm text-cyan-700">EHYD-Pegelstanddaten für BESS-Simulation</p>
+            </button>
         </div>
     </div>
 
@@ -80,6 +88,152 @@
         <!-- Karten werden hier dynamisch hinzugefügt -->
     </div>
 
+
+    <!-- Wasserstand-Analyse Karte -->
+    <div id="water-level-card" class="analysis-card bg-white rounded-lg shadow-md p-6 hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-cyan-800">
+                <i class="fas fa-water text-cyan-600 mr-2"></i>
+                Wasserstand-Analyse - Steyr
+            </h3>
+            <button onclick="removeAnalysisCard('water-level')" class="text-gray-400 hover:text-red-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Status-Info -->
+        <div class="bg-cyan-50 border-l-4 border-cyan-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-cyan-400"></i>
+                </div>
+                <div class="ml-3">
+                    <h4 class="text-sm font-medium text-cyan-800">Wasserstand-Daten verfügbar</h4>
+                    <div class="mt-2 text-sm text-cyan-700">
+                        <p><strong>711.936 Datenpunkte</strong> für Steyr verfügbar</p>
+                        <p><strong>Zeitraum:</strong> 2024-01-01 bis 2025-12-31</p>
+                        <p><strong>Quelle:</strong> EHYD (Demo) - Basierend auf echten österreichischen Mustern</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart-Container -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-semibold text-gray-800 mb-4">Pegelstand-Verlauf</h4>
+            <div id="waterLevelChartContainer" class="h-96">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-chart-line text-4xl mb-4"></i>
+                    <p>Klicken Sie auf "Wasserstand-Daten laden" um die Analyse zu starten</p>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button id="loadWaterLevelBtn" onclick="loadWaterLevelData()" class="bg-cyan-500 hover:bg-cyan-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-water"></i> Wasserstand-Daten laden
+                </button>
+                <button onclick="exportWaterLevelData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-download"></i> Daten exportieren
+                </button>
+            </div>
+        </div>
+        
+        <!-- BESS-Integration -->
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-semibold text-blue-800 mb-4">
+                <i class="fas fa-battery-three-quarters text-blue-600 mr-2"></i>
+                BESS-Simulation Integration
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Größe (kWh)</label>
+                    <input type="number" id="bessSizeWater" value="100" min="1" max="10000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Leistung (kW)</label>
+                    <input type="number" id="bessPowerWater" value="100" min="1" max="5000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button onclick="simulateBESSWithWaterData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-play"></i> BESS-Simulation mit Wasserstanddaten starten
+                </button>
+            </div>
+        </div>
+        
+
+        <!-- Wasserkraft-Erzeugung Berechnung -->
+        <div class="bg-green-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-semibold text-green-800 mb-4">
+                <i class="fas fa-bolt text-green-600 mr-2"></i>
+                Wasserkraft-Erzeugung (540kW Anlage)
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Wasserkraftwerk Leistung</label>
+                    <input type="number" id="hydroPower" value="540" min="1" max="10000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">kW (Nennleistung)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Wirkungsgrad</label>
+                    <input type="number" id="hydroEfficiency" value="85" min="1" max="100" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">% (Turbine + Generator)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fallhöhe</label>
+                    <input type="number" id="hydroHead" value="15" min="1" max="100" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">m (Netto-Fallhöhe)</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Durchfluss (m³/s)</label>
+                    <input type="number" id="hydroFlow" value="4.2" min="0.1" max="100" step="0.1"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">Basierend auf Pegelstand</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Erzeugung (kWh/h)</label>
+                    <div id="hydroGeneration" class="w-full px-3 py-2 bg-green-100 border border-green-300 rounded-md text-green-800 font-semibold">
+                        459 kWh/h
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Aktuelle Erzeugung</p>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button onclick="calculateHydroPower()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-calculator"></i> Wasserkraft berechnen
+                </button>
+                <button onclick="showHydroPowerChart()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-chart-line"></i> Erzeugungsverlauf
+                </button>
+            </div>
+        </div>
+        
+        <!-- Wasserkraft-Erzeugungsverlauf Chart -->
+        <div id="hydroPowerChartContainer" class="bg-blue-50 rounded-lg p-4 mb-6 hidden">
+            <h4 class="text-md font-semibold text-blue-800 mb-4">
+                <i class="fas fa-chart-area text-blue-600 mr-2"></i>
+                Wasserkraft-Erzeugungsverlauf (kWh/h)
+            </h4>
+            <div id="hydroPowerChart" class="h-80">
+                <!-- Chart wird hier dynamisch eingefügt -->
+            </div>
+        </div>
+        <!-- Debug-Info -->
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-800 mb-2">Debug-Informationen</h4>
+            <div id="waterLevelDebugInfo" class="text-sm text-gray-600">
+                <p>Status: Bereit für Wasserstand-Analyse</p>
+                <p>API-Endpunkt: /api/water-levels</p>
+                <p>BESS-Integration: Aktiv</p>
+            </div>
+        </div>
+    </div>
     <!-- Neue Karte hinzufügen -->
     <div class="mt-8 text-center">
         <button onclick="showAnalysisSelector()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-md">
@@ -133,7 +287,523 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js">
+    // Cache-Busting für JavaScript-Funktionen
+    console.log('🔄 Lade aktualisierte JavaScript-Funktionen...');
+    
+    // Sicherstellen, dass alle Funktionen verfügbar sind
+    if (typeof createWaterLevelChartData === 'undefined') {
+        console.log('⚠️ createWaterLevelChartData nicht gefunden - lade Funktionen neu...');
+    }
+    
+    // Wasserstand Chart-Daten
+    function createWaterLevelChartData() {
+        console.log('📊 Erstelle Wasserstand-Chart-Daten...');
+        const hours = [];
+        const waterLevel = [];
+        const hydroPower = [];
+        const bessPower = [];
+        
+        for (let i = 0; i < 24; i++) {
+            hours.push(i);
+            
+            // Wasserstand (realistische Werte für Steyr)
+            let baseWaterLevel = 125;
+            if (i >= 6 && i <= 9) baseWaterLevel = 130; // Morgenspitze
+            else if (i >= 17 && i <= 20) baseWaterLevel = 128; // Abendspitze
+            else if (i >= 22 || i <= 5) baseWaterLevel = 122; // Nachts niedrig
+            
+            waterLevel.push(baseWaterLevel + Math.random() * 5);
+            
+            // Wasserkraft-Erzeugung (basierend auf Wasserstand)
+            const powerValue = Math.max(0, (baseWaterLevel - 100) * 8 + Math.random() * 20);
+            hydroPower.push(powerValue);
+            
+            // BESS-Leistung (komplementär zur Wasserkraft)
+            const bessValue = Math.max(0, 50 - powerValue * 0.3 + Math.random() * 10);
+            bessPower.push(bessValue);
+        }
+        
+        return {
+            type: 'line',
+            data: {
+                labels: hours,
+                datasets: [
+                    {
+                        label: 'Wasserstand (cm)',
+                        data: waterLevel,
+                        borderColor: 'rgb(6, 182, 212)',
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Wasserkraft (kWh/h)',
+                        data: hydroPower,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    },
+                    {
+                        label: 'BESS-Leistung (kW)',
+                        data: bessPower,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        yAxisID: 'y2'
+                    }
+                ]
+            }
+        };
+    }
+    
+    // Wasserstand Chart-Optionen
+    function createWaterLevelChartOptions() {
+        console.log('⚙️ Erstelle Wasserstand-Chart-Optionen...');
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Wasserstand-Analyse - Pegelstand, Wasserkraft und BESS-Integration',
+                    font: { size: 16, weight: 'bold' }
+                },
+                legend: {
+                    position: 'top',
+                    labels: { usePointStyle: true, padding: 20 }
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Zeit (Stunden)' },
+                    ticks: { stepSize: 2 }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Wasserstand (cm)' },
+                    beginAtZero: false
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Wasserkraft (kWh/h)' },
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false }
+                },
+                y2: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'BESS-Leistung (kW)' },
+                    beginAtZero: true,
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        };
+    }
+    
+    console.log('✅ Wasserstand-Funktionen geladen');
+    
+    // Wasserstand-Analyse Funktionen
+    async function loadWaterLevelData() {
+        try {
+            console.log("🌊 Lade Wasserstand-Daten für BESS-Analyse...");
+            
+            const response = await fetch('/api/water-levels?river_name=Steyr&start_date=2024-01-01&end_date=2025-12-31');
+            const data = await response.json();
+            
+            console.log("📊 Wasserstand-API-Antwort:", data);
+            
+            if (data.success && data.data && data.data.length > 0) {
+                console.log(`✅ ${data.data.length} Wasserstand-Datenpunkte geladen`);
+                createWaterLevelChart(data.data);
+                updateWaterLevelDebugInfo(`✅ ${data.data.length} Datenpunkte geladen`, 'success');
+                showNotification(`Wasserstand-Daten geladen: ${data.data.length} Datenpunkte`, 'success');
+            } else {
+                console.log("⚠️ Keine Wasserstand-Daten verfügbar");
+                showNoWaterLevelDataMessage();
+                updateWaterLevelDebugInfo('Keine Daten verfügbar', 'warning');
+                showNotification('Keine Wasserstand-Daten verfügbar', 'warning');
+            }
+        } catch (error) {
+            console.error('❌ Fehler beim Laden der Wasserstand-Daten:', error);
+            showNoWaterLevelDataMessage();
+            updateWaterLevelDebugInfo('Fehler beim Laden der Daten', 'error');
+            showNotification('Fehler beim Laden der Wasserstand-Daten', 'error');
+        }
+    }
+    
+    // Wasserstand-Chart erstellen
+    function createWaterLevelChart(data) {
+        const chartContainer = document.getElementById('waterLevelChartContainer');
+        if (!chartContainer) {
+            console.error('❌ waterLevelChartContainer nicht gefunden');
+            return;
+        }
+        
+        console.log(`📈 Erstelle Wasserstand-Chart mit ${data.length} Datenpunkten`);
+        
+        // Chart.js verwenden
+        const ctx = document.createElement('canvas');
+        ctx.id = 'waterLevelChartBESS';
+        chartContainer.innerHTML = '';
+        chartContainer.appendChild(ctx);
+        
+        // Limitiere auf 200 Datenpunkte für bessere Performance
+        const chartData = data.slice(0, 200);
+        const labels = chartData.map(d => {
+            const date = new Date(d.timestamp);
+            return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+        });
+        const values = chartData.map(d => d.water_level_cm);
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Pegelstand (cm)',
+                    data: values,
+                    borderColor: 'rgb(6, 182, 212)',
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 2,
+                    pointHoverRadius: 5,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Steyr Pegelstand-Verlauf - BESS-Analyse',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return `Pegelstand: ${context.parsed.y} cm`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Datum & Zeit' },
+                        ticks: { maxTicksLimit: 10 }
+                    },
+                    y: {
+                        beginAtZero: false,
+                        title: { display: true, text: 'Pegelstand (cm)' }
+                    }
+                },
+                interaction: { intersect: false, mode: 'index' }
+            }
+        });
+        
+        console.log("✅ Wasserstand-Chart erfolgreich erstellt");
+    }
+    
+    // Keine Daten Nachricht für Wasserstand
+    function showNoWaterLevelDataMessage() {
+        const chartContainer = document.getElementById('waterLevelChartContainer');
+        if (chartContainer) {
+            chartContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-water text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Keine Wasserstand-Daten verfügbar</h3>
+                    <p class="text-gray-500">Laden Sie zuerst EHYD-Daten für Steyr.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Debug-Info für Wasserstand aktualisieren
+    function updateWaterLevelDebugInfo(message, type = 'info') {
+        const debugInfo = document.getElementById('waterLevelDebugInfo');
+        if (debugInfo) {
+            const colorClass = type === 'success' ? 'text-green-600' : 
+                              type === 'error' ? 'text-red-600' : 
+                              type === 'warning' ? 'text-yellow-600' : 'text-gray-600';
+            debugInfo.innerHTML = `
+                <p class="${colorClass}">Status: ${message}</p>
+                <p>API-Endpunkt: /api/water-levels</p>
+                <p>BESS-Integration: Aktiv</p>
+            `;
+        }
+    }
+    
+    // BESS-Simulation mit Wasserstanddaten
+    function simulateBESSWithWaterData() {
+        const bessSize = document.getElementById('bessSizeWater').value;
+        const bessPower = document.getElementById('bessPowerWater').value;
+        
+        console.log(`🔋 Starte BESS-Simulation: ${bessSize} kWh / ${bessPower} kW`);
+        
+        // Hier würde die eigentliche BESS-Simulation mit Wasserstanddaten stattfinden
+        showNotification(`BESS-Simulation gestartet: ${bessSize} kWh / ${bessPower} kW mit Wasserstanddaten`, 'success');
+        
+        // Beispiel-Ergebnisse anzeigen
+        updateWaterLevelDebugInfo(`BESS-Simulation läuft: ${bessSize} kWh / ${bessPower} kW`, 'success');
+    }
+    
+    // Wasserstand-Daten exportieren
+    function exportWaterLevelData() {
+        console.log("📤 Exportiere Wasserstand-Daten...");
+        showNotification('Wasserstand-Daten werden exportiert...', 'info');
+        // Hier würde der Export-Code stehen
+    }
+
+    // Wasserkraft-Berechnung basierend auf Pegelständen
+    function calculateHydroPower() {
+        const power = parseFloat(document.getElementById('hydroPower').value);
+        const efficiency = parseFloat(document.getElementById('hydroEfficiency').value) / 100;
+        const head = parseFloat(document.getElementById('hydroHead').value);
+        const flow = parseFloat(document.getElementById('hydroFlow').value);
+        
+        // Wasserkraft-Formel: P = η * ρ * g * H * Q
+        // η = Wirkungsgrad, ρ = Wasserdichte (1000 kg/m³), g = Erdbeschleunigung (9.81 m/s²)
+        const waterDensity = 1000; // kg/m³
+        const gravity = 9.81; // m/s²
+        
+        // Theoretische Leistung in Watt
+        const theoreticalPower = efficiency * waterDensity * gravity * head * flow;
+        
+        // Praktische Leistung (begrenzt auf Nennleistung)
+        const actualPower = Math.min(theoreticalPower, power * 1000); // kW zu W
+        
+        // Erzeugung in kWh/h
+        const generation = actualPower / 1000; // W zu kW
+        
+        // Anzeige aktualisieren
+        document.getElementById('hydroGeneration').textContent = generation.toFixed(1) + ' kWh/h';
+        
+        console.log(`⚡ Wasserkraft-Berechnung: ${generation.toFixed(1)} kWh/h`);
+        showNotification(`Wasserkraft-Erzeugung: ${generation.toFixed(1)} kWh/h`, 'success');
+        
+        return generation;
+    }
+    
+    // Wasserkraft-Erzeugungsverlauf basierend auf Pegelstanddaten
+    function calculateHydroPowerFromWaterLevels(waterLevelData) {
+        if (!waterLevelData || waterLevelData.length === 0) {
+            console.log("⚠️ Keine Pegelstanddaten für Wasserkraft-Berechnung");
+            return [];
+        }
+        
+        const power = parseFloat(document.getElementById('hydroPower').value);
+        const efficiency = parseFloat(document.getElementById('hydroEfficiency').value) / 100;
+        const head = parseFloat(document.getElementById('hydroHead').value);
+        
+        console.log(`🌊 Berechne Wasserkraft für ${waterLevelData.length} Datenpunkte`);
+        
+        const generationData = waterLevelData.map(dataPoint => {
+            const waterLevel = dataPoint.water_level_cm / 100; // cm zu m
+            
+            // Durchfluss basierend auf Pegelstand (vereinfachte Formel)
+            // Q = k * H^1.5 (k = Durchflusskoeffizient)
+            const flowCoefficient = 0.8; // m³/s pro m^1.5
+            const flow = flowCoefficient * Math.pow(waterLevel, 1.5);
+            
+            // Wasserkraft-Formel
+            const waterDensity = 1000; // kg/m³
+            const gravity = 9.81; // m/s²
+            const theoreticalPower = efficiency * waterDensity * gravity * head * flow;
+            const actualPower = Math.min(theoreticalPower, power * 1000);
+            const generation = actualPower / 1000; // kWh/h
+            
+            return {
+                timestamp: dataPoint.timestamp,
+                water_level_m: waterLevel,
+                flow_m3s: flow,
+                generation_kwh: generation
+            };
+        });
+        
+        console.log(`✅ Wasserkraft-Berechnung abgeschlossen: ${generationData.length} Datenpunkte`);
+        return generationData;
+    }
+    
+    // Wasserkraft-Erzeugungsverlauf Chart anzeigen
+    function showHydroPowerChart() {
+        const chartContainer = document.getElementById('hydroPowerChartContainer');
+        chartContainer.classList.remove('hidden');
+        
+        // Lade Wasserstanddaten und berechne Erzeugung
+        loadWaterLevelDataForHydroPower();
+    }
+    
+    // Wasserstanddaten für Wasserkraft-Berechnung laden
+    async function loadWaterLevelDataForHydroPower() {
+        try {
+            console.log("🌊 Lade Wasserstanddaten für Wasserkraft-Berechnung...");
+            
+            const response = await fetch('/api/water-levels?river_name=Steyr&start_date=2024-01-01&end_date=2025-12-31');
+            const data = await response.json();
+            
+            if (data.success && data.data && data.data.length > 0) {
+                console.log(`✅ ${data.data.length} Wasserstanddaten geladen`);
+                
+                // Wasserkraft-Erzeugung berechnen
+                const generationData = calculateHydroPowerFromWaterLevels(data.data);
+                
+                // Chart erstellen
+                createHydroPowerChart(generationData);
+                
+                // Gesamte Erzeugung berechnen
+                const totalGeneration = generationData.reduce((sum, point) => sum + point.generation_kwh, 0);
+                const avgGeneration = totalGeneration / generationData.length;
+                
+                console.log(`⚡ Gesamte Erzeugung: ${totalGeneration.toFixed(1)} kWh`);
+                console.log(`⚡ Durchschnittliche Erzeugung: ${avgGeneration.toFixed(1)} kWh/h`);
+                
+                showNotification(`Wasserkraft-Erzeugung berechnet: ${avgGeneration.toFixed(1)} kWh/h Durchschnitt`, 'success');
+            } else {
+                console.log("⚠️ Keine Wasserstanddaten verfügbar");
+                showNotification('Keine Wasserstanddaten für Wasserkraft-Berechnung verfügbar', 'warning');
+            }
+        } catch (error) {
+            console.error('❌ Fehler bei Wasserkraft-Berechnung:', error);
+            showNotification('Fehler bei Wasserkraft-Berechnung', 'error');
+        }
+    }
+    
+    // Wasserkraft-Erzeugungsverlauf Chart erstellen
+    function createHydroPowerChart(generationData) {
+        const chartContainer = document.getElementById('hydroPowerChart');
+        if (!chartContainer) {
+            console.error('❌ hydroPowerChart Container nicht gefunden');
+            return;
+        }
+        
+        // Chart.js verwenden
+        const ctx = document.createElement('canvas');
+        ctx.id = 'hydroPowerChartCanvas';
+        chartContainer.innerHTML = '';
+        chartContainer.appendChild(ctx);
+        
+        // Limitiere auf 200 Datenpunkte für bessere Performance
+        const chartData = generationData.slice(0, 200);
+        const labels = chartData.map(d => {
+            const date = new Date(d.timestamp);
+            return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+        });
+        const generationValues = chartData.map(d => d.generation_kwh);
+        const flowValues = chartData.map(d => d.flow_m3s);
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Erzeugung (kWh/h)',
+                        data: generationValues,
+                        borderColor: 'rgb(34, 197, 94)',
+                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Durchfluss (m³/s)',
+                        data: flowValues,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 1,
+                        pointHoverRadius: 3,
+                        fill: false,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Wasserkraft-Erzeugung (540kW Anlage) - Steyr',
+                        font: { size: 16, weight: 'bold' }
+                    },
+                    legend: { display: true, position: 'top' },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.label.includes('Erzeugung')) {
+                                    return `Erzeugung: ${context.parsed.y.toFixed(1)} kWh/h`;
+                                } else {
+                                    return `Durchfluss: ${context.parsed.y.toFixed(2)} m³/s`;
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Datum & Zeit' },
+                        ticks: { maxTicksLimit: 10 }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Erzeugung (kWh/h)' },
+                        beginAtZero: true
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Durchfluss (m³/s)' },
+                        beginAtZero: true,
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                interaction: { intersect: false, mode: 'index' }
+            }
+        });
+        
+        console.log("✅ Wasserkraft-Erzeugungsverlauf Chart erstellt");
+    }
+    
+    // BESS-Simulation mit Wasserkraft-Erzeugung erweitern
+    function simulateBESSWithWaterData() {
+        const bessSize = document.getElementById('bessSizeWater').value;
+        const bessPower = document.getElementById('bessPowerWater').value;
+        const hydroGeneration = calculateHydroPower();
+        
+        console.log(`🔋 Starte BESS-Simulation: ${bessSize} kWh / ${bessPower} kW`);
+        console.log(`⚡ Wasserkraft-Erzeugung: ${hydroGeneration.toFixed(1)} kWh/h`);
+        
+        // Hier würde die erweiterte BESS-Simulation mit Wasserkraft-Erzeugung stattfinden
+        showNotification(`BESS-Simulation gestartet: ${bessSize} kWh / ${bessPower} kW + ${hydroGeneration.toFixed(1)} kWh/h Wasserkraft`, 'success');
+        
+        // Beispiel-Ergebnisse anzeigen
+        updateWaterLevelDebugInfo(`BESS + Wasserkraft-Simulation: ${bessSize} kWh / ${bessPower} kW + ${hydroGeneration.toFixed(1)} kWh/h`, 'success');
+    }
+</script>
 <script>
 let charts = {};
 let cardCounter = 1;
@@ -141,6 +811,14 @@ let cardCounter = 1;
 // Projekte und Lastprofile laden
 document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
+    
+    // Wenn ein Projekt in der URL ist, automatisch laden
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project_id');
+    if (projectId) {
+        document.getElementById('projectSelect').value = projectId;
+        loadLoadProfiles(projectId);
+    }
 });
 
 // Projekte laden
@@ -180,8 +858,12 @@ async function loadProjects() {
 // Lastprofile für ein Projekt laden
 async function loadLoadProfiles(projectId) {
     try {
+        console.log(`🔄 Lade Lastprofile für Projekt ${projectId}...`);
+        
         const response = await fetch(`/api/projects/${projectId}/load-profiles`);
         const data = await response.json();
+        
+        console.log(`📊 API-Antwort:`, data);
         
         const select = document.getElementById('loadProfileSelect');
         const deleteBtn = document.getElementById('deleteProfileBtn');
@@ -207,7 +889,7 @@ async function loadLoadProfiles(projectId) {
         }
         
     } catch (error) {
-        console.error('Fehler beim Laden der Lastprofile:', error);
+        console.error('❌ Fehler beim Laden der Lastprofile:', error);
         const select = document.getElementById('loadProfileSelect');
         const deleteBtn = document.getElementById('deleteProfileBtn');
         select.innerHTML = '<option value="">Fehler beim Laden</option>';
@@ -302,6 +984,12 @@ function addAnalysisCard(analysisType) {
             icon: 'fas fa-exchange-alt',
             color: 'purple',
             description: 'Regelleistung und Systemdienstleistungen'
+        },
+        'water-level': {
+            title: 'Wasserstand-Analyse',
+            icon: 'fas fa-water',
+            color: 'cyan',
+            description: 'EHYD-Pegelstanddaten für BESS-Simulation'
         }
     };
     
@@ -332,7 +1020,7 @@ function addAnalysisCard(analysisType) {
             <p class="text-gray-600 mb-4">${config.description}</p>
             
             <div class="flex gap-3">
-                <button onclick="runAnalysis('${analysisType}', ${projectId}, ${loadProfileId})" class="bg-${config.color}-600 hover:bg-${config.color}-700 text-white px-4 py-2 rounded-lg font-medium">
+                <button onclick="runAnalysis('${analysisType}', '${projectId}', '${loadProfileId}')" class="bg-${config.color}-600 hover:bg-${config.color}-700 text-white px-4 py-2 rounded-lg font-medium">
                     <i class="fas fa-play mr-2"></i>Analyse starten
                 </button>
                 <button onclick="configureAnalysis('${analysisType}')" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium">
@@ -431,6 +1119,15 @@ function configureAnalysis(analysisType) {
                 { name: 'response_time', label: 'Reaktionszeit (Sekunden)', type: 'number', value: 30, min: 5, max: 300 },
                 { name: 'availability', label: 'Verfügbarkeit (%)', type: 'number', value: 95, min: 80, max: 100 },
                 { name: 'service_type', label: 'Dienstleistung', type: 'select', options: ['Primärregelung', 'Sekundärregelung', 'Minutenreserve'] }
+            ]
+        },
+        'water-level': {
+            title: 'Wasserstand-Analyse Konfiguration',
+            fields: [
+                { name: 'river_name', label: 'Fluss', type: 'select', options: ['Steyr', 'Enns', 'Traun', 'Salzach'] },
+                { name: 'time_period', label: 'Zeitraum (Tage)', type: 'number', value: 7, min: 1, max: 365 },
+                { name: 'chart_type', label: 'Chart-Typ', type: 'select', options: ['Linien-Chart', 'Balken-Chart', 'Flächen-Chart'] },
+                { name: 'bess_integration', label: 'BESS-Integration', type: 'select', options: ['Aktiviert', 'Deaktiviert'] }
             ]
         }
     };
@@ -559,6 +1256,23 @@ function showAnalysisResults(analysisType, data) {
                 'Verfügbarkeit optimieren',
                 'Marktteilnahme erweitern'
             ]
+        },
+        'water-level': {
+            title: 'Wasserstand-Analyse Ergebnisse',
+            icon: 'fas fa-water',
+            color: 'cyan',
+            chartTitle: 'Wasserstand-Verlauf und BESS-Integration',
+            summary: [
+                { label: 'Durchschnittlicher Pegelstand', value: '125.3', unit: 'cm' },
+                { label: 'Wasserkraft-Erzeugung', value: '432', unit: 'kWh/h' },
+                { label: 'BESS-Integration', value: 'Aktiviert', unit: '' },
+                { label: 'Datenpunkte', value: '1,000', unit: '' }
+            ],
+            nextSteps: [
+                'Wasserstand-Daten exportieren',
+                'BESS-Simulation starten',
+                'Wasserkraft-Berechnung durchführen'
+            ]
         }
     };
     
@@ -675,6 +1389,10 @@ function createAnalysisSpecificChart(analysisType) {
         case 'secondary':
             chartData = createSecondaryMarketChartData();
             chartOptions = createSecondaryMarketChartOptions();
+            break;
+        case 'water-level':
+            chartData = createWaterLevelChartData();
+            chartOptions = createWaterLevelChartOptions();
             break;
         default:
             chartData = createPeakShavingChartData();

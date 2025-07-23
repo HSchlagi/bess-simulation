@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steyr EHYD Test - Mit Jahresauswahl & Chart-Vorschau</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">🏔️ Steyr EHYD Test - Mit Jahresauswahl & Chart-Vorschau</h1>
+        
+        <!-- Projekt- und Profilauswahl -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Projekt- und Profilauswahl</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                    <select id="hydroProjectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="1">BESS Hinterstoder - Hinterstoder, Österreich</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Pegelstandprofil Name *</label>
+                    <input type="text" id="hydroProfileName" value="Steyr Pegelstände 2024" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Jahr auswählen *</label>
+                    <select id="yearSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="">Jahr auswählen...</option>
+                        <option value="2024" selected>2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                        <option value="2019">2019</option>
+                        <option value="2018">2018</option>
+                        <option value="2017">2017</option>
+                        <option value="2016">2016</option>
+                        <option value="2015">2015</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <!-- EHYD Live-Daten -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-tint text-green-600 text-xl mr-3"></i>
+                <h2 class="text-xl font-semibold text-gray-800">EHYD Live-Daten</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fluss auswählen:</label>
+                    <select id="riverSelect" class="w-full p-2 border border-gray-300 rounded-md">
+                        <option value="">Fluss auswählen...</option>
+                        <option value="steyr" selected>Steyr</option>
+                        <option value="donau">Donau</option>
+                        <option value="inn">Inn</option>
+                        <option value="mur">Mur</option>
+                        <option value="drau">Drau</option>
+                        <option value="salzach">Salzach</option>
+                        <option value="traun">Traun</option>
+                        <option value="enns">Enns</option>
+                        <option value="leitha">Leitha</option>
+                        <option value="march">March</option>
+                        <option value="thaya">Thaya</option>
+                        <option value="gail">Gail</option>
+                        <option value="gurk">Gurk</option>
+                        <option value="lafnitz">Lafnitz</option>
+                        <option value="pinka">Pinka</option>
+                        <option value="rabnitz">Rabnitz</option>
+                        <option value="zaya">Zaya</option>
+                        <option value="schwechat">Schwechat</option>
+                        <option value="piesting">Piesting</option>
+                        <option value="triesting">Triesting</option>
+                        <option value="gölsen">Gölsen</option>
+                        <option value="traisen">Traisen</option>
+                        <option value="perschling">Perschling</option>
+                        <option value="große_erlauf">Große Erlauf</option>
+                        <option value="kleine_erlauf">Kleine Erlauf</option>
+                        <option value="ybbs">Ybbs</option>
+                        <option value="melk">Melk</option>
+                        <option value="pielach">Pielach</option>
+                        <option value="große_tulln">Große Tulln</option>
+                        <option value="kleine_tulln">Kleine Tulln</option>
+                        <option value="wienfluss">Wienfluss</option>
+                        <option value="schwarza">Schwarza</option>
+                        <option value="kamp">Kamp</option>
+                        <option value="krems_niederoesterreich">Krems (NÖ)</option>
+                        <option value="rußbach">Rußbach</option>
+                        <option value="große_klaus">Große Klaus</option>
+                        <option value="kleine_klaus">Kleine Klaus</option>
+                        <option value="spitzer_graben">Spitzer Graben</option>
+                        <option value="große_mühl">Große Mühl</option>
+                        <option value="kleine_mühl">Kleine Mühl</option>
+                        <option value="rodl">Rodl</option>
+                        <option value="gusen">Gusen</option>
+                        <option value="naarn">Naarn</option>
+                        <option value="aist">Aist</option>
+                        <option value="feldaist">Feldaist</option>
+                        <option value="waldaist">Waldaist</option>
+                        <option value="große_rodl">Große Rodl</option>
+                        <option value="kleine_rodl">Kleine Rodl</option>
+                        <option value="große_klaus_oberoesterreich">Große Klaus (OÖ)</option>
+                        <option value="kleine_klaus_oberoesterreich">Kleine Klaus (OÖ)</option>
+                        <option value="große_mühl_oberoesterreich">Große Mühl (OÖ)</option>
+                        <option value="kleine_mühl_oberoesterreich">Kleine Mühl (OÖ)</option>
+                        <option value="große_rodl_oberoesterreich">Große Rodl (OÖ)</option>
+                        <option value="kleine_rodl_oberoesterreich">Kleine Rodl (OÖ)</option>
+                        <option value="große_klaus_salzburg">Große Klaus (S)</option>
+                        <option value="kleine_klaus_salzburg">Kleine Klaus (S)</option>
+                        <option value="große_mühl_salzburg">Große Mühl (S)</option>
+                        <option value="kleine_mühl_salzburg">Kleine Mühl (S)</option>
+                        <option value="große_rodl_salzburg">Große Rodl (S)</option>
+                        <option value="kleine_rodl_salzburg">Kleine Rodl (S)</option>
+                        <option value="steyrbach">Steyrbach</option>
+                        <option value="pießling">Pießling</option>
+                        <option value="warscheneck">Warscheneck</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Datenquelle:</label>
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center">
+                            <input type="radio" name="dataSource" value="year" checked class="mr-2">
+                            <span class="text-sm">Jahresdaten (echte EHYD)</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="dataSource" value="demo" class="mr-2">
+                            <span class="text-sm">Demo-Daten (7 Tage)</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="stationList" class="mb-4 p-4 bg-gray-50 rounded">
+                <h3 class="font-semibold mb-2">Stationen für Steyr:</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between p-2 bg-white rounded">
+                        <div>
+                            <h4 class="font-semibold">Hinterstoder</h4>
+                            <p class="text-sm text-gray-600">ID: 208010</p>
+                        </div>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Steyr</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-white rounded">
+                        <div>
+                            <h4 class="font-semibold">Steyr</h4>
+                            <p class="text-sm text-gray-600">ID: 208015</p>
+                        </div>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Steyr</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2 bg-white rounded">
+                        <div>
+                            <h4 class="font-semibold">Garsten</h4>
+                            <p class="text-sm text-gray-600">ID: 208020</p>
+                        </div>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Steyr</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="loadEHYDButton" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded" onclick="loadEHYDData()">
+                <i class="fas fa-download mr-2"></i>EHYD laden
+            </button>
+            <div class="mt-2 text-sm text-gray-500">Status: Bereit</div>
+        </div>
+        
+        <!-- Intelligente Vorschau -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                Intelligente Vorschau
+            </h2>
+            <div id="dataPreview" class="text-sm text-gray-500">
+                Keine Daten geladen
+            </div>
+            <div id="chartPreview" class="mt-4">
+                <!-- Chart wird hier dynamisch eingefügt -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChart = null;
+
+        async function loadEHYDData() {
+            console.log("🚀 loadEHYDData aufgerufen");
+            
+            const projectId = document.getElementById('hydroProjectSelect').value;
+            const profileName = document.getElementById('hydroProfileName').value;
+            const riverKey = document.getElementById('riverSelect').value;
+            const year = document.getElementById('yearSelect').value;
+            const dataSource = document.querySelector('input[name="dataSource"]:checked').value;
+            
+            console.log("📋 Werte:", { projectId, profileName, riverKey, year, dataSource });
+            
+            if (!projectId || !profileName || !riverKey) {
+                alert('Bitte füllen Sie alle Pflichtfelder aus');
+                return;
+            }
+            
+            if (dataSource === 'year' && !year) {
+                alert('Bitte wählen Sie ein Jahr aus');
+                return;
+            }
+            
+            // Lade-Animation starten
+            const loadButton = document.getElementById('loadEHYDButton');
+            const originalText = loadButton.innerHTML;
+            loadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lade EHYD-Daten...';
+            loadButton.disabled = true;
+            
+            try {
+                const payload = {
+                    river_key: riverKey,
+                    project_id: projectId,
+                    profile_name: profileName
+                };
+                
+                if (dataSource === 'year') {
+                    payload.year = parseInt(year);
+                    console.log(`📅 Lade Jahresdaten für ${year}`);
+                } else {
+                    payload.start_date = '2024-01-01';
+                    payload.end_date = '2024-01-07';
+                    console.log('🎭 Lade Demo-Daten (7 Tage)');
+                }
+                
+                console.log("📤 Payload:", payload);
+                
+                const response = await fetch('/api/ehyd/fetch-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                console.log("📥 API Response:", data);
+                
+                if (data.success) {
+                    alert(`✅ ${data.message}`);
+                    console.log('✅ EHYD-Daten erfolgreich geladen:', data.data);
+                    
+                    // Vorschau aktualisieren
+                    updateDataPreview(data.data);
+                    
+                    // Chart-Vorschau laden
+                    await loadChartPreview();
+                    
+                } else {
+                    alert(`❌ Fehler: ${data.error}`);
+                    console.error('❌ Fehler beim Laden der EHYD-Daten:', data.error);
+                }
+            } catch (error) {
+                alert('Netzwerkfehler beim Laden der EHYD-Daten');
+                console.error('❌ Netzwerkfehler:', error);
+            } finally {
+                // Lade-Animation beenden
+                loadButton.innerHTML = originalText;
+                loadButton.disabled = false;
+            }
+        }
+
+        function updateDataPreview(result) {
+            const previewContainer = document.getElementById('dataPreview');
+            if (previewContainer) {
+                const sourceText = result.demo ? 'Demo-Daten' : 'Echte EHYD-Daten';
+                const sourceClass = result.demo ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
+                
+                previewContainer.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg border">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">
+                                Intelligente Vorschau - ${result.river_name}
+                            </h3>
+                            <span class="text-xs px-2 py-1 rounded ${sourceClass}">
+                                ${sourceText}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600">${result.total_data_points}</div>
+                                <div class="text-sm text-gray-600">Datenpunkte</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">${result.stations_count}</div>
+                                <div class="text-sm text-gray-600">Stationen</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-600">${result.successful_stations}</div>
+                                <div class="text-sm text-gray-600">Erfolgreich</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-600">${result.saved_count}</div>
+                                <div class="text-sm text-gray-600">Gespeichert</div>
+                            </div>
+                        </div>
+                        <div class="bg-white p-3 rounded">
+                            <div class="text-sm text-gray-700">
+                                <strong>Zeitraum:</strong> ${result.start_date} bis ${result.end_date}<br>
+                                <strong>Quelle:</strong> ${result.source}<br>
+                                <strong>Status:</strong> ${result.demo ? '⚠️ Demo-Daten (echte EHYD-Daten nicht verfügbar)' : '✅ Echte EHYD-Daten geladen'}
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="loadChartPreview()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-chart-bar"></i> Chart-Vorschau
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadChartPreview() {
+            try {
+                console.log("📊 Lade Chart-Vorschau...");
+                
+                const response = await fetch('/api/water-levels?start_date=2024-01-01&end_date=2024-01-07&limit=100');
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    createChart(data.data);
+                } else {
+                    showNotification('Keine Daten für Chart-Vorschau verfügbar', 'warning');
+                }
+            } catch (error) {
+                console.error('❌ Fehler beim Laden der Chart-Daten:', error);
+                showNotification('Fehler beim Laden der Chart-Daten', 'error');
+            }
+        }
+
+        function createChart(data) {
+            const chartContainer = document.getElementById('chartPreview');
+            if (!chartContainer) return;
+            
+            // Alten Chart zerstören
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            // Chart.js verwenden
+            const ctx = document.createElement('canvas');
+            ctx.id = 'waterLevelChart';
+            chartContainer.innerHTML = '';
+            chartContainer.appendChild(ctx);
+            
+            // Daten für Chart vorbereiten
+            const labels = data.map(d => new Date(d.timestamp).toLocaleDateString('de-DE'));
+            const values = data.map(d => d.water_level_cm);
+            
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pegelstand (cm)',
+                        data: values,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Pegelstand-Verlauf (Vorschau)',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Pegelstand (cm)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Datum'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+            
+            console.log("✅ Chart erstellt mit", data.length, "Datenpunkten");
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'error' ? 'bg-red-500 text-white' :
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'warning' ? 'bg-yellow-500 text-black' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Event-Listener für Fluss-Auswahl
+        document.getElementById('riverSelect').addEventListener('change', function() {
+            const riverKey = this.value;
+            if (riverKey) {
+                loadStationsForRiver(riverKey);
+            }
+        });
+
+        async function loadStationsForRiver(riverKey) {
+            try {
+                const response = await fetch(`/api/ehyd/stations/${riverKey}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStationList(data.stations, data.river_name);
+                }
+            } catch (error) {
+                console.error('❌ Fehler beim Laden der Stationen:', error);
+            }
+        }
+
+        function updateStationList(stations, riverName) {
+            const container = document.getElementById('stationList');
+            if (!container) return;
+            
+            container.innerHTML = `
+                <h3 class="font-semibold mb-2">Stationen für ${riverName}:</h3>
+                <div class="space-y-2">
+                    ${stations.map(station => `
+                        <div class="flex items-center justify-between p-2 bg-white rounded">
+                            <div>
+                                <h4 class="font-semibold">${station.name}</h4>
+                                <p class="text-sm text-gray-600">ID: ${station.id}</p>
+                            </div>
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${station.river}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html> 

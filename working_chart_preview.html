@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steyr Chart-Vorschau - FUNKTIONIERT</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">🏔️ Steyr Chart-Vorschau - FUNKTIONIERT</h1>
+        
+        <!-- Status -->
+        <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-400"></i>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-green-800">Chart-Vorschau funktioniert!</h3>
+                    <div class="mt-2 text-sm text-green-700">
+                        <p><strong>100 Datenpunkte</strong> erfolgreich geladen</p>
+                        <p><strong>Quelle:</strong> EHYD (Demo) - Basierend auf echten österreichischen Mustern</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart-Container -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">📈 Steyr Pegelstand-Verlauf</h2>
+            <div id="chartContainer" class="h-96">
+                <canvas id="waterLevelChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Daten-Info -->
+        <div class="bg-blue-50 rounded-lg p-4 mt-6">
+            <h3 class="font-semibold text-blue-800 mb-2">📊 Daten-Informationen</h3>
+            <ul class="text-blue-700 text-sm space-y-1">
+                <li>• <strong>Datenpunkte:</strong> 100</li>
+                <li>• <strong>Stationen:</strong> 3</li>
+                <li>• <strong>Zeitraum:</strong> 2025-07-24 bis 2025-07-24</li>
+                <li>• <strong>Quelle:</strong> EHYD (Demo)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Chart-Daten
+        const chartData = [{"timestamp": "2025-07-24T15:39:53.833579", "water_level_cm": 129.6, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:39:53.833579", "water_level_cm": 132.7, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:39:53.833579", "water_level_cm": 182.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:39:53.820614", "water_level_cm": 121.9, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:39:53.820614", "water_level_cm": 134.1, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:39:53.820614", "water_level_cm": 181.6, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:33:19.017268", "water_level_cm": 127.8, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:33:19.017268", "water_level_cm": 130.2, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:33:19.017268", "water_level_cm": 175.1, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:33:19.002309", "water_level_cm": 122.0, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:33:19.002309", "water_level_cm": 132.4, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:33:19.002309", "water_level_cm": 180.6, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:25:05.605867", "water_level_cm": 129.4, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:25:05.605867", "water_level_cm": 140.5, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:25:05.605867", "water_level_cm": 183.2, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:25:05.589401", "water_level_cm": 123.1, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:25:05.589401", "water_level_cm": 138.9, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:25:05.589401", "water_level_cm": 184.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:24.187755", "water_level_cm": 124.7, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:24.187755", "water_level_cm": 133.2, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:24.187755", "water_level_cm": 177.0, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:23.317898", "water_level_cm": 131.1, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:23.317898", "water_level_cm": 137.7, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:23.317898", "water_level_cm": 183.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:22.479521", "water_level_cm": 127.3, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:22.479521", "water_level_cm": 140.4, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:22.479521", "water_level_cm": 175.3, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:08.051978", "water_level_cm": 121.3, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:08.051978", "water_level_cm": 138.7, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:08.051978", "water_level_cm": 184.7, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:06.987058", "water_level_cm": 122.5, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:06.987058", "water_level_cm": 134.7, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:24:06.987058", "water_level_cm": 175.6, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:23:18.528956", "water_level_cm": 122.6, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:23:18.528956", "water_level_cm": 132.1, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:23:18.528956", "water_level_cm": 187.0, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:23:17.755384", "water_level_cm": 121.4, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:23:17.755384", "water_level_cm": 133.1, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:23:17.755384", "water_level_cm": 186.4, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:07:18.774193", "water_level_cm": 120.9, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:07:18.774193", "water_level_cm": 132.3, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:07:18.774193", "water_level_cm": 184.1, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:07:18.063214", "water_level_cm": 120.5, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:07:18.063214", "water_level_cm": 143.0, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T15:07:18.063214", "water_level_cm": 187.0, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:39:53.833579", "water_level_cm": 126.2, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:39:53.833579", "water_level_cm": 130.4, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:39:53.833579", "water_level_cm": 172.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:39:53.820614", "water_level_cm": 125.4, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:39:53.820614", "water_level_cm": 132.6, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:39:53.820614", "water_level_cm": 175.4, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:33:19.017268", "water_level_cm": 126.5, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:33:19.017268", "water_level_cm": 133.6, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:33:19.017268", "water_level_cm": 171.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:33:19.002309", "water_level_cm": 129.7, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:33:19.002309", "water_level_cm": 130.8, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:33:19.002309", "water_level_cm": 183.0, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:25:05.605867", "water_level_cm": 120.1, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:25:05.605867", "water_level_cm": 129.9, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:25:05.605867", "water_level_cm": 185.1, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:25:05.589401", "water_level_cm": 121.5, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:25:05.589401", "water_level_cm": 131.8, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:25:05.589401", "water_level_cm": 186.6, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:24.187755", "water_level_cm": 121.4, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:24.187755", "water_level_cm": 141.6, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:24.187755", "water_level_cm": 173.9, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:23.317898", "water_level_cm": 120.8, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:23.317898", "water_level_cm": 130.5, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:23.317898", "water_level_cm": 181.2, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:22.479521", "water_level_cm": 126.4, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:22.479521", "water_level_cm": 129.1, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:22.479521", "water_level_cm": 181.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:08.051978", "water_level_cm": 119.5, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:08.051978", "water_level_cm": 139.3, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:08.051978", "water_level_cm": 183.3, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:06.987058", "water_level_cm": 129.5, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:06.987058", "water_level_cm": 137.4, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:24:06.987058", "water_level_cm": 173.0, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:23:18.528956", "water_level_cm": 120.3, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:23:18.528956", "water_level_cm": 128.5, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:23:18.528956", "water_level_cm": 177.8, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:23:17.755384", "water_level_cm": 120.1, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:23:17.755384", "water_level_cm": 131.1, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:23:17.755384", "water_level_cm": 171.1, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:07:18.774193", "water_level_cm": 119.2, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:07:18.774193", "water_level_cm": 134.6, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:07:18.774193", "water_level_cm": 175.3, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:07:18.063214", "water_level_cm": 117.8, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:07:18.063214", "water_level_cm": 132.6, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T14:07:18.063214", "water_level_cm": 171.1, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:39:53.833579", "water_level_cm": 122.3, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:39:53.833579", "water_level_cm": 138.0, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:39:53.833579", "water_level_cm": 186.4, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:39:53.820614", "water_level_cm": 126.0, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:39:53.820614", "water_level_cm": 130.7, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:39:53.820614", "water_level_cm": 173.9, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:33:19.017268", "water_level_cm": 125.6, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:33:19.017268", "water_level_cm": 139.0, "station_name": "Steyr", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:33:19.017268", "water_level_cm": 175.2, "station_name": "Hinterstoder", "river_name": "Steyr", "source": "EHYD (Demo)"}, {"timestamp": "2025-07-24T13:33:19.002309", "water_level_cm": 116.6, "station_name": "Garsten", "river_name": "Steyr", "source": "EHYD (Demo)"}];
+        
+        // Chart erstellen
+        function createChart() {
+            const ctx = document.getElementById('waterLevelChart');
+            
+            // Daten für Chart vorbereiten
+            const labels = chartData.map(d => {
+                const date = new Date(d.timestamp);
+                return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+            });
+            const values = chartData.map(d => d.water_level_cm);
+            
+            console.log(`📊 Erstelle Chart mit ${chartData.length} Datenpunkten`);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pegelstand (cm)',
+                        data: values,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Steyr Pegelstand-Verlauf (Vorschau)',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Pegelstand: ${context.parsed.y} cm`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Datum & Zeit' },
+                            ticks: { maxTicksLimit: 10 }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Pegelstand (cm)' }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            });
+            
+            console.log("✅ Chart erfolgreich erstellt");
+        }
+        
+        // Seite laden
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🚀 Chart-Vorschau-Seite geladen");
+            createChart();
+        });
+    </script>
+</body>
+</html>

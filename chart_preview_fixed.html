@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steyr Chart-Vorschau - FIXED</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">🏔️ Steyr Chart-Vorschau - FIXED</h1>
+        
+        <!-- Status -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">📊 Chart-Vorschau Status</h2>
+            <div id="status" class="text-green-600 font-medium">
+                <i class="fas fa-check-circle mr-2"></i>Bereit für Chart-Vorschau
+            </div>
+        </div>
+        
+        <!-- Chart-Container -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">📈 Steyr Pegelstand-Verlauf</h2>
+            <div id="chartContainer" class="h-96">
+                <div id="loadingMessage" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-2xl text-blue-500 mb-4"></i>
+                    <p class="text-gray-600">Lade Chart-Daten...</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info -->
+        <div class="bg-blue-50 rounded-lg p-4 mt-6">
+            <h3 class="font-semibold text-blue-800 mb-2">ℹ️ Informationen</h3>
+            <ul class="text-blue-700 text-sm space-y-1">
+                <li>• <strong>Datenquelle:</strong> EHYD (Demo) - Basierend auf echten österreichischen Mustern</li>
+                <li>• <strong>Stationen:</strong> Hinterstoder, Steyr, Garsten</li>
+                <li>• <strong>Zeitraum:</strong> 2024-2025</li>
+                <li>• <strong>Datenpunkte:</strong> 343.440+ in der Datenbank</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Chart-Vorschau laden
+        async function loadChartPreview() {
+            try {
+                console.log("📊 Lade Chart-Vorschau...");
+                
+                // Verwende die neue API-Route
+                const response = await fetch('/api/water-levels-fixed?river_name=Steyr&start_date=2024-01-01&end_date=2025-12-31');
+                const data = await response.json();
+                
+                console.log("📊 API Response:", data);
+                
+                if (data.success && data.data && data.data.length > 0) {
+                    console.log(`📊 ${data.data.length} Datenpunkte gefunden`);
+                    createChart(data.data);
+                } else {
+                    showNoDataMessage();
+                }
+            } catch (error) {
+                console.error('❌ Fehler beim Laden der Chart-Daten:', error);
+                showErrorMessage();
+            }
+        }
+        
+        // Chart erstellen
+        function createChart(data) {
+            const chartContainer = document.getElementById('chartContainer');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            // Loading-Message entfernen
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+            
+            // Chart-Canvas erstellen
+            chartContainer.innerHTML = '<canvas id="waterLevelChart"></canvas>';
+            const ctx = document.getElementById('waterLevelChart');
+            
+            // Daten für Chart vorbereiten (nur die ersten 200 Punkte für bessere Performance)
+            const chartData = data.slice(0, 200);
+            const labels = chartData.map(d => {
+                const date = new Date(d.timestamp);
+                return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+            });
+            const values = chartData.map(d => d.water_level_cm);
+            
+            console.log(`📊 Erstelle Chart mit ${chartData.length} Datenpunkten`);
+            
+            // Chart erstellen
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pegelstand (cm)',
+                        data: values,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Steyr Pegelstand-Verlauf (Vorschau)',
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Pegelstand: ${context.parsed.y} cm`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Datum & Zeit'
+                            },
+                            ticks: {
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Pegelstand (cm)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+            
+            console.log("✅ Chart erfolgreich erstellt");
+            updateStatus('Chart-Vorschau erfolgreich geladen!', 'success');
+        }
+        
+        // Keine Daten Nachricht
+        function showNoDataMessage() {
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-chart-line text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Keine Daten verfügbar</h3>
+                    <p class="text-gray-500">Laden Sie zuerst EHYD-Daten für Steyr.</p>
+                </div>
+            `;
+            updateStatus('Keine Daten verfügbar', 'warning');
+        }
+        
+        // Fehler Nachricht
+        function showErrorMessage() {
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-4xl text-red-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Fehler beim Laden</h3>
+                    <p class="text-gray-500">Es gab einen Fehler beim Laden der Chart-Daten.</p>
+                </div>
+            `;
+            updateStatus('Fehler beim Laden', 'error');
+        }
+        
+        // Status aktualisieren
+        function updateStatus(message, type) {
+            const statusElement = document.getElementById('status');
+            const icon = type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : 'times-circle';
+            const color = type === 'success' ? 'green' : type === 'warning' ? 'yellow' : 'red';
+            
+            statusElement.innerHTML = `<i class="fas fa-${icon} mr-2"></i>${message}`;
+            statusElement.className = `text-${color}-600 font-medium`;
+        }
+        
+        // Seite laden
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🚀 Chart-Vorschau-Seite geladen");
+            loadChartPreview();
+        });
+    </script>
+</body>
+</html> 

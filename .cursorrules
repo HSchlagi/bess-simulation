@@ -26,6 +26,6 @@
 
 ## Terminal Commands
 - PowerShell verwenden (nicht bash/cmd)
-- Immer zuerst: cd D:\Daten-Heinz\TB-Instanet\project
+- Immer zuerst: cd D:\Daten-Heinz\TB-Instanet
 - Server starten: python run.py
 - Git Commands: git add . && git commit -m "Nachricht" && git push origin main 

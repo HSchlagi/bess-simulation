@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verbesserte EHYD-Sektion</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">🏔️ Verbesserte EHYD-Sektion</h1>
+        
+        <!-- EHYD Live-Daten Sektion -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-tint text-green-500 text-2xl mr-3"></i>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800">EHYD Live-Daten</h3>
+                    <p class="text-sm text-gray-600">Echte österreichische Pegelstände</p>
+                    <a href="https://ehyd.gv.at" target="_blank" class="text-xs text-blue-600 hover:underline">Von ehyd.gv.at</a>
+                </div>
+            </div>
+            
+            <!-- Fluss-Auswahl -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fluss auswählen:</label>
+                <select id="riverSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">Fluss auswählen...</option>
+                </select>
+            </div>
+            
+            <!-- Jahr-Auswahl -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Jahr auswählen:</label>
+                <select id="yearSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">Jahr auswählen...</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                    <option value="2021">2021</option>
+                    <option value="2020">2020</option>
+                </select>
+            </div>
+            
+            <!-- Datenquelle-Auswahl -->
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Datenquelle:</label>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="radio" name="dataSource" value="real" class="mr-2" checked>
+                        <span class="text-sm">Jahresdaten (echte EHYD)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="dataSource" value="demo" class="mr-2">
+                        <span class="text-sm">Demo-Daten (7 Tage)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Stationen-Liste -->
+            <div id="stationsList" class="mb-4 hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Stationen:</label>
+                <div id="stationsContainer" class="space-y-2">
+                    <!-- Stationen werden hier dynamisch geladen -->
+                </div>
+            </div>
+            
+            <!-- Lade-Button -->
+            <button id="loadEHYDButton" onclick="loadEHYDData()" 
+                    class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors">
+                <i class="fas fa-download mr-2"></i>EHYD laden
+            </button>
+            
+            <!-- Status -->
+            <div class="mt-3 text-sm">
+                <span id="statusText" class="text-green-600 font-medium">Status: Bereit</span>
+            </div>
+        </div>
+        
+        <!-- Intelligente Vorschau -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Intelligente Vorschau</h3>
+            <div id="previewContainer">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-chart-line text-4xl mb-4"></i>
+                    <p>Laden Sie EHYD-Daten, um eine Vorschau zu sehen</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chart-Vorschau -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Chart-Vorschau</h3>
+            <div id="chartContainer" class="h-96">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-chart-bar text-4xl mb-4"></i>
+                    <p>Chart wird hier angezeigt</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // EHYD Data Fetcher
+        const ehydFetcher = {
+            rivers: [],
+            stations: {},
+            
+            // Flüsse laden
+            async loadRivers() {
+                try {
+                    const response = await fetch('/api/ehyd/rivers');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.rivers = data.rivers;
+                        this.populateRiverSelect();
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der Flüsse:', error);
+                }
+            },
+            
+            // Fluss-Auswahl befüllen
+            populateRiverSelect() {
+                const select = document.getElementById('riverSelect');
+                select.innerHTML = '<option value="">Fluss auswählen...</option>';
+                
+                this.rivers.forEach(river => {
+                    const option = document.createElement('option');
+                    option.value = river.key;
+                    option.textContent = river.name;
+                    select.appendChild(option);
+                });
+            },
+            
+            // Stationen laden
+            async loadStations(riverKey) {
+                try {
+                    const response = await fetch(`/api/ehyd/stations/${riverKey}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.stations[riverKey] = data.stations;
+                        this.showStations(riverKey);
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der Stationen:', error);
+                }
+            },
+            
+            // Stationen anzeigen
+            showStations(riverKey) {
+                const stationsList = document.getElementById('stationsList');
+                const container = document.getElementById('stationsContainer');
+                
+                container.innerHTML = '';
+                
+                this.stations[riverKey].forEach(station => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+                    div.innerHTML = `
+                        <span class="text-sm">${station.name} ID: ${station.id}</span>
+                        <button class="text-xs bg-blue-500 text-white px-2 py-1 rounded">${riverKey}</button>
+                    `;
+                    container.appendChild(div);
+                });
+                
+                stationsList.classList.remove('hidden');
+            },
+            
+            // EHYD-Daten laden
+            async loadEHYDData() {
+                const riverKey = document.getElementById('riverSelect').value;
+                const year = document.getElementById('yearSelect').value;
+                const dataSource = document.querySelector('input[name="dataSource"]:checked').value;
+                
+                if (!riverKey) {
+                    alert('Bitte wählen Sie einen Fluss aus');
+                    return;
+                }
+                
+                if (dataSource === 'real' && !year) {
+                    alert('Bitte wählen Sie ein Jahr aus');
+                    return;
+                }
+                
+                this.updateStatus('Lade EHYD-Daten...', 'loading');
+                
+                try {
+                    const requestData = {
+                        river_key: riverKey,
+                        project_id: 1,
+                        profile_name: `${riverKey} Pegelstände ${year || 'Demo'}`
+                    };
+                    
+                    if (dataSource === 'real') {
+                        requestData.year = parseInt(year);
+                    } else {
+                        requestData.start_date = '2024-01-01';
+                        requestData.end_date = '2024-01-07';
+                    }
+                    
+                    const response = await fetch('/api/ehyd/fetch-data', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.updateStatus('Daten erfolgreich geladen!', 'success');
+                        this.showPreview(data.data);
+                        this.loadChartPreview();
+                    } else {
+                        this.updateStatus('Fehler beim Laden der Daten', 'error');
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der EHYD-Daten:', error);
+                    this.updateStatus('Fehler beim Laden der Daten', 'error');
+                }
+            },
+            
+            // Status aktualisieren
+            updateStatus(message, type) {
+                const statusElement = document.getElementById('statusText');
+                const colors = {
+                    loading: 'text-blue-600',
+                    success: 'text-green-600',
+                    error: 'text-red-600'
+                };
+                
+                statusElement.textContent = `Status: ${message}`;
+                statusElement.className = `${colors[type]} font-medium`;
+            },
+            
+            // Vorschau anzeigen
+            showPreview(data) {
+                const container = document.getElementById('previewContainer');
+                const isDemo = data.demo;
+                
+                container.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-semibold">Intelligente Vorschau - ${data.river_name}</h4>
+                            ${isDemo ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">Demo-Daten</span>' : ''}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600">${data.total_data_points}</div>
+                                <div class="text-sm text-gray-600">Datenpunkte</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">${data.stations_count}</div>
+                                <div class="text-sm text-gray-600">Stationen</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-600">${data.successful_stations}</div>
+                                <div class="text-sm text-gray-600">Erfolgreich</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-600">${data.saved_count}</div>
+                                <div class="text-sm text-gray-600">Gespeichert</div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="text-sm text-gray-700">
+                                <strong>Zeitraum:</strong> ${data.start_date} bis ${data.end_date}<br>
+                                <strong>Quelle:</strong> ${data.source}<br>
+                                <strong>Status:</strong> ${isDemo ? '⚠️ Demo-Daten (echte EHYD-Daten nicht verfügbar)' : '✅ Echte EHYD-Daten geladen'}
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button onclick="loadChartPreview()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-chart-bar"></i> Chart-Vorschau
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            // Chart-Vorschau laden
+            async loadChartPreview() {
+                try {
+                    const response = await fetch('/api/water-levels?river_name=Steyr&start_date=2024-01-01&end_date=2025-12-31');
+                    const data = await response.json();
+                    
+                    if (data.success && data.data && data.data.length > 0) {
+                        createChart(data.data);
+                    } else {
+                        // Fallback: Verwende gespeicherte Test-Daten
+                        const fallbackResponse = await fetch('/test_api_response.json');
+                        const fallbackData = await fallbackResponse.json();
+                        
+                        if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
+                            createChart(fallbackData.data);
+                        } else {
+                            showNoDataMessage();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Fehler beim Laden der Chart-Daten:', error);
+                    showNoDataMessage();
+                }
+            }
+        };
+        
+        // Chart erstellen
+        function createChart(data) {
+            const chartContainer = document.getElementById('chartContainer');
+            
+            chartContainer.innerHTML = '<canvas id="waterLevelChart"></canvas>';
+            const ctx = document.getElementById('waterLevelChart');
+            
+            const chartData = data.slice(0, 200);
+            const labels = chartData.map(d => {
+                const date = new Date(d.timestamp);
+                return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
+            });
+            const values = chartData.map(d => d.water_level_cm);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pegelstand (cm)',
+                        data: values,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Steyr Pegelstand-Verlauf (Vorschau)',
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: { display: true, position: 'top' },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Pegelstand: ${context.parsed.y} cm`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Datum & Zeit' },
+                            ticks: { maxTicksLimit: 10 }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            title: { display: true, text: 'Pegelstand (cm)' }
+                        }
+                    },
+                    interaction: { intersect: false, mode: 'index' }
+                }
+            });
+        }
+        
+        // Keine Daten Nachricht
+        function showNoDataMessage() {
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-chart-line text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Keine Daten verfügbar</h3>
+                    <p class="text-gray-500">Laden Sie zuerst EHYD-Daten für Steyr.</p>
+                </div>
+            `;
+        }
+        
+        // Globale Funktionen
+        function loadEHYDData() {
+            ehydFetcher.loadEHYDData();
+        }
+        
+        function loadChartPreview() {
+            ehydFetcher.loadChartPreview();
+        }
+        
+        // Event-Listener
+        document.addEventListener('DOMContentLoaded', function() {
+            ehydFetcher.loadRivers();
+            
+            // Fluss-Auswahl Event
+            document.getElementById('riverSelect').addEventListener('change', function() {
+                const riverKey = this.value;
+                if (riverKey) {
+                    ehydFetcher.loadStations(riverKey);
+                } else {
+                    document.getElementById('stationsList').classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
