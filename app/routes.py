@@ -113,13 +113,18 @@ def button_funktioniert():
 def api_projects():
     try:
         cursor = get_db().cursor()
-        cursor.execute("SELECT id, name, location FROM project")
+        cursor.execute("""
+            SELECT p.id, p.name, p.location, c.name as customer_name 
+            FROM project p 
+            LEFT JOIN customer c ON p.customer_id = c.id
+        """)
         projects = cursor.fetchall()
         
         return jsonify([{
             'id': p[0],
             'name': p[1],
-            'location': p[2]
+            'location': p[2],
+            'customer_name': p[3] if p[3] else None
         } for p in projects])
     except Exception as e:
         print(f"Fehler beim Laden der Projekte: {e}")
