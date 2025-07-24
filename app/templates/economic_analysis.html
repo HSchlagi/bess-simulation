@@ -44,6 +44,14 @@
             </div>
         </div>
         
+        <!-- Intelligente Analyse Checkbox -->
+        <div class="mt-4">
+            <label class="flex items-center">
+                <input type="checkbox" id="intelligentAnalysis" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                <span class="ml-2 text-sm text-gray-700">Intelligente Analyse (inkl. erneuerbare Energien & BESS-Anwendungen)</span>
+            </label>
+        </div>
+        
         <div class="mt-6">
             <button id="runAnalysis" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -138,7 +146,7 @@
         <!-- Detailed Analysis Grid - Vertikale Anordnung -->
         <div class="space-y-6 mb-8">
             <!-- Investment Breakdown -->
-            <div class="bg-blue-50 rounded-xl shadow-lg border border-blue-200 p-6">
+            <div class="bg-blue-50 rounded-xl shadow-lg border border-blue-200 p-6 detailed-analysis-section">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Investitionsaufschlüsselung</h3>
                 <div id="investmentBreakdown" class="space-y-3">
                     <!-- Will be populated by JavaScript -->
@@ -146,7 +154,7 @@
             </div>
 
             <!-- Savings Breakdown -->
-            <div class="bg-green-50 rounded-xl shadow-lg border border-green-200 p-6">
+            <div class="bg-green-50 rounded-xl shadow-lg border border-green-200 p-6 detailed-analysis-section">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Einsparungsquellen</h3>
                 <div id="savingsBreakdown" class="space-y-3">
                     <!-- Will be populated by JavaScript -->
@@ -154,7 +162,7 @@
             </div>
 
             <!-- Intelligente Erlösquellen-Analyse -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <div id="intelligentRevenueSection" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                     <svg class="w-5 h-5 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
@@ -254,7 +262,7 @@
         </div>
 
         <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div id="chartsSection" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             <!-- Cash Flow Chart -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Cash Flow Prognose (20 Jahre)</h3>
@@ -281,7 +289,7 @@
         </div>
 
         <!-- Sensitivity Analysis -->
-        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+        <div id="sensitivitySection" class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
             <h3 class="text-xl font-semibold text-gray-900 mb-4">Sensitivitätsanalyse</h3>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
@@ -404,7 +412,32 @@ function onProjectChange() {
 }
 
 function onAnalysisTypeChange() {
-    // Could implement different analysis depths here
+    const analysisType = document.getElementById('analysisType').value;
+    const intelligentCheckbox = document.getElementById('intelligentAnalysis');
+    
+    // Analysetyp-spezifische Einstellungen
+    switch(analysisType) {
+        case 'quick':
+            // Schnellanalyse: Nur grundlegende Metriken, keine intelligenten Erlöse
+            intelligentCheckbox.checked = false;
+            intelligentCheckbox.disabled = true;
+            showNotification('Schnellanalyse: Grundlegende Wirtschaftlichkeitsberechnung', 'info');
+            break;
+            
+        case 'comprehensive':
+            // Vollständige Analyse: Alle Features aktiviert
+            intelligentCheckbox.checked = true;
+            intelligentCheckbox.disabled = false;
+            showNotification('Vollständige Analyse: Alle Berechnungen inkl. intelligente Erlöse', 'info');
+            break;
+            
+        case 'detailed':
+            // Detaillierte Analyse: Alle Features + erweiterte Details
+            intelligentCheckbox.checked = true;
+            intelligentCheckbox.disabled = false;
+            showNotification('Detaillierte Analyse: Erweiterte Analyse mit allen Details', 'info');
+            break;
+    }
 }
 
 function runAnalysis() {
@@ -413,13 +446,21 @@ function runAnalysis() {
         return;
     }
 
+    const analysisType = document.getElementById('analysisType').value;
+    const intelligentAnalysis = document.getElementById('intelligentAnalysis').checked;
+    
     showLoading(true);
     
-    fetch(`/api/economic-analysis/${currentProjectId}`)
+    // API-Endpunkt mit Analysetyp-Parameter
+    const url = `/api/economic-analysis/${currentProjectId}?analysis_type=${analysisType}&intelligent=${intelligentAnalysis}`;
+    
+    console.log(`🚀 Starte ${analysisType} Analyse für Projekt ${currentProjectId}`);
+    
+    fetch(url)
         .then(response => response.json())
         .then(data => {
             showLoading(false);
-            displayAnalysisResults(data);
+            displayAnalysisResults(data, analysisType);
         })
         .catch(error => {
             showLoading(false);
@@ -428,44 +469,92 @@ function runAnalysis() {
         });
 }
 
-function displayAnalysisResults(data) {
+function displayAnalysisResults(data, analysisType) {
     document.getElementById('analysisResults').classList.remove('hidden');
     
-    // Update key metrics
-    document.getElementById('totalInvestment').textContent = formatCurrency(data.total_investment);
+    // Analysetyp-spezifische Anzeige
+    const intelligentSection = document.getElementById('intelligentRevenueSection');
+    const detailedSections = document.querySelectorAll('.detailed-analysis-section');
+    const chartsSection = document.getElementById('chartsSection');
+    const sensitivitySection = document.getElementById('sensitivitySection');
     
-    // Zeige Gesamtnutzen statt nur Einsparungen
-    if (data.total_annual_benefit) {
-        document.getElementById('annualSavings').textContent = formatCurrency(data.total_annual_benefit);
-        // Korrigiert: Suche nach dem p-Element mit der Beschriftung
-        const labelElement = document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500');
-        if (labelElement) {
-            labelElement.textContent = 'Jährlicher Gesamtnutzen';
-        }
+    // Schnellanalyse: Nur grundlegende Metriken
+    if (analysisType === 'quick') {
+        intelligentSection.style.display = 'none';
+        detailedSections.forEach(section => section.style.display = 'none');
+        chartsSection.style.display = 'none';
+        sensitivitySection.style.display = 'none';
+        document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500').textContent = 'Jährliche Einsparungen';
     } else {
+        intelligentSection.style.display = 'block';
+        detailedSections.forEach(section => section.style.display = 'block');
+        chartsSection.style.display = 'block';
+        sensitivitySection.style.display = 'block';
+        if (data.total_annual_benefit) {
+            document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500').textContent = 'Jährlicher Gesamtnutzen';
+        }
+    }
+    // Update key metrics
+    document.getElementById('totalInvestment').textContent = data.total_investment !== undefined ? formatCurrency(data.total_investment) : '-';
+    if (data.total_annual_benefit && analysisType !== 'quick') {
+        document.getElementById('annualSavings').textContent = formatCurrency(data.total_annual_benefit);
+    } else if (data.annual_savings !== undefined) {
         document.getElementById('annualSavings').textContent = formatCurrency(data.annual_savings);
+    } else {
+        document.getElementById('annualSavings').textContent = '-';
     }
-    
-    document.getElementById('paybackPeriod').textContent = `${data.payback_period.toFixed(1)} Jahre`;
-    document.getElementById('roi').textContent = `${data.roi.toFixed(1)}%`;
-    
+    document.getElementById('paybackPeriod').textContent = data.payback_period !== undefined ? `${data.payback_period.toFixed(1)} Jahre` : '-';
+    document.getElementById('roi').textContent = data.roi !== undefined ? `${data.roi.toFixed(1)}%` : '-';
     // Update breakdowns
-    updateInvestmentBreakdown(data.investment_breakdown);
-    updateSavingsBreakdown(data.savings_breakdown);
-    
-    // Update intelligent revenue analysis
-    if (data.intelligent_revenues) {
-        updateIntelligentRevenueAnalysis(data.intelligent_revenues);
+    if (data.investment_breakdown) {
+        updateInvestmentBreakdown(data.investment_breakdown);
+    } else {
+        document.getElementById('investmentBreakdown').innerHTML = '<div class="text-gray-400 text-sm">Keine Daten</div>';
     }
-    updateRiskAssessment(data.risk_factors);
-    updateDecisionSupport(data.decision_metrics);
-    
-    // Create charts
-    createCashFlowChart(data.cash_flow);
-    createROIChart(data.roi_comparison);
-    
-    // Update sensitivity analysis
-    updateSensitivityAnalysis();
+    if (data.savings_breakdown) {
+        updateSavingsBreakdown(data.savings_breakdown);
+    } else {
+        document.getElementById('savingsBreakdown').innerHTML = '<div class="text-gray-400 text-sm">Keine Daten</div>';
+    }
+    // Update intelligent revenue analysis (nur wenn nicht Schnellanalyse)
+    if (data.intelligent_revenues && analysisType !== 'quick') {
+        updateIntelligentRevenueAnalysis(data.intelligent_revenues);
+    } else if (analysisType !== 'quick') {
+        document.getElementById('pvRevenue').innerHTML = '<div class="text-gray-400 text-xs">Keine Daten</div>';
+        document.getElementById('windRevenue').innerHTML = '<div class="text-gray-400 text-xs">Keine Daten</div>';
+        document.getElementById('hydroRevenue').innerHTML = '<div class="text-gray-400 text-xs">Keine Daten</div>';
+        document.getElementById('peakShavingRevenue').innerHTML = '<div class="text-gray-400 text-xs">Keine Daten</div>';
+        document.getElementById('intradayRevenue').innerHTML = '<div class="text-gray-400 text-xs">Keine Daten</div>';
+        document.getElementById('secondaryMarketRevenue').innerHTML = '<div class="text-gray-400 text-xs">Keine Daten</div>';
+        document.getElementById('totalRevenue').textContent = '-';
+    }
+    // Update risk assessment und decision support
+    if (data.risk_factors) {
+        updateRiskAssessment(data.risk_factors);
+    } else {
+        document.getElementById('riskAssessment').innerHTML = '<div class="text-gray-400 text-sm">Keine Daten</div>';
+    }
+    if (data.decision_metrics) {
+        updateDecisionSupport(data.decision_metrics);
+    } else {
+        document.getElementById('decisionSupport').innerHTML = '<div class="text-gray-400 text-sm">Keine Daten</div>';
+    }
+    // Create charts (nur wenn nicht Schnellanalyse)
+    if (analysisType !== 'quick' && data.cash_flow && data.roi_comparison) {
+        createCashFlowChart(data.cash_flow);
+        createROIChart(data.roi_comparison);
+        updateSensitivityAnalysis();
+    } else if (analysisType !== 'quick') {
+        document.getElementById('cashFlowChart').getContext('2d').clearRect(0,0,400,400);
+        document.getElementById('roiChart').getContext('2d').clearRect(0,0,400,400);
+    }
+    // Analysetyp-spezifische Benachrichtigung
+    const analysisNames = {
+        'quick': 'Schnellanalyse',
+        'comprehensive': 'Vollständige Analyse', 
+        'detailed': 'Detaillierte Analyse'
+    };
+    showNotification(`${analysisNames[analysisType]} erfolgreich abgeschlossen!`, 'success');
 }
 
 function updateInvestmentBreakdown(breakdown) {
