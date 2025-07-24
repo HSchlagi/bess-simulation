@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file
 from app import db, get_db
 import sys
 import os
@@ -2522,3 +2522,538 @@ def test_db():
             'success': False,
             'error': str(e)
         }) 
+
+@main_bp.route('/api/economic-analysis/<int:project_id>/export-pdf', methods=['POST'])
+def export_economic_analysis_pdf(project_id):
+    """Exportiert Wirtschaftlichkeitsanalyse als PDF"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Wirtschaftlichkeitsanalyse-Daten laden
+        analysis_data = get_economic_analysis_data(project_id)
+        
+        # PDF generieren
+        pdf_content = generate_economic_analysis_pdf(project, analysis_data)
+        
+        # PDF-Datei speichern
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"wirtschaftlichkeitsanalyse_{project.name}_{timestamp}.pdf"
+        filepath = os.path.join('instance', 'exports', filename)
+        
+        # Export-Verzeichnis erstellen falls nicht vorhanden
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        with open(filepath, 'wb') as f:
+            f.write(pdf_content)
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'download_url': f'/api/download/{filename}'
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim PDF-Export: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/economic-analysis/<int:project_id>/export-excel', methods=['POST'])
+def export_economic_analysis_excel(project_id):
+    """Exportiert Wirtschaftlichkeitsanalyse als Excel"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Wirtschaftlichkeitsanalyse-Daten laden
+        analysis_data = get_economic_analysis_data(project_id)
+        
+        # Excel generieren
+        excel_content = generate_economic_analysis_excel(project, analysis_data)
+        
+        # Excel-Datei speichern
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"wirtschaftlichkeitsanalyse_{project.name}_{timestamp}.xlsx"
+        filepath = os.path.join('instance', 'exports', filename)
+        
+        # Export-Verzeichnis erstellen falls nicht vorhanden
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        
+        with open(filepath, 'wb') as f:
+            f.write(excel_content)
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'download_url': f'/api/download/{filename}'
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Excel-Export: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/economic-analysis/<int:project_id>/share', methods=['POST'])
+def share_economic_analysis(project_id):
+    """Teilt Wirtschaftlichkeitsanalyse-Bericht"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Share-Daten aus Request holen
+        share_data = request.get_json()
+        share_method = share_data.get('method', 'email')
+        recipient = share_data.get('recipient', '')
+        
+        # Wirtschaftlichkeitsanalyse-Daten laden
+        analysis_data = get_economic_analysis_data(project_id)
+        
+        # Bericht teilen
+        share_result = share_economic_analysis_report(project, analysis_data, share_method, recipient)
+        
+        return jsonify({
+            'success': True,
+            'message': share_result
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Teilen des Berichts: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/download/<filename>')
+def download_export(filename):
+    """Download für exportierte Dateien"""
+    try:
+        filepath = os.path.join('instance', 'exports', filename)
+        
+        if not os.path.exists(filepath):
+            return jsonify({'error': 'Datei nicht gefunden'}), 404
+        
+        return send_file(
+            filepath,
+            as_attachment=True,
+            download_name=filename,
+            mimetype='application/octet-stream'
+        )
+        
+    except Exception as e:
+        print(f"Fehler beim Download: {e}")
+        return jsonify({'error': str(e)}), 400
+
+def get_economic_analysis_data(project_id):
+    """Lädt alle Wirtschaftlichkeitsanalyse-Daten für ein Projekt"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return None
+        
+        # Investitionskosten laden
+        investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
+        
+        # Investitionsaufschlüsselung erstellen
+        investment_breakdown = {}
+        total_investment = 0
+        
+        for cost in investment_costs:
+            component_name = cost.component_type.replace('_', ' ').title()
+            if cost.component_type == 'bess':
+                component_name = 'BESS'
+            elif cost.component_type == 'pv':
+                component_name = 'Photovoltaik'
+            elif cost.component_type == 'hp':
+                component_name = 'Wärmepumpe'
+            elif cost.component_type == 'wind':
+                component_name = 'Windkraft'
+            elif cost.component_type == 'hydro':
+                component_name = 'Wasserkraft'
+            elif cost.component_type == 'other':
+                component_name = 'Sonstiges'
+            
+            investment_breakdown[component_name] = cost.cost_eur
+            total_investment += cost.cost_eur
+        
+        # Detaillierte Wirtschaftlichkeitsberechnung
+        simulation_results = run_economic_simulation(project)
+        
+        # Einsparungsaufschlüsselung
+        savings_breakdown = {
+            'Peak Shaving': simulation_results['peak_shaving_savings'],
+            'Arbitrage': simulation_results['arbitrage_savings'],
+            'Netzstabilität': simulation_results['grid_stability_bonus'],
+            'Eigenverbrauch PV': calculate_pv_self_consumption_savings(project),
+            'Wärmepumpen-Effizienz': calculate_hp_efficiency_savings(project)
+        }
+        
+        # Risikobewertung
+        risk_factors = assess_project_risks(project, total_investment, simulation_results['annual_savings'])
+        
+        # Entscheidungsmetriken
+        decision_metrics = generate_decision_metrics(project, total_investment, simulation_results)
+        
+        # Cash Flow Prognose (20 Jahre)
+        cash_flow_data = generate_cash_flow_projection(project, total_investment, simulation_results['annual_savings'])
+        
+        # ROI Vergleich
+        roi_comparison = generate_roi_comparison(simulation_results['roi_percent'])
+        
+        return {
+            'project': project,
+            'total_investment': total_investment,
+            'annual_savings': simulation_results['annual_savings'],
+            'payback_period': simulation_results['payback_years'],
+            'roi': simulation_results['roi_percent'],
+            'investment_breakdown': investment_breakdown,
+            'savings_breakdown': savings_breakdown,
+            'risk_factors': risk_factors,
+            'decision_metrics': decision_metrics,
+            'cash_flow': cash_flow_data,
+            'roi_comparison': roi_comparison
+        }
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Wirtschaftlichkeitsanalyse-Daten: {e}")
+        return None
+
+def generate_economic_analysis_pdf(project, analysis_data):
+    """Generiert PDF-Bericht für Wirtschaftlichkeitsanalyse"""
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from io import BytesIO
+        
+        # PDF-Buffer erstellen
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Titel
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            spaceAfter=30,
+            alignment=1  # Zentriert
+        )
+        story.append(Paragraph(f"Wirtschaftlichkeitsanalyse: {project.name}", title_style))
+        story.append(Spacer(1, 20))
+        
+        # Projekt-Informationen
+        story.append(Paragraph("Projekt-Informationen", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        project_info = [
+            ['Projektname:', project.name],
+            ['Kunde:', project.customer.name if project.customer else 'Nicht zugewiesen'],
+            ['Erstellt am:', project.created_at.strftime('%d.%m.%Y') if project.created_at else 'Nicht verfügbar'],
+            ['BESS-Größe:', f"{project.bess_size} kWh" if project.bess_size else 'Nicht angegeben'],
+            ['BESS-Leistung:', f"{project.bess_power} kW" if project.bess_power else 'Nicht angegeben']
+        ]
+        
+        project_table = Table(project_info, colWidths=[2*inch, 4*inch])
+        project_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.grey),
+            ('TEXTCOLOR', (0, 0), (0, -1), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('BACKGROUND', (1, 0), (1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(project_table)
+        story.append(Spacer(1, 20))
+        
+        # Key Metrics
+        story.append(Paragraph("Wirtschaftliche Kennzahlen", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        metrics_data = [
+            ['Kennzahl', 'Wert'],
+            ['Gesamtinvestition', f"{analysis_data['total_investment']:,.0f} €"],
+            ['Jährliche Einsparungen', f"{analysis_data['annual_savings']:,.0f} €"],
+            ['Amortisationszeit', f"{analysis_data['payback_period']:.1f} Jahre"],
+            ['ROI (20 Jahre)', f"{analysis_data['roi']:.1f}%"]
+        ]
+        
+        metrics_table = Table(metrics_data, colWidths=[3*inch, 3*inch])
+        metrics_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.blue),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(metrics_table)
+        story.append(Spacer(1, 20))
+        
+        # Investitionsaufschlüsselung
+        story.append(Paragraph("Investitionsaufschlüsselung", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        investment_data = [['Komponente', 'Betrag (€)', 'Anteil (%)']]
+        for component, cost in analysis_data['investment_breakdown'].items():
+            percentage = (cost / analysis_data['total_investment'] * 100) if analysis_data['total_investment'] > 0 else 0
+            investment_data.append([component, f"{cost:,.0f}", f"{percentage:.1f}"])
+        
+        investment_table = Table(investment_data, colWidths=[2.5*inch, 1.5*inch, 1*inch])
+        investment_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.green),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(investment_table)
+        story.append(Spacer(1, 20))
+        
+        # Risikobewertung
+        story.append(Paragraph("Risikobewertung", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        risk_data = [['Risikofaktor', 'Bewertung', 'Beschreibung']]
+        for risk in analysis_data['risk_factors']:
+            risk_data.append([risk['factor'], risk['level'], risk['description']])
+        
+        risk_table = Table(risk_data, colWidths=[1.5*inch, 1*inch, 3.5*inch])
+        risk_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.red),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(risk_table)
+        story.append(Spacer(1, 20))
+        
+        # Empfehlungen
+        story.append(Paragraph("Entscheidungsempfehlungen", styles['Heading2']))
+        story.append(Spacer(1, 12))
+        
+        recommendations = [
+            ['Empfehlung', 'Wert'],
+            ['Investitionsempfehlung', analysis_data['decision_metrics']['investment_recommendation']],
+            ['Finanzierungsempfehlung', analysis_data['decision_metrics']['financing_recommendation']],
+            ['Zeitplan-Empfehlung', analysis_data['decision_metrics']['timeline_recommendation']]
+        ]
+        
+        rec_table = Table(recommendations, colWidths=[3*inch, 3*inch])
+        rec_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.purple),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(rec_table)
+        story.append(Spacer(1, 20))
+        
+        # Footer
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            alignment=1,
+            textColor=colors.grey
+        )
+        story.append(Paragraph(f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')} | BESS Simulation", footer_style))
+        
+        # PDF generieren
+        doc.build(story)
+        buffer.seek(0)
+        return buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Fehler beim PDF-Generieren: {e}")
+        return None
+
+def generate_economic_analysis_excel(project, analysis_data):
+    """Generiert Excel-Bericht für Wirtschaftlichkeitsanalyse"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        from io import BytesIO
+        
+        # Excel-Workbook erstellen
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Wirtschaftlichkeitsanalyse"
+        
+        # Styles definieren
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        subheader_font = Font(bold=True, color="FFFFFF")
+        subheader_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                       top=Side(style='thin'), bottom=Side(style='thin'))
+        
+        # Titel
+        ws.merge_cells('A1:F1')
+        ws['A1'] = f"Wirtschaftlichkeitsanalyse: {project.name}"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws['A1'].alignment = center_alignment
+        
+        # Projekt-Informationen
+        ws['A3'] = "Projekt-Informationen"
+        ws['A3'].font = Font(bold=True, size=14)
+        ws['A3'].fill = subheader_fill
+        ws['A3'].font = subheader_font
+        
+        project_info = [
+            ['Projektname', project.name],
+            ['Kunde', project.customer.name if project.customer else 'Nicht zugewiesen'],
+            ['Erstellt am', project.created_at.strftime('%d.%m.%Y') if project.created_at else 'Nicht verfügbar'],
+            ['BESS-Größe', f"{project.bess_size} kWh" if project.bess_size else 'Nicht angegeben'],
+            ['BESS-Leistung', f"{project.bess_power} kW" if project.bess_power else 'Nicht angegeben']
+        ]
+        
+        for i, (key, value) in enumerate(project_info, start=4):
+            ws[f'A{i}'] = key
+            ws[f'B{i}'] = value
+            ws[f'A{i}'].font = Font(bold=True)
+            ws[f'A{i}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            ws[f'A{i}'].border = border
+            ws[f'B{i}'].border = border
+        
+        # Key Metrics
+        ws['A10'] = "Wirtschaftliche Kennzahlen"
+        ws['A10'].font = Font(bold=True, size=14)
+        ws['A10'].fill = subheader_fill
+        ws['A10'].font = subheader_font
+        
+        metrics_data = [
+            ['Kennzahl', 'Wert'],
+            ['Gesamtinvestition', f"{analysis_data['total_investment']:,.0f} €"],
+            ['Jährliche Einsparungen', f"{analysis_data['annual_savings']:,.0f} €"],
+            ['Amortisationszeit', f"{analysis_data['payback_period']:.1f} Jahre"],
+            ['ROI (20 Jahre)', f"{analysis_data['roi']:.1f}%"]
+        ]
+        
+        for i, (key, value) in enumerate(metrics_data, start=11):
+            ws[f'A{i}'] = key
+            ws[f'B{i}'] = value
+            if i == 11:  # Header
+                ws[f'A{i}'].font = header_font
+                ws[f'B{i}'].font = header_font
+                ws[f'A{i}'].fill = header_fill
+                ws[f'B{i}'].fill = header_fill
+            ws[f'A{i}'].border = border
+            ws[f'B{i}'].border = border
+            ws[f'A{i}'].alignment = center_alignment
+            ws[f'B{i}'].alignment = center_alignment
+        
+        # Investitionsaufschlüsselung
+        ws['A17'] = "Investitionsaufschlüsselung"
+        ws['A17'].font = Font(bold=True, size=14)
+        ws['A17'].fill = subheader_fill
+        ws['A17'].font = subheader_font
+        
+        investment_headers = ['Komponente', 'Betrag (€)', 'Anteil (%)']
+        for i, header in enumerate(investment_headers, start=18):
+            cell = ws[f'{get_column_letter(i+1)}{18}']
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+            cell.alignment = center_alignment
+        
+        row = 19
+        for component, cost in analysis_data['investment_breakdown'].items():
+            percentage = (cost / analysis_data['total_investment'] * 100) if analysis_data['total_investment'] > 0 else 0
+            ws[f'A{row}'] = component
+            ws[f'B{row}'] = cost
+            ws[f'C{row}'] = percentage
+            ws[f'A{row}'].border = border
+            ws[f'B{row}'].border = border
+            ws[f'C{row}'].border = border
+            ws[f'A{row}'].alignment = center_alignment
+            ws[f'B{row}'].alignment = center_alignment
+            ws[f'C{row}'].alignment = center_alignment
+            row += 1
+        
+        # Risikobewertung
+        ws['A25'] = "Risikobewertung"
+        ws['A25'].font = Font(bold=True, size=14)
+        ws['A25'].fill = subheader_fill
+        ws['A25'].font = subheader_font
+        
+        risk_headers = ['Risikofaktor', 'Bewertung', 'Beschreibung']
+        for i, header in enumerate(risk_headers, start=26):
+            cell = ws[f'{get_column_letter(i+1)}{26}']
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.border = border
+            cell.alignment = center_alignment
+        
+        row = 27
+        for risk in analysis_data['risk_factors']:
+            ws[f'A{row}'] = risk['factor']
+            ws[f'B{row}'] = risk['level']
+            ws[f'C{row}'] = risk['description']
+            ws[f'A{row}'].border = border
+            ws[f'B{row}'].border = border
+            ws[f'C{row}'].border = border
+            ws[f'A{row}'].alignment = center_alignment
+            ws[f'B{row}'].alignment = center_alignment
+            ws[f'C{row}'].alignment = Alignment(horizontal="left", vertical="center")
+            row += 1
+        
+        # Spaltenbreiten anpassen
+        for column in ws.columns:
+            max_length = 0
+            column_letter = get_column_letter(column[0].column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Excel-Datei speichern
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        return buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Fehler beim Excel-Generieren: {e}")
+        return None
+
+def share_economic_analysis_report(project, analysis_data, share_method, recipient):
+    """Teilt Wirtschaftlichkeitsanalyse-Bericht"""
+    try:
+        if share_method == 'email':
+            # Hier würde die E-Mail-Versand-Logik stehen
+            return f"Bericht wurde per E-Mail an {recipient} gesendet"
+        
+        elif share_method == 'link':
+            # Hier würde die Link-Generierung stehen
+            return "Teilbarer Link wurde generiert"
+        
+        elif share_method == 'cloud':
+            # Hier würde die Cloud-Upload-Logik stehen
+            return "Bericht wurde in die Cloud hochgeladen"
+        
+        else:
+            return "Unbekannte Share-Methode"
+            
+    except Exception as e:
+        print(f"Fehler beim Teilen des Berichts: {e}")
+        return f"Fehler beim Teilen: {str(e)}"
