@@ -153,6 +153,97 @@
                 </div>
             </div>
 
+            <!-- Intelligente Erlösquellen-Analyse -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    Intelligente Erlösquellen-Analyse
+                </h3>
+                
+                <!-- Erneuerbare Energien -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-medium text-gray-700 mb-3 flex items-center border-b border-gray-200 pb-2">
+                        <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Erneuerbare Energien
+                    </h4>
+                    <div id="renewableEnergyBreakdown" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Photovoltaik -->
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <h5 class="font-medium text-green-800 mb-2">Photovoltaik</h5>
+                            <div id="pvRevenue" class="space-y-1 text-sm">
+                                <!-- Wird dynamisch befüllt -->
+                            </div>
+                        </div>
+                        
+                        <!-- Windkraft -->
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <h5 class="font-medium text-blue-800 mb-2">Windkraft</h5>
+                            <div id="windRevenue" class="space-y-1 text-sm">
+                                <!-- Wird dynamisch befüllt -->
+                            </div>
+                        </div>
+                        
+                        <!-- Wasserkraft -->
+                        <div class="bg-cyan-50 rounded-lg p-4">
+                            <h5 class="font-medium text-cyan-800 mb-2">Wasserkraft</h5>
+                            <div id="hydroRevenue" class="space-y-1 text-sm">
+                                <!-- Wird dynamisch befüllt -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- BESS-Anwendungen -->
+                <div>
+                    <h4 class="text-lg font-medium text-gray-700 mb-3 flex items-center border-b border-gray-200 pb-2">
+                        <svg class="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        BESS-Anwendungen
+                    </h4>
+                    <div id="bessApplicationsBreakdown" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Peak Shaving -->
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <h5 class="font-medium text-purple-800 mb-2">Peak Shaving</h5>
+                            <div id="peakShavingRevenue" class="space-y-1 text-sm">
+                                <!-- Wird dynamisch befüllt -->
+                            </div>
+                        </div>
+                        
+                        <!-- Intraday Trading -->
+                        <div class="bg-orange-50 rounded-lg p-4">
+                            <h5 class="font-medium text-orange-800 mb-2">Intraday Trading</h5>
+                            <div id="intradayRevenue" class="space-y-1 text-sm">
+                                <!-- Wird dynamisch befüllt -->
+                            </div>
+                        </div>
+                        
+                        <!-- Sekundärmarkt -->
+                        <div class="bg-indigo-50 rounded-lg p-4">
+                            <h5 class="font-medium text-indigo-800 mb-2">Sekundärmarkt</h5>
+                            <div id="secondaryMarketRevenue" class="space-y-1 text-sm">
+                                <!-- Wird dynamisch befüllt -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gesamterlös -->
+                <div class="mt-6 p-4 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-lg text-white shadow-lg">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-lg font-semibold">Gesamterlös pro Jahr</span>
+                            <div class="text-sm opacity-90">Einsparungen + Direkterlöse</div>
+                        </div>
+                        <span id="totalRevenue" class="text-2xl font-bold">€0</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Risk Assessment -->
             <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Risikobewertung</h3>
@@ -342,13 +433,26 @@ function displayAnalysisResults(data) {
     
     // Update key metrics
     document.getElementById('totalInvestment').textContent = formatCurrency(data.total_investment);
-    document.getElementById('annualSavings').textContent = formatCurrency(data.annual_savings);
+    
+    // Zeige Gesamtnutzen statt nur Einsparungen
+    if (data.total_annual_benefit) {
+        document.getElementById('annualSavings').textContent = formatCurrency(data.total_annual_benefit);
+        document.getElementById('annualSavings').parentElement.querySelector('h3').textContent = 'Jährlicher Gesamtnutzen';
+    } else {
+        document.getElementById('annualSavings').textContent = formatCurrency(data.annual_savings);
+    }
+    
     document.getElementById('paybackPeriod').textContent = `${data.payback_period.toFixed(1)} Jahre`;
     document.getElementById('roi').textContent = `${data.roi.toFixed(1)}%`;
     
     // Update breakdowns
     updateInvestmentBreakdown(data.investment_breakdown);
     updateSavingsBreakdown(data.savings_breakdown);
+    
+    // Update intelligent revenue analysis
+    if (data.intelligent_revenues) {
+        updateIntelligentRevenueAnalysis(data.intelligent_revenues);
+    }
     updateRiskAssessment(data.risk_factors);
     updateDecisionSupport(data.decision_metrics);
     
@@ -396,6 +500,81 @@ function updateSavingsBreakdown(breakdown) {
             `;
         }
     });
+}
+
+function updateIntelligentRevenueAnalysis(revenues) {
+    // Update renewable energy revenues
+    updatePVRevenue(revenues.renewable_energy.photovoltaik);
+    updateWindRevenue(revenues.renewable_energy.windkraft);
+    updateHydroRevenue(revenues.renewable_energy.wasserkraft);
+    
+    // Update BESS application revenues
+    updatePeakShavingRevenue(revenues.bess_applications.peak_shaving);
+    updateIntradayRevenue(revenues.bess_applications.intraday_trading);
+    updateSecondaryMarketRevenue(revenues.bess_applications.secondary_market);
+    
+    // Update total revenue
+    document.getElementById('totalRevenue').textContent = formatCurrency(revenues.total_revenue);
+}
+
+function updatePVRevenue(pvData) {
+    const container = document.getElementById('pvRevenue');
+    container.innerHTML = `
+        <div class="text-green-700">Direkte Einspeisung: ${formatCurrency(pvData.direct)}</div>
+        <div class="text-green-700">Eigenverbrauch: ${formatCurrency(pvData.self_consumption)}</div>
+        <div class="text-green-700">Überschuss: ${formatCurrency(pvData.excess)}</div>
+        <div class="font-semibold text-green-800 border-t pt-1 mt-1">Gesamt: ${formatCurrency(pvData.total)}</div>
+    `;
+}
+
+function updateWindRevenue(windData) {
+    const container = document.getElementById('windRevenue');
+    container.innerHTML = `
+        <div class="text-blue-700">Direkte Einspeisung: ${formatCurrency(windData.direct)}</div>
+        <div class="text-blue-700">Eigenverbrauch: ${formatCurrency(windData.self_consumption)}</div>
+        <div class="text-blue-700">Überschuss: ${formatCurrency(windData.excess)}</div>
+        <div class="font-semibold text-blue-800 border-t pt-1 mt-1">Gesamt: ${formatCurrency(windData.total)}</div>
+    `;
+}
+
+function updateHydroRevenue(hydroData) {
+    const container = document.getElementById('hydroRevenue');
+    container.innerHTML = `
+        <div class="text-cyan-700">Direkte Einspeisung: ${formatCurrency(hydroData.direct)}</div>
+        <div class="text-cyan-700">Eigenverbrauch: ${formatCurrency(hydroData.self_consumption)}</div>
+        <div class="text-cyan-700">Überschuss: ${formatCurrency(hydroData.excess)}</div>
+        <div class="font-semibold text-cyan-800 border-t pt-1 mt-1">Gesamt: ${formatCurrency(hydroData.total)}</div>
+    `;
+}
+
+function updatePeakShavingRevenue(peakData) {
+    const container = document.getElementById('peakShavingRevenue');
+    container.innerHTML = `
+        <div class="text-purple-700">Peak-Reduktion: ${formatCurrency(peakData.peak_reduction)}</div>
+        <div class="text-purple-700">Lastoptimierung: ${formatCurrency(peakData.load_optimization)}</div>
+        <div class="text-purple-700">Netzstabilität: ${formatCurrency(peakData.grid_stability)}</div>
+        <div class="font-semibold text-purple-800 border-t pt-1 mt-1">Gesamt: ${formatCurrency(peakData.total)}</div>
+    `;
+}
+
+function updateIntradayRevenue(intradayData) {
+    const container = document.getElementById('intradayRevenue');
+    container.innerHTML = `
+        <div class="text-orange-700">Spot-Arbitrage: ${formatCurrency(intradayData.spot_arbitrage)}</div>
+        <div class="text-orange-700">Intraday-Handel: ${formatCurrency(intradayData.intraday_trading)}</div>
+        <div class="text-orange-700">Regelenergie: ${formatCurrency(intradayData.balancing_energy)}</div>
+        <div class="font-semibold text-orange-800 border-t pt-1 mt-1">Gesamt: ${formatCurrency(intradayData.total)}</div>
+    `;
+}
+
+function updateSecondaryMarketRevenue(secondaryData) {
+    const container = document.getElementById('secondaryMarketRevenue');
+    container.innerHTML = `
+        <div class="text-indigo-700">Frequenzregelung: ${formatCurrency(secondaryData.frequency_regulation)}</div>
+        <div class="text-indigo-700">Kapazitätsmärkte: ${formatCurrency(secondaryData.capacity_market)}</div>
+        <div class="text-indigo-700">Flexibilitätsmärkte: ${formatCurrency(secondaryData.flexibility_market)}</div>
+        <div class="font-semibold text-indigo-800 border-t pt-1 mt-1">Gesamt: ${formatCurrency(secondaryData.total)}</div>
+    `;
 }
 
 function updateRiskAssessment(risks) {

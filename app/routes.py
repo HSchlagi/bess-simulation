@@ -1210,7 +1210,10 @@ def api_economic_analysis(project_id):
         # Detaillierte Wirtschaftlichkeitsberechnung
         simulation_results = run_economic_simulation(project)
         
-        # Einsparungsaufschlüsselung
+        # Intelligente Erlösberechnung
+        intelligent_revenues = calculate_intelligent_revenues(project)
+        
+        # Einsparungsaufschlüsselung (erweitert)
         savings_breakdown = {
             'Peak Shaving': simulation_results['peak_shaving_savings'],
             'Arbitrage': simulation_results['arbitrage_savings'],
@@ -1235,10 +1238,12 @@ def api_economic_analysis(project_id):
             'success': True,
             'total_investment': total_investment,
             'annual_savings': simulation_results['annual_savings'],
-            'payback_period': simulation_results['payback_years'],
-            'roi': simulation_results['roi_percent'],
+            'total_annual_benefit': total_annual_benefit,
+            'payback_period': corrected_payback_years,
+            'roi': corrected_roi_percent,
             'investment_breakdown': investment_breakdown,
             'savings_breakdown': savings_breakdown,
+            'intelligent_revenues': intelligent_revenues,
             'risk_factors': risk_factors,
             'decision_metrics': decision_metrics,
             'cash_flow': cash_flow_data,
@@ -2676,7 +2681,10 @@ def get_economic_analysis_data(project_id):
         # Detaillierte Wirtschaftlichkeitsberechnung
         simulation_results = run_economic_simulation(project)
         
-        # Einsparungsaufschlüsselung
+        # Intelligente Erlösberechnung
+        intelligent_revenues = calculate_intelligent_revenues(project)
+        
+        # Einsparungsaufschlüsselung (erweitert)
         savings_breakdown = {
             'Peak Shaving': simulation_results['peak_shaving_savings'],
             'Arbitrage': simulation_results['arbitrage_savings'],
@@ -2701,10 +2709,12 @@ def get_economic_analysis_data(project_id):
             'project': project,
             'total_investment': total_investment,
             'annual_savings': simulation_results['annual_savings'],
-            'payback_period': simulation_results['payback_years'],
-            'roi': simulation_results['roi_percent'],
+            'total_annual_benefit': total_annual_benefit,
+            'payback_period': corrected_payback_years,
+            'roi': corrected_roi_percent,
             'investment_breakdown': investment_breakdown,
             'savings_breakdown': savings_breakdown,
+            'intelligent_revenues': intelligent_revenues,
             'risk_factors': risk_factors,
             'decision_metrics': decision_metrics,
             'cash_flow': cash_flow_data,
@@ -3057,3 +3067,228 @@ def share_economic_analysis_report(project, analysis_data, share_method, recipie
     except Exception as e:
         print(f"Fehler beim Teilen des Berichts: {e}")
         return f"Fehler beim Teilen: {str(e)}"
+
+# ===== NEUE INTELLIGENTE ERLÖSBERECHNUNGSFUNKTIONEN =====
+
+def calculate_intelligent_revenues(project):
+    """Intelligente Erlösberechnung mit allen Energiequellen und BESS-Anwendungen"""
+    try:
+        # 1. Erneuerbare Energien - Detaillierte Erlöse
+        pv_revenue = calculate_pv_revenue(project)
+        wind_revenue = calculate_wind_revenue(project)
+        hydro_revenue = calculate_hydro_revenue(project)
+        
+        # 2. BESS-Anwendungen - Intelligente Erlöse
+        bess_peak_shaving = calculate_bess_peak_shaving_revenue(project)
+        bess_intraday = calculate_bess_intraday_revenue(project)
+        bess_secondary = calculate_bess_secondary_market_revenue(project)
+        
+        # 3. Gesamterlös berechnen
+        total_revenue = (
+            pv_revenue['total'] + 
+            wind_revenue['total'] + 
+            hydro_revenue['total'] + 
+            bess_peak_shaving['total'] + 
+            bess_intraday['total'] + 
+            bess_secondary['total']
+        )
+        
+        return {
+            'renewable_energy': {
+                'photovoltaik': pv_revenue,
+                'windkraft': wind_revenue,
+                'wasserkraft': hydro_revenue,
+                'total': pv_revenue['total'] + wind_revenue['total'] + hydro_revenue['total']
+            },
+            'bess_applications': {
+                'peak_shaving': bess_peak_shaving,
+                'intraday_trading': bess_intraday,
+                'secondary_market': bess_secondary,
+                'total': bess_peak_shaving['total'] + bess_intraday['total'] + bess_secondary['total']
+            },
+            'total_revenue': total_revenue
+        }
+        
+    except Exception as e:
+        print(f"Fehler bei intelligenter Erlösberechnung: {e}")
+        return {
+            'renewable_energy': {'photovoltaik': {}, 'windkraft': {}, 'wasserkraft': {}, 'total': 0},
+            'bess_applications': {'peak_shaving': {}, 'intraday_trading': {}, 'secondary_market': {}, 'total': 0},
+            'total_revenue': 0
+        }
+
+def calculate_pv_revenue(project):
+    """Berechnet detaillierte PV-Erlöse"""
+    if not project.pv_power:
+        return {'direct': 0, 'self_consumption': 0, 'excess': 0, 'total': 0}
+    
+    # PV-Parameter
+    pv_power_kw = project.pv_power
+    annual_production_kwh = pv_power_kw * 1000  # Vereinfachte Berechnung
+    self_consumption_rate = 0.7  # 70% Eigenverbrauch
+    excess_rate = 0.3  # 30% Überschuss
+    
+    # Preise (€/kWh)
+    eeg_tariff = 0.08  # EEG-Vergütung
+    grid_price = 0.25  # Strompreis für Eigenverbrauch
+    market_value = 0.05  # Marktwert für Überschuss
+    
+    # Berechnungen
+    direct_revenue = annual_production_kwh * 0.1 * eeg_tariff  # 10% direkte Einspeisung
+    self_consumption_revenue = annual_production_kwh * self_consumption_rate * grid_price
+    excess_revenue = annual_production_kwh * excess_rate * market_value
+    
+    total_revenue = direct_revenue + self_consumption_revenue + excess_revenue
+    
+    return {
+        'direct': round(direct_revenue, 2),
+        'self_consumption': round(self_consumption_revenue, 2),
+        'excess': round(excess_revenue, 2),
+        'total': round(total_revenue, 2)
+    }
+
+def calculate_wind_revenue(project):
+    """Berechnet detaillierte Windkraft-Erlöse"""
+    if not project.wind_power:
+        return {'direct': 0, 'self_consumption': 0, 'excess': 0, 'total': 0}
+    
+    # Windkraft-Parameter
+    wind_power_kw = project.wind_power
+    capacity_factor = 0.25  # 25% Volllaststunden
+    annual_production_kwh = wind_power_kw * capacity_factor * 8760
+    self_consumption_rate = 0.6  # 60% Eigenverbrauch
+    excess_rate = 0.4  # 40% Überschuss
+    
+    # Preise (€/kWh)
+    eeg_tariff = 0.07  # EEG-Vergütung
+    grid_price = 0.25  # Strompreis für Eigenverbrauch
+    market_value = 0.05  # Marktwert für Überschuss
+    
+    # Berechnungen
+    direct_revenue = annual_production_kwh * 0.1 * eeg_tariff  # 10% direkte Einspeisung
+    self_consumption_revenue = annual_production_kwh * self_consumption_rate * grid_price
+    excess_revenue = annual_production_kwh * excess_rate * market_value
+    
+    total_revenue = direct_revenue + self_consumption_revenue + excess_revenue
+    
+    return {
+        'direct': round(direct_revenue, 2),
+        'self_consumption': round(self_consumption_revenue, 2),
+        'excess': round(excess_revenue, 2),
+        'total': round(total_revenue, 2)
+    }
+
+def calculate_hydro_revenue(project):
+    """Berechnet detaillierte Wasserkraft-Erlöse"""
+    if not project.hydro_power:
+        return {'direct': 0, 'self_consumption': 0, 'excess': 0, 'total': 0}
+    
+    # Wasserkraft-Parameter
+    hydro_power_kw = project.hydro_power
+    capacity_factor = 0.35  # 35% Volllaststunden
+    annual_production_kwh = hydro_power_kw * capacity_factor * 8760
+    self_consumption_rate = 0.5  # 50% Eigenverbrauch
+    excess_rate = 0.5  # 50% Überschuss
+    
+    # Preise (€/kWh)
+    eeg_tariff = 0.06  # EEG-Vergütung
+    grid_price = 0.25  # Strompreis für Eigenverbrauch
+    market_value = 0.05  # Marktwert für Überschuss
+    
+    # Berechnungen
+    direct_revenue = annual_production_kwh * 0.1 * eeg_tariff  # 10% direkte Einspeisung
+    self_consumption_revenue = annual_production_kwh * self_consumption_rate * grid_price
+    excess_revenue = annual_production_kwh * excess_rate * market_value
+    
+    total_revenue = direct_revenue + self_consumption_revenue + excess_revenue
+    
+    return {
+        'direct': round(direct_revenue, 2),
+        'self_consumption': round(self_consumption_revenue, 2),
+        'excess': round(excess_revenue, 2),
+        'total': round(total_revenue, 2)
+    }
+
+def calculate_bess_peak_shaving_revenue(project):
+    """Berechnet detaillierte BESS Peak-Shaving Erlöse"""
+    if not project.bess_power:
+        return {'peak_reduction': 0, 'load_optimization': 0, 'grid_stability': 0, 'total': 0}
+    
+    # BESS-Parameter
+    bess_power_kw = project.bess_power
+    peak_reduction_hours = 2000  # 2000 Stunden/Jahr im Peak
+    
+    # Preise (€/kWh)
+    grid_fee_savings = 0.45  # Netzentgelt-Ersparnis
+    balancing_optimization = 0.15  # Bilanzkreis-Optimierung
+    grid_stability_price = 0.20  # Netzstabilität
+    
+    # Berechnungen
+    peak_reduction_revenue = bess_power_kw * peak_reduction_hours * grid_fee_savings / 1000
+    load_optimization_revenue = bess_power_kw * 8760 * balancing_optimization / 1000
+    grid_stability_revenue = bess_power_kw * 8760 * grid_stability_price / 1000
+    
+    total_revenue = peak_reduction_revenue + load_optimization_revenue + grid_stability_revenue
+    
+    return {
+        'peak_reduction': round(peak_reduction_revenue, 2),
+        'load_optimization': round(load_optimization_revenue, 2),
+        'grid_stability': round(grid_stability_revenue, 2),
+        'total': round(total_revenue, 2)
+    }
+
+def calculate_bess_intraday_revenue(project):
+    """Berechnet detaillierte BESS Intraday-Handel Erlöse"""
+    if not project.bess_power or not project.bess_size:
+        return {'spot_arbitrage': 0, 'intraday_trading': 0, 'balancing_energy': 0, 'total': 0}
+    
+    # BESS-Parameter
+    bess_power_kw = project.bess_power
+    bess_capacity_kwh = project.bess_size
+    daily_cycles = 1.5  # 1,5 Zyklen/Tag
+    
+    # Preise (€/kWh)
+    spot_arbitrage_price = 0.08  # Spot-Markt-Arbitrage
+    intraday_trading_price = 0.12  # Intraday-Handel
+    balancing_energy_price = 0.25  # Regelenergie
+    
+    # Berechnungen
+    spot_arbitrage_revenue = bess_capacity_kwh * daily_cycles * 365 * spot_arbitrage_price
+    intraday_trading_revenue = bess_capacity_kwh * daily_cycles * 365 * intraday_trading_price
+    balancing_energy_revenue = bess_power_kw * 8760 * balancing_energy_price / 1000
+    
+    total_revenue = spot_arbitrage_revenue + intraday_trading_revenue + balancing_energy_revenue
+    
+    return {
+        'spot_arbitrage': round(spot_arbitrage_revenue, 2),
+        'intraday_trading': round(intraday_trading_revenue, 2),
+        'balancing_energy': round(balancing_energy_revenue, 2),
+        'total': round(total_revenue, 2)
+    }
+
+def calculate_bess_secondary_market_revenue(project):
+    """Berechnet detaillierte BESS Sekundärmarkt Erlöse"""
+    if not project.bess_power:
+        return {'frequency_regulation': 0, 'capacity_market': 0, 'flexibility_market': 0, 'total': 0}
+    
+    # BESS-Parameter
+    bess_power_kw = project.bess_power
+    
+    # Preise (€/kWh)
+    frequency_regulation_price = 0.30  # Frequenzregelung
+    capacity_market_price = 0.18  # Kapazitätsmärkte
+    flexibility_market_price = 0.22  # Flexibilitätsmärkte
+    
+    # Berechnungen
+    frequency_regulation_revenue = bess_power_kw * 8760 * frequency_regulation_price / 1000
+    capacity_market_revenue = bess_power_kw * 8760 * capacity_market_price / 1000
+    flexibility_market_revenue = bess_power_kw * 8760 * flexibility_market_price / 1000
+    
+    total_revenue = frequency_regulation_revenue + capacity_market_revenue + flexibility_market_revenue
+    
+    return {
+        'frequency_regulation': round(frequency_regulation_revenue, 2),
+        'capacity_market': round(capacity_market_revenue, 2),
+        'flexibility_market': round(flexibility_market_revenue, 2),
+        'total': round(total_revenue, 2)
+    }
