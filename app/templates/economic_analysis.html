@@ -3,10 +3,614 @@
 {% block title %}Wirtschaftlichkeit - BESS Simulation{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-6">Wirtschaftlichkeit</h1>
-        <p class="text-gray-600">Wirtschaftlichkeitsanalyse</p>
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">Wirtschaftlichkeitsanalyse</h1>
+        <p class="text-lg text-gray-600">Fundierte Investitionsentscheidungen durch intelligente Analyse</p>
+    </div>
+
+    <!-- Project Selection Card -->
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-semibold text-gray-900">Projekt auswählen</h2>
+            <div class="flex items-center space-x-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    Intelligente Analyse
+                </span>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Project Dropdown -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt auswählen</label>
+                <select id="projectSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Projekt auswählen...</option>
+                </select>
+            </div>
+            
+            <!-- Analysis Type -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Analyse-Typ</label>
+                <select id="analysisType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="comprehensive">Vollständige Analyse</option>
+                    <option value="quick">Schnellanalyse</option>
+                    <option value="detailed">Detaillierte Analyse</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="mt-6">
+            <button id="runAnalysis" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                Wirtschaftlichkeitsanalyse starten
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="hidden bg-white rounded-xl shadow-lg border border-gray-200 p-8 mb-8">
+        <div class="flex items-center justify-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span class="ml-4 text-lg text-gray-700">Analysiere Projektdaten...</span>
+        </div>
+    </div>
+
+    <!-- Analysis Results -->
+    <div id="analysisResults" class="hidden">
+        <!-- Key Metrics Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Investment -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Gesamtinvestition</p>
+                        <p id="totalInvestment" class="text-2xl font-bold text-gray-900">€0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Annual Savings -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Jährliche Einsparungen</p>
+                        <p id="annualSavings" class="text-2xl font-bold text-gray-900">€0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payback Period -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Amortisationszeit</p>
+                        <p id="paybackPeriod" class="text-2xl font-bold text-gray-900">0 Jahre</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROI -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">ROI (20 Jahre)</p>
+                        <p id="roi" class="text-2xl font-bold text-gray-900">0%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Analysis Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Investment Breakdown -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Investitionsaufschlüsselung</h3>
+                <div id="investmentBreakdown" class="space-y-3">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Savings Breakdown -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Einsparungsquellen</h3>
+                <div id="savingsBreakdown" class="space-y-3">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Risk Assessment -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Risikobewertung</h3>
+                <div id="riskAssessment" class="space-y-4">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Cash Flow Chart -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Cash Flow Prognose (20 Jahre)</h3>
+                <div class="h-80">
+                    <canvas id="cashFlowChart"></canvas>
+                </div>
+            </div>
+
+            <!-- ROI Comparison -->
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">ROI Vergleich</h3>
+                <div class="h-80">
+                    <canvas id="roiChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decision Support -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Entscheidungshilfe</h3>
+            <div id="decisionSupport" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Sensitivity Analysis -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Sensitivitätsanalyse</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Parameter-Variation</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Strompreis-Entwicklung (±%)</label>
+                            <input type="range" id="priceVariation" min="-20" max="20" value="0" class="w-full">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>-20%</span>
+                                <span id="priceVariationValue">0%</span>
+                                <span>+20%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Investitionskosten (±%)</label>
+                            <input type="range" id="costVariation" min="-15" max="15" value="0" class="w-full">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>-15%</span>
+                                <span id="costVariationValue">0%</span>
+                                <span>+15%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-3">Szenario-Ergebnisse</h4>
+                    <div id="sensitivityResults" class="space-y-3">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Bericht exportieren</h3>
+            <div class="flex flex-wrap gap-4">
+                <button id="exportPDF" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    PDF Bericht
+                </button>
+                <button id="exportExcel" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Excel Export
+                </button>
+                <button id="shareReport" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                    <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+                    </svg>
+                    Bericht teilen
+                </button>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let cashFlowChart, roiChart;
+let currentProjectId = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    setupEventListeners();
+});
+
+function loadProjects() {
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">Projekt auswählen...</option>';
+            
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = `${project.name} (${project.customer_name})`;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Projekte:', error);
+            showNotification('Fehler beim Laden der Projekte', 'error');
+        });
+}
+
+function setupEventListeners() {
+    document.getElementById('runAnalysis').addEventListener('click', runAnalysis);
+    document.getElementById('projectSelect').addEventListener('change', onProjectChange);
+    document.getElementById('analysisType').addEventListener('change', onAnalysisTypeChange);
+    
+    // Sensitivity analysis
+    document.getElementById('priceVariation').addEventListener('input', updateSensitivityAnalysis);
+    document.getElementById('costVariation').addEventListener('input', updateSensitivityAnalysis);
+    
+    // Export buttons
+    document.getElementById('exportPDF').addEventListener('click', exportPDF);
+    document.getElementById('exportExcel').addEventListener('click', exportExcel);
+    document.getElementById('shareReport').addEventListener('click', shareReport);
+}
+
+function onProjectChange() {
+    const projectId = document.getElementById('projectSelect').value;
+    if (projectId) {
+        currentProjectId = parseInt(projectId);
+        document.getElementById('runAnalysis').disabled = false;
+    } else {
+        currentProjectId = null;
+        document.getElementById('runAnalysis').disabled = true;
+    }
+}
+
+function onAnalysisTypeChange() {
+    // Could implement different analysis depths here
+}
+
+function runAnalysis() {
+    if (!currentProjectId) {
+        showNotification('Bitte wählen Sie ein Projekt aus', 'warning');
+        return;
+    }
+
+    showLoading(true);
+    
+    fetch(`/api/economic-analysis/${currentProjectId}`)
+        .then(response => response.json())
+        .then(data => {
+            showLoading(false);
+            displayAnalysisResults(data);
+        })
+        .catch(error => {
+            showLoading(false);
+            console.error('Fehler bei der Analyse:', error);
+            showNotification('Fehler bei der Wirtschaftlichkeitsanalyse', 'error');
+        });
+}
+
+function displayAnalysisResults(data) {
+    document.getElementById('analysisResults').classList.remove('hidden');
+    
+    // Update key metrics
+    document.getElementById('totalInvestment').textContent = formatCurrency(data.total_investment);
+    document.getElementById('annualSavings').textContent = formatCurrency(data.annual_savings);
+    document.getElementById('paybackPeriod').textContent = `${data.payback_period.toFixed(1)} Jahre`;
+    document.getElementById('roi').textContent = `${data.roi.toFixed(1)}%`;
+    
+    // Update breakdowns
+    updateInvestmentBreakdown(data.investment_breakdown);
+    updateSavingsBreakdown(data.savings_breakdown);
+    updateRiskAssessment(data.risk_factors);
+    updateDecisionSupport(data.decision_metrics);
+    
+    // Create charts
+    createCashFlowChart(data.cash_flow);
+    createROIChart(data.roi_comparison);
+    
+    // Update sensitivity analysis
+    updateSensitivityAnalysis();
+}
+
+function updateInvestmentBreakdown(breakdown) {
+    const container = document.getElementById('investmentBreakdown');
+    container.innerHTML = '';
+    
+    Object.entries(breakdown).forEach(([component, cost]) => {
+        if (cost > 0) {
+            const percentage = (cost / Object.values(breakdown).reduce((a, b) => a + b, 0) * 100).toFixed(1);
+            container.innerHTML += `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">${component}</span>
+                    <div class="text-right">
+                        <div class="text-sm font-medium text-gray-900">${formatCurrency(cost)}</div>
+                        <div class="text-xs text-gray-500">${percentage}%</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+function updateSavingsBreakdown(breakdown) {
+    const container = document.getElementById('savingsBreakdown');
+    container.innerHTML = '';
+    
+    Object.entries(breakdown).forEach(([source, savings]) => {
+        if (savings > 0) {
+            container.innerHTML += `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">${source}</span>
+                    <div class="text-right">
+                        <div class="text-sm font-medium text-green-600">${formatCurrency(savings)}</div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+}
+
+function updateRiskAssessment(risks) {
+    const container = document.getElementById('riskAssessment');
+    container.innerHTML = '';
+    
+    risks.forEach(risk => {
+        const riskLevel = getRiskLevel(risk.level);
+        container.innerHTML += `
+            <div class="flex items-center justify-between p-3 rounded-lg ${riskLevel.bg}">
+                <div>
+                    <div class="font-medium text-sm ${riskLevel.text}">${risk.factor}</div>
+                    <div class="text-xs ${riskLevel.textLight}">${risk.description}</div>
+                </div>
+                <span class="px-2 py-1 text-xs font-medium rounded-full ${riskLevel.badge}">
+                    ${risk.level}
+                </span>
+            </div>
+        `;
+    });
+}
+
+function getRiskLevel(level) {
+    switch(level.toLowerCase()) {
+        case 'niedrig': return { bg: 'bg-green-50', text: 'text-green-800', textLight: 'text-green-600', badge: 'bg-green-100 text-green-800' };
+        case 'mittel': return { bg: 'bg-yellow-50', text: 'text-yellow-800', textLight: 'text-yellow-600', badge: 'bg-yellow-100 text-yellow-800' };
+        case 'hoch': return { bg: 'bg-red-50', text: 'text-red-800', textLight: 'text-red-600', badge: 'bg-red-100 text-red-800' };
+        default: return { bg: 'bg-gray-50', text: 'text-gray-800', textLight: 'text-gray-600', badge: 'bg-gray-100 text-gray-800' };
+    }
+}
+
+function updateDecisionSupport(metrics) {
+    const container = document.getElementById('decisionSupport');
+    container.innerHTML = '';
+    
+    const recommendations = [
+        {
+            title: 'Investitionsempfehlung',
+            value: metrics.investment_recommendation,
+            icon: '💰',
+            color: metrics.investment_recommendation === 'Empfohlen' ? 'text-green-600' : 'text-red-600'
+        },
+        {
+            title: 'Finanzierung',
+            value: metrics.financing_recommendation,
+            icon: '🏦',
+            color: 'text-blue-600'
+        },
+        {
+            title: 'Zeitplan',
+            value: metrics.timeline_recommendation,
+            icon: '📅',
+            color: 'text-purple-600'
+        }
+    ];
+    
+    recommendations.forEach(rec => {
+        container.innerHTML += `
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl mb-2">${rec.icon}</div>
+                <div class="font-medium text-gray-900">${rec.title}</div>
+                <div class="text-sm ${rec.color} font-semibold">${rec.value}</div>
+            </div>
+        `;
+    });
+}
+
+function createCashFlowChart(cashFlowData) {
+    const ctx = document.getElementById('cashFlowChart').getContext('2d');
+    
+    if (cashFlowChart) {
+        cashFlowChart.destroy();
+    }
+    
+    cashFlowChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: cashFlowData.labels,
+            datasets: [{
+                label: 'Kumulativer Cash Flow',
+                data: cashFlowData.values,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrency(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createROIChart(roiData) {
+    const ctx = document.getElementById('roiChart').getContext('2d');
+    
+    if (roiChart) {
+        roiChart.destroy();
+    }
+    
+    roiChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: roiData.labels,
+            datasets: [{
+                label: 'ROI (%)',
+                data: roiData.values,
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(239, 68, 68, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateSensitivityAnalysis() {
+    const priceVariation = document.getElementById('priceVariation').value;
+    const costVariation = document.getElementById('costVariation').value;
+    
+    document.getElementById('priceVariationValue').textContent = priceVariation + '%';
+    document.getElementById('costVariationValue').textContent = costVariation + '%';
+    
+    // Simulate sensitivity analysis results
+    const container = document.getElementById('sensitivityResults');
+    container.innerHTML = `
+        <div class="space-y-3">
+            <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                <span class="text-sm font-medium text-blue-900">Optimistisches Szenario</span>
+                <span class="text-sm font-bold text-blue-900">+${(parseFloat(priceVariation) * 0.5).toFixed(1)}% ROI</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <span class="text-sm font-medium text-gray-900">Basis-Szenario</span>
+                <span class="text-sm font-bold text-gray-900">0% Änderung</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                <span class="text-sm font-medium text-red-900">Pessimistisches Szenario</span>
+                <span class="text-sm font-bold text-red-900">-${(parseFloat(costVariation) * 0.3).toFixed(1)}% ROI</span>
+            </div>
+        </div>
+    `;
+}
+
+function showLoading(show) {
+    const loadingState = document.getElementById('loadingState');
+    const analysisResults = document.getElementById('analysisResults');
+    
+    if (show) {
+        loadingState.classList.remove('hidden');
+        analysisResults.classList.add('hidden');
+    } else {
+        loadingState.classList.add('hidden');
+    }
+}
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount);
+}
+
+function showNotification(message, type) {
+    // Simple notification - could be enhanced with a proper notification system
+    alert(message);
+}
+
+function exportPDF() {
+    showNotification('PDF Export wird implementiert...', 'info');
+}
+
+function exportExcel() {
+    showNotification('Excel Export wird implementiert...', 'info');
+}
+
+function shareReport() {
+    showNotification('Bericht-Sharing wird implementiert...', 'info');
+}
+</script>
 {% endblock %} 

@@ -1173,7 +1173,7 @@ def test_customer():
 # API Routes für Wirtschaftlichkeitsanalyse
 @main_bp.route('/api/economic-analysis/<int:project_id>')
 def api_economic_analysis(project_id):
-    """Wirtschaftlichkeitsanalyse für ein Projekt"""
+    """Umfassende Wirtschaftlichkeitsanalyse für ein Projekt"""
     try:
         project = Project.query.get(project_id)
         if not project:
@@ -1181,22 +1181,68 @@ def api_economic_analysis(project_id):
         
         # Investitionskosten laden
         investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
-        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Investitionsaufschlüsselung erstellen
+        investment_breakdown = {}
+        total_investment = 0
+        
+        for cost in investment_costs:
+            component_name = cost.component_type.replace('_', ' ').title()
+            if cost.component_type == 'bess':
+                component_name = 'BESS'
+            elif cost.component_type == 'pv':
+                component_name = 'Photovoltaik'
+            elif cost.component_type == 'hp':
+                component_name = 'Wärmepumpe'
+            elif cost.component_type == 'wind':
+                component_name = 'Windkraft'
+            elif cost.component_type == 'hydro':
+                component_name = 'Wasserkraft'
+            elif cost.component_type == 'other':
+                component_name = 'Sonstiges'
+            
+            investment_breakdown[component_name] = cost.cost_eur
+            total_investment += cost.cost_eur
         
         # Referenzpreise laden
         reference_prices = ReferencePrice.query.all()
         
-        # Einfache Wirtschaftlichkeitsberechnung
-        # (Hier würde eine komplexere Berechnung stehen)
-        annual_savings = calculate_annual_savings(project, reference_prices)
-        payback_years = total_investment / annual_savings if annual_savings > 0 else 0
+        # Detaillierte Wirtschaftlichkeitsberechnung
+        simulation_results = run_economic_simulation(project)
+        
+        # Einsparungsaufschlüsselung
+        savings_breakdown = {
+            'Peak Shaving': simulation_results['peak_shaving_savings'],
+            'Arbitrage': simulation_results['arbitrage_savings'],
+            'Netzstabilität': simulation_results['grid_stability_bonus'],
+            'Eigenverbrauch PV': calculate_pv_self_consumption_savings(project),
+            'Wärmepumpen-Effizienz': calculate_hp_efficiency_savings(project)
+        }
+        
+        # Risikobewertung
+        risk_factors = assess_project_risks(project, total_investment, simulation_results['annual_savings'])
+        
+        # Entscheidungsmetriken
+        decision_metrics = generate_decision_metrics(project, total_investment, simulation_results)
+        
+        # Cash Flow Prognose (20 Jahre)
+        cash_flow_data = generate_cash_flow_projection(project, total_investment, simulation_results['annual_savings'])
+        
+        # ROI Vergleich
+        roi_comparison = generate_roi_comparison(simulation_results['roi_percent'])
         
         return jsonify({
             'success': True,
             'total_investment': total_investment,
-            'annual_savings': annual_savings,
-            'payback_years': round(payback_years, 1),
-            'roi_percent': (annual_savings / total_investment * 100) if total_investment > 0 else 0
+            'annual_savings': simulation_results['annual_savings'],
+            'payback_period': simulation_results['payback_years'],
+            'roi': simulation_results['roi_percent'],
+            'investment_breakdown': investment_breakdown,
+            'savings_breakdown': savings_breakdown,
+            'risk_factors': risk_factors,
+            'decision_metrics': decision_metrics,
+            'cash_flow': cash_flow_data,
+            'roi_comparison': roi_comparison
         })
         
     except Exception as e:
@@ -1328,6 +1374,161 @@ def calculate_grid_stability_bonus(project):
     stability_bonus_eur_kw_year = 50  # 50€ pro kW pro Jahr
     
     return project.bess_power * stability_bonus_eur_kw_year
+
+def calculate_pv_self_consumption_savings(project):
+    """Berechnet PV Eigenverbrauch Ersparnisse"""
+    if not project.pv_power:
+        return 0
+    
+    # PV Eigenverbrauch Berechnung
+    pv_power_kw = project.pv_power
+    annual_production_kwh = pv_power_kw * 1000  # Vereinfachte Berechnung
+    self_consumption_rate = 0.35  # 35% Eigenverbrauch
+    electricity_price_eur_kwh = 0.25  # 25 Cent/kWh
+    
+    return annual_production_kwh * self_consumption_rate * electricity_price_eur_kwh
+
+def calculate_hp_efficiency_savings(project):
+    """Berechnet Wärmepumpen-Effizienz Ersparnisse"""
+    if not project.hp_power:
+        return 0
+    
+    # Wärmepumpen-Effizienz Berechnung
+    hp_power_kw = project.hp_power
+    annual_heating_hours = 2000  # 2000 Heizstunden pro Jahr
+    efficiency_improvement = 0.25  # 25% Effizienzverbesserung
+    heating_cost_eur_kwh = 0.12  # 12 Cent/kWh Heizkosten
+    
+    return hp_power_kw * annual_heating_hours * efficiency_improvement * heating_cost_eur_kwh
+
+def assess_project_risks(project, total_investment, annual_savings):
+    """Bewertet Projektrisiken"""
+    risks = []
+    
+    # Technologie-Risiko
+    if project.bess_power and project.bess_power > 1000:
+        risks.append({
+            'factor': 'Technologie-Risiko',
+            'description': 'Große BESS-Anlage mit neuen Technologien',
+            'level': 'Mittel'
+        })
+    else:
+        risks.append({
+            'factor': 'Technologie-Risiko',
+            'description': 'Erprobte Technologien',
+            'level': 'Niedrig'
+        })
+    
+    # Markt-Risiko
+    if annual_savings > 0:
+        payback_period = total_investment / annual_savings
+        if payback_period > 10:
+            risks.append({
+                'factor': 'Markt-Risiko',
+                'description': f'Lange Amortisationszeit ({payback_period:.1f} Jahre)',
+                'level': 'Hoch'
+            })
+        elif payback_period > 7:
+            risks.append({
+                'factor': 'Markt-Risiko',
+                'description': f'Mittlere Amortisationszeit ({payback_period:.1f} Jahre)',
+                'level': 'Mittel'
+            })
+        else:
+            risks.append({
+                'factor': 'Markt-Risiko',
+                'description': f'Kurze Amortisationszeit ({payback_period:.1f} Jahre)',
+                'level': 'Niedrig'
+            })
+    
+    # Finanzierungs-Risiko
+    if total_investment > 1000000:
+        risks.append({
+            'factor': 'Finanzierungs-Risiko',
+            'description': 'Hohe Investitionssumme erfordert externe Finanzierung',
+            'level': 'Mittel'
+        })
+    else:
+        risks.append({
+            'factor': 'Finanzierungs-Risiko',
+            'description': 'Moderate Investitionssumme',
+            'level': 'Niedrig'
+        })
+    
+    # Regulatorisches Risiko
+    risks.append({
+        'factor': 'Regulatorisches Risiko',
+        'description': 'Änderungen in Energiepolitik und Förderungen möglich',
+        'level': 'Mittel'
+    })
+    
+    return risks
+
+def generate_decision_metrics(project, total_investment, simulation_results):
+    """Generiert Entscheidungsmetriken"""
+    roi = simulation_results['roi_percent']
+    payback_period = simulation_results['payback_years']
+    
+    # Investitionsempfehlung
+    if roi > 15 and payback_period < 7:
+        investment_recommendation = 'Empfohlen'
+    elif roi > 10 and payback_period < 10:
+        investment_recommendation = 'Bedingt empfohlen'
+    else:
+        investment_recommendation = 'Nicht empfohlen'
+    
+    # Finanzierungsempfehlung
+    if total_investment > 500000:
+        financing_recommendation = 'Externe Finanzierung'
+    elif total_investment > 100000:
+        financing_recommendation = 'Mischfinanzierung'
+    else:
+        financing_recommendation = 'Eigenfinanzierung'
+    
+    # Zeitplan-Empfehlung
+    if roi > 20:
+        timeline_recommendation = 'Sofortige Umsetzung'
+    elif roi > 12:
+        timeline_recommendation = 'Planung in 6 Monaten'
+    else:
+        timeline_recommendation = 'Langfristige Planung'
+    
+    return {
+        'investment_recommendation': investment_recommendation,
+        'financing_recommendation': financing_recommendation,
+        'timeline_recommendation': timeline_recommendation
+    }
+
+def generate_cash_flow_projection(project, total_investment, annual_savings):
+    """Generiert Cash Flow Prognose für 20 Jahre"""
+    years = list(range(1, 21))
+    cumulative_cash_flow = []
+    current_cash_flow = -total_investment
+    
+    for year in years:
+        # Jährliche Einsparungen mit leichter Degradation
+        degradation_factor = 1 - (year - 1) * 0.005  # 0.5% Degradation pro Jahr
+        year_savings = annual_savings * degradation_factor
+        
+        current_cash_flow += year_savings
+        cumulative_cash_flow.append(current_cash_flow)
+    
+    return {
+        'labels': [f'Jahr {year}' for year in years],
+        'values': cumulative_cash_flow
+    }
+
+def generate_roi_comparison(project_roi):
+    """Generiert ROI Vergleich mit anderen Anlageklassen"""
+    return {
+        'labels': ['BESS Projekt', 'Aktien', 'Anleihen', 'Immobilien'],
+        'values': [
+            project_roi,
+            8.5,  # Durchschnittliche Aktienrendite
+            3.2,  # Durchschnittliche Anleihenrendite
+            5.8   # Durchschnittliche Immobilienrendite
+        ]
+    }
 
 @main_bp.route('/api/import-data', methods=['POST'])
 def api_import_data():
