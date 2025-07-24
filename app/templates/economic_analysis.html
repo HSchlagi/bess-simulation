@@ -275,7 +275,8 @@ function loadProjects() {
             projects.forEach(project => {
                 const option = document.createElement('option');
                 option.value = project.id;
-                option.textContent = `${project.name} (${project.customer_name})`;
+                const customerName = project.customer_name || project.customer?.name || 'Kein Kunde';
+                option.textContent = `${project.name} (${customerName})`;
                 select.appendChild(option);
             });
         })

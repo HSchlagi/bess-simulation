@@ -2540,7 +2540,7 @@ def export_economic_analysis_pdf(project_id):
         # PDF-Datei speichern
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"wirtschaftlichkeitsanalyse_{project.name}_{timestamp}.pdf"
-        filepath = os.path.join('instance', 'exports', filename)
+        filepath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'exports', filename)
         
         # Export-Verzeichnis erstellen falls nicht vorhanden
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -2575,7 +2575,7 @@ def export_economic_analysis_excel(project_id):
         # Excel-Datei speichern
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"wirtschaftlichkeitsanalyse_{project.name}_{timestamp}.xlsx"
-        filepath = os.path.join('instance', 'exports', filename)
+        filepath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'exports', filename)
         
         # Export-Verzeichnis erstellen falls nicht vorhanden
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -2625,7 +2625,7 @@ def share_economic_analysis(project_id):
 def download_export(filename):
     """Download für exportierte Dateien"""
     try:
-        filepath = os.path.join('instance', 'exports', filename)
+        filepath = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'exports', filename)
         
         if not os.path.exists(filepath):
             return jsonify({'error': 'Datei nicht gefunden'}), 404
