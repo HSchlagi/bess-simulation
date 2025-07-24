@@ -1235,7 +1235,7 @@ def api_economic_analysis(project_id):
         risk_factors = assess_project_risks(project, total_investment, total_annual_benefit)
         
         # Entscheidungsmetriken
-        decision_metrics = generate_decision_metrics(project, total_investment, simulation_results)
+        decision_metrics = generate_decision_metrics(project, total_investment, total_annual_benefit)
         
         # Cash Flow Prognose (20 Jahre)
         cash_flow_data = generate_cash_flow_projection(project, total_investment, total_annual_benefit)
@@ -1478,18 +1478,28 @@ def assess_project_risks(project, total_investment, annual_savings):
     
     return risks
 
-def generate_decision_metrics(project, total_investment, simulation_results):
-    """Generiert Entscheidungsmetriken"""
-    roi = simulation_results['roi_percent']
-    payback_period = simulation_results['payback_years']
+def generate_decision_metrics(project, total_investment, total_annual_benefit):
+    """Generiert Entscheidungsmetriken basierend auf korrigierten Werten"""
     
-    # Investitionsempfehlung
-    if roi > 15 and payback_period < 7:
+    # Korrigierte Berechnungen mit Gesamtnutzen (Einsparungen + Erlöse)
+    corrected_roi_percent = (total_annual_benefit * 20 - total_investment) / total_investment * 100 if total_investment > 0 else 0
+    corrected_payback_years = total_investment / total_annual_benefit if total_annual_benefit > 0 else 0
+    
+    print(f"🔍 Entscheidungsmetriken Debug:")
+    print(f"  - Total Investment: {total_investment:,.0f} €")
+    print(f"  - Total Annual Benefit: {total_annual_benefit:,.0f} €")
+    print(f"  - Korrigierter ROI: {corrected_roi_percent:.1f}%")
+    print(f"  - Korrigierte Amortisationszeit: {corrected_payback_years:.1f} Jahre")
+    
+    # Investitionsempfehlung - Realistischere Schwellenwerte
+    if corrected_roi_percent > 12 and corrected_payback_years < 8:
         investment_recommendation = 'Empfohlen'
-    elif roi > 10 and payback_period < 10:
+    elif corrected_roi_percent > 8 and corrected_payback_years < 12:
         investment_recommendation = 'Bedingt empfohlen'
     else:
         investment_recommendation = 'Nicht empfohlen'
+    
+    print(f"  - Investitionsempfehlung: {investment_recommendation}")
     
     # Finanzierungsempfehlung
     if total_investment > 500000:
@@ -1500,9 +1510,9 @@ def generate_decision_metrics(project, total_investment, simulation_results):
         financing_recommendation = 'Eigenfinanzierung'
     
     # Zeitplan-Empfehlung
-    if roi > 20:
+    if corrected_roi_percent > 15:
         timeline_recommendation = 'Sofortige Umsetzung'
-    elif roi > 12:
+    elif corrected_roi_percent > 10:
         timeline_recommendation = 'Planung in 6 Monaten'
     else:
         timeline_recommendation = 'Langfristige Planung'
@@ -2715,7 +2725,7 @@ def get_economic_analysis_data(project_id):
         risk_factors = assess_project_risks(project, total_investment, total_annual_benefit)
         
         # Entscheidungsmetriken
-        decision_metrics = generate_decision_metrics(project, total_investment, simulation_results)
+        decision_metrics = generate_decision_metrics(project, total_investment, total_annual_benefit)
         
         # Cash Flow Prognose (20 Jahre)
         cash_flow_data = generate_cash_flow_projection(project, total_investment, total_annual_benefit)

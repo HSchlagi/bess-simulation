@@ -138,7 +138,7 @@
         <!-- Detailed Analysis Grid - Vertikale Anordnung -->
         <div class="space-y-6 mb-8">
             <!-- Investment Breakdown -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <div class="bg-blue-50 rounded-xl shadow-lg border border-blue-200 p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Investitionsaufschlüsselung</h3>
                 <div id="investmentBreakdown" class="space-y-3">
                     <!-- Will be populated by JavaScript -->
@@ -146,7 +146,7 @@
             </div>
 
             <!-- Savings Breakdown -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+            <div class="bg-green-50 rounded-xl shadow-lg border border-green-200 p-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-4">Einsparungsquellen</h3>
                 <div id="savingsBreakdown" class="space-y-3">
                     <!-- Will be populated by JavaScript -->
@@ -476,11 +476,11 @@ function updateInvestmentBreakdown(breakdown) {
         if (cost > 0) {
             const percentage = (cost / Object.values(breakdown).reduce((a, b) => a + b, 0) * 100).toFixed(1);
             container.innerHTML += `
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">${component}</span>
+                <div class="flex justify-between items-center p-3 bg-blue-100 rounded-lg mb-2">
+                    <span class="text-sm font-medium text-blue-800">${component}</span>
                     <div class="text-right">
-                        <div class="text-sm font-medium text-gray-900">${formatCurrency(cost)}</div>
-                        <div class="text-xs text-gray-500">${percentage}%</div>
+                        <div class="text-sm font-semibold text-blue-900">${formatCurrency(cost)}</div>
+                        <div class="text-xs text-blue-600">${percentage}%</div>
                     </div>
                 </div>
             `;
@@ -495,10 +495,10 @@ function updateSavingsBreakdown(breakdown) {
     Object.entries(breakdown).forEach(([source, savings]) => {
         if (savings > 0) {
             container.innerHTML += `
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">${source}</span>
+                <div class="flex justify-between items-center p-3 bg-green-100 rounded-lg mb-2">
+                    <span class="text-sm font-medium text-green-800">${source}</span>
                     <div class="text-right">
-                        <div class="text-sm font-medium text-green-600">${formatCurrency(savings)}</div>
+                        <div class="text-sm font-semibold text-green-900">${formatCurrency(savings)}</div>
                     </div>
                 </div>
             `;
@@ -781,8 +781,34 @@ function formatCurrency(amount) {
 }
 
 function showNotification(message, type) {
-    // Simple notification - could be enhanced with a proper notification system
-    alert(message);
+    // Verbesserte Benachrichtigung mit visuellen Indikatoren
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 max-w-md ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-black' :
+        'bg-blue-500 text-white'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <span class="mr-2">
+                ${type === 'success' ? '✅' : 
+                  type === 'error' ? '❌' : 
+                  type === 'warning' ? '⚠️' : 'ℹ️'}
+            </span>
+            <span class="font-medium">${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Automatisch nach 5 Sekunden entfernen
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
 }
 
 function exportPDF() {
@@ -791,6 +817,7 @@ function exportPDF() {
         return;
     }
     
+    console.log('🚀 Starte PDF-Export für Projekt ID:', currentProjectId);
     showNotification('PDF wird generiert...', 'info');
     
     fetch(`/api/economic-analysis/${currentProjectId}/export-pdf`, {
@@ -799,19 +826,38 @@ function exportPDF() {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📡 Server-Antwort Status:', response.status);
+        console.log('📡 Server-Antwort Headers:', response.headers);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        console.log('📄 Server-Antwort Daten:', data);
+        
         if (data.success) {
+            console.log('✅ PDF erfolgreich generiert, Download-URL:', data.download_url);
+            
             // PDF herunterladen
-            window.open(data.download_url, '_blank');
-            showNotification('PDF erfolgreich erstellt!', 'success');
+            const downloadWindow = window.open(data.download_url, '_blank');
+            
+            if (downloadWindow) {
+                showNotification('PDF erfolgreich erstellt und Download gestartet!', 'success');
+            } else {
+                showNotification('PDF erstellt! Bitte erlauben Sie Pop-ups für den Download.', 'warning');
+            }
         } else {
-            showNotification('Fehler beim PDF-Export: ' + data.error, 'error');
+            console.error('❌ Server meldet Fehler:', data.error);
+            showNotification('Fehler beim PDF-Export: ' + (data.error || 'Unbekannter Fehler'), 'error');
         }
     })
     .catch(error => {
-        console.error('Fehler beim PDF-Export:', error);
-        showNotification('Fehler beim PDF-Export', 'error');
+        console.error('❌ Fehler beim PDF-Export:', error);
+        showNotification('Fehler beim PDF-Export: ' + error.message, 'error');
     });
 }
 
@@ -821,6 +867,7 @@ function exportExcel() {
         return;
     }
     
+    console.log('🚀 Starte Excel-Export für Projekt ID:', currentProjectId);
     showNotification('Excel wird generiert...', 'info');
     
     fetch(`/api/economic-analysis/${currentProjectId}/export-excel`, {
@@ -829,19 +876,37 @@ function exportExcel() {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('📡 Server-Antwort Status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return response.json();
+    })
     .then(data => {
+        console.log('📄 Server-Antwort Daten:', data);
+        
         if (data.success) {
+            console.log('✅ Excel erfolgreich generiert, Download-URL:', data.download_url);
+            
             // Excel herunterladen
-            window.open(data.download_url, '_blank');
-            showNotification('Excel erfolgreich erstellt!', 'success');
+            const downloadWindow = window.open(data.download_url, '_blank');
+            
+            if (downloadWindow) {
+                showNotification('Excel erfolgreich erstellt und Download gestartet!', 'success');
+            } else {
+                showNotification('Excel erstellt! Bitte erlauben Sie Pop-ups für den Download.', 'warning');
+            }
         } else {
-            showNotification('Fehler beim Excel-Export: ' + data.error, 'error');
+            console.error('❌ Server meldet Fehler:', data.error);
+            showNotification('Fehler beim Excel-Export: ' + (data.error || 'Unbekannter Fehler'), 'error');
         }
     })
     .catch(error => {
-        console.error('Fehler beim Excel-Export:', error);
-        showNotification('Fehler beim Excel-Export', 'error');
+        console.error('❌ Fehler beim Excel-Export:', error);
+        showNotification('Fehler beim Excel-Export: ' + error.message, 'error');
     });
 }
 
