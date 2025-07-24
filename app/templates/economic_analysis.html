@@ -437,7 +437,11 @@ function displayAnalysisResults(data) {
     // Zeige Gesamtnutzen statt nur Einsparungen
     if (data.total_annual_benefit) {
         document.getElementById('annualSavings').textContent = formatCurrency(data.total_annual_benefit);
-        document.getElementById('annualSavings').parentElement.querySelector('h3').textContent = 'Jährlicher Gesamtnutzen';
+        // Korrigiert: Suche nach dem p-Element mit der Beschriftung
+        const labelElement = document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500');
+        if (labelElement) {
+            labelElement.textContent = 'Jährlicher Gesamtnutzen';
+        }
     } else {
         document.getElementById('annualSavings').textContent = formatCurrency(data.annual_savings);
     }

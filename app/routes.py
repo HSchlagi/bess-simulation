@@ -1213,6 +1213,15 @@ def api_economic_analysis(project_id):
         # Intelligente Erlösberechnung
         intelligent_revenues = calculate_intelligent_revenues(project)
         
+        # Gesamter jährlicher Nutzen (Einsparungen + Erlöse)
+        total_annual_benefit = simulation_results['annual_savings'] + intelligent_revenues['total_revenue']
+        
+        # Korrigierte Amortisationszeit basierend auf Gesamtnutzen
+        corrected_payback_years = total_investment / total_annual_benefit if total_annual_benefit > 0 else 0
+        
+        # Korrigierter ROI basierend auf Gesamtnutzen
+        corrected_roi_percent = (total_annual_benefit * 20 - total_investment) / total_investment * 100 if total_investment > 0 else 0
+        
         # Einsparungsaufschlüsselung (erweitert)
         savings_breakdown = {
             'Peak Shaving': simulation_results['peak_shaving_savings'],
@@ -1223,16 +1232,16 @@ def api_economic_analysis(project_id):
         }
         
         # Risikobewertung
-        risk_factors = assess_project_risks(project, total_investment, simulation_results['annual_savings'])
+        risk_factors = assess_project_risks(project, total_investment, total_annual_benefit)
         
         # Entscheidungsmetriken
         decision_metrics = generate_decision_metrics(project, total_investment, simulation_results)
         
         # Cash Flow Prognose (20 Jahre)
-        cash_flow_data = generate_cash_flow_projection(project, total_investment, simulation_results['annual_savings'])
+        cash_flow_data = generate_cash_flow_projection(project, total_investment, total_annual_benefit)
         
         # ROI Vergleich
-        roi_comparison = generate_roi_comparison(simulation_results['roi_percent'])
+        roi_comparison = generate_roi_comparison(corrected_roi_percent)
         
         return jsonify({
             'success': True,
@@ -2684,6 +2693,15 @@ def get_economic_analysis_data(project_id):
         # Intelligente Erlösberechnung
         intelligent_revenues = calculate_intelligent_revenues(project)
         
+        # Gesamter jährlicher Nutzen (Einsparungen + Erlöse)
+        total_annual_benefit = simulation_results['annual_savings'] + intelligent_revenues['total_revenue']
+        
+        # Korrigierte Amortisationszeit basierend auf Gesamtnutzen
+        corrected_payback_years = total_investment / total_annual_benefit if total_annual_benefit > 0 else 0
+        
+        # Korrigierter ROI basierend auf Gesamtnutzen
+        corrected_roi_percent = (total_annual_benefit * 20 - total_investment) / total_investment * 100 if total_investment > 0 else 0
+        
         # Einsparungsaufschlüsselung (erweitert)
         savings_breakdown = {
             'Peak Shaving': simulation_results['peak_shaving_savings'],
@@ -2694,16 +2712,16 @@ def get_economic_analysis_data(project_id):
         }
         
         # Risikobewertung
-        risk_factors = assess_project_risks(project, total_investment, simulation_results['annual_savings'])
+        risk_factors = assess_project_risks(project, total_investment, total_annual_benefit)
         
         # Entscheidungsmetriken
         decision_metrics = generate_decision_metrics(project, total_investment, simulation_results)
         
         # Cash Flow Prognose (20 Jahre)
-        cash_flow_data = generate_cash_flow_projection(project, total_investment, simulation_results['annual_savings'])
+        cash_flow_data = generate_cash_flow_projection(project, total_investment, total_annual_benefit)
         
         # ROI Vergleich
-        roi_comparison = generate_roi_comparison(simulation_results['roi_percent'])
+        roi_comparison = generate_roi_comparison(corrected_roi_percent)
         
         return {
             'project': project,
