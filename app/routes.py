@@ -562,33 +562,166 @@ def api_delete_investment_cost(cost_id):
 # API Routes für Referenzpreise
 @main_bp.route('/api/reference-prices')
 def api_reference_prices():
-    prices = ReferencePrice.query.all()
-    return jsonify([{
-        'id': p.id,
-        'name': p.name,
-        'price_type': p.price_type,
-        'price_eur_mwh': p.price_eur_mwh,
-        'region': p.region,
-        'valid_from': p.valid_from.isoformat() if p.valid_from else None,
-        'valid_to': p.valid_to.isoformat() if p.valid_to else None
-    } for p in prices])
+    try:
+        cursor = get_db().cursor()
+        cursor.execute("""
+            SELECT id, name, price_type, price_eur_mwh, region, valid_from, valid_to, created_at
+            FROM reference_price 
+            ORDER BY price_type, name
+        """)
+        
+        rows = cursor.fetchall()
+        prices = []
+        
+        for row in rows:
+            prices.append({
+                'id': row[0],
+                'name': row[1],
+                'price_type': row[2],
+                'price_eur_mwh': row[3],
+                'region': row[4],
+                'valid_from': row[5],
+                'valid_to': row[6],
+                'created_at': row[7]
+            })
+        
+        return jsonify(prices)
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Referenzpreise: {e}")
+        return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/reference-prices', methods=['POST'])
 def api_create_reference_price():
     try:
         data = request.get_json()
-        price = ReferencePrice(
-            name=data['name'],
-            price_type=data['price_type'],
-            price_eur_mwh=data['price_eur_mwh'],
-            region=data.get('region'),
-            valid_from=datetime.fromisoformat(data['valid_from']) if data.get('valid_from') else None,
-            valid_to=datetime.fromisoformat(data['valid_to']) if data.get('valid_to') else None
-        )
-        db.session.add(price)
-        db.session.commit()
-        return jsonify({'success': True, 'id': price.id}), 201
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Debug-Ausgabe
+        print(f"🆕 Neuer Referenzpreis:")
+        print(f"   Name: {data.get('name')}")
+        print(f"   Type: {data.get('price_type')}")
+        print(f"   Price: {data.get('price_eur_mwh')}")
+        print(f"   Region: {data.get('region')}")
+        print(f"   Valid from: {data.get('valid_from')}")
+        print(f"   Valid to: {data.get('valid_to')}")
+        
+        cursor.execute("""
+            INSERT INTO reference_price 
+            (name, price_type, price_eur_mwh, region, valid_from, valid_to, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+        """, (
+            data['name'],
+            data['price_type'],
+            data['price_eur_mwh'],
+            data.get('region'),
+            data.get('valid_from'),
+            data.get('valid_to')
+        ))
+        
+        # Commit und ID holen auf derselben Verbindung
+        conn.commit()
+        price_id = cursor.lastrowid
+        
+        print(f"✅ Neuer Referenzpreis mit ID {price_id} erstellt")
+        return jsonify({'success': True, 'id': price_id}), 201
+        
     except Exception as e:
+        print(f"❌ Fehler beim Erstellen: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/reference-prices/<int:price_id>')
+def api_get_reference_price(price_id):
+    try:
+        cursor = get_db().cursor()
+        cursor.execute("""
+            SELECT id, name, price_type, price_eur_mwh, region, valid_from, valid_to, created_at
+            FROM reference_price 
+            WHERE id = ?
+        """, (price_id,))
+        
+        row = cursor.fetchone()
+        if row:
+            return jsonify({
+                'id': row[0],
+                'name': row[1],
+                'price_type': row[2],
+                'price_eur_mwh': row[3],
+                'region': row[4],
+                'valid_from': row[5],
+                'valid_to': row[6],
+                'created_at': row[7]
+            })
+        else:
+            return jsonify({'error': 'Referenzpreis nicht gefunden'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/reference-prices/<int:price_id>', methods=['PUT'])
+def api_update_reference_price(price_id):
+    try:
+        data = request.get_json()
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Debug-Ausgabe
+        print(f"🔄 Update Referenzpreis ID {price_id}:")
+        print(f"   Name: {data.get('name')}")
+        print(f"   Type: {data.get('price_type')}")
+        print(f"   Price: {data.get('price_eur_mwh')}")
+        print(f"   Region: {data.get('region')}")
+        print(f"   Valid from: {data.get('valid_from')}")
+        print(f"   Valid to: {data.get('valid_to')}")
+        
+        cursor.execute("""
+            UPDATE reference_price 
+            SET name = ?, price_type = ?, price_eur_mwh = ?, region = ?, valid_from = ?, valid_to = ?
+            WHERE id = ?
+        """, (
+            data['name'],
+            data['price_type'],
+            data['price_eur_mwh'],
+            data.get('region'),
+            data.get('valid_from'),
+            data.get('valid_to'),
+            price_id
+        ))
+        
+        # Commit der Änderungen auf derselben Verbindung
+        conn.commit()
+        
+        if cursor.rowcount > 0:
+            print(f"✅ Referenzpreis ID {price_id} erfolgreich aktualisiert")
+            return jsonify({'success': True})
+        else:
+            print(f"❌ Referenzpreis ID {price_id} nicht gefunden")
+            return jsonify({'error': 'Referenzpreis nicht gefunden'}), 404
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Update: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/reference-prices/<int:price_id>', methods=['DELETE'])
+def api_delete_reference_price(price_id):
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM reference_price WHERE id = ?", (price_id,))
+        
+        # Commit der Änderungen auf derselben Verbindung
+        conn.commit()
+        
+        if cursor.rowcount > 0:
+            print(f"✅ Referenzpreis ID {price_id} erfolgreich gelöscht")
+            return jsonify({'success': True})
+        else:
+            print(f"❌ Referenzpreis ID {price_id} nicht gefunden")
+            return jsonify({'error': 'Referenzpreis nicht gefunden'}), 404
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Löschen: {e}")
         return jsonify({'error': str(e)}), 400
 
 # API Routes für Spot-Preise

@@ -15,16 +15,16 @@
         <!-- Preis-Übersicht -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-blue-50 p-4 rounded-lg">
-                <div class="text-2xl font-bold text-blue-600" id="avgElectricityPrice">0</div>
-                <div class="text-sm text-blue-700">Ø Strompreis (€/MWh)</div>
+                <div class="text-2xl font-bold text-blue-600" id="avgBessPrice">0</div>
+                <div class="text-sm text-blue-700">Ø BESS-Preis (€/kWh)</div>
             </div>
             <div class="bg-green-50 p-4 rounded-lg">
-                <div class="text-2xl font-bold text-green-600" id="avgGasPrice">0</div>
-                <div class="text-sm text-green-700">Ø Gaspreis (€/MWh)</div>
+                <div class="text-2xl font-bold text-green-600" id="avgPvPrice">0</div>
+                <div class="text-sm text-green-700">Ø Photovoltaik-Preis (€/kWh)</div>
             </div>
             <div class="bg-purple-50 p-4 rounded-lg">
-                <div class="text-2xl font-bold text-purple-600" id="avgHeatingPrice">0</div>
-                <div class="text-sm text-purple-700">Ø Heizpreis (€/MWh)</div>
+                <div class="text-2xl font-bold text-purple-600" id="avgHydroPrice">0</div>
+                <div class="text-sm text-purple-700">Ø Wasserkraft-Preis (€/kWh)</div>
             </div>
             <div class="bg-orange-50 p-4 rounded-lg">
                 <div class="text-2xl font-bold text-orange-600" id="priceCount">0</div>
@@ -39,7 +39,7 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Typ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preis (€/MWh)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preis (€/kWh)</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gültig von</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gültig bis</th>
@@ -68,15 +68,17 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Typ</label>
                     <select id="priceType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         <option value="">Typ auswählen...</option>
-                        <option value="electricity">Strom</option>
-                        <option value="gas">Gas</option>
-                        <option value="heating">Heizung</option>
-                        <option value="other">Sonstiges</option>
+                        <option value="bess">BESS</option>
+                        <option value="photovoltaik">Photovoltaik</option>
+                        <option value="wasserkraft">Wasserkraft</option>
+                        <option value="windkraft">Windkraft</option>
+                        <option value="waermepumpe">Wärmepumpe</option>
+                        <option value="sonstiges">Sonstiges</option>
                     </select>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Preis (€/MWh)</label>
-                    <input type="number" id="priceValue" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preis (€/kWh)</label>
+                    <input type="number" id="priceValue" step="0.001" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Region</label>
@@ -131,28 +133,55 @@ function generateDemoPrices() {
     return [
         {
             id: 1,
-            name: 'Standard-Strompreis AT',
-            price_type: 'electricity',
-            price_eur_mwh: 85.50,
+            name: 'BESS Standard-Preis',
+            price_type: 'bess',
+            price_eur_mwh: 0.120,
             region: 'AT',
             valid_from: '2025-01-01',
             valid_to: '2025-12-31'
         },
         {
             id: 2,
-            name: 'Standard-Gaspreis AT',
-            price_type: 'gas',
-            price_eur_mwh: 65.20,
+            name: 'Photovoltaik Standard-Preis',
+            price_type: 'photovoltaik',
+            price_eur_mwh: 0.085,
             region: 'AT',
             valid_from: '2025-01-01',
             valid_to: '2025-12-31'
         },
         {
             id: 3,
-            name: 'Fernwärme-Preis Hinterstoder',
-            price_type: 'heating',
-            price_eur_mwh: 45.80,
-            region: 'AT-OÖ',
+            name: 'Wasserkraft Standard-Preis',
+            price_type: 'wasserkraft',
+            price_eur_mwh: 0.065,
+            region: 'AT',
+            valid_from: '2025-01-01',
+            valid_to: '2025-12-31'
+        },
+        {
+            id: 4,
+            name: 'Windkraft Standard-Preis',
+            price_type: 'windkraft',
+            price_eur_mwh: 0.075,
+            region: 'AT',
+            valid_from: '2025-01-01',
+            valid_to: '2025-12-31'
+        },
+        {
+            id: 5,
+            name: 'Wärmepumpe Standard-Preis',
+            price_type: 'waermepumpe',
+            price_eur_mwh: 0.095,
+            region: 'AT',
+            valid_from: '2025-01-01',
+            valid_to: '2025-12-31'
+        },
+        {
+            id: 6,
+            name: 'Sonstiges Standard-Preis',
+            price_type: 'sonstiges',
+            price_eur_mwh: 0.100,
+            region: 'AT',
             valid_from: '2025-01-01',
             valid_to: '2025-12-31'
         }
@@ -162,20 +191,20 @@ function generateDemoPrices() {
 // Preise-Anzeige aktualisieren
 function updatePricesDisplay(prices) {
     // Statistiken aktualisieren
-    const electricityPrices = prices.filter(p => p.price_type === 'electricity');
-    const gasPrices = prices.filter(p => p.price_type === 'gas');
-    const heatingPrices = prices.filter(p => p.price_type === 'heating');
+    const bessPrices = prices.filter(p => p.price_type === 'bess');
+    const pvPrices = prices.filter(p => p.price_type === 'photovoltaik');
+    const hydroPrices = prices.filter(p => p.price_type === 'wasserkraft');
     
-    const avgElectricity = electricityPrices.length > 0 ? 
-        electricityPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / electricityPrices.length : 0;
-    const avgGas = gasPrices.length > 0 ? 
-        gasPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / gasPrices.length : 0;
-    const avgHeating = heatingPrices.length > 0 ? 
-        heatingPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / heatingPrices.length : 0;
+    const avgBess = bessPrices.length > 0 ? 
+        bessPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / bessPrices.length : 0;
+    const avgPv = pvPrices.length > 0 ? 
+        pvPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / pvPrices.length : 0;
+    const avgHydro = hydroPrices.length > 0 ? 
+        hydroPrices.reduce((sum, p) => sum + p.price_eur_mwh, 0) / hydroPrices.length : 0;
     
-    document.getElementById('avgElectricityPrice').textContent = avgElectricity.toFixed(2);
-    document.getElementById('avgGasPrice').textContent = avgGas.toFixed(2);
-    document.getElementById('avgHeatingPrice').textContent = avgHeating.toFixed(2);
+    document.getElementById('avgBessPrice').textContent = avgBess.toFixed(2);
+    document.getElementById('avgPvPrice').textContent = avgPv.toFixed(2);
+    document.getElementById('avgHydroPrice').textContent = avgHydro.toFixed(2);
     document.getElementById('priceCount').textContent = prices.length;
     
     // Tabelle aktualisieren
@@ -184,17 +213,19 @@ function updatePricesDisplay(prices) {
     
     prices.forEach(price => {
         const typeNames = {
-            'electricity': 'Strom',
-            'gas': 'Gas',
-            'heating': 'Heizung',
-            'other': 'Sonstiges'
+            'bess': 'BESS',
+            'photovoltaik': 'Photovoltaik',
+            'wasserkraft': 'Wasserkraft',
+            'windkraft': 'Windkraft',
+            'waermepumpe': 'Wärmepumpe',
+            'sonstiges': 'Sonstiges'
         };
         
         const row = `
             <tr>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.name}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${typeNames[price.price_type]}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.price_eur_mwh.toFixed(2)} €/MWh</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.price_eur_mwh.toFixed(3)} €/kWh</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.region || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.valid_from || '-'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${price.valid_to || '-'}</td>
@@ -220,9 +251,19 @@ function openNewPriceModal() {
 function closeNewPriceModal() {
     document.getElementById('newPriceModal').classList.add('hidden');
     document.getElementById('newPriceForm').reset();
+    
+    // Modal zurücksetzen
+    document.querySelector('#newPriceModal h3').textContent = 'Neuen Referenzpreis hinzufügen';
+    const form = document.getElementById('newPriceForm');
+    delete form.dataset.editMode;
+    delete form.dataset.editId;
+    
+    // Button-Text zurücksetzen
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.textContent = 'Hinzufügen';
 }
 
-// Neuen Preis hinzufügen
+// Preis hinzufügen oder bearbeiten
 document.getElementById('newPriceForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -235,36 +276,111 @@ document.getElementById('newPriceForm').addEventListener('submit', async functio
         valid_to: document.getElementById('validTo').value
     };
     
+    const isEditMode = this.dataset.editMode === 'true';
+    const editId = this.dataset.editId;
+    
+    console.log('🔄 Formular-Submit:');
+    console.log('   Edit Mode:', isEditMode);
+    console.log('   Edit ID:', editId);
+    console.log('   Form Data:', formData);
+    
     try {
-        const response = await fetch('/api/reference-prices', {
-            method: 'POST',
+        const url = isEditMode ? `/api/reference-prices/${editId}` : '/api/reference-prices';
+        const method = isEditMode ? 'PUT' : 'POST';
+        
+        console.log('   URL:', url);
+        console.log('   Method:', method);
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(formData)
         });
         
+        console.log('   Response Status:', response.status);
+        
         if (response.ok) {
+            console.log('✅ Erfolgreich aktualisiert/erstellt');
             closeNewPriceModal();
             loadReferencePrices();
         } else {
-            alert('Fehler beim Hinzufügen des Preises');
+            const errorText = await response.text();
+            console.error('❌ API Fehler:', errorText);
+            alert(isEditMode ? 'Fehler beim Aktualisieren des Preises' : 'Fehler beim Hinzufügen des Preises');
         }
     } catch (error) {
-        console.error('Fehler:', error);
-        alert('Fehler beim Hinzufügen des Preises');
+        console.error('❌ JavaScript Fehler:', error);
+        alert(isEditMode ? 'Fehler beim Aktualisieren des Preises' : 'Fehler beim Hinzufügen des Preises');
     }
 });
 
 // Preis bearbeiten
-function editPrice(priceId) {
-    console.log('Preis bearbeiten:', priceId);
+async function editPrice(priceId) {
+    console.log('🔄 Bearbeite Preis ID:', priceId);
+    
+    try {
+        // Preis-Daten laden
+        const response = await fetch(`/api/reference-prices/${priceId}`);
+        console.log('   Response Status:', response.status);
+        
+        if (response.ok) {
+            const price = await response.json();
+            console.log('   Geladene Preis-Daten:', price);
+            
+            // Modal mit Preis-Daten füllen
+            document.getElementById('priceName').value = price.name;
+            document.getElementById('priceType').value = price.price_type;
+            document.getElementById('priceValue').value = price.price_eur_mwh;
+            document.getElementById('priceRegion').value = price.region || '';
+            document.getElementById('validFrom').value = price.valid_from || '';
+            document.getElementById('validTo').value = price.valid_to || '';
+            
+            console.log('   Modal gefüllt mit Preis:', price.price_eur_mwh);
+            
+            // Modal-Titel ändern
+            document.querySelector('#newPriceModal h3').textContent = 'Referenzpreis bearbeiten';
+            
+            // Formular für Update vorbereiten
+            const form = document.getElementById('newPriceForm');
+            form.dataset.editMode = 'true';
+            form.dataset.editId = priceId;
+            
+            // Button-Text ändern
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.textContent = 'Aktualisieren';
+            
+            openNewPriceModal();
+            console.log('✅ Modal geöffnet für Bearbeitung');
+        } else {
+            const errorText = await response.text();
+            console.error('❌ Fehler beim Laden:', errorText);
+            alert('Fehler beim Laden des Preises');
+        }
+    } catch (error) {
+        console.error('❌ JavaScript Fehler:', error);
+        alert('Fehler beim Laden des Preises');
+    }
 }
 
 // Preis löschen
-function deletePrice(priceId) {
+async function deletePrice(priceId) {
     if (confirm('Preis wirklich löschen?')) {
-        console.log('Preis löschen:', priceId);
+        try {
+            const response = await fetch(`/api/reference-prices/${priceId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadReferencePrices();
+            } else {
+                alert('Fehler beim Löschen des Preises');
+            }
+        } catch (error) {
+            console.error('Fehler:', error);
+            alert('Fehler beim Löschen des Preises');
+        }
     }
 }
 
