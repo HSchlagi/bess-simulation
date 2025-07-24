@@ -88,7 +88,9 @@ def bess_peak_shaving_analysis():
 
 @main_bp.route('/data_import_center')
 def data_import_center():
-    return render_template('data_import_center.html')
+    # Tab-Parameter aus der URL holen
+    tab = request.args.get('tab', 'load')
+    return render_template('data_import_center.html', active_tab=tab)
 
 @main_bp.route('/data_import_center_fixed')
 def data_import_center_fixed():
@@ -148,6 +150,13 @@ def api_create_project():
 @main_bp.route('/api/projects/<int:project_id>')
 def api_get_project(project_id):
     project = Project.query.get_or_404(project_id)
+    
+    # Lade Investitionskosten aus der InvestmentCost Tabelle
+    investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
+    costs_dict = {}
+    for cost in investment_costs:
+        costs_dict[cost.component_type] = cost.cost_eur
+    
     return jsonify({
         'id': project.id,
         'name': project.name,
@@ -159,12 +168,20 @@ def api_get_project(project_id):
         'hp_power': project.hp_power,
         'wind_power': project.wind_power,
         'hydro_power': project.hydro_power,
+        'other_power': project.other_power,
         'customer_id': project.customer_id,
         'customer': {
             'id': project.customer.id,
             'name': project.customer.name
         } if project.customer else None,
-        'created_at': project.created_at.isoformat()
+        'created_at': project.created_at.isoformat(),
+        # Investitionskosten
+        'bess_cost': costs_dict.get('bess'),
+        'pv_cost': costs_dict.get('pv'),
+        'hp_cost': costs_dict.get('hp'),
+        'wind_cost': costs_dict.get('wind'),
+        'hydro_cost': costs_dict.get('hydro'),
+        'other_cost': costs_dict.get('other')
     })
 
 @main_bp.route('/api/projects/<int:project_id>', methods=['PUT'])
@@ -225,6 +242,8 @@ def api_update_project(project_id):
             project.hp_power = float(data['hp_power']) if data.get('hp_power') and str(data['hp_power']).strip() else None
             project.wind_power = float(data['wind_power']) if data.get('wind_power') and str(data['wind_power']).strip() else None
             project.hydro_power = float(data['hydro_power']) if data.get('hydro_power') and str(data['hydro_power']).strip() else None
+            project.other_power = float(data['other_power']) if data.get('other_power') and str(data['other_power']).strip() else None
+            project.current_electricity_cost = float(data['current_electricity_cost']) if data.get('current_electricity_cost') and str(data['current_electricity_cost']).strip() else 12.5
             
             print(f"Verarbeitete Daten:")
             print(f"  Name: {project.name}")
@@ -234,10 +253,42 @@ def api_update_project(project_id):
             print(f"  BESS Size: {project.bess_size}")
             print(f"  BESS Power: {project.bess_power}")
             print(f"  PV Power: {project.pv_power}")
+            print(f"  Other Power: {project.other_power}")
+            
+            # Investitionskosten verarbeiten
+            cost_fields = ['bess_cost', 'pv_cost', 'hp_cost', 'wind_cost', 'hydro_cost', 'other_cost']
+            cost_types = ['bess', 'pv', 'hp', 'wind', 'hydro', 'other']
+            
+            for field, cost_type in zip(cost_fields, cost_types):
+                cost_value = data.get(field)
+                if cost_value is not None and str(cost_value).strip():
+                    try:
+                        cost_eur = float(cost_value)
+                        
+                        # Bestehenden Eintrag suchen oder neuen erstellen
+                        existing_cost = InvestmentCost.query.filter_by(
+                            project_id=project_id, 
+                            component_type=cost_type
+                        ).first()
+                        
+                        if existing_cost:
+                            existing_cost.cost_eur = cost_eur
+                            print(f"  {cost_type} Kosten aktualisiert: {cost_eur} €")
+                        else:
+                            new_cost = InvestmentCost(
+                                project_id=project_id,
+                                component_type=cost_type,
+                                cost_eur=cost_eur,
+                                description=f'{cost_type.upper()} Investitionskosten'
+                            )
+                            db.session.add(new_cost)
+                            print(f"  {cost_type} Kosten hinzugefügt: {cost_eur} €")
+                    except (ValueError, TypeError):
+                        print(f"  Warnung: Ungültiger Kostenwert für {cost_type}: {cost_value}")
             
             db.session.commit()
-            print(f"Projekt erfolgreich aktualisiert!")
-            return jsonify({'success': True})
+            print(f"✅ Projekt und Investitionskosten erfolgreich aktualisiert")
+            return jsonify({'success': True, 'message': 'Projekt erfolgreich aktualisiert'})
             
         except (ValueError, TypeError) as e:
             print(f"Datentyp-Fehler: {str(e)}")
@@ -820,6 +871,83 @@ def api_load_profile_data_range(load_profile_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@main_bp.route('/api/load-profiles/<string:profile_id>/data-range', methods=['POST'])
+def api_load_profile_data_range_string(profile_id):
+    """API-Endpoint für Lastprofil-Daten mit String-IDs (new_2, old_3, etc.)"""
+    try:
+        print(f"📊 Lade Daten für Lastprofil: {profile_id}")
+        
+        data = request.get_json()
+        start_date = datetime.fromisoformat(data['start_date'])
+        end_date = datetime.fromisoformat(data['end_date'])
+        
+        # Präfix entfernen und echte ID extrahieren
+        if profile_id.startswith('new_'):
+            real_id = int(profile_id.replace('new_', ''))
+            table_name = 'load_profiles'
+            data_table = 'load_profile_data'
+            value_column = 'value'  # Neue Tabelle verwendet 'value' statt 'power_kw'
+        elif profile_id.startswith('old_'):
+            real_id = int(profile_id.replace('old_', ''))
+            table_name = 'load_profile'
+            data_table = 'load_value'
+            value_column = 'power_kw'  # Alte Tabelle verwendet 'power_kw'
+        else:
+            return jsonify({'error': 'Ungültige Profil-ID'}), 400
+        
+        cursor = get_db().cursor()
+        
+        # Daten aus der entsprechenden Tabelle laden
+        cursor.execute(f"""
+            SELECT timestamp, {value_column}
+            FROM {data_table} 
+            WHERE load_profile_id = ? 
+            AND timestamp BETWEEN ? AND ?
+            ORDER BY timestamp
+        """, (real_id, start_date, end_date))
+        
+        data_points = cursor.fetchall()
+        
+        if not data_points:
+            print(f"⚠️ Keine Daten für Zeitraum {start_date} bis {end_date}")
+            # Fallback: Dummy-Daten generieren
+            dummy_data = []
+            current_time = start_date
+            while current_time <= end_date:
+                dummy_data.append({
+                    'timestamp': current_time.isoformat(),
+                    'value': random.uniform(100, 1000)
+                })
+                current_time += timedelta(hours=1)
+            
+            return jsonify({
+                'success': True,
+                'data': dummy_data,
+                'source': 'Dummy-Daten (keine echten Daten verfügbar)',
+                'count': len(dummy_data)
+            })
+        
+        # Echte Daten formatieren
+        formatted_data = []
+        for row in data_points:
+            formatted_data.append({
+                'timestamp': row[0],
+                'value': float(row[1]) if row[1] is not None else 0.0
+            })
+        
+        print(f"✅ {len(formatted_data)} Datenpunkte für Lastprofil {profile_id} geladen")
+        
+        return jsonify({
+            'success': True,
+            'data': formatted_data,
+            'source': f'Echte Daten aus {table_name}',
+            'count': len(formatted_data)
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Lastprofil-Daten: {e}")
+        return jsonify({'error': str(e)}), 400
+
 @main_bp.route('/api/load-profiles/<int:load_profile_id>')
 def api_get_load_profile(load_profile_id):
     try:
@@ -832,6 +960,69 @@ def api_get_load_profile(load_profile_id):
         }
         return jsonify(profile)
     except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/load-profiles/<string:profile_id>')
+def api_get_load_profile_string(profile_id):
+    """API-Endpoint für Lastprofile mit String-IDs (new_2, old_3, etc.)"""
+    try:
+        print(f"🔍 Lade Lastprofil mit String-ID: {profile_id}")
+        
+        # Präfix entfernen und echte ID extrahieren
+        if profile_id.startswith('new_'):
+            real_id = int(profile_id.replace('new_', ''))
+            table_name = 'load_profiles'
+            data_table = 'load_profile_data'
+        elif profile_id.startswith('old_'):
+            real_id = int(profile_id.replace('old_', ''))
+            table_name = 'load_profile'
+            data_table = 'load_value'
+        else:
+            return jsonify({'error': 'Ungültige Profil-ID'}), 400
+        
+        cursor = get_db().cursor()
+        
+        # Lastprofil aus der entsprechenden Tabelle laden
+        if table_name == 'load_profiles':
+            # Neue Tabelle: keine time_resolution Spalte
+            cursor.execute(f"""
+                SELECT id, name, created_at, data_type, NULL as time_resolution
+                FROM {table_name} 
+                WHERE id = ?
+            """, (real_id,))
+        else:
+            # Alte Tabelle: hat time_resolution Spalte
+            cursor.execute(f"""
+                SELECT id, name, created_at, data_type, time_resolution
+                FROM {table_name} 
+                WHERE id = ?
+            """, (real_id,))
+        
+        profile_data = cursor.fetchone()
+        
+        if not profile_data:
+            return jsonify({'error': 'Lastprofil nicht gefunden'}), 404
+        
+        # Anzahl Datenpunkte ermitteln
+        cursor.execute(f"SELECT COUNT(*) FROM {data_table} WHERE load_profile_id = ?", (real_id,))
+        data_points = cursor.fetchone()[0]
+        
+        profile = {
+            'id': profile_id,  # Original String-ID zurückgeben
+            'real_id': real_id,
+            'name': profile_data[1],
+            'created_at': profile_data[2],
+            'data_type': profile_data[3] or 'load',
+            'time_resolution': profile_data[4] or 15,
+            'data_points': data_points,
+            'table_source': table_name
+        }
+        
+        print(f"✅ Lastprofil geladen: {profile['name']} ({data_points} Datenpunkte)")
+        return jsonify(profile)
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Laden des Lastprofils: {e}")
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/test-customer', methods=['POST'])
@@ -1541,6 +1732,65 @@ def api_delete_load_profile(profile_id):
             'message': f'Lastprofil "{profile_name}" erfolgreich gelöscht',
             'deleted_profile': deleted_profile,
             'deleted_values': deleted_values
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim Löschen des Lastprofils: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/load-profiles/<string:profile_id>', methods=['DELETE'])
+def api_delete_load_profile_string(profile_id):
+    """API-Endpoint zum Löschen eines Lastprofils mit String-ID (new_2, old_3, etc.)"""
+    try:
+        print(f"🗑️ Lösche Lastprofil mit String-ID: {profile_id}")
+        
+        # Präfix entfernen und echte ID extrahieren
+        if profile_id.startswith('new_'):
+            real_id = int(profile_id.replace('new_', ''))
+            table_name = 'load_profiles'
+            data_table = 'load_profile_data'
+        elif profile_id.startswith('old_'):
+            real_id = int(profile_id.replace('old_', ''))
+            table_name = 'load_profile'
+            data_table = 'load_value'
+        else:
+            return jsonify({'success': False, 'error': 'Ungültige Profil-ID'})
+        
+        cursor = get_db().cursor()
+        
+        # Prüfen ob Lastprofil existiert
+        cursor.execute(f"SELECT name, project_id FROM {table_name} WHERE id = ?", (real_id,))
+        profile = cursor.fetchone()
+        
+        if not profile:
+            return jsonify({'success': False, 'error': 'Lastprofil nicht gefunden'})
+        
+        profile_name, project_id = profile
+        
+        # Anzahl Datenpunkte ermitteln
+        cursor.execute(f"SELECT COUNT(*) FROM {data_table} WHERE load_profile_id = ?", (real_id,))
+        data_points = cursor.fetchone()[0]
+        
+        # Alle zugehörigen Datenpunkte löschen
+        cursor.execute(f"DELETE FROM {data_table} WHERE load_profile_id = ?", (real_id,))
+        deleted_values = cursor.rowcount
+        
+        # Lastprofil selbst löschen
+        cursor.execute(f"DELETE FROM {table_name} WHERE id = ?", (real_id,))
+        deleted_profile = cursor.rowcount
+        
+        get_db().commit()
+        
+        print(f"🗑️ Lastprofil '{profile_name}' (ID: {profile_id}) aus {table_name} gelöscht")
+        print(f"   - {deleted_values} Datenpunkte aus {data_table} gelöscht")
+        print(f"   - {deleted_profile} Profil-Eintrag gelöscht")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Lastprofil "{profile_name}" erfolgreich gelöscht',
+            'deleted_profile': deleted_profile,
+            'deleted_values': deleted_values,
+            'table_source': table_name
         })
         
     except Exception as e:

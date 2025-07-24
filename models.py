@@ -20,6 +20,8 @@ class Project(db.Model):
     hp_power = db.Column(db.Float)  # kW
     wind_power = db.Column(db.Float)  # kW
     hydro_power = db.Column(db.Float)  # kW
+    other_power = db.Column(db.Float)  # kW - Sonstiges
+    current_electricity_cost = db.Column(db.Float, default=12.5)  # Ct/kWh - Aktuelle Stromkosten
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
     customer = db.relationship('Customer', backref='projects')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

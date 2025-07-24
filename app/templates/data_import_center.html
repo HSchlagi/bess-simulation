@@ -3307,6 +3307,15 @@ let ehydFetcher = {
 
 // Event-Listener für EHYD-Integration
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialisierung: Aktiven Tab aus URL-Parameter setzen
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab') || 'load';
+    console.log('🎯 Aktiver Tab aus URL-Parameter:', activeTab);
+    showTab(activeTab);
+    
+    // Projekte laden
+    loadProjects();
+    
     // EHYD-Flüsse beim Laden der Seite laden
     ehydFetcher.loadRivers();
     

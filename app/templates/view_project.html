@@ -57,6 +57,9 @@ function loadProjectDetails(projectId) {
 }
 
 function displayProjectDetails(project) {
+    // Projekt-Daten global verfügbar machen für Kostenberechnung
+    window.currentProject = project;
+    
     const detailsHtml = `
         <!-- Grundinformationen -->
         <div class="bg-gray-50 p-6 rounded-lg">
@@ -109,6 +112,25 @@ function displayProjectDetails(project) {
                     <label class="block text-sm font-medium text-gray-700">Wasserkraft</label>
                     <p class="text-lg text-gray-900">${project.hydro_power ? project.hydro_power + ' kW' : 'Nicht angegeben'}</p>
                 </div>
+                        <div>
+            <label class="block text-sm font-medium text-gray-700">Sonstiges</label>
+            <p class="text-lg text-gray-900">${project.other_power ? project.other_power + ' kW' : 'Nicht angegeben'}</p>
+        </div>
+    </div>
+
+    <!-- Betriebsparameter -->
+    <div class="mt-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-cogs mr-2 text-blue-600"></i>
+            Betriebsparameter
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Aktuelle Stromkosten</label>
+                <p class="text-lg text-gray-900">${project.current_electricity_cost ? project.current_electricity_cost + ' Ct/kWh' : '12.5 Ct/kWh (Standard)'}</p>
+            </div>
+        </div>
+    </div>
             </div>
         </div>
 
@@ -214,7 +236,11 @@ function loadProjectLoadProfiles(projectId) {
     fetch(`/api/projects/${projectId}/load-profiles`)
         .then(response => response.json())
         .then(data => {
-            displayLoadProfiles(data.load_profiles);
+            if (data.success && data.profiles) {
+                displayLoadProfiles(data.profiles);
+            } else {
+                throw new Error('Keine Lastprofile-Daten erhalten');
+            }
         })
         .catch(error => {
             console.error('Fehler beim Laden der Lastprofile:', error);
@@ -225,25 +251,53 @@ function loadProjectLoadProfiles(projectId) {
 
 function displayLoadProfiles(loadProfiles) {
     if (loadProfiles.length === 0) {
-        document.getElementById('loadProfilesList').innerHTML = 
-            '<div class="text-center py-4 text-gray-600">Keine Lastprofile vorhanden</div>';
+        document.getElementById('loadProfilesList').innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-chart-line text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-600 mb-4">Keine Lastprofile vorhanden</p>
+                <a href="/data_import_center?tab=load" 
+                   class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                    <i class="fas fa-plus mr-2"></i>Lastprofile importieren
+                </a>
+            </div>`;
         return;
     }
     
-    const profilesHtml = loadProfiles.map(profile => `
-        <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h4 class="font-medium text-gray-900">${profile.name}</h4>
-                    <p class="text-sm text-gray-600">ID: ${profile.id}</p>
+    const profilesHtml = loadProfiles.map(profile => {
+        // ID ohne Präfix für Anzeige
+        const displayId = profile.id.replace('old_', '').replace('new_', '');
+        const dataType = profile.data_type || 'Lastprofil';
+        const source = profile.source || 'Unbekannt';
+        
+        return `
+            <div class="bg-white border border-gray-200 rounded-lg p-4 mb-3 hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-center">
+                    <div class="flex-1">
+                        <div class="flex items-center mb-2">
+                            <h4 class="font-medium text-gray-900">${profile.name}</h4>
+                            <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">${dataType}</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600 space-x-4">
+                            <span><i class="fas fa-database mr-1"></i>ID: ${displayId}</span>
+                            <span><i class="fas fa-calendar mr-1"></i>${new Date(profile.created_at).toLocaleDateString('de-DE')}</span>
+                            <span><i class="fas fa-chart-bar mr-1"></i>${profile.data_points || 0} Datenpunkte</span>
+                            <span><i class="fas fa-info-circle mr-1"></i>${source}</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="viewLoadProfile('${profile.id}')" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-eye mr-1"></i>Anzeigen
+                        </button>
+                        <button onclick="deleteLoadProfile('${profile.id}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm">
+                            <i class="fas fa-trash mr-1"></i>Löschen
+                        </button>
+                    </div>
                 </div>
-                <button onclick="viewLoadProfile(${profile.id})" 
-                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm">
-                    <i class="fas fa-eye mr-1"></i>Anzeigen
-                </button>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     document.getElementById('loadProfilesList').innerHTML = profilesHtml;
 }
@@ -260,19 +314,40 @@ function viewLoadProfile(loadProfileId) {
     window.location.href = `/load_profile_detail?id=${loadProfileId}`;
 }
 
-// Wirtschaftlichkeits-Funktionen
-function loadEconomicData(projectId) {
-    // Investitionskosten laden
-    fetch(`/api/investment-costs?project_id=${projectId}`)
+function deleteLoadProfile(loadProfileId) {
+    if (confirm('Sind Sie sicher, dass Sie dieses Lastprofil löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        // ID ohne Präfix für API-Aufruf
+        const cleanId = loadProfileId.replace('old_', '').replace('new_', '');
+        
+        fetch(`/api/load-profiles/${cleanId}`, {
+            method: 'DELETE'
+        })
         .then(response => response.json())
-        .then(costs => {
-            const totalCost = costs.reduce((sum, cost) => sum + cost.cost_eur, 0);
-            document.getElementById('totalInvestment').textContent = `€${totalCost.toLocaleString('de-DE')}`;
+        .then(data => {
+            if (data.success) {
+                alert('Lastprofil erfolgreich gelöscht!');
+                // Seite neu laden um aktualisierte Liste anzuzeigen
+                const urlParams = new URLSearchParams(window.location.search);
+                const projectId = urlParams.get('id');
+                if (projectId) {
+                    loadProjectLoadProfiles(projectId);
+                }
+            } else {
+                alert('Fehler beim Löschen des Lastprofils: ' + data.error);
+            }
         })
         .catch(error => {
-            console.error('Fehler beim Laden der Investitionskosten:', error);
-            document.getElementById('totalInvestment').textContent = '€0';
+            console.error('Fehler:', error);
+            alert('Fehler beim Löschen des Lastprofils');
         });
+    }
+}
+
+// Wirtschaftlichkeits-Funktionen
+function loadEconomicData(projectId) {
+    // Investitionskosten aus den Projekt-Kostenfeldern berechnen
+    const totalCost = calculateTotalInvestmentCosts();
+    document.getElementById('totalInvestment').textContent = `€${totalCost.toLocaleString('de-DE')}`;
     
     // Wirtschaftlichkeitsanalyse laden
     fetch(`/api/economic-analysis/${projectId}`)
@@ -291,6 +366,18 @@ function loadEconomicData(projectId) {
             document.getElementById('annualSavings').textContent = '€0';
             document.getElementById('paybackPeriod').textContent = '-';
         });
+}
+
+function calculateTotalInvestmentCosts() {
+    // Kosten aus den Projekt-Daten berechnen
+    const bessCost = parseFloat(window.currentProject?.bess_cost) || 0;
+    const pvCost = parseFloat(window.currentProject?.pv_cost) || 0;
+    const hpCost = parseFloat(window.currentProject?.hp_cost) || 0;
+    const windCost = parseFloat(window.currentProject?.wind_cost) || 0;
+    const hydroCost = parseFloat(window.currentProject?.hydro_cost) || 0;
+    const otherCost = parseFloat(window.currentProject?.other_cost) || 0;
+    
+    return bessCost + pvCost + hpCost + windCost + hydroCost + otherCost;
 }
 
 function runEconomicSimulation(projectId) {

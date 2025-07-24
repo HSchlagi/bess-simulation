@@ -71,6 +71,82 @@
                         <input type="number" id="hydroPower" name="hydro_power" step="0.1" 
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
+                            <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Sonstiges (kW)</label>
+            <input type="number" id="otherPower" name="other_power" step="0.1" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+    </div>
+
+    <!-- Betriebsparameter -->
+    <div class="mt-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <i class="fas fa-cogs mr-2 text-blue-600"></i>
+            Betriebsparameter
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Aktuelle Stromkosten (Ct/kWh)</label>
+                <input type="number" id="currentElectricityCost" name="current_electricity_cost" step="0.1" min="0"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="12.5">
+                <p class="text-xs text-gray-500 mt-1">Aktuelle Stromkosten für die Wirtschaftlichkeitsberechnung</p>
+            </div>
+        </div>
+    </div>
+            </div>
+
+            <!-- Investitionskosten -->
+            <div class="bg-green-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-green-900 mb-4">
+                    <i class="fas fa-euro-sign mr-2"></i>Investitionskosten (€)
+                </h3>
+                <p class="text-sm text-green-700 mb-4">Geben Sie die Investitionskosten für die Wirtschaftlichkeitsberechnung ein</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BESS Kosten (€)</label>
+                        <input type="number" id="bessCost" name="bess_cost" step="0.01" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">PV Kosten (€)</label>
+                        <input type="number" id="pvCost" name="pv_cost" step="0.01" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wärmepumpe Kosten (€)</label>
+                        <input type="number" id="hpCost" name="hp_cost" step="0.01" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Windkraft Kosten (€)</label>
+                        <input type="number" id="windCost" name="wind_cost" step="0.01" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Wasserkraft Kosten (€)</label>
+                        <input type="number" id="hydroCost" name="hydro_cost" step="0.01" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sonstiges Kosten (€)</label>
+                        <input type="number" id="otherCost" name="other_cost" step="0.01" min="0"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                               placeholder="0.00">
+                    </div>
+                </div>
+                
+                <!-- Gesamtkosten Anzeige -->
+                <div class="mt-4 p-4 bg-white rounded-lg border border-green-200">
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-semibold text-green-900">Gesamtinvestition:</span>
+                        <span class="text-2xl font-bold text-green-600" id="totalCost">0,00 €</span>
+                    </div>
                 </div>
             </div>
 
@@ -116,6 +192,15 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         updateProject();
     });
+    
+    // Event Listeners für die Kostenfelder
+    const costFields = ['bessCost', 'pvCost', 'hpCost', 'windCost', 'hydroCost', 'otherCost'];
+    costFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('input', calculateTotalCost);
+        }
+    });
 });
 
 function loadProjectData(projectId) {
@@ -131,8 +216,21 @@ function loadProjectData(projectId) {
             document.getElementById('bessPower').value = project.bess_power || '';
             document.getElementById('pvPower').value = project.pv_power || '';
             document.getElementById('hpPower').value = project.hp_power || '';
-            document.getElementById('windPower').value = project.wind_power || '';
-            document.getElementById('hydroPower').value = project.hydro_power || '';
+                    document.getElementById('windPower').value = project.wind_power || '';
+        document.getElementById('hydroPower').value = project.hydro_power || '';
+        document.getElementById('otherPower').value = project.other_power || '';
+        document.getElementById('currentElectricityCost').value = project.current_electricity_cost || 12.5;
+            
+            // Kostenfelder laden (falls vorhanden)
+            document.getElementById('bessCost').value = project.bess_cost || '';
+            document.getElementById('pvCost').value = project.pv_cost || '';
+            document.getElementById('hpCost').value = project.hp_cost || '';
+            document.getElementById('windCost').value = project.wind_cost || '';
+            document.getElementById('hydroCost').value = project.hydro_cost || '';
+            document.getElementById('otherCost').value = project.other_cost || '';
+            
+            // Gesamtkosten berechnen
+            calculateTotalCost();
         })
         .catch(error => {
             console.error('Fehler beim Laden der Projektdaten:', error);
@@ -188,7 +286,15 @@ function updateProject() {
         pv_power: formData.get('pv_power') ? parseFloat(formData.get('pv_power')) : null,
         hp_power: formData.get('hp_power') ? parseFloat(formData.get('hp_power')) : null,
         wind_power: formData.get('wind_power') ? parseFloat(formData.get('wind_power')) : null,
-        hydro_power: formData.get('hydro_power') ? parseFloat(formData.get('hydro_power')) : null
+        hydro_power: formData.get('hydro_power') ? parseFloat(formData.get('hydro_power')) : null,
+        other_power: formData.get('other_power') ? parseFloat(formData.get('other_power')) : null,
+        current_electricity_cost: formData.get('current_electricity_cost') ? parseFloat(formData.get('current_electricity_cost')) : 12.5,
+        bess_cost: formData.get('bess_cost') ? parseFloat(formData.get('bess_cost')) : null,
+        pv_cost: formData.get('pv_cost') ? parseFloat(formData.get('pv_cost')) : null,
+        hp_cost: formData.get('hp_cost') ? parseFloat(formData.get('hp_cost')) : null,
+        wind_cost: formData.get('wind_cost') ? parseFloat(formData.get('wind_cost')) : null,
+        hydro_cost: formData.get('hydro_cost') ? parseFloat(formData.get('hydro_cost')) : null,
+        other_cost: formData.get('other_cost') ? parseFloat(formData.get('other_cost')) : null
     };
     
     console.log('=== DEBUG: Gesendete Daten ===');
@@ -252,5 +358,25 @@ function deleteProject() {
         });
     }
 }
+
+function calculateTotalCost() {
+    const bessCost = parseFloat(document.getElementById('bessCost').value) || 0;
+    const pvCost = parseFloat(document.getElementById('pvCost').value) || 0;
+    const hpCost = parseFloat(document.getElementById('hpCost').value) || 0;
+    const windCost = parseFloat(document.getElementById('windCost').value) || 0;
+    const hydroCost = parseFloat(document.getElementById('hydroCost').value) || 0;
+    const otherCost = parseFloat(document.getElementById('otherCost').value) || 0;
+
+    const total = bessCost + pvCost + hpCost + windCost + hydroCost + otherCost;
+    document.getElementById('totalCost').textContent = total.toFixed(2) + ' €';
+}
+
+// Event Listeners für die Kostenfelder
+document.getElementById('bessCost').addEventListener('input', calculateTotalCost);
+document.getElementById('pvCost').addEventListener('input', calculateTotalCost);
+document.getElementById('hpCost').addEventListener('input', calculateTotalCost);
+document.getElementById('windCost').addEventListener('input', calculateTotalCost);
+document.getElementById('hydroCost').addEventListener('input', calculateTotalCost);
+document.getElementById('otherCost').addEventListener('input', calculateTotalCost);
 </script>
 {% endblock %} 
