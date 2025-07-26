@@ -1,20 +1,10 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Datenimport-Center{% endblock %}
 
 {% block content %}
-
-<!-- Chart.js Bibliothek -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
-<!-- Chart.js Bibliothek -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <!-- CSRF-Token für AJAX-Requests -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
-
-
 
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
@@ -3167,12 +3157,12 @@ let ehydFetcher = {
         `;
     },
     
-    // Chart-Vorschau anzeigen - BEHOBEN!
+    
+    // Verbesserte Chart-Vorschau anzeigen
     async showChartPreview() {
         try {
-            console.log("🎯 Chart-Vorschau Button geklickt!");
+            console.log("🔄 Lade Chart-Vorschau...");
             
-            // Verwende bessere Parameter für mehr Daten
             const response = await fetch('/api/water-levels?river_name=Steyr&start_date=2024-01-01&end_date=2025-12-31');
             const data = await response.json();
             
@@ -3194,41 +3184,7 @@ let ehydFetcher = {
         }
     },
     
-    // Keine Daten Nachricht anzeigen
-    showNoDataMessage() {
-        const chartContainer = document.getElementById('chartPreview');
-        if (chartContainer) {
-            chartContainer.innerHTML = `
-                <div class="text-center py-8">
-                    <i class="fas fa-chart-line text-4xl text-gray-400 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-700 mb-2">Keine Daten verfügbar</h3>
-                    <p class="text-gray-500">Laden Sie zuerst EHYD-Daten für Steyr.</p>
-                </div>
-            `;
-        }
-    },
-    
-    // Notification Funktion
-    showNotification(message, type = 'info') {
-        console.log(`${type.toUpperCase()}: ${message}`);
-        
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-            type === 'success' ? 'bg-green-500 text-white' :
-            type === 'error' ? 'bg-red-500 text-white' :
-            type === 'warning' ? 'bg-yellow-500 text-black' :
-            'bg-blue-500 text-white'
-        }`;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
-    },
-    
-    // Chart erstellen - BEHOBEN!
+    // Verbesserte Chart erstellen
     createChart(data) {
         const chartContainer = document.getElementById('chartPreview');
         if (!chartContainer) {
@@ -3236,21 +3192,20 @@ let ehydFetcher = {
             return;
         }
         
-        console.log(`📈 Erstelle Chart mit ${data.length} Datenpunkten`);
-        
         // Chart.js verwenden
         const ctx = document.createElement('canvas');
         ctx.id = 'waterLevelChart';
         chartContainer.innerHTML = '';
         chartContainer.appendChild(ctx);
         
-        // Limitiere auf 200 Datenpunkte für bessere Performance
-        const chartData = data.slice(0, 200);
+        const chartData = data.slice(0, 200); // Limitiere auf 200 Datenpunkte
         const labels = chartData.map(d => {
             const date = new Date(d.timestamp);
             return date.toLocaleDateString('de-DE') + ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'});
         });
         const values = chartData.map(d => d.water_level_cm);
+        
+        console.log(`📈 Erstelle Chart mit ${chartData.length} Datenpunkten`);
         
         new Chart(ctx, {
             type: 'line',
@@ -3302,20 +3257,47 @@ let ehydFetcher = {
         });
         
         console.log("✅ Chart erfolgreich erstellt");
+    },
+    
+    // Keine Daten Nachricht
+    showNoDataMessage() {
+        const chartContainer = document.getElementById('chartPreview');
+        if (chartContainer) {
+            chartContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-chart-line text-4xl text-gray-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-700 mb-2">Keine Daten verfügbar</h3>
+                    <p class="text-gray-500">Laden Sie zuerst EHYD-Daten für Steyr.</p>
+                </div>
+            `;
+        }
+    },
+    
+    // Notification Funktion
+    showNotification(message, type = 'info') {
+        // Einfache Notification
+        console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // Optional: Erstelle visuelle Notification
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            type === 'warning' ? 'bg-yellow-500 text-black' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
-};
+    
 
 // Event-Listener für EHYD-Integration
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialisierung: Aktiven Tab aus URL-Parameter setzen
-    const urlParams = new URLSearchParams(window.location.search);
-    const activeTab = urlParams.get('tab') || 'load';
-    console.log('🎯 Aktiver Tab aus URL-Parameter:', activeTab);
-    showTab(activeTab);
-    
-    // Projekte laden
-    loadProjects();
-    
     // EHYD-Flüsse beim Laden der Seite laden
     ehydFetcher.loadRivers();
     

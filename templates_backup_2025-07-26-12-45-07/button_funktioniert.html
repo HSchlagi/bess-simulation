@@ -1,17 +1,17 @@
-﻿
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHART-VORSCHAU FUNKTIONIERT JETZT!</title>
+    <title>BUTTON FUNKTIONIERT JETZT!</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">🎯 CHART-VORSCHAU FUNKTIONIERT JETZT!</h1>
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">🎯 BUTTON FUNKTIONIERT JETZT!</h1>
         
         <!-- Status -->
         <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
@@ -20,10 +20,10 @@
                     <i class="fas fa-check-circle text-green-400"></i>
                 </div>
                 <div class="ml-3">
-                    <h3 class="text-sm font-medium text-green-800">Chart-Vorschau funktioniert!</h3>
+                    <h3 class="text-sm font-medium text-green-800">Button funktioniert!</h3>
                     <div class="mt-2 text-sm text-green-700">
-                        <p><strong>501.120 Datenpunkte</strong> verfügbar</p>
-                        <p><strong>API funktioniert</strong> - Klicken Sie auf den Button!</p>
+                        <p><strong>606.528 Datenpunkte</strong> verfügbar</p>
+                        <p><strong>Button ist klickbar</strong> - Testen Sie es!</p>
                     </div>
                 </div>
             </div>
@@ -39,7 +39,7 @@
                 </div>
             </div>
             <div class="mt-4">
-                <button onclick="loadChartPreview()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                <button id="chartButton" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
                     <i class="fas fa-chart-bar"></i> Chart-Vorschau laden
                 </button>
             </div>
@@ -50,8 +50,8 @@
             <h3 class="font-semibold text-gray-800 mb-2">Debug-Informationen</h3>
             <div id="debugInfo" class="text-sm text-gray-600">
                 <p>Status: Bereit</p>
+                <p>Button-ID: chartButton</p>
                 <p>API-Endpunkt: /api/water-levels</p>
-                <p>Datenbank: instance/bess.db</p>
             </div>
         </div>
     </div>
@@ -214,9 +214,24 @@
             }
         }
         
+        // Button Event Listener
+        function setupButton() {
+            const button = document.getElementById('chartButton');
+            if (button) {
+                button.addEventListener('click', function() {
+                    console.log("🎯 Button geklickt!");
+                    loadChartPreview();
+                });
+                console.log("✅ Button Event Listener hinzugefügt");
+            } else {
+                console.error("❌ Button nicht gefunden");
+            }
+        }
+        
         // Seite laden
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("🚀 Chart-Vorschau-Seite geladen");
+            console.log("🚀 Button-Seite geladen");
+            setupButton();
             updateDebugInfo();
         });
     </script>
