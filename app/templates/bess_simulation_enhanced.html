@@ -1,0 +1,577 @@
+{% extends "base.html" %}
+
+{% block title %}BESS-Simulation Erweitert - Projekt & Use Case Analyse{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">BESS-Simulation Erweitert</h1>
+        <p class="text-gray-600">Projektbasierte Analyse mit Use Cases, 10-Jahres-Prognose und Batterie-Degradation</p>
+    </div>
+
+    <!-- Projekt Auswahl -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Projekt Auswahl</h2>
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Projekt auswählen:</label>
+            <select id="projectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="loadProjectDetails()">
+                <option value="">Projekt auswählen...</option>
+            </select>
+        </div>
+        
+        <!-- Projekt Details -->
+        <div id="projectDetails" class="hidden bg-gray-50 rounded-lg p-4">
+            <h3 class="font-semibold text-lg text-gray-900 mb-3">Projektdetails</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <span class="text-sm text-gray-600">Name:</span>
+                    <div class="font-medium" id="projectName">-</div>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-600">Standort:</span>
+                    <div class="font-medium" id="projectLocation">-</div>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-600">BESS-Größe:</span>
+                    <div class="font-medium" id="projectBessSize">-</div>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-600">BESS-Leistung:</span>
+                    <div class="font-medium" id="projectBessPower">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Use Case Auswahl (nur sichtbar wenn Projekt ausgewählt) -->
+    <div id="useCaseSection" class="hidden">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Use Case Auswahl für <span id="projectNameHeader">Projekt</span></h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC1')">
+                    <h3 class="font-semibold text-lg text-blue-600">UC1</h3>
+                    <p class="text-sm text-gray-600 mb-2">Verbrauch ohne Eigenerzeugung</p>
+                    <ul class="text-xs text-gray-500">
+                        <li>• PV: 0 MWp</li>
+                        <li>• Wasserkraft: 0 kW</li>
+                        <li>• Nur BESS-Optimierung</li>
+                    </ul>
+                </div>
+                <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC2')">
+                    <h3 class="font-semibold text-lg text-green-600">UC2</h3>
+                    <p class="text-sm text-gray-600 mb-2">Verbrauch + PV (1,95 MWp)</p>
+                    <ul class="text-xs text-gray-500">
+                        <li>• PV: 1,95 MWp</li>
+                        <li>• Wasserkraft: 0 kW</li>
+                        <li>• PV + BESS-Optimierung</li>
+                    </ul>
+                </div>
+                <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC3')">
+                    <h3 class="font-semibold text-lg text-purple-600">UC3</h3>
+                    <p class="text-sm text-gray-600 mb-2">Verbrauch + PV + Wasserkraft</p>
+                    <ul class="text-xs text-gray-500">
+                        <li>• PV: 1,95 MWp</li>
+                        <li>• Wasserkraft: 650 kW</li>
+                        <li>• Vollständige Optimierung</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Simulation Parameter -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Simulationsparameter</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Use Case</label>
+                    <select id="useCaseSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Use Case auswählen...</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Simulationsjahr</label>
+                    <select id="simulationYear" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Größe (MWh)</label>
+                    <input type="number" id="bessSize" value="1.0" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Leistung (MW)</label>
+                    <input type="number" id="bessPower" value="0.5" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button onclick="runSimulation()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    Simulation starten
+                </button>
+                <button onclick="run10YearAnalysis()" class="ml-4 bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    10-Jahres-Analyse
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ergebnisse -->
+    <div id="results" class="hidden">
+        <!-- Jahresbilanz -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Jahresbilanz</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-blue-50 rounded-lg">
+                    <div class="text-2xl font-bold text-blue-600" id="annualConsumption">-</div>
+                    <div class="text-sm text-gray-600">Verbrauch (MWh/a)</div>
+                </div>
+                <div class="text-center p-4 bg-green-50 rounded-lg">
+                    <div class="text-2xl font-bold text-green-600" id="annualGeneration">-</div>
+                    <div class="text-sm text-gray-600">Erzeugung (MWh/a)</div>
+                </div>
+                <div class="text-center p-4 bg-purple-50 rounded-lg">
+                    <div class="text-2xl font-bold text-purple-600" id="annualRevenues">-</div>
+                    <div class="text-sm text-gray-600">Erlöse (EUR/a)</div>
+                </div>
+                <div class="text-center p-4 bg-red-50 rounded-lg">
+                    <div class="text-2xl font-bold text-red-600" id="annualCosts">-</div>
+                    <div class="text-sm text-gray-600">Kosten (EUR/a)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wirtschaftlichkeitsmetriken -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Wirtschaftlichkeitsmetriken</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-yellow-50 rounded-lg">
+                    <div class="text-2xl font-bold text-yellow-600" id="roiPercent">-</div>
+                    <div class="text-sm text-gray-600">ROI (%)</div>
+                </div>
+                <div class="text-center p-4 bg-orange-50 rounded-lg">
+                    <div class="text-2xl font-bold text-orange-600" id="paybackYears">-</div>
+                    <div class="text-sm text-gray-600">Amortisation (Jahre)</div>
+                </div>
+                <div class="text-center p-4 bg-indigo-50 rounded-lg">
+                    <div class="text-2xl font-bold text-indigo-600" id="totalInvestment">-</div>
+                    <div class="text-sm text-gray-600">Investition (EUR)</div>
+                </div>
+                <div class="text-center p-4 bg-teal-50 rounded-lg">
+                    <div class="text-2xl font-bold text-teal-600" id="netCashflow">-</div>
+                    <div class="text-sm text-gray-600">Net Cashflow (EUR/a)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Jahresbilanz Chart -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Jahresbilanz</h3>
+                <canvas id="annualBalanceChart" width="400" height="300"></canvas>
+            </div>
+
+            <!-- Erlöse nach Komponenten -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Erlöse nach Komponenten</h3>
+                <canvas id="revenueComponentsChart" width="400" height="300"></canvas>
+            </div>
+        </div>
+
+        <!-- 10-Jahres-Analyse -->
+        <div id="tenYearAnalysis" class="hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">10-Jahres-Analyse mit Batterie-Degradation</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Cashflow-Verlauf -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Cashflow-Verlauf</h3>
+                        <canvas id="cashflowChart" width="400" height="300"></canvas>
+                    </div>
+
+                    <!-- Batterie-Degradation -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Batterie-Kapazität</h3>
+                        <canvas id="degradationChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+
+                <!-- Erweiterte Metriken -->
+                <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" id="totalRevenues">-</div>
+                        <div class="text-sm text-gray-600">Gesamterlöse (10J)</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" id="totalNetCashflow">-</div>
+                        <div class="text-sm text-gray-600">Gesamt-Cashflow (10J)</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" id="npv">-</div>
+                        <div class="text-sm text-gray-600">NPV (5%)</div>
+                    </div>
+                    <div class="text-center p-4 bg-orange-50 rounded-lg">
+                        <div class="text-2xl font-bold text-orange-600" id="irr">-</div>
+                        <div class="text-sm text-gray-600">IRR (%)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <span class="ml-3 text-gray-700">Simulation läuft...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let charts = {};
+let selectedProject = null;
+let selectedUseCase = null;
+
+// Lade Projekte beim Seitenstart
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+});
+
+// Lade alle verfügbaren Projekte
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        const projectSelect = document.getElementById('projectSelect');
+        projectSelect.innerHTML = '<option value="">Projekt auswählen...</option>';
+        
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            projectSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der Projekte:', error);
+    }
+}
+
+// Lade Projektdetails
+async function loadProjectDetails() {
+    const projectId = document.getElementById('projectSelect').value;
+    
+    if (!projectId) {
+        document.getElementById('projectDetails').classList.add('hidden');
+        document.getElementById('useCaseSection').classList.add('hidden');
+        document.getElementById('results').classList.add('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}`);
+        const project = await response.json();
+        
+        selectedProject = project;
+        
+        // Zeige Projektdetails
+        document.getElementById('projectName').textContent = project.name;
+        document.getElementById('projectLocation').textContent = project.location || '-';
+        document.getElementById('projectBessSize').textContent = project.bess_size ? `${project.bess_size} MWh` : '-';
+        document.getElementById('projectBessPower').textContent = project.bess_power ? `${project.bess_power} MW` : '-';
+        
+        // Update Header
+        document.getElementById('projectNameHeader').textContent = project.name;
+        
+        // Zeige Projektdetails und Use Case Sektion
+        document.getElementById('projectDetails').classList.remove('hidden');
+        document.getElementById('useCaseSection').classList.remove('hidden');
+        
+        // Update BESS-Parameter basierend auf Projekt
+        if (project.bess_size) {
+            document.getElementById('bessSize').value = project.bess_size;
+        }
+        if (project.bess_power) {
+            document.getElementById('bessPower').value = project.bess_power;
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Projektdetails:', error);
+    }
+}
+
+// Use Case auswählen
+function selectUseCase(useCase) {
+    selectedUseCase = useCase;
+    document.getElementById('useCaseSelect').value = useCase;
+    
+    // Visueller Feedback
+    document.querySelectorAll('[onclick^="selectUseCase"]').forEach(el => {
+        el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+    });
+    
+    event.target.closest('[onclick^="selectUseCase"]').classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+}
+
+// Simulation starten
+async function runSimulation() {
+    if (!selectedProject || !selectedUseCase) {
+        alert('Bitte wählen Sie ein Projekt und einen Use Case aus.');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const simulationData = {
+            project_id: selectedProject.id,
+            use_case: selectedUseCase,
+            simulation_year: document.getElementById('simulationYear').value,
+            bess_size: parseFloat(document.getElementById('bessSize').value),
+            bess_power: parseFloat(document.getElementById('bessPower').value)
+        };
+        
+        const response = await fetch('/api/simulation/run', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(simulationData)
+        });
+        
+        const results = await response.json();
+        displayResults(results);
+        
+    } catch (error) {
+        console.error('Fehler bei der Simulation:', error);
+        alert('Fehler bei der Simulation. Bitte versuchen Sie es erneut.');
+    } finally {
+        hideLoading();
+    }
+}
+
+// 10-Jahres-Analyse
+async function run10YearAnalysis() {
+    if (!selectedProject || !selectedUseCase) {
+        alert('Bitte wählen Sie ein Projekt und einen Use Case aus.');
+        return;
+    }
+    
+    showLoading();
+    
+    try {
+        const analysisData = {
+            project_id: selectedProject.id,
+            use_case: selectedUseCase,
+            bess_size: parseFloat(document.getElementById('bessSize').value),
+            bess_power: parseFloat(document.getElementById('bessPower').value)
+        };
+        
+        const response = await fetch('/api/simulation/10-year-analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(analysisData)
+        });
+        
+        const results = await response.json();
+        display10YearAnalysis(results);
+        
+    } catch (error) {
+        console.error('Fehler bei der 10-Jahres-Analyse:', error);
+        alert('Fehler bei der 10-Jahres-Analyse. Bitte versuchen Sie es erneut.');
+    } finally {
+        hideLoading();
+    }
+}
+
+// Ergebnisse anzeigen
+function displayResults(data) {
+    // Jahresbilanz
+    document.getElementById('annualConsumption').textContent = data.annual_consumption?.toFixed(1) || '-';
+    document.getElementById('annualGeneration').textContent = data.annual_generation?.toFixed(1) || '-';
+    document.getElementById('annualRevenues').textContent = data.annual_revenues?.toFixed(0) || '-';
+    document.getElementById('annualCosts').textContent = data.annual_costs?.toFixed(0) || '-';
+    
+    // Wirtschaftlichkeitsmetriken
+    document.getElementById('roiPercent').textContent = data.roi_percent?.toFixed(1) || '-';
+    document.getElementById('paybackYears').textContent = data.payback_years?.toFixed(1) || '-';
+    document.getElementById('totalInvestment').textContent = data.total_investment?.toFixed(0) || '-';
+    document.getElementById('netCashflow').textContent = data.net_cashflow?.toFixed(0) || '-';
+    
+    // Charts erstellen
+    createAnnualBalanceChart(data);
+    createRevenueComponentsChart(data);
+    
+    // Ergebnisse anzeigen
+    document.getElementById('results').classList.remove('hidden');
+}
+
+// 10-Jahres-Analyse anzeigen
+function display10YearAnalysis(data) {
+    // Erweiterte Metriken
+    document.getElementById('totalRevenues').textContent = data.total_revenues?.toFixed(0) || '-';
+    document.getElementById('totalNetCashflow').textContent = data.total_net_cashflow?.toFixed(0) || '-';
+    document.getElementById('npv').textContent = data.npv?.toFixed(0) || '-';
+    document.getElementById('irr').textContent = data.irr?.toFixed(1) || '-';
+    
+    // Charts erstellen
+    createCashflowChart(data);
+    createDegradationChart(data);
+    
+    // 10-Jahres-Analyse anzeigen
+    document.getElementById('tenYearAnalysis').classList.remove('hidden');
+}
+
+// Chart-Funktionen
+function createAnnualBalanceChart(data) {
+    const ctx = document.getElementById('annualBalanceChart').getContext('2d');
+    
+    if (charts.annualBalance) {
+        charts.annualBalance.destroy();
+    }
+    
+    charts.annualBalance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Verbrauch', 'Erzeugung', 'Netto'],
+            datasets: [{
+                label: 'MWh/a',
+                data: [
+                    data.annual_consumption || 0,
+                    data.annual_generation || 0,
+                    (data.annual_consumption || 0) - (data.annual_generation || 0)
+                ],
+                backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6'],
+                borderColor: ['#2563EB', '#059669', '#7C3AED'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createRevenueComponentsChart(data) {
+    const ctx = document.getElementById('revenueComponentsChart').getContext('2d');
+    
+    if (charts.revenueComponents) {
+        charts.revenueComponents.destroy();
+    }
+    
+    charts.revenueComponents = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Arbitrage', 'SRL+', 'SRL-', 'Day-Ahead'],
+            datasets: [{
+                data: [
+                    data.arbitrage_revenue || 0,
+                    data.srl_positive_revenue || 0,
+                    data.srl_negative_revenue || 0,
+                    data.day_ahead_revenue || 0
+                ],
+                backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createCashflowChart(data) {
+    const ctx = document.getElementById('cashflowChart').getContext('2d');
+    
+    if (charts.cashflow) {
+        charts.cashflow.destroy();
+    }
+    
+    const years = Array.from({length: 10}, (_, i) => 2024 + i);
+    
+    charts.cashflow = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Jährlicher Cashflow (EUR)',
+                data: data.cashflow_data || Array(10).fill(0),
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createDegradationChart(data) {
+    const ctx = document.getElementById('degradationChart').getContext('2d');
+    
+    if (charts.degradation) {
+        charts.degradation.destroy();
+    }
+    
+    const years = Array.from({length: 10}, (_, i) => 2024 + i);
+    
+    charts.degradation = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: years,
+            datasets: [{
+                label: 'Batterie-Kapazität (%)',
+                data: data.degradation_data || Array(10).fill(100),
+                borderColor: '#EF4444',
+                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                borderWidth: 2,
+                fill: false
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+// Loading-Funktionen
+function showLoading() {
+    document.getElementById('loading').classList.remove('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading').classList.add('hidden');
+}
+</script>
+{% endblock %} 

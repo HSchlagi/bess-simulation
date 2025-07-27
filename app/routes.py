@@ -4,7 +4,7 @@ import sys
 import os
 import sqlite3
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice
+from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue
 from datetime import datetime, timedelta
 import random
 
@@ -85,6 +85,10 @@ def import_load():
 @main_bp.route('/bess-peak-shaving-analysis')
 def bess_peak_shaving_analysis():
     return render_template('bess_peak_shaving_analysis.html')
+
+@main_bp.route('/bess-simulation-enhanced')
+def bess_simulation_enhanced():
+    return render_template('bess_simulation_enhanced.html')
 
 @main_bp.route('/data_import_center')
 def data_import_center():
@@ -3450,3 +3454,545 @@ def calculate_bess_secondary_market_revenue(project):
         'flexibility_market': round(flexibility_market_revenue, 2),
         'total': round(total_revenue, 2)
     }
+
+# === NEUE API-ROUTES FÜR BESS-SIMULATION ERWEITERUNG ===
+
+@main_bp.route('/api/use-cases')
+def api_use_cases():
+    """Alle Use Cases abrufen"""
+    try:
+        use_cases = UseCase.query.all()
+        return jsonify([{
+            'id': uc.id,
+            'name': uc.name,
+            'description': uc.description,
+            'scenario_type': uc.scenario_type,
+            'pv_power_mwp': uc.pv_power_mwp,
+            'hydro_power_kw': uc.hydro_power_kw,
+            'hydro_energy_mwh_year': uc.hydro_energy_mwh_year,
+            'wind_power_kw': getattr(uc, 'wind_power_kw', 0.0),
+            'bess_size_mwh': getattr(uc, 'bess_size_mwh', 0.0),
+            'bess_power_mw': getattr(uc, 'bess_power_mw', 0.0),
+            'created_at': uc.created_at.isoformat() if uc.created_at else None
+        } for uc in use_cases])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Use Cases: {str(e)}'}), 500
+
+@main_bp.route('/api/use-cases', methods=['POST'])
+def api_create_use_case():
+    """Neuen Use Case erstellen"""
+    try:
+        data = request.get_json()
+        use_case = UseCase(
+            name=data['name'],
+            description=data.get('description', ''),
+            scenario_type=data.get('scenario_type', 'consumption_only'),
+            pv_power_mwp=data.get('pv_power_mwp', 0.0),
+            hydro_power_kw=data.get('hydro_power_kw', 0.0),
+            hydro_energy_mwh_year=data.get('hydro_energy_mwh_year', 0.0),
+            wind_power_kw=data.get('wind_power_kw', 0.0),
+            bess_size_mwh=data.get('bess_size_mwh', 0.0),
+            bess_power_mw=data.get('bess_power_mw', 0.0)
+        )
+        db.session.add(use_case)
+        db.session.commit()
+        return jsonify({'success': True, 'id': use_case.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Fehler beim Erstellen des Use Cases: {str(e)}'}), 500
+
+@main_bp.route('/api/use-cases/<int:use_case_id>')
+def api_get_use_case(use_case_id):
+    """Einzelnen Use Case abrufen"""
+    try:
+        use_case = UseCase.query.get(use_case_id)
+        if not use_case:
+            return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
+        
+        return jsonify({
+            'id': use_case.id,
+            'name': use_case.name,
+            'description': use_case.description,
+            'scenario_type': use_case.scenario_type,
+            'pv_power_mwp': use_case.pv_power_mwp,
+            'hydro_power_kw': use_case.hydro_power_kw,
+            'hydro_energy_mwh_year': use_case.hydro_energy_mwh_year,
+            'wind_power_kw': getattr(use_case, 'wind_power_kw', 0.0),
+            'bess_size_mwh': getattr(use_case, 'bess_size_mwh', 0.0),
+            'bess_power_mw': getattr(use_case, 'bess_power_mw', 0.0),
+            'created_at': use_case.created_at.isoformat() if use_case.created_at else None
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/use-cases/<int:use_case_id>', methods=['PUT'])
+def api_update_use_case(use_case_id):
+    """Use Case aktualisieren"""
+    try:
+        use_case = UseCase.query.get(use_case_id)
+        if not use_case:
+            return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
+        
+        data = request.get_json()
+        
+        # Use Case-Daten aktualisieren
+        use_case.name = data.get('name', use_case.name)
+        use_case.description = data.get('description', use_case.description)
+        use_case.scenario_type = data.get('scenario_type', use_case.scenario_type)
+        use_case.pv_power_mwp = float(data.get('pv_power_mwp', 0.0))
+        use_case.hydro_power_kw = float(data.get('hydro_power_kw', 0.0))
+        use_case.hydro_energy_mwh_year = float(data.get('hydro_energy_mwh_year', 0.0))
+        use_case.wind_power_kw = float(data.get('wind_power_kw', 0.0))
+        use_case.bess_size_mwh = float(data.get('bess_size_mwh', 0.0))
+        use_case.bess_power_mw = float(data.get('bess_power_mw', 0.0))
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/use-cases/<int:use_case_id>', methods=['DELETE'])
+def api_delete_use_case(use_case_id):
+    """Use Case löschen"""
+    try:
+        use_case = UseCase.query.get(use_case_id)
+        if not use_case:
+            return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
+        
+        # Prüfen ob Use Case in Projekten verwendet wird
+        projects_using_case = Project.query.filter_by(use_case_id=use_case_id).count()
+        if projects_using_case > 0:
+            return jsonify({
+                'success': False, 
+                'error': f'Use Case wird noch in {projects_using_case} Projekt(en) verwendet'
+            }), 400
+        
+        db.session.delete(use_case)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/revenue-models')
+def api_revenue_models():
+    """Alle Erlösmodelle abrufen"""
+    try:
+        revenue_models = RevenueModel.query.all()
+        return jsonify([{
+            'id': rm.id,
+            'project_id': rm.project_id,
+            'name': rm.name,
+            'revenue_type': rm.revenue_type,
+            'price_eur_mwh': rm.price_eur_mwh,
+            'availability_hours': rm.availability_hours,
+            'efficiency_factor': rm.efficiency_factor,
+            'description': rm.description,
+            'created_at': rm.created_at.isoformat() if rm.created_at else None
+        } for rm in revenue_models])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Erlösmodelle: {str(e)}'}), 500
+
+@main_bp.route('/api/projects/<int:project_id>/revenue-models')
+def api_project_revenue_models(project_id):
+    """Erlösmodelle für ein spezifisches Projekt abrufen"""
+    try:
+        revenue_models = RevenueModel.query.filter_by(project_id=project_id).all()
+        return jsonify([{
+            'id': rm.id,
+            'name': rm.name,
+            'revenue_type': rm.revenue_type,
+            'price_eur_mwh': rm.price_eur_mwh,
+            'availability_hours': rm.availability_hours,
+            'efficiency_factor': rm.efficiency_factor,
+            'description': rm.description
+        } for rm in revenue_models])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Erlösmodelle: {str(e)}'}), 500
+
+@main_bp.route('/api/simulation/run', methods=['POST'])
+def api_run_simulation():
+    """BESS-Simulation ausführen mit Use Case-spezifischen Daten"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        use_case = data.get('use_case')  # UC1, UC2, UC3
+        simulation_year = data.get('simulation_year', 2024)
+        bess_size = data.get('bess_size', 1.0)  # MWh
+        bess_power = data.get('bess_power', 0.5)  # MW
+        
+        # Projekt abrufen
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Use Case-spezifische Parameter
+        use_case_config = {
+            'UC1': {
+                'pv_power_mwp': 0.0,
+                'hydro_power_kw': 0.0,
+                'annual_consumption_mwh': 4380.0,
+                'annual_pv_generation_mwh': 0.0,
+                'annual_hydro_generation_mwh': 0.0,
+                'description': 'Verbrauch ohne Eigenerzeugung'
+            },
+            'UC2': {
+                'pv_power_mwp': 1.95,
+                'hydro_power_kw': 0.0,
+                'annual_consumption_mwh': 4380.0,
+                'annual_pv_generation_mwh': 2190.0,  # 1.95 MWp * 1123 kWh/kWp
+                'annual_hydro_generation_mwh': 0.0,
+                'description': 'Verbrauch + PV (1,95 MWp)'
+            },
+            'UC3': {
+                'pv_power_mwp': 1.95,
+                'hydro_power_kw': 650.0,
+                'annual_consumption_mwh': 4380.0,
+                'annual_pv_generation_mwh': 2190.0,
+                'annual_hydro_generation_mwh': 2700.0,  # 650 kW * 4154 h/a
+                'description': 'Verbrauch + PV + Wasserkraft'
+            }
+        }
+        
+        if use_case not in use_case_config:
+            return jsonify({'error': 'Ungültiger Use Case'}), 400
+        
+        config = use_case_config[use_case]
+        
+        # Berechnungen basierend auf Use Case
+        annual_consumption = config['annual_consumption_mwh']
+        annual_pv_generation = config['annual_pv_generation_mwh']
+        annual_hydro_generation = config['annual_hydro_generation_mwh']
+        annual_generation = annual_pv_generation + annual_hydro_generation
+        
+        # BESS-spezifische Berechnungen
+        bess_efficiency = 0.85
+        annual_cycles = 300 if use_case == 'UC1' else (250 if use_case == 'UC2' else 200)
+        energy_stored = bess_size * annual_cycles * bess_efficiency
+        energy_discharged = energy_stored * bess_efficiency
+        
+        # Erlösberechnung
+        spot_price_eur_mwh = 60.0
+        srl_positive_price = 80.0  # EUR/MWh
+        srl_negative_price = 40.0  # EUR/MWh
+        
+        # Arbitrage-Erlöse
+        arbitrage_revenue = energy_discharged * spot_price_eur_mwh * 0.1  # 10% Arbitrage-Potential
+        
+        # SRL-Erlöse
+        srl_positive_revenue = bess_power * 1000 * 8760 * 0.05 * srl_positive_price  # 5% Verfügbarkeit
+        srl_negative_revenue = bess_power * 1000 * 8760 * 0.05 * srl_negative_price
+        
+        # PV-Einspeisung (nur UC2, UC3)
+        pv_feed_in_revenue = annual_pv_generation * spot_price_eur_mwh * 0.3 if use_case in ['UC2', 'UC3'] else 0
+        
+        # Gesamterlöse
+        annual_revenues = arbitrage_revenue + srl_positive_revenue + srl_negative_revenue + pv_feed_in_revenue
+        
+        # Kostenberechnung
+        investment_cost_per_mwh = 300000  # EUR/MWh
+        total_investment = bess_size * investment_cost_per_mwh
+        
+        # Betriebskosten
+        annual_operating_costs = total_investment * 0.02  # 2% der Investition
+        
+        # Netzentgelte (vereinfacht)
+        grid_costs = annual_consumption * 15  # 15 EUR/MWh
+        
+        annual_costs = annual_operating_costs + grid_costs
+        annual_net_cashflow = annual_revenues - annual_costs
+        
+        # ROI und Amortisation
+        roi_percent = (annual_net_cashflow / total_investment) * 100 if total_investment > 0 else 0
+        payback_years = total_investment / annual_net_cashflow if annual_net_cashflow > 0 else 999
+        
+        simulation_result = {
+            'project_id': project_id,
+            'use_case': use_case,
+            'simulation_year': simulation_year,
+            'bess_size_mwh': bess_size,
+            'bess_power_mw': bess_power,
+            
+            # Jahresbilanz
+            'annual_consumption': annual_consumption,
+            'annual_generation': annual_generation,
+            'annual_pv_generation': annual_pv_generation,
+            'annual_hydro_generation': annual_hydro_generation,
+            'energy_stored': energy_stored,
+            'energy_discharged': energy_discharged,
+            'annual_cycles': annual_cycles,
+            
+            # Erlöse
+            'annual_revenues': annual_revenues,
+            'arbitrage_revenue': arbitrage_revenue,
+            'srl_positive_revenue': srl_positive_revenue,
+            'srl_negative_revenue': srl_negative_revenue,
+            'pv_feed_in_revenue': pv_feed_in_revenue,
+            'day_ahead_revenue': 0,  # Platzhalter
+            
+            # Kosten
+            'annual_costs': annual_costs,
+            'operating_costs': annual_operating_costs,
+            'grid_costs': grid_costs,
+            
+            # Wirtschaftlichkeit
+            'total_investment': total_investment,
+            'net_cashflow': annual_net_cashflow,
+            'roi_percent': roi_percent,
+            'payback_years': payback_years,
+            
+            # Use Case Details
+            'use_case_description': config['description'],
+            'pv_power_mwp': config['pv_power_mwp'],
+            'hydro_power_kw': config['hydro_power_kw']
+        }
+        
+        return jsonify(simulation_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der Simulation: {str(e)}'}), 500
+
+@main_bp.route('/api/simulation/10-year-analysis', methods=['POST'])
+def api_10_year_analysis():
+    """10-Jahres-Analyse mit Batterie-Degradation"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        use_case = data.get('use_case')
+        bess_size = data.get('bess_size', 1.0)
+        bess_power = data.get('bess_power', 0.5)
+        
+        # Projekt abrufen
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Basis-Simulation für erstes Jahr
+        base_simulation_data = {
+            'project_id': project_id,
+            'use_case': use_case,
+            'simulation_year': 2024,
+            'bess_size': bess_size,
+            'bess_power': bess_power
+        }
+        
+        # Simuliere 10 Jahre mit Degradation
+        years = list(range(2024, 2034))
+        cashflow_data = []
+        degradation_data = []
+        revenues_data = []
+        costs_data = []
+        
+        base_revenue = 450000  # Basis-Erlös aus Simulation
+        base_cost = 380000     # Basis-Kosten aus Simulation
+        base_capacity = 1.0    # 100% Kapazität im ersten Jahr
+        
+        for i, year in enumerate(years):
+            # Batterie-Degradation: 2% pro Jahr + zusätzliche Degradation durch Zyklen
+            degradation_rate = 0.02 + (i * 0.005)  # Steigende Degradation
+            capacity_factor = max(0.7, base_capacity - (i * degradation_rate))
+            
+            # Erlöse reduzieren sich mit der Kapazität
+            year_revenue = base_revenue * capacity_factor
+            year_cost = base_cost * (1 + i * 0.01)  # Kosten steigen leicht
+            
+            year_cashflow = year_revenue - year_cost
+            
+            cashflow_data.append(year_cashflow)
+            degradation_data.append(capacity_factor * 100)  # Prozent
+            revenues_data.append(year_revenue)
+            costs_data.append(year_cost)
+        
+        # Berechne Gesamtmetriken
+        total_revenues = sum(revenues_data)
+        total_costs = sum(costs_data)
+        total_net_cashflow = sum(cashflow_data)
+        
+        # NPV-Berechnung (5% Diskontierung)
+        npv = 0
+        for i, cashflow in enumerate(cashflow_data):
+            npv += cashflow / ((1 + 0.05) ** (i + 1))
+        
+        # IRR-Berechnung (vereinfacht)
+        total_investment = bess_size * 300000  # EUR/MWh
+        irr = (total_net_cashflow / total_investment) * 100 if total_investment > 0 else 0
+        
+        # Payback-Jahr finden
+        cumulative_cashflow = 0
+        payback_year = None
+        for i, cashflow in enumerate(cashflow_data):
+            cumulative_cashflow += cashflow
+            if cumulative_cashflow >= total_investment and payback_year is None:
+                payback_year = years[i]
+        
+        analysis_result = {
+            'project_id': project_id,
+            'use_case': use_case,
+            'years': years,
+            'cashflow_data': cashflow_data,
+            'degradation_data': degradation_data,
+            'revenues_data': revenues_data,
+            'costs_data': costs_data,
+            'total_investment': total_investment,
+            'total_revenues': total_revenues,
+            'total_costs': total_costs,
+            'total_net_cashflow': total_net_cashflow,
+            'npv': npv,
+            'irr': irr,
+            'payback_year': payback_year,
+            'final_capacity_percent': degradation_data[-1]
+        }
+        
+        return jsonify(analysis_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der 10-Jahres-Analyse: {str(e)}'}), 500
+
+@main_bp.route('/api/residual-load/calculate', methods=['POST'])
+def api_calculate_residual_load():
+    """Residuallast berechnen"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        use_case_id = data.get('use_case_id')
+        
+        # Hier würde die Residuallast-Berechnung ausgeführt werden
+        # Für jetzt geben wir Beispieldaten zurück
+        
+        residual_load_result = {
+            'project_id': project_id,
+            'use_case_id': use_case_id,
+            'data_points': [
+                {
+                    'timestamp': '2024-01-01T00:00:00',
+                    'consumption_kw': 500.0,
+                    'pv_generation_kw': 0.0,
+                    'hydro_generation_kw': 650.0,
+                    'residual_load_kw': -150.0
+                },
+                {
+                    'timestamp': '2024-01-01T12:00:00',
+                    'consumption_kw': 450.0,
+                    'pv_generation_kw': 1200.0,
+                    'hydro_generation_kw': 650.0,
+                    'residual_load_kw': -1400.0
+                }
+            ],
+            'statistics': {
+                'average_consumption_kw': 475.0,
+                'average_pv_generation_kw': 600.0,
+                'average_hydro_generation_kw': 650.0,
+                'average_residual_load_kw': -775.0
+            }
+        }
+        
+        return jsonify(residual_load_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der Residuallast-Berechnung: {str(e)}'}), 500
+
+@main_bp.route('/api/load-shifting/optimize', methods=['POST'])
+def api_optimize_load_shifting():
+    """Load-Shifting optimieren"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        optimization_target = data.get('optimization_target', 'cost_minimization')
+        
+        # Hier würde die Load-Shifting-Optimierung ausgeführt werden
+        # Für jetzt geben wir Beispieldaten zurück
+        
+        optimization_result = {
+            'project_id': project_id,
+            'optimization_target': optimization_target,
+            'schedule': [
+                {
+                    'timestamp': '2024-01-01T00:00:00',
+                    'charge_power_kw': 500.0,
+                    'discharge_power_kw': 0.0,
+                    'battery_soc_percent': 50.0,
+                    'spot_price_eur_mwh': 45.0,
+                    'cost_eur': 5.63,
+                    'revenue_eur': 0.0
+                },
+                {
+                    'timestamp': '2024-01-01T12:00:00',
+                    'charge_power_kw': 0.0,
+                    'discharge_power_kw': 500.0,
+                    'battery_soc_percent': 30.0,
+                    'spot_price_eur_mwh': 85.0,
+                    'cost_eur': 0.0,
+                    'revenue_eur': 10.63
+                }
+            ],
+            'summary': {
+                'total_charge_energy_mwh': 1000.0,
+                'total_discharge_energy_mwh': 850.0,
+                'total_cost_eur': 45000.0,
+                'total_revenue_eur': 72000.0,
+                'net_benefit_eur': 27000.0
+            }
+        }
+        
+        return jsonify(optimization_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der Load-Shifting-Optimierung: {str(e)}'}), 500
+
+@main_bp.route('/api/grid-tariffs')
+def api_grid_tariffs():
+    """Netzentgelte abrufen"""
+    try:
+        grid_tariffs = GridTariff.query.all()
+        return jsonify([{
+            'id': gt.id,
+            'name': gt.name,
+            'tariff_type': gt.tariff_type,
+            'base_price_eur_mwh': gt.base_price_eur_mwh,
+            'spot_multiplier': gt.spot_multiplier,
+            'region': gt.region,
+            'valid_from': gt.valid_from.isoformat() if gt.valid_from else None,
+            'valid_to': gt.valid_to.isoformat() if gt.valid_to else None
+        } for gt in grid_tariffs])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Netzentgelte: {str(e)}'}), 500
+
+@main_bp.route('/api/legal-charges')
+def api_legal_charges():
+    """Gesetzliche Abgaben abrufen"""
+    try:
+        legal_charges = LegalCharges.query.all()
+        return jsonify([{
+            'id': lc.id,
+            'name': lc.name,
+            'charge_type': lc.charge_type,
+            'amount_eur_mwh': lc.amount_eur_mwh,
+            'region': lc.region,
+            'valid_from': lc.valid_from.isoformat() if lc.valid_from else None,
+            'valid_to': lc.valid_to.isoformat() if lc.valid_to else None,
+            'description': lc.description
+        } for lc in legal_charges])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der gesetzlichen Abgaben: {str(e)}'}), 500
+
+@main_bp.route('/api/regulatory-changes')
+def api_regulatory_changes():
+    """Gesetzliche Änderungen abrufen"""
+    try:
+        regulatory_changes = RegulatoryChanges.query.all()
+        return jsonify([{
+            'id': rc.id,
+            'name': rc.name,
+            'change_type': rc.change_type,
+            'old_value_eur_mwh': rc.old_value_eur_mwh,
+            'new_value_eur_mwh': rc.new_value_eur_mwh,
+            'change_year': rc.change_year,
+            'region': rc.region,
+            'description': rc.description
+        } for rc in regulatory_changes])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der gesetzlichen Änderungen: {str(e)}'}), 500

@@ -5,11 +5,16 @@
 {% block content %}
 <div class="max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">Projekte</h1>
-        <a href="{{ url_for('main.new_project') }}" 
-           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
-            <i class="fas fa-plus mr-2"></i>Neues Projekt
-        </a>
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Projekte & Use Cases</h1>
+            <p class="text-gray-600 mt-1">Verwalten Sie Projekte und deren spezifische Use Cases</p>
+        </div>
+        <div class="flex space-x-3">
+            <a href="{{ url_for('main.new_project') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                <i class="fas fa-plus mr-2"></i>Neues Projekt
+            </a>
+        </div>
     </div>
 
     <!-- Filter und Suche -->
@@ -25,6 +30,13 @@
                 <select id="customerFilter" 
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">Alle Kunden</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Use Case</label>
+                <select id="useCaseFilter" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Alle Use Cases</option>
                 </select>
             </div>
             <div>
@@ -59,17 +71,141 @@
             <i class="fas fa-plus mr-2"></i>+ Neues Projekt erstellen
         </a>
     </div>
+
+    <!-- Use Case Manager Modal -->
+    <div id="useCaseModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Use Case Manager</h3>
+                    <button onclick="closeUseCaseManager()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Use Case Tabs -->
+                <div class="border-b border-gray-200 mb-4">
+                    <nav class="-mb-px flex space-x-8">
+                        <button onclick="switchUseCaseTab('existing', event)" 
+                                class="use-case-tab active py-2 px-1 border-b-2 border-blue-500 text-blue-600">
+                            Vorhandene Use Cases
+                        </button>
+                        <button onclick="switchUseCaseTab('create', event)" 
+                                class="use-case-tab py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            Neuen Use Case erstellen
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- Existing Use Cases Tab -->
+                <div id="existingUseCasesTab" class="use-case-tab-content">
+                    <div class="mb-4">
+                        <h4 class="font-medium text-gray-900 mb-2">Verfügbare Use Cases</h4>
+                        <div id="existingUseCasesList" class="space-y-2">
+                            <!-- Use Cases werden hier dynamisch geladen -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Create Use Case Tab -->
+                <div id="createUseCaseTab" class="use-case-tab-content hidden">
+                    <form id="createUseCaseForm" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Use Case Name</label>
+                                <input type="text" id="useCaseName" name="name" required
+                                       placeholder="z.B. UC4 - Gewerbe + PV + Wind"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Szenario-Typ</label>
+                                <select id="scenarioType" name="scenario_type" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Szenario auswählen...</option>
+                                    <option value="consumption_only">Nur Verbrauch</option>
+                                    <option value="pv_consumption">PV + Verbrauch</option>
+                                    <option value="pv_hydro_consumption">PV + Wasserkraft + Verbrauch</option>
+                                    <option value="pv_wind_consumption">PV + Wind + Verbrauch</option>
+                                    <option value="commercial_pv">Gewerbe + PV</option>
+                                    <option value="industrial_complex">Industriekomplex</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">PV-Leistung (MWp)</label>
+                                <input type="number" id="pvPower" name="pv_power_mwp" step="0.01" min="0"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Wasserkraft (kW)</label>
+                                <input type="number" id="hydroPower" name="hydro_power_kw" step="1" min="0"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Windkraft (kW)</label>
+                                <input type="number" id="windPower" name="wind_power_kw" step="1" min="0"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Größe (MWh)</label>
+                                <input type="number" id="bessSize" name="bess_size_mwh" step="0.1" min="0"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Leistung (MW)</label>
+                                <input type="number" id="bessPower" name="bess_power_mw" step="0.1" min="0"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
+                            <textarea id="useCaseDescription" name="description" rows="3"
+                                      placeholder="Detaillierte Beschreibung des Use Cases..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" onclick="closeUseCaseManager()" 
+                                    class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                                Abbrechen
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                                Use Case erstellen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM geladen - Initialisiere Projekt & Use Case Manager...');
+    
     loadProjects();
     loadCustomers();
+    loadUseCases();
     
     // Event Listeners
-    document.getElementById('searchInput').addEventListener('input', filterProjects);
-    document.getElementById('customerFilter').addEventListener('change', filterProjects);
-    document.getElementById('sortSelect').addEventListener('change', filterProjects);
+    const searchInput = document.getElementById('searchInput');
+    const customerFilter = document.getElementById('customerFilter');
+    const useCaseFilter = document.getElementById('useCaseFilter');
+    const sortSelect = document.getElementById('sortSelect');
+    const createUseCaseForm = document.getElementById('createUseCaseForm');
+    
+    if (searchInput) searchInput.addEventListener('input', filterProjects);
+    if (customerFilter) customerFilter.addEventListener('change', filterProjects);
+    if (useCaseFilter) useCaseFilter.addEventListener('change', filterProjects);
+    if (sortSelect) sortSelect.addEventListener('change', filterProjects);
+    if (createUseCaseForm) createUseCaseForm.addEventListener('submit', createUseCase);
+    
+    console.log('Event Listeners registriert');
 });
 
 function loadProjects() {
@@ -100,6 +236,38 @@ function loadCustomers() {
         .catch(error => console.error('Fehler beim Laden der Kunden:', error));
 }
 
+function loadUseCases() {
+    fetch('/api/use-cases')
+        .then(response => response.json())
+        .then(useCases => {
+            updateUseCaseFilter(useCases);
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Use Cases:', error);
+        });
+}
+
+function updateUseCaseFilter(useCases) {
+    const filter = document.getElementById('useCaseFilter');
+    const currentValue = filter.value;
+    
+    // Standard-Optionen beibehalten
+    filter.innerHTML = '<option value="">Alle Use Cases</option>';
+    
+    // Use Cases hinzufügen
+    useCases.forEach(useCase => {
+        const option = document.createElement('option');
+        option.value = useCase.name;
+        option.textContent = `${useCase.name} - ${useCase.description}`;
+        filter.appendChild(option);
+    });
+    
+    // Vorherigen Wert wiederherstellen
+    if (currentValue) {
+        filter.value = currentValue;
+    }
+}
+
 function displayProjects(projects) {
     if (projects.length === 0) {
         document.getElementById('projectsList').classList.add('hidden');
@@ -117,6 +285,11 @@ function displayProjects(projects) {
                     <div class="flex items-center mb-2">
                         <h3 class="text-xl font-semibold text-gray-900">${project.name}</h3>
                         <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Aktiv</span>
+                        ${project.use_case ? `
+                            <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                ${project.use_case.name}
+                            </span>
+                        ` : ''}
                     </div>
                     <p class="text-gray-600 mb-3">${project.location || 'Kein Standort angegeben'}</p>
                     
@@ -146,6 +319,10 @@ function displayProjects(projects) {
                 </div>
                 
                 <div class="flex space-x-2 ml-4">
+                    <button onclick="openUseCaseManagerForProject(${project.id})" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm">
+                        <i class="fas fa-cogs mr-1"></i>Use Cases
+                    </button>
                     <a href="/view_project?id=${project.id}" 
                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm">
                         <i class="fas fa-eye mr-1"></i>Anzeigen
@@ -185,6 +362,345 @@ function filterProjects() {
     loadProjects();
 }
 
+// Use Case Manager Funktionen
+let currentProjectId = null;
+
+function openUseCaseManagerForProject(projectId) {
+    console.log('openUseCaseManagerForProject aufgerufen für Projekt:', projectId);
+    currentProjectId = projectId;
+    
+    const modal = document.getElementById('useCaseModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        loadExistingUseCases();
+        console.log('Modal für Projekt', projectId, 'geöffnet');
+    } else {
+        console.error('Modal nicht gefunden!');
+    }
+}
+
+function openUseCaseManager() {
+    console.log('openUseCaseManager aufgerufen (globale Funktion)');
+    currentProjectId = null;
+    
+    const modal = document.getElementById('useCaseModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        loadExistingUseCases();
+        console.log('Globales Modal geöffnet');
+    } else {
+        console.error('Modal nicht gefunden!');
+    }
+}
+
+function closeUseCaseManager() {
+    document.getElementById('useCaseModal').classList.add('hidden');
+    resetUseCaseForm();
+    currentProjectId = null; // Reset current project
+}
+
+function switchUseCaseTab(tab, event = null) {
+    // Tab-Buttons aktualisieren
+    document.querySelectorAll('.use-case-tab').forEach(btn => {
+        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Wenn ein Event übergeben wurde, das aktive Element markieren
+    if (event && event.target) {
+        event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+        event.target.classList.remove('border-transparent', 'text-gray-500');
+    }
+    
+    // Tab-Inhalte wechseln
+    document.querySelectorAll('.use-case-tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    if (tab === 'existing') {
+        document.getElementById('existingUseCasesTab').classList.remove('hidden');
+    } else {
+        document.getElementById('createUseCaseTab').classList.remove('hidden');
+    }
+}
+
+function loadExistingUseCases() {
+    console.log('loadExistingUseCases aufgerufen');
+    
+    const container = document.getElementById('existingUseCasesList');
+    if (!container) {
+        console.error('Container existingUseCasesList nicht gefunden!');
+        return;
+    }
+    
+    // Loading-Indikator anzeigen
+    container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Lade Use Cases...</div>';
+    
+    fetch('/api/use-cases')
+        .then(response => {
+            console.log('API Response Status:', response.status);
+            console.log('API Response Headers:', response.headers);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            return response.text().then(text => {
+                console.log('Raw API Response:', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    console.error('JSON Parse Error:', e);
+                    throw new Error('Ungültige JSON-Antwort vom Server');
+                }
+            });
+        })
+        .then(useCases => {
+            console.log('Use Cases geladen:', useCases);
+            console.log('Type of useCases:', typeof useCases);
+            console.log('Is Array:', Array.isArray(useCases));
+            
+            if (!Array.isArray(useCases)) {
+                console.error('useCases ist kein Array:', useCases);
+                throw new Error('Ungültige Antwort: Kein Array von Use Cases');
+            }
+            
+            if (useCases.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-gray-500">Keine Use Cases gefunden</div>';
+                return;
+            }
+            
+            console.log('Rendering', useCases.length, 'Use Cases');
+            
+            container.innerHTML = useCases.map(useCase => {
+                console.log('Rendering Use Case:', useCase);
+                return `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-2">
+                        <div class="flex-1">
+                            <h5 class="font-medium text-gray-900">${useCase.name || 'Unbenannter Use Case'}</h5>
+                            <p class="text-sm text-gray-600">${useCase.description || 'Keine Beschreibung'}</p>
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                ${useCase.pv_power_mwp > 0 ? `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">PV: ${useCase.pv_power_mwp} MWp</span>` : ''}
+                                ${useCase.hydro_power_kw > 0 ? `<span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Hydro: ${useCase.hydro_power_kw} kW</span>` : ''}
+                                ${useCase.wind_power_kw > 0 ? `<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Wind: ${useCase.wind_power_kw} kW</span>` : ''}
+                                ${useCase.bess_size_mwh > 0 ? `<span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">BESS: ${useCase.bess_size_mwh} MWh</span>` : ''}
+                                ${useCase.bess_power_mw > 0 ? `<span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">Leistung: ${useCase.bess_power_mw} MW</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                            <button onclick="editUseCase(${useCase.id})" 
+                                    class="text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50 transition-colors"
+                                    title="Use Case bearbeiten">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteUseCase(${useCase.id})" 
+                                    class="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors"
+                                    title="Use Case löschen">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            console.log('Use Cases erfolgreich gerendert');
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Use Cases:', error);
+            container.innerHTML = `
+                <div class="text-center py-4 text-red-500">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p class="mt-2">Fehler beim Laden der Use Cases</p>
+                    <p class="text-sm">${error.message}</p>
+                    <button onclick="loadExistingUseCases()" class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Erneut versuchen
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function createUseCase(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const useCaseData = Object.fromEntries(formData.entries());
+    
+    // Numerische Werte konvertieren
+    useCaseData.pv_power_mwp = parseFloat(useCaseData.pv_power_mwp) || 0.0;
+    useCaseData.hydro_power_kw = parseFloat(useCaseData.hydro_power_kw) || 0.0;
+    useCaseData.wind_power_kw = parseFloat(useCaseData.wind_power_kw) || 0.0;
+    useCaseData.bess_size_mwh = parseFloat(useCaseData.bess_size_mwh) || 0.0;
+    useCaseData.bess_power_mw = parseFloat(useCaseData.bess_power_mw) || 0.0;
+    
+    fetch('/api/use-cases', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(useCaseData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Use Case erfolgreich erstellt!');
+            closeUseCaseManager();
+            loadUseCases();
+            loadExistingUseCases();
+            
+            // Wenn ein Projekt ausgewählt war, Projekte neu laden
+            if (currentProjectId) {
+                loadProjects();
+            }
+        } else {
+            alert('Fehler beim Erstellen des Use Cases: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        alert('Fehler beim Erstellen des Use Cases');
+    });
+}
+
+function editUseCase(useCaseId) {
+    console.log('editUseCase aufgerufen für ID:', useCaseId);
+    
+    // Loading-Indikator anzeigen
+    const container = document.getElementById('existingUseCasesList');
+    if (container) {
+        container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Lade Use Case...</div>';
+    }
+    
+    // Use Case zum Bearbeiten laden
+    fetch(`/api/use-cases/${useCaseId}`)
+        .then(response => {
+            console.log('API Response Status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(useCase => {
+            console.log('Use Case geladen:', useCase);
+            
+            // Formular mit Use Case-Daten füllen
+            const nameField = document.getElementById('useCaseName');
+            const scenarioField = document.getElementById('scenarioType');
+            const pvField = document.getElementById('pvPower');
+            const hydroField = document.getElementById('hydroPower');
+            const windField = document.getElementById('windPower');
+            const bessSizeField = document.getElementById('bessSize');
+            const bessPowerField = document.getElementById('bessPower');
+            const descField = document.getElementById('useCaseDescription');
+            
+            if (nameField) nameField.value = useCase.name || '';
+            if (scenarioField) scenarioField.value = useCase.scenario_type || '';
+            if (pvField) pvField.value = useCase.pv_power_mwp || '';
+            if (hydroField) hydroField.value = useCase.hydro_power_kw || '';
+            if (windField) windField.value = useCase.wind_power_kw || '';
+            if (bessSizeField) bessSizeField.value = useCase.bess_size_mwh || '';
+            if (bessPowerField) bessPowerField.value = useCase.bess_power_mw || '';
+            if (descField) descField.value = useCase.description || '';
+            
+            // Tab auf "Erstellen" wechseln und Formular-Modus ändern
+            switchUseCaseTab('create', null);
+            
+            // Formular-Button ändern
+            const submitBtn = document.querySelector('#createUseCaseForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.textContent = 'Use Case aktualisieren';
+                submitBtn.onclick = (e) => updateUseCase(e, useCaseId);
+            }
+            
+            // Modal öffnen falls geschlossen
+            const modal = document.getElementById('useCaseModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+            
+            // Use Cases Liste neu laden
+            loadExistingUseCases();
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden des Use Cases:', error);
+            alert('Fehler beim Laden des Use Cases: ' + error.message);
+            
+            // Use Cases Liste neu laden bei Fehler
+            loadExistingUseCases();
+        });
+}
+
+function updateUseCase(event, useCaseId) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const useCaseData = Object.fromEntries(formData.entries());
+    
+    // Numerische Werte konvertieren
+    useCaseData.pv_power_mwp = parseFloat(useCaseData.pv_power_mwp) || 0.0;
+    useCaseData.hydro_power_kw = parseFloat(useCaseData.hydro_power_kw) || 0.0;
+    useCaseData.wind_power_kw = parseFloat(useCaseData.wind_power_kw) || 0.0;
+    useCaseData.bess_size_mwh = parseFloat(useCaseData.bess_size_mwh) || 0.0;
+    useCaseData.bess_power_mw = parseFloat(useCaseData.bess_power_mw) || 0.0;
+    
+    fetch(`/api/use-cases/${useCaseId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(useCaseData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Use Case erfolgreich aktualisiert!');
+            closeUseCaseManager();
+            loadUseCases();
+            loadExistingUseCases();
+            resetUseCaseForm();
+        } else {
+            alert('Fehler beim Aktualisieren des Use Cases: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        alert('Fehler beim Aktualisieren des Use Cases');
+    });
+}
+
+function resetUseCaseForm() {
+    // Formular zurücksetzen
+    document.getElementById('createUseCaseForm').reset();
+    
+    // Button zurücksetzen
+    const submitBtn = document.querySelector('#createUseCaseForm button[type="submit"]');
+    submitBtn.textContent = 'Use Case erstellen';
+    submitBtn.onclick = createUseCase;
+}
+
+function deleteUseCase(useCaseId) {
+    console.log('deleteUseCase aufgerufen für ID:', useCaseId);
+    if (confirm('Sind Sie sicher, dass Sie diesen Use Case löschen möchten?')) {
+        fetch(`/api/use-cases/${useCaseId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Use Case erfolgreich gelöscht!');
+                loadExistingUseCases();
+                loadUseCases();
+            } else {
+                alert('Fehler beim Löschen des Use Cases: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Fehler:', error);
+            alert('Fehler beim Löschen des Use Cases');
+        });
+    }
+}
+
 function deleteProject(projectId) {
     if (confirm('Sind Sie sicher, dass Sie dieses Projekt löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
         fetch(`/api/projects/${projectId}`, {
@@ -206,4 +722,10 @@ function deleteProject(projectId) {
     }
 }
 </script>
+
+<style>
+.use-case-tab.active {
+    @apply border-blue-500 text-blue-600;
+}
+</style>
 {% endblock %} 
