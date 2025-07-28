@@ -11,6 +11,9 @@ import random
 # EHYD Data Fetcher importieren
 from ehyd_data_fetcher import EHYDDataFetcher
 
+# PVGIS Data Fetcher importieren
+from pvgis_data_fetcher import PVGISDataFetcher
+
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
@@ -3996,3 +3999,183 @@ def api_regulatory_changes():
         } for rc in regulatory_changes])
     except Exception as e:
         return jsonify({'error': f'Fehler beim Abrufen der gesetzlichen Änderungen: {str(e)}'}), 500
+
+# -------------------------
+# PVGIS SOLAR-DATEN API
+# -------------------------
+
+@main_bp.route('/api/pvgis/locations')
+def api_pvgis_locations():
+    """Verfügbare PVGIS-Standorte abrufen"""
+    try:
+        fetcher = PVGISDataFetcher()
+        locations = fetcher.get_available_locations()
+        return jsonify({
+            'success': True,
+            'locations': locations
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/fetch-solar-data', methods=['POST'])
+def api_pvgis_fetch_solar_data():
+    """Solar-Daten von PVGIS abrufen und in Datenbank speichern"""
+    try:
+        data = request.get_json()
+        location_key = data.get('location_key')
+        year = data.get('year', 2024)
+        custom_lat = data.get('custom_lat')
+        custom_lon = data.get('custom_lon')
+        
+        if not location_key:
+            return jsonify({'success': False, 'error': 'location_key ist erforderlich'}), 400
+        
+        fetcher = PVGISDataFetcher()
+        result = fetcher.fetch_solar_data(location_key, year, custom_lat, custom_lon)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': f"Solar-Daten erfolgreich geladen für {result['location']} ({result['year']})",
+                'records': result['records'],
+                'location': result['location'],
+                'year': result['year'],
+                'database_saved': result['database_saved']
+            })
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/solar-data/<location_key>/<int:year>')
+def api_pvgis_get_solar_data(location_key, year):
+    """Solar-Daten aus Datenbank abrufen"""
+    try:
+        fetcher = PVGISDataFetcher()
+        df = fetcher.get_solar_data_from_db(location_key, year)
+        
+        if df is not None and not df.empty:
+            # Daten für JSON-Serialisierung vorbereiten
+            data = []
+            for _, row in df.iterrows():
+                data.append({
+                    'datetime': row['datetime'].isoformat(),
+                    'global_irradiance': float(row['global_irradiance']) if pd.notna(row['global_irradiance']) else None,
+                    'beam_irradiance': float(row['beam_irradiance']) if pd.notna(row['beam_irradiance']) else None,
+                    'diffuse_irradiance': float(row['diffuse_irradiance']) if pd.notna(row['diffuse_irradiance']) else None,
+                    'sun_height': float(row['sun_height']) if pd.notna(row['sun_height']) else None,
+                    'temperature_2m': float(row['temperature_2m']) if pd.notna(row['temperature_2m']) else None,
+                    'wind_speed_10m': float(row['wind_speed_10m']) if pd.notna(row['wind_speed_10m']) else None
+                })
+            
+            return jsonify({
+                'success': True,
+                'location_key': location_key,
+                'year': year,
+                'records': len(data),
+                'data': data
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/add-location', methods=['POST'])
+def api_pvgis_add_location():
+    """Neuen benutzerdefinierten Standort hinzufügen"""
+    try:
+        data = request.get_json()
+        key = data.get('key')
+        name = data.get('name')
+        lat = data.get('lat')
+        lon = data.get('lon')
+        altitude = data.get('altitude')
+        description = data.get('description', '')
+        
+        if not all([key, name, lat, lon]):
+            return jsonify({'success': False, 'error': 'key, name, lat, lon sind erforderlich'}), 400
+        
+        fetcher = PVGISDataFetcher()
+        success = fetcher.add_custom_location(key, name, lat, lon, altitude, description)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Standort {name} erfolgreich hinzugefügt'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Standort mit Schlüssel {key} existiert bereits'
+            }), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/solar-statistics/<location_key>/<int:year>')
+def api_pvgis_solar_statistics(location_key, year):
+    """Statistiken für Solar-Daten berechnen"""
+    try:
+        fetcher = PVGISDataFetcher()
+        df = fetcher.get_solar_data_from_db(location_key, year)
+        
+        if df is not None and not df.empty:
+            stats = {}
+            
+            if 'global_irradiance' in df.columns:
+                stats['global_irradiance'] = {
+                    'mean': float(df['global_irradiance'].mean()),
+                    'max': float(df['global_irradiance'].max()),
+                    'min': float(df['global_irradiance'].min()),
+                    'std': float(df['global_irradiance'].std()),
+                    'total_annual': float(df['global_irradiance'].sum() / 1000)  # kWh/m²
+                }
+            
+            if 'temperature_2m' in df.columns:
+                stats['temperature_2m'] = {
+                    'mean': float(df['temperature_2m'].mean()),
+                    'max': float(df['temperature_2m'].max()),
+                    'min': float(df['temperature_2m'].min()),
+                    'std': float(df['temperature_2m'].std())
+                }
+            
+            if 'wind_speed_10m' in df.columns:
+                stats['wind_speed_10m'] = {
+                    'mean': float(df['wind_speed_10m'].mean()),
+                    'max': float(df['wind_speed_10m'].max()),
+                    'min': float(df['wind_speed_10m'].min()),
+                    'std': float(df['wind_speed_10m'].std())
+                }
+            
+            # Monatliche Statistiken
+            df['month'] = df['datetime'].dt.month
+            monthly_stats = {}
+            for month in range(1, 13):
+                month_data = df[df['month'] == month]
+                if not month_data.empty and 'global_irradiance' in month_data.columns:
+                    monthly_stats[month] = {
+                        'mean_irradiance': float(month_data['global_irradiance'].mean()),
+                        'total_irradiance': float(month_data['global_irradiance'].sum() / 1000)  # kWh/m²
+                    }
+            
+            stats['monthly'] = monthly_stats
+            
+            return jsonify({
+                'success': True,
+                'location_key': location_key,
+                'year': year,
+                'statistics': stats
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
+            }), 404
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
