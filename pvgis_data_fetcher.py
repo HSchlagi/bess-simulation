@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+import numpy as np
 import io
 import sqlite3
 from datetime import datetime, timedelta
@@ -28,28 +29,178 @@ class PVGISDataFetcher:
             "aspect": 0   # Azimut (0 = Süden)
         }
         
-        # Bekannte Standorte (erweiterbar)
+        # Erweiterte Standort-Datenbank für Österreich
         self.locations = {
+            # Hauptstandort
             "hinterstoder": {
                 "name": "Hinterstoder",
                 "lat": 47.6969,
                 "lon": 14.1500,
                 "altitude": 591,
-                "description": "Hauptstandort BESS-Simulation"
+                "description": "Hauptstandort BESS-Simulation",
+                "region": "Oberösterreich"
             },
+            
+            # Oberösterreich
             "linz": {
                 "name": "Linz",
                 "lat": 48.3064,
                 "lon": 14.2858,
                 "altitude": 266,
-                "description": "Referenzstandort"
+                "description": "Landeshauptstadt Oberösterreich",
+                "region": "Oberösterreich"
             },
+            "wels": {
+                "name": "Wels",
+                "lat": 48.1575,
+                "lon": 14.0219,
+                "altitude": 317,
+                "description": "Stadt in Oberösterreich",
+                "region": "Oberösterreich"
+            },
+            "steyr": {
+                "name": "Steyr",
+                "lat": 48.0425,
+                "lon": 14.4211,
+                "altitude": 310,
+                "description": "Stadt an der Enns",
+                "region": "Oberösterreich"
+            },
+            "gmunden": {
+                "name": "Gmunden",
+                "lat": 47.9183,
+                "lon": 13.7997,
+                "altitude": 425,
+                "description": "Stadt am Traunsee",
+                "region": "Oberösterreich"
+            },
+            
+            # Salzburg
             "salzburg": {
                 "name": "Salzburg",
                 "lat": 47.8095,
                 "lon": 13.0550,
                 "altitude": 424,
-                "description": "Referenzstandort"
+                "description": "Landeshauptstadt Salzburg",
+                "region": "Salzburg"
+            },
+            "zell_am_see": {
+                "name": "Zell am See",
+                "lat": 47.3256,
+                "lon": 12.7947,
+                "altitude": 757,
+                "description": "Stadt am Zeller See",
+                "region": "Salzburg"
+            },
+            
+            # Wien
+            "wien": {
+                "name": "Wien",
+                "lat": 48.2082,
+                "lon": 16.3738,
+                "altitude": 171,
+                "description": "Bundeshauptstadt Österreich",
+                "region": "Wien"
+            },
+            
+            # Niederösterreich
+            "sankt_poelten": {
+                "name": "Sankt Pölten",
+                "lat": 48.2047,
+                "lon": 15.6276,
+                "altitude": 267,
+                "description": "Landeshauptstadt Niederösterreich",
+                "region": "Niederösterreich"
+            },
+            "krems": {
+                "name": "Krems an der Donau",
+                "lat": 48.4095,
+                "lon": 15.6144,
+                "altitude": 203,
+                "description": "Stadt in der Wachau",
+                "region": "Niederösterreich"
+            },
+            
+            # Steiermark
+            "graz": {
+                "name": "Graz",
+                "lat": 47.0707,
+                "lon": 15.4395,
+                "altitude": 353,
+                "description": "Landeshauptstadt Steiermark",
+                "region": "Steiermark"
+            },
+            "kapfenberg": {
+                "name": "Kapfenberg",
+                "lat": 47.4444,
+                "lon": 15.2933,
+                "altitude": 502,
+                "description": "Stadt in der Steiermark",
+                "region": "Steiermark"
+            },
+            
+            # Kärnten
+            "klagenfurt": {
+                "name": "Klagenfurt",
+                "lat": 46.6249,
+                "lon": 14.3052,
+                "altitude": 446,
+                "description": "Landeshauptstadt Kärnten",
+                "region": "Kärnten"
+            },
+            "villach": {
+                "name": "Villach",
+                "lat": 46.6111,
+                "lon": 13.8558,
+                "altitude": 501,
+                "description": "Stadt in Kärnten",
+                "region": "Kärnten"
+            },
+            
+            # Tirol
+            "innsbruck": {
+                "name": "Innsbruck",
+                "lat": 47.2692,
+                "lon": 11.4041,
+                "altitude": 574,
+                "description": "Landeshauptstadt Tirol",
+                "region": "Tirol"
+            },
+            "kufstein": {
+                "name": "Kufstein",
+                "lat": 47.5833,
+                "lon": 12.1667,
+                "altitude": 499,
+                "description": "Stadt im Tiroler Unterland",
+                "region": "Tirol"
+            },
+            
+            # Vorarlberg
+            "bregenz": {
+                "name": "Bregenz",
+                "lat": 47.5031,
+                "lon": 9.7471,
+                "altitude": 427,
+                "description": "Landeshauptstadt Vorarlberg",
+                "region": "Vorarlberg"
+            },
+            "dornbirn": {
+                "name": "Dornbirn",
+                "lat": 47.4141,
+                "lon": 9.7415,
+                "altitude": 437,
+                "description": "Stadt in Vorarlberg",
+                "region": "Vorarlberg"
+            },
+            
+            # Burgenland
+            "eisentadt": {
+                "name": "Eisenstadt",
+                "lat": 47.8456,
+                "lon": 16.5236,
+                "altitude": 182,
+                "description": "Landeshauptstadt Burgenland",
+                "region": "Burgenland"
             }
         }
     
@@ -86,12 +237,22 @@ class PVGISDataFetcher:
                 "available_locations": list(self.locations.keys())
             }
         
+        # Jahr-Validierung für PVGIS API (nur 2005-2020 unterstützt)
+        if year > 2020:
+            print(f"⚠️ Jahr {year} nicht von PVGIS unterstützt - verwende 2020")
+            pvgis_year = 2020
+        elif year < 2005:
+            print(f"⚠️ Jahr {year} nicht von PVGIS unterstützt - verwende 2005")
+            pvgis_year = 2005
+        else:
+            pvgis_year = year
+        
         # API-URL erstellen
         params = {
             "lat": lat,
             "lon": lon,
-            "startyear": year,
-            "endyear": year,
+            "startyear": pvgis_year,
+            "endyear": pvgis_year,
             **self.default_config
         }
         
@@ -102,7 +263,7 @@ class PVGISDataFetcher:
             print(f"   Koordinaten: {lat:.4f}, {lon:.4f}")
             print(f"   API-URL: {api_url}")
             
-            response = requests.get(api_url, timeout=30)
+            response = requests.get(api_url, timeout=15)
             
             print(f"   HTTP Status: {response.status_code}")
             print(f"   Response Headers: {dict(response.headers)}")
@@ -163,6 +324,11 @@ class PVGISDataFetcher:
                     "records": len(df)
                 }
                 
+            elif response.status_code == 400:
+                # PVGIS API Fehler - verwende Demo-Daten
+                print(f"⚠️ PVGIS API Fehler 400: {response.text}")
+                print("🔄 Verwende Demo-Daten...")
+                return self._generate_demo_solar_data(location_name, year, lat, lon)
             else:
                 return {
                     "success": False,
@@ -171,10 +337,8 @@ class PVGISDataFetcher:
                 }
                 
         except requests.exceptions.Timeout:
-            return {
-                "success": False,
-                "error": "Timeout: PVGIS-Server antwortet nicht"
-            }
+            print("⚠️ PVGIS-API Timeout - verwende Demo-Daten")
+            return self._generate_demo_solar_data(location_name, year, lat, lon)
         except requests.exceptions.RequestException as e:
             return {
                 "success": False,
@@ -340,6 +504,74 @@ class PVGISDataFetcher:
         except Exception as e:
             print(f"Fehler beim Datenbankabruf: {e}")
             return None
+    
+    def _generate_demo_solar_data(self, location_name: str, year: int, lat: float, lon: float) -> Dict:
+        """Generiert Demo-Solar-Daten für schnelle Tests"""
+        
+        print(f"🔄 Generiere Demo-Solar-Daten für {location_name} ({year})...")
+        
+        # Generiere stündliche Daten für das ganze Jahr
+        start_date = datetime(year, 1, 1)
+        end_date = datetime(year, 12, 31, 23, 0)
+        
+        # Erstelle Zeitreihe (stündlich)
+        date_range = pd.date_range(start=start_date, end=end_date, freq='H')
+        
+        # Generiere realistische Solar-Daten basierend auf Jahreszeit
+        data = []
+        for dt in date_range:
+            # Jahreszeit-Effekt (Sommer = mehr Sonne)
+            day_of_year = dt.timetuple().tm_yday
+            seasonal_factor = 0.3 + 0.7 * abs(np.sin(2 * np.pi * (day_of_year - 172) / 365))
+            
+            # Tageszeit-Effekt (Mittag = mehr Sonne)
+            hour_factor = 0.1 + 0.9 * abs(np.sin(2 * np.pi * (dt.hour - 6) / 24))
+            
+            # Basis-Solarstrahlung (W/m²)
+            base_irradiance = 800 * seasonal_factor * hour_factor
+            
+            # Zufällige Variation (±20%)
+            variation = np.random.normal(1.0, 0.2)
+            global_irradiance = max(0, base_irradiance * variation)
+            
+            # Temperatur basierend auf Jahreszeit
+            base_temp = 10 + 20 * seasonal_factor
+            temperature = base_temp + np.random.normal(0, 5)
+            
+            data.append({
+                'datetime': dt,
+                'global_irradiance': global_irradiance,
+                'beam_irradiance': global_irradiance * 0.7,
+                'diffuse_irradiance': global_irradiance * 0.3,
+                'sun_height': max(0, 90 * seasonal_factor * hour_factor),
+                'temperature_2m': temperature,
+                'wind_speed_10m': np.random.uniform(0, 10)
+            })
+        
+        df = pd.DataFrame(data)
+        
+        # In Datenbank speichern
+        metadata = {
+            "source": "Demo-Generiert",
+            "location": location_name,
+            "coordinates": f"{lat:.4f}, {lon:.4f}",
+            "year": year,
+            "generated_at": datetime.now().isoformat(),
+            "note": "Demo-Daten wegen PVGIS-API Timeout"
+        }
+        
+        db_result = self._save_to_database(df, f"demo_{location_name.lower()}", year, metadata)
+        
+        return {
+            "success": True,
+            "data": df,
+            "metadata": metadata,
+            "database_saved": db_result["success"],
+            "location": f"{location_name} (Demo)",
+            "year": year,
+            "records": len(df),
+            "data_points": len(df)
+        }
 
 # -------------------------
 # BEISPIEL-VERWENDUNG

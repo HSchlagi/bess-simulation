@@ -3,6 +3,7 @@ from app import db, get_db
 import sys
 import os
 import sqlite3
+import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue
 from datetime import datetime, timedelta
@@ -367,6 +368,50 @@ def api_load_profiles(project_id):
                 'data_type': row[4],
                 'source': 'load_profiles'
             })
+        
+        # 3. PVGIS-Solar-Daten als virtuelle Lastprofile hinzufügen
+        cursor.execute("""
+            SELECT DISTINCT location_key, year, 
+                   (SELECT COUNT(*) FROM solar_data WHERE location_key = sd.location_key AND year = sd.year) as data_points
+            FROM solar_data sd
+            ORDER BY location_key, year DESC
+        """)
+        
+        solar_profiles = []
+        for row in cursor.fetchall():
+            location_key, year, data_points = row
+            if data_points > 0:
+                # Standort-Informationen abrufen
+                try:
+                    fetcher = PVGISDataFetcher()
+                    locations = fetcher.get_available_locations()
+                    
+                    location_name = location_key
+                    for region, region_locations in locations.items():
+                        for loc in region_locations:
+                            if loc['key'] == location_key:
+                                location_name = loc['name']
+                                break
+                        if location_name != location_key:
+                            break
+                except Exception as e:
+                    print(f"⚠️ Fehler beim Abrufen der Standort-Informationen: {e}")
+                    location_name = location_key
+                
+                solar_profiles.append({
+                    'id': f"pvgis_{location_key}_{year}",
+                    'name': f"PVGIS Solar {location_name} ({year})",
+                    'created_at': f"{year}-01-01",
+                    'data_points': data_points,
+                    'data_type': 'solar',
+                    'source': 'pvgis',
+                    'location_key': location_key,
+                    'year': year,
+                    'location_name': location_name
+                })
+        
+        # Solar-Profile zu den normalen Profilen hinzufügen
+        profiles.extend(solar_profiles)
         
         print(f"📊 {len(profiles)} Lastprofile für Projekt {project_id} gefunden:")
         for profile in profiles:
@@ -1027,7 +1072,46 @@ def api_load_profile_data_range_string(profile_id):
         end_date = datetime.fromisoformat(data['end_date'])
         
         # Präfix entfernen und echte ID extrahieren
-        if profile_id.startswith('new_'):
+        if profile_id.startswith('pvgis_'):
+            # PVGIS-Solar-Daten verarbeiten
+            parts = profile_id.replace('pvgis_', '').split('_')
+            if len(parts) >= 2:
+                location_key = parts[0]
+                year = int(parts[1])
+                
+                # Solar-Daten aus der solar_data Tabelle laden
+                cursor = get_db().cursor()
+                cursor.execute("""
+                    SELECT datetime, global_irradiance, temperature_2m
+                    FROM solar_data 
+                    WHERE location_key = ? AND year = ?
+                    AND datetime BETWEEN ? AND ?
+                    ORDER BY datetime
+                """, (location_key, year, start_date, end_date))
+                
+                data_points = cursor.fetchall()
+                
+                if data_points:
+                    formatted_data = []
+                    for row in data_points:
+                        formatted_data.append({
+                            'timestamp': row[0],
+                            'value': float(row[1]) if row[1] is not None else 0.0,  # Globalstrahlung als Hauptwert
+                            'temperature': float(row[2]) if row[2] is not None else 0.0
+                        })
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': formatted_data,
+                        'source': f'PVGIS Solar {location_key} ({year})',
+                        'count': len(formatted_data),
+                        'data_type': 'solar'
+                    })
+                else:
+                    return jsonify({'error': f'Keine Solar-Daten für {location_key} ({year}) verfügbar'}), 404
+            else:
+                return jsonify({'error': 'Ungültige PVGIS-Profil-ID'}), 400
+        elif profile_id.startswith('new_'):
             real_id = int(profile_id.replace('new_', ''))
             table_name = 'load_profiles'
             data_table = 'load_profile_data'
@@ -4006,13 +4090,39 @@ def api_regulatory_changes():
 
 @main_bp.route('/api/pvgis/locations')
 def api_pvgis_locations():
-    """Verfügbare PVGIS-Standorte abrufen"""
+    """Verfügbare PVGIS-Standorte abrufen - gruppiert nach Regionen"""
     try:
         fetcher = PVGISDataFetcher()
         locations = fetcher.get_available_locations()
+        
+        # Standorte nach Regionen gruppieren
+        grouped_locations = {}
+        for key, location in locations.items():
+            region = location.get('region', 'Sonstige')
+            if region not in grouped_locations:
+                grouped_locations[region] = []
+            grouped_locations[region].append({
+                'key': key,
+                'name': location['name'],
+                'lat': location['lat'],
+                'lon': location['lon'],
+                'altitude': location.get('altitude', 0),
+                'description': location.get('description', ''),
+                'region': region
+            })
+        
+        # Regionen sortieren (Hauptstandort zuerst)
+        sorted_regions = {}
+        if 'Oberösterreich' in grouped_locations:
+            sorted_regions['Oberösterreich'] = grouped_locations['Oberösterreich']
+        for region in sorted(grouped_locations.keys()):
+            if region != 'Oberösterreich':
+                sorted_regions[region] = grouped_locations[region]
+        
         return jsonify({
             'success': True,
-            'locations': locations
+            'locations': sorted_regions,
+            'total_count': len(locations)
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -4052,15 +4162,24 @@ def api_pvgis_fetch_solar_data():
 def api_pvgis_get_solar_data(location_key, year):
     """Solar-Daten aus Datenbank abrufen"""
     try:
-        fetcher = PVGISDataFetcher()
-        df = fetcher.get_solar_data_from_db(location_key, year)
+        print(f"🔄 Lade Solar-Daten für {location_key}, Jahr {year}...")
         
-        if df is not None and not df.empty:
+        # Direkte Datenbankabfrage
+        conn = get_db()
+        df = pd.read_sql_query('''
+            SELECT * FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if not df.empty:
+            print(f"✅ {len(df)} Datensätze gefunden")
+            
             # Daten für JSON-Serialisierung vorbereiten
             data = []
             for _, row in df.iterrows():
                 data.append({
-                    'datetime': row['datetime'].isoformat(),
+                    'datetime': row['datetime'],
                     'global_irradiance': float(row['global_irradiance']) if pd.notna(row['global_irradiance']) else None,
                     'beam_irradiance': float(row['beam_irradiance']) if pd.notna(row['beam_irradiance']) else None,
                     'diffuse_irradiance': float(row['diffuse_irradiance']) if pd.notna(row['diffuse_irradiance']) else None,
@@ -4077,10 +4196,34 @@ def api_pvgis_get_solar_data(location_key, year):
                 'data': data
             })
         else:
+            print(f"❌ Keine Daten gefunden für {location_key} ({year})")
             return jsonify({
                 'success': False,
                 'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
             }), 404
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Solar-Daten: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/expand-locations/<int:project_id>', methods=['POST'])
+def api_pvgis_expand_locations(project_id):
+    """Intelligente Standort-Erweiterung für ein Projekt"""
+    try:
+        from intelligent_location_expander import IntelligentLocationExpander
+        
+        expander = IntelligentLocationExpander()
+        result = expander.expand_locations_for_project(project_id)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': f"Standorte für Projekt {project_id} erweitert",
+                'added_count': result['added_count'],
+                'new_locations': result['new_locations']
+            })
+        else:
+            return jsonify(result), 400
             
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -4121,61 +4264,164 @@ def api_pvgis_add_location():
 def api_pvgis_solar_statistics(location_key, year):
     """Statistiken für Solar-Daten berechnen"""
     try:
-        fetcher = PVGISDataFetcher()
-        df = fetcher.get_solar_data_from_db(location_key, year)
+        print(f"🔄 Berechne Solar-Statistiken für {location_key} ({year})")
         
-        if df is not None and not df.empty:
-            stats = {}
-            
-            if 'global_irradiance' in df.columns:
-                stats['global_irradiance'] = {
-                    'mean': float(df['global_irradiance'].mean()),
-                    'max': float(df['global_irradiance'].max()),
-                    'min': float(df['global_irradiance'].min()),
-                    'std': float(df['global_irradiance'].std()),
-                    'total_annual': float(df['global_irradiance'].sum() / 1000)  # kWh/m²
-                }
-            
-            if 'temperature_2m' in df.columns:
-                stats['temperature_2m'] = {
-                    'mean': float(df['temperature_2m'].mean()),
-                    'max': float(df['temperature_2m'].max()),
-                    'min': float(df['temperature_2m'].min()),
-                    'std': float(df['temperature_2m'].std())
-                }
-            
-            if 'wind_speed_10m' in df.columns:
-                stats['wind_speed_10m'] = {
-                    'mean': float(df['wind_speed_10m'].mean()),
-                    'max': float(df['wind_speed_10m'].max()),
-                    'min': float(df['wind_speed_10m'].min()),
-                    'std': float(df['wind_speed_10m'].std())
-                }
-            
-            # Monatliche Statistiken
-            df['month'] = df['datetime'].dt.month
-            monthly_stats = {}
-            for month in range(1, 13):
-                month_data = df[df['month'] == month]
-                if not month_data.empty and 'global_irradiance' in month_data.columns:
-                    monthly_stats[month] = {
-                        'mean_irradiance': float(month_data['global_irradiance'].mean()),
-                        'total_irradiance': float(month_data['global_irradiance'].sum() / 1000)  # kWh/m²
-                    }
-            
-            stats['monthly'] = monthly_stats
-            
-            return jsonify({
-                'success': True,
-                'location_key': location_key,
-                'year': year,
-                'statistics': stats
-            })
-        else:
+        # Direkt aus der Datenbank laden
+        conn = get_db()
+        df = pd.read_sql_query('''
+            SELECT datetime, global_irradiance, temperature_2m, wind_speed_10m
+            FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if df.empty:
             return jsonify({
                 'success': False,
                 'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
             }), 404
-            
+        
+        # Datetime konvertieren
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        
+        stats = {}
+        
+        # Globalstrahlung Statistiken
+        if 'global_irradiance' in df.columns:
+            stats['global_irradiance'] = {
+                'mean': round(float(df['global_irradiance'].mean()), 2),
+                'max': round(float(df['global_irradiance'].max()), 2),
+                'min': round(float(df['global_irradiance'].min()), 2),
+                'std': round(float(df['global_irradiance'].std()), 2),
+                'total_annual': round(float(df['global_irradiance'].sum() / 1000), 2)  # kWh/m²
+            }
+        
+        # Temperatur Statistiken
+        if 'temperature_2m' in df.columns:
+            stats['temperature_2m'] = {
+                'mean': round(float(df['temperature_2m'].mean()), 2),
+                'max': round(float(df['temperature_2m'].max()), 2),
+                'min': round(float(df['temperature_2m'].min()), 2),
+                'std': round(float(df['temperature_2m'].std()), 2)
+            }
+        
+        # Windgeschwindigkeit Statistiken
+        if 'wind_speed_10m' in df.columns:
+            stats['wind_speed_10m'] = {
+                'mean': round(float(df['wind_speed_10m'].mean()), 2),
+                'max': round(float(df['wind_speed_10m'].max()), 2),
+                'min': round(float(df['wind_speed_10m'].min()), 2),
+                'std': round(float(df['wind_speed_10m'].std()), 2)
+            }
+        
+        # Monatliche Statistiken
+        df['month'] = df['datetime'].dt.month
+        monthly_stats = {}
+        for month in range(1, 13):
+            month_data = df[df['month'] == month]
+            if not month_data.empty and 'global_irradiance' in month_data.columns:
+                monthly_stats[month] = {
+                    'mean_irradiance': round(float(month_data['global_irradiance'].mean()), 2),
+                    'total_irradiance': round(float(month_data['global_irradiance'].sum() / 1000), 2)  # kWh/m²
+                }
+        
+        stats['monthly'] = monthly_stats
+        
+        print(f"✅ Solar-Statistiken berechnet: {len(df)} Datensätze")
+        
+        return jsonify({
+            'success': True,
+            'location_key': location_key,
+            'year': year,
+            'statistics': stats,
+            'data_points': len(df)
+        })
+        
     except Exception as e:
+        print(f"❌ Fehler bei Solar-Statistiken: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/bess/simulation-with-solar', methods=['POST'])
+def api_bess_simulation_with_solar():
+    """BESS-Simulation mit Solar-Daten durchführen"""
+    try:
+        data = request.get_json()
+        location_key = data.get('location_key')
+        year = data.get('year', 2020)
+        pv_capacity = data.get('pv_capacity', 1950)  # kWp
+        bess_size = data.get('bess_size', 1000)      # kWh
+        bess_power = data.get('bess_power', 500)     # kW
+        
+        print(f"🔄 BESS-Simulation mit Solar-Daten: {location_key}, {pv_capacity} kWp, {bess_size} kWh")
+        
+        # Solar-Daten abrufen
+        conn = get_db()
+        df = pd.read_sql_query('''
+            SELECT datetime, global_irradiance, temperature_2m
+            FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if df.empty:
+            return jsonify({'success': False, 'error': 'Keine Solar-Daten verfügbar'}), 404
+        
+        # PV-Erzeugung berechnen (vereinfacht)
+        df['pv_generation'] = df['global_irradiance'] * pv_capacity * 0.75 / 1000  # kW
+        
+        # BESS-Simulation (vereinfacht)
+        bess_soc = 0.5  # Start-SOC 50%
+        bess_energy = []
+        grid_import = []
+        grid_export = []
+        
+        for _, row in df.iterrows():
+            pv_gen = row['pv_generation']
+            
+            # BESS-Logik (vereinfacht)
+            if pv_gen > 0:  # Tagsüber
+                # Überschüssige Energie in BESS laden
+                excess = max(0, pv_gen - bess_power)
+                bess_charge = min(bess_power, excess)
+                bess_soc = min(1.0, bess_soc + bess_charge / bess_size)
+                grid_export.append(excess)
+                grid_import.append(0)
+            else:  # Nachts
+                # BESS entladen
+                bess_discharge = min(bess_power, bess_size * bess_soc)
+                bess_soc = max(0.0, bess_soc - bess_discharge / bess_size)
+                grid_import.append(bess_discharge)
+                grid_export.append(0)
+            
+            bess_energy.append(bess_soc * bess_size)
+        
+        # Ergebnisse berechnen
+        total_pv_energy = df['pv_generation'].sum() / 1000  # MWh
+        total_grid_import = sum(grid_import) / 1000  # MWh
+        total_grid_export = sum(grid_export) / 1000  # MWh
+        self_consumption_rate = (total_pv_energy - total_grid_export) / total_pv_energy * 100
+        
+        results = {
+            'total_pv_energy_mwh': round(total_pv_energy, 2),
+            'total_grid_import_mwh': round(total_grid_import, 2),
+            'total_grid_export_mwh': round(total_grid_export, 2),
+            'self_consumption_rate_percent': round(self_consumption_rate, 1),
+            'bess_utilization_hours': round(total_grid_import / bess_power * 1000, 0),
+            'data_points': len(df)
+        }
+        
+        return jsonify({
+            'success': True,
+            'simulation_results': results,
+            'parameters': {
+                'location_key': location_key,
+                'year': year,
+                'pv_capacity_kwp': pv_capacity,
+                'bess_size_kwh': bess_size,
+                'bess_power_kw': bess_power
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler bei BESS-Simulation: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
