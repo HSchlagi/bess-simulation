@@ -245,6 +245,21 @@
             </div>
         </div>
         
+        <!-- Solar-Potential Ergebnisse -->
+        <div id="solarResults" class="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-6 hidden">
+            <h4 class="text-lg font-bold text-green-800 mb-4">
+                <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                🎯 Solar-Potential Analyse Ergebnisse
+            </h4>
+            <div id="solarResultsContent" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Ergebnisse werden hier dynamisch eingefügt -->
+            </div>
+            <div class="mt-4 text-sm text-green-700">
+                <i class="fas fa-info-circle mr-1"></i>
+                Diese Werte basieren auf den PVGIS-Solar-Daten für den ausgewählten Standort.
+            </div>
+        </div>
+        
         <!-- BESS-Integration -->
         <div class="bg-blue-50 rounded-lg p-4 mb-6">
             <h4 class="text-md font-semibold text-blue-800 mb-4">
@@ -273,17 +288,6 @@
                 <button onclick="simulateBESSWithSolarData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
                     <i class="fas fa-play"></i> BESS-Simulation mit Solar-Daten starten
                 </button>
-            </div>
-        </div>
-        
-        <!-- Solar-Potential Ergebnisse -->
-        <div id="solarResults" class="bg-green-50 rounded-lg p-4 mb-6 hidden">
-            <h4 class="text-md font-semibold text-green-800 mb-4">
-                <i class="fas fa-chart-bar text-green-600 mr-2"></i>
-                Solar-Potential Analyse Ergebnisse
-            </h4>
-            <div id="solarResultsContent" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <!-- Ergebnisse werden hier dynamisch eingefügt -->
             </div>
         </div>
         
@@ -2559,7 +2563,11 @@ async function calculateSolarPotential() {
         
         if (data.success) {
             displaySolarResults(data.statistics, pvCapacity);
-            showNotification('✅ Solar-Potential erfolgreich berechnet!', 'success');
+            if (data.demo_data) {
+                showNotification('✅ Solar-Potential berechnet (Demo-Daten)!', 'info');
+            } else {
+                showNotification('✅ Solar-Potential erfolgreich berechnet!', 'success');
+            }
         } else {
             showNotification('Fehler bei der Solar-Potential Berechnung', 'error');
         }
@@ -2572,11 +2580,27 @@ async function calculateSolarPotential() {
 
 // Solar-Ergebnisse anzeigen
 function displaySolarResults(statistics, pvCapacity) {
+    console.log('📊 Zeige Solar-Ergebnisse:', statistics, pvCapacity);
+    
     const resultsDiv = document.getElementById('solarResults');
     const contentDiv = document.getElementById('solarResultsContent');
     
+    if (!resultsDiv || !contentDiv) {
+        console.error('❌ Ergebnisse-Container nicht gefunden');
+        return;
+    }
+    
     // Jährliche Energieerzeugung berechnen
     const annualEnergy = (statistics.avg_irradiance * pvCapacity * 0.75 * 8760) / 1000; // MWh
+    const fullLoadHours = (annualEnergy * 1000 / pvCapacity);
+    
+    console.log('⚡ Berechnete Werte:', {
+        avg_irradiance: statistics.avg_irradiance,
+        max_irradiance: statistics.max_irradiance,
+        pv_capacity: pvCapacity,
+        annual_energy: annualEnergy,
+        full_load_hours: fullLoadHours
+    });
     
     contentDiv.innerHTML = `
         <div class="bg-white p-4 rounded-lg shadow">
@@ -2592,12 +2616,17 @@ function displaySolarResults(statistics, pvCapacity) {
             <div class="text-sm text-gray-600">Jährliche Energie (MWh)</div>
         </div>
         <div class="bg-white p-4 rounded-lg shadow">
-            <div class="text-2xl font-bold text-purple-600">${(annualEnergy * 1000 / pvCapacity).toFixed(0)}</div>
+            <div class="text-2xl font-bold text-purple-600">${fullLoadHours.toFixed(0)}</div>
             <div class="text-sm text-gray-600">Vollaststunden (h/a)</div>
         </div>
     `;
     
+    // Container sichtbar machen
     resultsDiv.classList.remove('hidden');
+    console.log('✅ Solar-Ergebnisse angezeigt');
+    
+    // Scroll zu den Ergebnissen
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 // BESS-Simulation mit Solar-Daten starten

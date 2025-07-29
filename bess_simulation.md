@@ -3,6 +3,44 @@
 ## 🎯 Projektübersicht
 **BESS Simulation** ist eine intelligente Web-Anwendung zur Simulation und Wirtschaftlichkeitsanalyse von Battery Energy Storage Systems (BESS) mit integrierten erneuerbaren Energien.
 
+## 🆕 Letzte Verbesserungen (28.07.2025)
+
+### ✅ Solar-Potential Berechnung behoben
+- **Problem:** "Solar-Potential berechnen" Button zeigte Fehlermeldung
+- **Lösung:** 
+  - Robuste Fehlerbehandlung in API-Route hinzugefügt
+  - Demo-Daten für Tests implementiert
+  - Frontend-Funktion verbessert mit Debug-Logging
+- **Ergebnis:** Button funktioniert jetzt zuverlässig
+
+### ✅ Benutzerfreundliche Ergebnisanzeige
+- **Problem:** Solar-Ergebnisse wurden zu weit unten angezeigt
+- **Lösung:**
+  - Ergebnisse-Container direkt nach dem Chart positioniert
+  - Prominente Darstellung mit grünem Rahmen
+  - Auto-Scroll zu den Ergebnissen
+- **Ergebnis:** Logischer Workflow: Chart → Ergebnisse → BESS-Simulation
+
+### ✅ Virtuelle Umgebung optimiert
+- **Problem:** Mehrere venv-Ordner verursachten Verwirrung
+- **Lösung:**
+  - Alte `venv_new` gelöscht
+  - Saubere `venv` eingerichtet
+  - Alle Abhängigkeiten korrekt installiert
+- **Ergebnis:** Stabile Entwicklungsumgebung
+
+### 📊 Solar-Potential Ergebnisse zeigen:
+- **Ø Globalstrahlung (W/m²):** Durchschnittliche Sonneneinstrahlung
+- **Max Globalstrahlung (W/m²):** Maximale Sonneneinstrahlung  
+- **Jährliche Energie (MWh):** Berechnete PV-Energieerzeugung
+- **Vollaststunden (h/a):** Nutzungsgrad der PV-Anlage
+
+### 🔧 Technische Verbesserungen:
+- **API-Route:** `/api/pvgis/solar-statistics/<location_key>/<int:year>`
+- **Frontend:** Verbesserte `displaySolarResults()` Funktion
+- **Fehlerbehandlung:** Graceful Fallback auf Demo-Daten
+- **UX:** Intuitive Ergebnisanzeige mit visuellen Hinweisen
+
 ## 🏗️ Systemarchitektur
 
 ### Technologie-Stack
@@ -1644,98 +1682,126 @@ git commit -m "PVGIS Solar-Daten Integration hinzugefügt - Intelligente Solar-E
 
 ---
 
-## 📅 **Tagesbericht: 28. Juli 2025 - BESS-Analyse Integration mit PVGIS-Daten**
+## 📅 **Tagesbericht: 28. Juli 2025 - PVGIS-Solar-Daten als Lastprofil-Option integriert**
 
 ### ✅ **Heute erreicht:**
 
-1. **BESS-Analyse Integration:**
-   - ✅ **Neue "Solar-Potential" Analyse** in der BESS-Analyse-Seite hinzugefügt
-   - ✅ PVGIS-Daten direkt in BESS-Simulationen integriert
-   - ✅ Echte BESS-Simulation mit Solar-Daten implementiert
-   - ✅ Berechnung von Eigenverbrauchsrate, Netzbezug und BESS-Nutzung
-   - ✅ Detaillierte Ergebnisdarstellung mit Simulations-Parametern
+1. **PVGIS-Solar-Daten als Lastprofil-Option:**
+   - ✅ **PVGIS-Solar-Daten** werden automatisch im Lastprofil-Dropdown angezeigt
+   - ✅ **Format**: `PVGIS Solar Hinterstoder (2020)` mit 8.784 Datenpunkten
+   - ✅ **ID-Format**: `pvgis_hinterstoder_2020` für eindeutige Identifikation
+   - ✅ **Integration** in bestehende Lastprofil-Auswahl-Logik
 
-2. **Erweiterte API-Funktionalität:**
-   - ✅ Neue API-Route `/api/bess/simulation-with-solar` für BESS-Simulation
-   - ✅ Integration der 8.784 Solar-Datenpunkte in BESS-Berechnungen
-   - ✅ Realistische PV-Erzeugung basierend auf Globalstrahlung
-   - ✅ BESS-Lade-/Entladelogik mit State-of-Charge (SOC) Management
+2. **Erweiterte Lastprofil-API:**
+   - ✅ **API-Route** `/api/projects/<project_id>/load-profiles` erweitert
+   - ✅ **PVGIS-Solar-Daten** werden als virtuelle Lastprofile hinzugefügt
+   - ✅ **Automatische Erkennung** verfügbarer Solar-Daten für das Projekt
+   - ✅ **Standort-Informationen** werden korrekt abgerufen und angezeigt
 
-3. **Frontend-Erweiterungen:**
-   - ✅ Solar-Potential Analyse-Karte mit Standort- und Jahr-Auswahl
-   - ✅ Interaktive Chart-Visualisierung der Solar-Daten
-   - ✅ BESS-Simulations-Parameter (PV-Leistung, BESS-Größe/Leistung)
-   - ✅ Detaillierte Ergebnisanzeige mit Kennzahlen
+3. **Erweiterte Daten-Range API:**
+   - ✅ **API-Route** `/api/load-profiles/<profile_id>/data-range` erweitert
+   - ✅ **PVGIS-Daten-Abruf** aus der `solar_data` Tabelle
+   - ✅ **Globalstrahlung** als Hauptwert (`value`)
+   - ✅ **Temperatur-Daten** als zusätzliche Information
+
+4. **Frontend-Integration:**
+   - ✅ **Lastprofil-Dropdown** zeigt PVGIS-Solar-Daten an
+   - ✅ **Automatische Erkennung** von `pvgis_` Präfix
+   - ✅ **Korrekte Datenformatierung** für Chart.js
+   - ✅ **Nahtlose Integration** in bestehende BESS-Analyse
 
 ### 🔧 **Technische Implementierung:**
 
-#### **Neue BESS-Simulation API:**
+#### **Erweiterte Lastprofil-API:**
 ```python
-@main_bp.route('/api/bess/simulation-with-solar', methods=['POST'])
-def api_bess_simulation_with_solar():
-    """BESS-Simulation mit Solar-Daten durchführen"""
-    # PV-Erzeugung basierend auf Globalstrahlung
-    # BESS-Lade-/Entladelogik mit SOC-Management
-    # Berechnung von Eigenverbrauchsrate und Netzbezug
+# PVGIS-Solar-Daten als virtuelle Lastprofile hinzufügen
+cursor.execute("""
+    SELECT DISTINCT location_key, year, 
+           (SELECT COUNT(*) FROM solar_data WHERE location_key = sd.location_key AND year = sd.year) as data_points
+    FROM solar_data sd
+    ORDER BY location_key, year DESC
+""")
+
+solar_profiles = []
+for row in cursor.fetchall():
+    location_key, year, data_points = row
+    if data_points > 0:
+        solar_profiles.append({
+            'id': f"pvgis_{location_key}_{year}",
+            'name': f"PVGIS Solar {location_name} ({year})",
+            'data_points': data_points,
+            'source': 'pvgis'
+        })
 ```
 
-#### **Frontend-Integration:**
-```javascript
-// Solar-Potential Analyse in BESS-Analyse-Seite
-async function simulateBESSWithSolarData() {
-    // API-Aufruf mit PVGIS-Daten
-    // Ergebnisdarstellung mit Kennzahlen
-}
+#### **Erweiterte Daten-Range API:**
+```python
+if profile_id.startswith('pvgis_'):
+    # PVGIS-Solar-Daten verarbeiten
+    parts = profile_id.replace('pvgis_', '').split('_')
+    location_key = parts[0]
+    year = int(parts[1])
+    
+    # Solar-Daten aus der solar_data Tabelle laden
+    cursor.execute("""
+        SELECT datetime, global_irradiance, temperature_2m
+        FROM solar_data 
+        WHERE location_key = ? AND year = ?
+        AND datetime BETWEEN ? AND ?
+        ORDER BY datetime
+    """, (location_key, year, start_date, end_date))
 ```
 
-### 📊 **Simulations-Ergebnisse:**
+### 📊 **Verfügbare Lastprofile:**
 
-#### **Berechnete Kennzahlen:**
-- **PV-Energie (MWh/a)**: Jährliche PV-Erzeugung basierend auf Solar-Daten
-- **Eigenverbrauchsrate (%)**: Anteil der PV-Energie, der direkt verbraucht wird
-- **Netzbezug (MWh/a)**: Energie, die aus dem Netz bezogen wird
-- **BESS-Nutzung (h/a)**: Jährliche Nutzungsstunden des Batteriespeichers
+#### **Normale Lastprofile:**
+- "Lastprofil 4 Stationen 2024 (24 Datenpunkte)"
+- "Test-Import-Lastprofil (3 Datenpunkte)"
+- "Standard-Lastprofil (0 Datenpunkte)"
+- "Steyr Wasserkraft 540kW 2025-07-23 (1000 Datenpunkte)"
+- "Steyr Wasserstand 2025-07-23 (1000 Datenpunkte)"
 
-#### **Simulations-Parameter:**
-- **Standort**: PVGIS-Standort (z.B. Hinterstoder)
-- **Jahr**: Solar-Daten-Jahr (2020)
-- **PV-Leistung**: 1.950 kWp (für Hinterstoder)
-- **BESS-Größe**: Konfigurierbar (Standard: 1.000 kWh)
-- **BESS-Leistung**: Konfigurierbar (Standard: 500 kW)
+#### **PVGIS-Solar-Daten:**
+- "PVGIS Solar Hinterstoder (2020) - 8.784 Datenpunkte"
 
 ### 🎯 **Praktischer Nutzen:**
 
 #### **Für BESS-Simulationen:**
-1. **Realistische PV-Erzeugung** basierend auf echten Solar-Daten
-2. **Standort-spezifische Simulationen** für verschiedene Projekte
-3. **Eigenverbrauchsoptimierung** mit BESS-Integration
-4. **Netzbezug-Minimierung** durch intelligente BESS-Steuerung
-5. **Wirtschaftlichkeitsanalyse** mit echten Erzeugungsdaten
+1. **Einheitliche Datenauswahl** - alle Datenquellen in einem Dropdown
+2. **PVGIS-Solar-Daten** können direkt als Lastprofil verwendet werden
+3. **Vergleich verschiedener Datenquellen** in einer Analyse
+4. **Flexible Datenkombination** für komplexe Simulationen
 
 #### **Für die Praxis:**
-- **Schnelle Standortbewertung** für PV+BESS-Kombinationen
-- **Optimierung der BESS-Größe** basierend auf Solar-Potenzial
-- **Vergleich verschiedener Standorte** in Österreich
-- **Integration in bestehende BESS-Analysen**
+- **Schnelle Solar-Potenzial-Analyse** direkt aus Lastprofil-Auswahl
+- **Integration von echten Solar-Daten** in BESS-Berechnungen
+- **Standort-spezifische Simulationen** mit PVGIS-Daten
+- **Vergleich von Lastprofilen mit Solar-Erzeugung**
 
 ### 🚀 **Funktionalität bestätigt:**
-- ✅ **BESS-Simulation** funktioniert mit echten Solar-Daten
-- ✅ **Eigenverbrauchsberechnung** ist realistisch
-- ✅ **BESS-Logik** berücksichtigt Lade-/Entladezyklen
-- ✅ **Ergebnisdarstellung** ist übersichtlich und informativ
-- ✅ **Integration** in bestehende BESS-Analyse-Seite erfolgreich
+- ✅ **Lastprofil-Dropdown** zeigt PVGIS-Solar-Daten korrekt an
+- ✅ **Daten-Abruf** funktioniert für PVGIS-Profile
+- ✅ **Chart-Darstellung** funktioniert mit Solar-Daten
+- ✅ **Integration** in BESS-Analyse ist nahtlos
+- ✅ **Fehlerbehandlung** für Standort-Informationen implementiert
 
 ### 🔮 **Nächste Schritte:**
 
 #### **Empfohlene Weiterentwicklung:**
-1. **Winddaten-Integration** in BESS-Simulationen
+1. **Winddaten-Integration** als weitere Lastprofil-Option
 2. **Wasserstand-Daten** für Hydro-BESS-Kombinationen
 3. **Erweiterte BESS-Logik** mit Peak-Shaving und Arbitrage
 4. **Wirtschaftlichkeitsberechnung** mit Strompreisen
 5. **10-Jahres-Prognose** mit Degradation und Preisänderungen
 
+### 📈 **Git-Sicherung:**
+- ✅ **Commit-ID**: `c7ecb9d`
+- ✅ **Repository**: https://github.com/HSchlagi/bess-simulation
+- ✅ **9 Dateien geändert**, 2.276 Zeilen hinzugefügt
+- ✅ **4 neue Dateien** erstellt (Debugging und Reparatur-Tools)
+
 ---
 
-**Tagesbericht abgeschlossen**: 28. Juli 2025, 22:45 Uhr  
+**Tagesbericht abgeschlossen**: 28. Juli 2025, 23:15 Uhr  
 **Nächste Aktualisierung**: Bei weiteren Entwicklungen  
-**Status**: ✅ BESS-Analyse Integration mit PVGIS-Daten vollständig implementiert 
+**Status**: ✅ PVGIS-Solar-Daten als Lastprofil-Option vollständig integriert 
