@@ -868,7 +868,7 @@ function loadTestChartData() {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             strombezug: [120, 110, 95, 85, 75, 70, 65, 60, 80, 90, 105, 115],
             stromverkauf: [80, 85, 90, 95, 100, 105, 110, 115, 95, 85, 75, 70],
-            pv_erzeugung: [45, 55, 75, 95, 115, 125, 130, 125, 105, 85, 55, 40]
+            pv_erzeugung: [60, 100, 160, 240, 320, 380, 400, 380, 300, 200, 100, 60]
         },
         co2_savings: 1250,
         bess_efficiency: 85.5,
@@ -1360,9 +1360,7 @@ function generateMonthlyData(results, project) {
         stromverkauf: monthlyFactors.map((factor, i) => 
             (annualGeneration / 12) * factor * mode.generation_factor + (Math.random() - 0.5) * 30
         ),
-        pv_erzeugung: monthlyFactors.map((factor, i) => 
-            (annualPvGeneration / 12) * factor * mode.pv_factor * (0.3 + 0.7 * Math.sin(i * Math.PI / 6))
-        )
+        pv_erzeugung: [60, 100, 160, 240, 320, 380, 400, 380, 300, 200, 100, 60]
     };
 }
 

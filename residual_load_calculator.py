@@ -282,10 +282,20 @@ def create_sample_data() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         hour = ts.hour + ts.minute / 60
         day_of_year = ts.timetuple().tm_yday
         
-        # Jahresverlauf (Sommer/Winter)
-        seasonal_factor = 0.3 + 0.7 * np.sin(np.pi * (day_of_year - 172) / 365)
+        # Jahresverlauf (Sommer/Winter) - REALISTISCH KORRIGIERT
+        # Asymmetrische Funktion basierend auf realer Sonneneinstrahlung in Österreich
+        # Keine Sinus-Form, sondern realistische saisonale Faktoren
         
-        # Tagesverlauf (Sinus-Kurve)
+        # Monatliche Faktoren basierend auf realer Sonneneinstrahlung
+        monthly_factors = {
+            1: 0.15, 2: 0.25, 3: 0.40, 4: 0.60, 5: 0.80, 6: 0.95,   # Winter zu Sommer
+            7: 1.00, 8: 0.95, 9: 0.75, 10: 0.50, 11: 0.25, 12: 0.15  # Sommer zu Winter
+        }
+        
+        month = ts.month
+        seasonal_factor = monthly_factors.get(month, 0.5)
+        
+        # Tagesverlauf (Sinus-Kurve) - bleibt gleich
         if 6 <= hour <= 18:
             daily_factor = np.sin(np.pi * (hour - 6) / 12)
         else:

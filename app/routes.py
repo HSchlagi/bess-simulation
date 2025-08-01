@@ -4057,6 +4057,9 @@ def api_run_simulation():
         roi_percent = min(roi_percent, 50.0)  # Maximal 50% ROI
         payback_years = min(payback_years, 20.0)  # Maximal 20 Jahre Amortisation
         
+        # MONATLICHE DATEN FÜR DASHBOARD-CHART
+        monthly_data = generate_monthly_chart_data(use_case, annual_consumption, annual_pv_generation, annual_hydro_generation)
+        
         simulation_result = {
             'project_id': project_id,
             'use_case': use_case,
@@ -4111,13 +4114,54 @@ def api_run_simulation():
             # Use Case Details
             'use_case_description': config['description'],
             'pv_power_mwp': config['pv_power_mwp'],
-            'hydro_power_kw': config['hydro_power_kw']
+            'hydro_power_kw': config['hydro_power_kw'],
+            
+            # MONATLICHE CHART-DATEN
+            'monthly_data': monthly_data
         }
         
         return jsonify(simulation_result)
         
     except Exception as e:
         return jsonify({'error': f'Fehler bei der Simulation: {str(e)}'}), 500
+
+def generate_monthly_chart_data(use_case, annual_consumption, annual_pv_generation, annual_hydro_generation):
+    """Generiert monatliche Chart-Daten mit korrigierter PV-Generationskurve"""
+    
+    # Monatliche Verbrauchsdaten (realistisches Lastprofil)
+    monthly_consumption = {
+        1: 420, 2: 380, 3: 360, 4: 340, 5: 320, 6: 300,  # Winter hoch, Sommer niedrig
+        7: 280, 8: 290, 9: 320, 10: 360, 11: 400, 12: 430
+    }
+    
+    # KORRIGIERTE monatliche PV-Generationsdaten (REALISTISCH)
+    # Asymmetrische Kurve basierend auf realer Sonneneinstrahlung in Österreich
+    # Keine Sinus-Form, sondern realistische saisonale Verteilung
+    monthly_pv_generation = {
+        1: 60,  2: 100, 3: 160, 4: 240, 5: 320, 6: 380,  # Winter zu Sommer (steiler Anstieg)
+        7: 400, 8: 380, 9: 300, 10: 200, 11: 100, 12: 60  # Sommer zu Winter (langsamer Abfall)
+    }
+    
+    # Monatliche Wasserkraft-Daten (konstant für UC3)
+    monthly_hydro_generation = {
+        1: 225, 2: 200, 3: 225, 4: 220, 5: 225, 6: 220,  # Leicht saisonal
+        7: 225, 8: 225, 9: 220, 10: 225, 11: 220, 12: 225
+    }
+    
+    # Skaliere auf jährliche Werte
+    consumption_scale = annual_consumption / sum(monthly_consumption.values())
+    pv_scale = annual_pv_generation / sum(monthly_pv_generation.values()) if annual_pv_generation > 0 else 0
+    hydro_scale = annual_hydro_generation / sum(monthly_hydro_generation.values()) if annual_hydro_generation > 0 else 0
+    
+    # Berechne monatliche Werte
+    monthly_data = {
+        'months': ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+        'strombezug': [round(monthly_consumption[m] * consumption_scale, 0) for m in range(1, 13)],
+        'stromverkauf': [round(max(0, monthly_pv_generation[m] * pv_scale + monthly_hydro_generation[m] * hydro_scale - monthly_consumption[m] * consumption_scale), 0) for m in range(1, 13)],
+        'pv_erzeugung': [round(monthly_pv_generation[m] * pv_scale, 0) for m in range(1, 13)]
+    }
+    
+    return monthly_data
 
 @main_bp.route('/api/simulation/10-year-analysis', methods=['POST'])
 def api_10_year_analysis():
