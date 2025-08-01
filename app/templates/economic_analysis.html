@@ -457,15 +457,29 @@ function runAnalysis() {
     console.log(`🚀 Starte ${analysisType} Analyse für Projekt ${currentProjectId}`);
     
     fetch(url)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             showLoading(false);
-            displayAnalysisResults(data, analysisType);
+            console.log('📊 Analyse-Daten erhalten:', data);
+            
+            // Prüfe ob erweiterte Analyse verfügbar ist
+            if (data.enhanced_analysis && data.enhanced_analysis.error) {
+                console.warn('⚠️ Erweiterte Analyse nicht verfügbar:', data.enhanced_analysis.error);
+                // Trotzdem normale Analyse anzeigen
+                displayAnalysisResults(data, analysisType);
+            } else {
+                displayAnalysisResults(data, analysisType);
+            }
         })
         .catch(error => {
             showLoading(false);
-            console.error('Fehler bei der Analyse:', error);
-            showNotification('Fehler bei der Wirtschaftlichkeitsanalyse', 'error');
+            console.error('❌ Fehler bei der Analyse:', error);
+            showNotification('Fehler bei der Wirtschaftlichkeitsanalyse: ' + error.message, 'error');
         });
 }
 
@@ -548,6 +562,11 @@ function displayAnalysisResults(data, analysisType) {
         document.getElementById('cashFlowChart').getContext('2d').clearRect(0,0,400,400);
         document.getElementById('roiChart').getContext('2d').clearRect(0,0,400,400);
     }
+    // Erweiterte Analyse anzeigen (falls verfügbar) - vor dem Export-Bereich
+    if (data.enhanced_analysis && !data.enhanced_analysis.error) {
+        displayEnhancedAnalysis(data.enhanced_analysis);
+    }
+    
     // Analysetyp-spezifische Benachrichtigung
     const analysisNames = {
         'quick': 'Schnellanalyse',
@@ -867,6 +886,135 @@ function formatCurrency(amount) {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);
+}
+
+function displayEnhancedAnalysis(enhancedData) {
+    console.log('🚀 Zeige erweiterte Analyse:', enhancedData);
+    
+    // Erstelle oder aktualisiere erweiterte Analyse Sektion
+    let enhancedSection = document.getElementById('enhancedAnalysisSection');
+    if (!enhancedSection) {
+        enhancedSection = document.createElement('div');
+        enhancedSection.id = 'enhancedAnalysisSection';
+        enhancedSection.className = 'bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8';
+        
+        // Füge die Sektion direkt nach den Key Metrics ein (vor dem Export-Bereich)
+        const analysisResults = document.getElementById('analysisResults');
+        const allSections = analysisResults.querySelectorAll('.bg-white.rounded-xl.shadow-lg.border.border-gray-200.p-6');
+        let exportSection = null;
+        
+        // Finde den Export-Bereich
+        for (let section of allSections) {
+            const h3 = section.querySelector('h3');
+            if (h3 && h3.textContent.includes('Bericht exportieren')) {
+                exportSection = section;
+                break;
+            }
+        }
+        
+        if (exportSection) {
+            analysisResults.insertBefore(enhancedSection, exportSection);
+        } else {
+            // Fallback: Füge am Ende hinzu
+            analysisResults.appendChild(enhancedSection);
+        }
+    }
+    
+    // Use Cases Vergleich
+    if (enhancedData.use_cases_summary) {
+        let useCasesHTML = `
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Use Cases Vergleich</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        `;
+        
+        Object.entries(enhancedData.use_cases_summary).forEach(([useCaseName, useCaseData]) => {
+            const annualBalance = useCaseData.annual_balance;
+            const efficiencyMetrics = useCaseData.efficiency_metrics;
+            
+            useCasesHTML += `
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <h4 class="font-semibold text-gray-900 mb-2">${useCaseName}</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">ROI:</span>
+                            <span class="font-medium ${annualBalance.cumulative_roi > 0 ? 'text-green-600' : 'text-red-600'}">
+                                ${annualBalance.cumulative_roi.toFixed(1)}%
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Netto-Cashflow:</span>
+                            <span class="font-medium">${formatCurrency(annualBalance.net_cashflow)}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Energieneutralität:</span>
+                            <span class="font-medium">${useCaseData.energy_neutrality.toFixed(1)}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Effizienz:</span>
+                            <span class="font-medium">${efficiencyMetrics.average_efficiency.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        useCasesHTML += `</div>`;
+        enhancedSection.innerHTML = useCasesHTML;
+    }
+    
+    // Empfehlungen
+    if (enhancedData.recommendations) {
+        const recommendations = enhancedData.recommendations;
+        let recommendationsHTML = `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h4 class="font-semibold text-blue-900 mb-2">💡 CursorAI-Empfehlungen</h4>
+                <div class="space-y-2">
+                    <div class="flex items-center">
+                        <span class="text-blue-600 mr-2">🏆</span>
+                        <span class="text-sm"><strong>Empfohlener Use Case:</strong> ${recommendations.recommended_use_case}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="text-blue-600 mr-2">💰</span>
+                        <span class="text-sm"><strong>Investment-Empfehlung:</strong> ${recommendations.investment_recommendation}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="text-blue-600 mr-2">✅</span>
+                        <span class="text-sm"><strong>Vorteile:</strong> ${recommendations.key_advantages.join(', ')}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        enhancedSection.innerHTML += recommendationsHTML;
+    }
+    
+    // Vergleichsmetriken
+    if (enhancedData.comparison_metrics) {
+        const metrics = enhancedData.comparison_metrics;
+        let metricsHTML = `
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="font-semibold text-green-900 mb-2">📊 Vergleichsmetriken</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Beste ROI:</span>
+                        <span class="font-medium text-green-600 ml-2">${metrics.best_roi.toFixed(1)}%</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Bester Use Case:</span>
+                        <span class="font-medium ml-2">${metrics.best_use_case}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Gesamterlös:</span>
+                        <span class="font-medium ml-2">${formatCurrency(metrics.total_comparison.total_revenue)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        enhancedSection.innerHTML += metricsHTML;
+    }
+    
+    showNotification('✅ Erweiterte CursorAI-Analyse erfolgreich geladen!', 'success');
 }
 
 function showNotification(message, type) {

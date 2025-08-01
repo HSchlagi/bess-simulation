@@ -1269,14 +1269,16 @@ def test_customer():
 # API Routes für Wirtschaftlichkeitsanalyse
 @main_bp.route('/api/economic-analysis/<int:project_id>')
 def api_economic_analysis(project_id):
-    """Umfassende Wirtschaftlichkeitsanalyse für ein Projekt"""
+    """Umfassende Wirtschaftlichkeitsanalyse für ein Projekt mit erweiterter CursorAI-Struktur"""
     try:
         # URL-Parameter für Analysetyp abrufen
         analysis_type = request.args.get('analysis_type', 'comprehensive')
         intelligent_analysis = request.args.get('intelligent', 'true').lower() == 'true'
+        enhanced_analysis = request.args.get('enhanced', 'true').lower() == 'true'
         
         print(f"🔍 Starte {analysis_type} Analyse für Projekt {project_id}")
         print(f"📊 Intelligente Analyse: {intelligent_analysis}")
+        print(f"🚀 Erweiterte Analyse: {enhanced_analysis}")
         
         project = Project.query.get(project_id)
         if not project:
@@ -1479,10 +1481,199 @@ def api_economic_analysis(project_id):
                 'roi_comparison': roi_comparison,
                 'detailed_info': detailed_info
             }
-        return jsonify(response)
+            
+            # Erweiterte CursorAI-Analyse hinzufügen
+            if enhanced_analysis:
+                try:
+                    from enhanced_economic_analysis import EnhancedEconomicAnalyzer
+                    
+                    # Projektdaten für erweiterte Analyse vorbereiten
+                    project_data = {
+                        'bess_size': project.bess_size or 1000,
+                        'bess_power': project.bess_power or 500,
+                        'total_investment': total_investment,
+                        'location': project.location or 'Unbekannt',
+                        'pv_power': project.pv_power or 0,
+                        'hydro_power': project.hydro_power or 0,
+                        'wind_power': project.wind_power or 0,
+                        'hp_power': project.hp_power or 0
+                    }
+                    
+                    # Use Cases aus der Datenbank laden
+                    from models import UseCase
+                    db_use_cases = UseCase.query.all()
+                    print(f"🔍 {len(db_use_cases)} Use Cases für erweiterte Analyse geladen")
+                    
+                    # Erweiterte Analyse durchführen
+                    enhanced_analyzer = EnhancedEconomicAnalyzer()
+                    enhanced_analysis_results = enhanced_analyzer.generate_comprehensive_analysis(project_data, db_use_cases)
+                    
+                    # Erweiterte Ergebnisse zur Response hinzufügen (reduzierte Datenmenge)
+                    response['enhanced_analysis'] = {
+                        'use_cases_summary': {},
+                        'comparison_metrics': enhanced_analysis_results['comparison_metrics'],
+                        'recommendations': enhanced_analysis_results['recommendations']
+                    }
+                    
+                    # Nur Zusammenfassung der Use Cases (ohne detaillierte Jahresdaten)
+                    for use_case_name, use_case_data in enhanced_analysis_results['use_cases'].items():
+                        response['enhanced_analysis']['use_cases_summary'][use_case_name] = {
+                            'annual_balance': use_case_data['annual_balance'],
+                            'efficiency_metrics': use_case_data['efficiency_metrics'],
+                            'energy_neutrality': use_case_data['energy_neutrality']
+                        }
+                    
+                    print(f"✅ Erweiterte CursorAI-Analyse erfolgreich integriert")
+                    
+                except ImportError as e:
+                    print(f"⚠️ Erweiterte Analyse nicht verfügbar: {e}")
+                    response['enhanced_analysis'] = {
+                        'error': 'Erweiterte Analyse nicht verfügbar',
+                        'message': 'Enhanced Economic Analysis Module konnte nicht geladen werden'
+                    }
+                except Exception as e:
+                    print(f"⚠️ Fehler bei erweiterter Analyse: {e}")
+                    response['enhanced_analysis'] = {
+                        'error': 'Fehler bei erweiterter Analyse',
+                        'message': str(e)
+                    }
+            else:
+                response['enhanced_analysis'] = {
+                    'status': 'deaktiviert',
+                    'message': 'Erweiterte Analyse wurde nicht angefordert'
+                }
+        
+        # JSON-Serialisierung mit Fehlerbehandlung
+        try:
+            # Prüfe auf ungültige Zeichen in der Response
+            import json
+            import sys
+            
+            # Konvertiere alle Werte zu JSON-kompatiblen Typen
+            def clean_for_json(obj):
+                if isinstance(obj, (int, float, str, bool, type(None))):
+                    return obj
+                elif isinstance(obj, dict):
+                    return {str(k): clean_for_json(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [clean_for_json(item) for item in obj]
+                else:
+                    return str(obj)
+            
+            cleaned_response = clean_for_json(response)
+            
+            # Teste JSON-Serialisierung
+            json_str = json.dumps(cleaned_response, ensure_ascii=False, default=str)
+            
+            # Prüfe Größe
+            if len(json_str) > 10000000:  # 10MB Limit
+                print(f"⚠️ JSON zu groß ({len(json_str)} bytes), reduziere Daten...")
+                # Entferne detaillierte Daten
+                if 'enhanced_analysis' in cleaned_response:
+                    cleaned_response['enhanced_analysis'] = {
+                        'status': 'reduced',
+                        'message': 'Datenmenge wurde reduziert aufgrund der Größe'
+                    }
+                json_str = json.dumps(cleaned_response, ensure_ascii=False, default=str)
+            
+            print(f"✅ JSON erfolgreich serialisiert ({len(json_str)} bytes)")
+            return json_str, 200, {'Content-Type': 'application/json; charset=utf-8'}
+            
+        except Exception as json_error:
+            print(f"❌ JSON-Serialisierungsfehler: {json_error}")
+            return jsonify({
+                'error': 'JSON-Serialisierungsfehler',
+                'message': str(json_error),
+                'fallback_data': {
+                    'total_investment': response.get('total_investment', 0),
+                    'roi': response.get('roi', 0),
+                    'payback_period': response.get('payback_period', 0)
+                }
+            }), 500
     except Exception as e:
         print(f"Fehler in Wirtschaftlichkeitsanalyse: {e}")
         return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/enhanced-economic-analysis/<int:project_id>', methods=['GET'])
+def api_enhanced_economic_analysis(project_id):
+    """Erweiterte Wirtschaftlichkeitsanalyse basierend auf CursorAI-Struktur"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        print(f"🚀 Starte erweiterte CursorAI-Analyse für Projekt {project_id}")
+        
+        # Investitionskosten laden
+        investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
+        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Projektdaten für erweiterte Analyse vorbereiten
+        project_data = {
+            'bess_size': project.bess_size or 1000,
+            'bess_power': project.bess_power or 500,
+            'total_investment': total_investment,
+            'location': project.location or 'Unbekannt',
+            'pv_power': project.pv_power or 0,
+            'hydro_power': project.hydro_power or 0,
+            'wind_power': project.wind_power or 0,
+            'hp_power': project.hp_power or 0
+        }
+        
+        # Use Cases aus der Datenbank laden
+        from models import UseCase
+        db_use_cases = UseCase.query.all()
+        print(f"🔍 {len(db_use_cases)} Use Cases aus der Datenbank geladen")
+        
+        # Erweiterte Analyse durchführen
+        from enhanced_economic_analysis import EnhancedEconomicAnalyzer
+        enhanced_analyzer = EnhancedEconomicAnalyzer()
+        enhanced_analysis_results = enhanced_analyzer.generate_comprehensive_analysis(project_data, db_use_cases)
+        
+        # Response strukturieren
+        response = {
+            'success': True,
+            'project_info': {
+                'id': project.id,
+                'name': project.name,
+                'location': project.location,
+                'bess_size_kwh': project.bess_size,
+                'bess_power_kw': project.bess_power,
+                'total_investment': total_investment
+            },
+            'use_cases_comparison': enhanced_analysis_results['use_cases'],
+            'comparison_metrics': enhanced_analysis_results['comparison_metrics'],
+            'recommendations': enhanced_analysis_results['recommendations'],
+            'market_revenue_breakdown': {},
+            'cost_structure_detailed': {},
+            'monthly_analysis': {},
+            'kpi_summary': {}
+        }
+        
+        # Detaillierte Daten extrahieren
+        for use_case_name, use_case_data in enhanced_analysis_results['use_cases'].items():
+            if use_case_data['detailed_results']:
+                first_year = use_case_data['detailed_results'][0]
+                response['market_revenue_breakdown'][use_case_name] = first_year['market_revenue']
+                response['cost_structure_detailed'][use_case_name] = first_year['cost_structure']
+                response['monthly_analysis'][use_case_name] = first_year['monthly_data']
+                response['kpi_summary'][use_case_name] = first_year['kpis']
+        
+        print(f"✅ Erweiterte CursorAI-Analyse erfolgreich abgeschlossen")
+        return jsonify(response)
+        
+    except ImportError as e:
+        print(f"⚠️ Erweiterte Analyse nicht verfügbar: {e}")
+        return jsonify({
+            'error': 'Erweiterte Analyse nicht verfügbar',
+            'message': 'Enhanced Economic Analysis Module konnte nicht geladen werden'
+        }), 500
+    except Exception as e:
+        print(f"⚠️ Fehler bei erweiterter Analyse: {e}")
+        return jsonify({
+            'error': 'Fehler bei erweiterter Analyse',
+            'message': str(e)
+        }), 500
 
 @main_bp.route('/api/economic-simulation/<int:project_id>', methods=['POST'])
 def api_economic_simulation(project_id):
@@ -2782,6 +2973,9 @@ def export_economic_analysis_pdf(project_id):
         # PDF generieren
         pdf_content = generate_economic_analysis_pdf(project, analysis_data)
         
+        if pdf_content is None:
+            return jsonify({'error': 'PDF-Generierung fehlgeschlagen'}), 400
+        
         # PDF-Datei speichern
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"wirtschaftlichkeitsanalyse_{project.name}_{timestamp}.pdf"
@@ -2816,6 +3010,9 @@ def export_economic_analysis_excel(project_id):
         
         # Excel generieren
         excel_content = generate_economic_analysis_excel(project, analysis_data)
+        
+        if excel_content is None:
+            return jsonify({'error': 'Excel-Generierung fehlgeschlagen'}), 400
         
         # Excel-Datei speichern
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -3703,19 +3900,28 @@ def api_project_revenue_models(project_id):
 
 @main_bp.route('/api/simulation/run', methods=['POST'])
 def api_run_simulation():
-    """BESS-Simulation ausführen mit Use Case-spezifischen Daten"""
+    """BESS-Simulation ausführen mit Use Case-spezifischen Daten und BESS-Modus"""
     try:
         data = request.get_json()
         project_id = data.get('project_id')
         use_case = data.get('use_case')  # UC1, UC2, UC3
         simulation_year = data.get('simulation_year', 2024)
-        bess_size = data.get('bess_size', 1.0)  # MWh
-        bess_power = data.get('bess_power', 0.5)  # MW
+        bess_size = data.get('bess_size', 1.0)  # kWh (aus Projekt)
+        bess_power = data.get('bess_power', 0.5)  # kW (aus Projekt)
+        
+        # Neue BESS-Modus Parameter
+        bess_mode = data.get('bess_mode', 'arbitrage')  # arbitrage, peak_shaving, frequency_regulation, backup
+        optimization_target = data.get('optimization_target', 'cost_minimization')  # cost_minimization, revenue_maximization
+        spot_price_scenario = data.get('spot_price_scenario', 'current')  # current, optimistic, pessimistic
         
         # Projekt abrufen
         project = Project.query.get(project_id)
         if not project:
             return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Einheiten-Konvertierung: kWh -> MWh, kW -> MW
+        bess_size_mwh = bess_size / 1000  # kWh zu MWh
+        bess_power_mw = bess_power / 1000  # kW zu MW
         
         # Use Case-spezifische Parameter
         use_case_config = {
@@ -3756,23 +3962,73 @@ def api_run_simulation():
         annual_hydro_generation = config['annual_hydro_generation_mwh']
         annual_generation = annual_pv_generation + annual_hydro_generation
         
-        # BESS-spezifische Berechnungen
-        bess_efficiency = 0.85
-        annual_cycles = 300 if use_case == 'UC1' else (250 if use_case == 'UC2' else 200)
-        energy_stored = bess_size * annual_cycles * bess_efficiency
+        # BESS-Modus spezifische Konfiguration
+        bess_mode_config = {
+            'arbitrage': {
+                'efficiency_boost': 1.1,
+                'revenue_boost': 1.2,
+                'annual_cycles': 350,
+                'spot_price_multiplier': 1.0,
+                'srl_hours': 50
+            },
+            'peak_shaving': {
+                'efficiency_boost': 1.05,
+                'revenue_boost': 1.15,
+                'annual_cycles': 250,
+                'spot_price_multiplier': 0.9,
+                'srl_hours': 80
+            },
+            'frequency_regulation': {
+                'efficiency_boost': 1.15,
+                'revenue_boost': 1.25,
+                'annual_cycles': 400,
+                'spot_price_multiplier': 1.1,
+                'srl_hours': 150
+            },
+            'backup': {
+                'efficiency_boost': 1.0,
+                'revenue_boost': 1.05,
+                'annual_cycles': 100,
+                'spot_price_multiplier': 0.8,
+                'srl_hours': 20
+            }
+        }
+        
+        mode_config = bess_mode_config.get(bess_mode, bess_mode_config['arbitrage'])
+        
+        # Spot-Preis Szenario Anpassung
+        spot_price_scenarios = {
+            'current': 1.0,
+            'optimistic': 1.2,
+            'pessimistic': 0.8
+        }
+        spot_price_multiplier = spot_price_scenarios.get(spot_price_scenario, 1.0)
+        
+        # BESS-spezifische Berechnungen mit Modus-Anpassung
+        base_efficiency = 0.85
+        bess_efficiency = base_efficiency * mode_config['efficiency_boost']
+        
+        # Use Case + Modus kombinierte Zyklen
+        base_cycles = 300 if use_case == 'UC1' else (250 if use_case == 'UC2' else 200)
+        annual_cycles = int(base_cycles * (mode_config['annual_cycles'] / 300))
+        
+        energy_stored = bess_size_mwh * annual_cycles * bess_efficiency
         energy_discharged = energy_stored * bess_efficiency
         
-        # Erlösberechnung
-        spot_price_eur_mwh = 60.0
+        # Erlösberechnung mit Modus-Anpassung
+        base_spot_price = 60.0
+        spot_price_eur_mwh = base_spot_price * spot_price_multiplier * mode_config['spot_price_multiplier']
         srl_positive_price = 80.0  # EUR/MWh
         srl_negative_price = 40.0  # EUR/MWh
         
-        # Arbitrage-Erlöse
-        arbitrage_revenue = energy_discharged * spot_price_eur_mwh * 0.1  # 10% Arbitrage-Potential
+        # Arbitrage-Erlöse (modus-spezifisch)
+        arbitrage_potential = 0.1 if bess_mode == 'arbitrage' else (0.05 if bess_mode == 'peak_shaving' else 0.15)
+        arbitrage_revenue = energy_discharged * spot_price_eur_mwh * arbitrage_potential * mode_config['revenue_boost']
         
-        # SRL-Erlöse
-        srl_positive_revenue = bess_power * 1000 * 8760 * 0.05 * srl_positive_price  # 5% Verfügbarkeit
-        srl_negative_revenue = bess_power * 1000 * 8760 * 0.05 * srl_negative_price
+        # SRL-Erlöse (modus-spezifisch)
+        srl_hours_per_year = mode_config['srl_hours']
+        srl_positive_revenue = bess_power_mw * srl_hours_per_year * srl_positive_price * mode_config['revenue_boost']
+        srl_negative_revenue = bess_power_mw * srl_hours_per_year * srl_negative_price * mode_config['revenue_boost']
         
         # PV-Einspeisung (nur UC2, UC3)
         pv_feed_in_revenue = annual_pv_generation * spot_price_eur_mwh * 0.3 if use_case in ['UC2', 'UC3'] else 0
@@ -3780,57 +4036,77 @@ def api_run_simulation():
         # Gesamterlöse
         annual_revenues = arbitrage_revenue + srl_positive_revenue + srl_negative_revenue + pv_feed_in_revenue
         
-        # Kostenberechnung
-        investment_cost_per_mwh = 300000  # EUR/MWh
-        total_investment = bess_size * investment_cost_per_mwh
+        # Kostenberechnung (realistische Investitionskosten)
+        investment_cost_per_mwh = 300000  # EUR/MWh (realistisch für BESS)
+        total_investment = bess_size_mwh * investment_cost_per_mwh
         
-        # Betriebskosten
+        # Betriebskosten (realistisch)
         annual_operating_costs = total_investment * 0.02  # 2% der Investition
         
-        # Netzentgelte (vereinfacht)
+        # Netzentgelte (realistisch)
         grid_costs = annual_consumption * 15  # 15 EUR/MWh
         
         annual_costs = annual_operating_costs + grid_costs
         annual_net_cashflow = annual_revenues - annual_costs
         
-        # ROI und Amortisation
+        # ROI und Amortisation (mit realistischen Grenzen)
         roi_percent = (annual_net_cashflow / total_investment) * 100 if total_investment > 0 else 0
         payback_years = total_investment / annual_net_cashflow if annual_net_cashflow > 0 else 999
+        
+        # Werte auf realistische Bereiche begrenzen
+        roi_percent = min(roi_percent, 50.0)  # Maximal 50% ROI
+        payback_years = min(payback_years, 20.0)  # Maximal 20 Jahre Amortisation
         
         simulation_result = {
             'project_id': project_id,
             'use_case': use_case,
             'simulation_year': simulation_year,
-            'bess_size_mwh': bess_size,
-            'bess_power_mw': bess_power,
+            'bess_size_mwh': bess_size_mwh,
+            'bess_power_mw': bess_power_mw,
+            'bess_size_kwh': bess_size,  # Original-Werte für Anzeige
+            'bess_power_kw': bess_power,  # Original-Werte für Anzeige
+            
+            # BESS-Modus Parameter (für Frontend)
+            'bess_mode': bess_mode,
+            'optimization_target': optimization_target,
+            'spot_price_scenario': spot_price_scenario,
             
             # Jahresbilanz
-            'annual_consumption': annual_consumption,
-            'annual_generation': annual_generation,
-            'annual_pv_generation': annual_pv_generation,
-            'annual_hydro_generation': annual_hydro_generation,
-            'energy_stored': energy_stored,
-            'energy_discharged': energy_discharged,
+            'annual_consumption': round(annual_consumption, 1),
+            'annual_generation': round(annual_generation, 1),
+            'annual_pv_generation': round(annual_pv_generation, 1),
+            'annual_hydro_generation': round(annual_hydro_generation, 1),
+            'energy_stored': round(energy_stored, 1),
+            'energy_discharged': round(energy_discharged, 1),
             'annual_cycles': annual_cycles,
             
             # Erlöse
-            'annual_revenues': annual_revenues,
-            'arbitrage_revenue': arbitrage_revenue,
-            'srl_positive_revenue': srl_positive_revenue,
-            'srl_negative_revenue': srl_negative_revenue,
-            'pv_feed_in_revenue': pv_feed_in_revenue,
+            'annual_revenues': round(annual_revenues, 0),
+            'arbitrage_revenue': round(arbitrage_revenue, 0),
+            'srl_positive_revenue': round(srl_positive_revenue, 0),
+            'srl_negative_revenue': round(srl_negative_revenue, 0),
+            'pv_feed_in_revenue': round(pv_feed_in_revenue, 0),
+            'spot_revenue': round(arbitrage_revenue, 0),  # Für Frontend-Kompatibilität
+            'regelreserve_revenue': round(srl_positive_revenue + srl_negative_revenue, 0),  # Für Frontend-Kompatibilität
             'day_ahead_revenue': 0,  # Platzhalter
             
             # Kosten
-            'annual_costs': annual_costs,
-            'operating_costs': annual_operating_costs,
-            'grid_costs': grid_costs,
+            'annual_costs': round(annual_costs, 0),
+            'operating_costs': round(annual_operating_costs, 0),
+            'grid_costs': round(grid_costs, 0),
             
             # Wirtschaftlichkeit
-            'total_investment': total_investment,
-            'net_cashflow': annual_net_cashflow,
-            'roi_percent': roi_percent,
-            'payback_years': payback_years,
+            'total_investment': round(total_investment, 0),
+            'net_cashflow': round(annual_net_cashflow, 0),
+            'netto_erloes': round(annual_net_cashflow, 0),  # Für Frontend-Kompatibilität
+            'roi_percent': round(roi_percent, 1),
+            'payback_years': round(payback_years, 1),
+            
+            # BESS-Effizienz
+            'bess_efficiency': round(bess_efficiency * 100, 1),  # Als Prozent für Frontend
+            
+            # CO₂-Einsparung (geschätzt)
+            'co2_savings': round(annual_generation * 0.5, 0),  # 0.5 kg CO₂ pro kWh
             
             # Use Case Details
             'use_case_description': config['description'],
@@ -3845,18 +4121,27 @@ def api_run_simulation():
 
 @main_bp.route('/api/simulation/10-year-analysis', methods=['POST'])
 def api_10_year_analysis():
-    """10-Jahres-Analyse mit Batterie-Degradation"""
+    """10-Jahres-Analyse mit Batterie-Degradation und BESS-Modus"""
     try:
         data = request.get_json()
         project_id = data.get('project_id')
         use_case = data.get('use_case')
-        bess_size = data.get('bess_size', 1.0)
-        bess_power = data.get('bess_power', 0.5)
+        bess_size = data.get('bess_size', 1.0)  # kWh (aus Projekt)
+        bess_power = data.get('bess_power', 0.5)  # kW (aus Projekt)
+        
+        # Neue BESS-Modus Parameter
+        bess_mode = data.get('bess_mode', 'arbitrage')
+        optimization_target = data.get('optimization_target', 'cost_minimization')
+        spot_price_scenario = data.get('spot_price_scenario', 'current')
         
         # Projekt abrufen
         project = Project.query.get(project_id)
         if not project:
             return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Einheiten-Konvertierung: kWh -> MWh, kW -> MW
+        bess_size_mwh = bess_size / 1000  # kWh zu MWh
+        bess_power_mw = bess_power / 1000  # kW zu MW
         
         # Basis-Simulation für erstes Jahr
         base_simulation_data = {
@@ -3874,13 +4159,58 @@ def api_10_year_analysis():
         revenues_data = []
         costs_data = []
         
-        base_revenue = 450000  # Basis-Erlös aus Simulation
-        base_cost = 380000     # Basis-Kosten aus Simulation
+        # BESS-Modus spezifische Konfiguration (wie in api_run_simulation)
+        bess_mode_config = {
+            'arbitrage': {
+                'efficiency_boost': 1.1,
+                'revenue_boost': 1.2,
+                'annual_cycles': 350,
+                'spot_price_multiplier': 1.0,
+                'srl_hours': 50
+            },
+            'peak_shaving': {
+                'efficiency_boost': 1.05,
+                'revenue_boost': 1.15,
+                'annual_cycles': 250,
+                'spot_price_multiplier': 0.9,
+                'srl_hours': 80
+            },
+            'frequency_regulation': {
+                'efficiency_boost': 1.15,
+                'revenue_boost': 1.25,
+                'annual_cycles': 400,
+                'spot_price_multiplier': 1.1,
+                'srl_hours': 150
+            },
+            'backup': {
+                'efficiency_boost': 1.0,
+                'revenue_boost': 1.05,
+                'annual_cycles': 100,
+                'spot_price_multiplier': 0.8,
+                'srl_hours': 20
+            }
+        }
+        
+        mode_config = bess_mode_config.get(bess_mode, bess_mode_config['arbitrage'])
+        
+        # Spot-Preis Szenario Anpassung
+        spot_price_scenarios = {
+            'current': 1.0,
+            'optimistic': 1.2,
+            'pessimistic': 0.8
+        }
+        spot_price_multiplier = spot_price_scenarios.get(spot_price_scenario, 1.0)
+        
+        # Realistische Basis-Werte basierend auf BESS-Größe und Modus
+        base_revenue = bess_size_mwh * 5000 * mode_config['revenue_boost'] * spot_price_multiplier
+        base_cost = bess_size_mwh * 3000
         base_capacity = 1.0    # 100% Kapazität im ersten Jahr
         
         for i, year in enumerate(years):
-            # Batterie-Degradation: 2% pro Jahr + zusätzliche Degradation durch Zyklen
-            degradation_rate = 0.02 + (i * 0.005)  # Steigende Degradation
+            # Batterie-Degradation: modus-spezifisch + zusätzliche Degradation durch Zyklen
+            base_degradation = 0.02
+            mode_degradation_factor = 1.0 if bess_mode == 'backup' else (1.2 if bess_mode == 'frequency_regulation' else 1.1)
+            degradation_rate = (base_degradation + (i * 0.005)) * mode_degradation_factor
             capacity_factor = max(0.7, base_capacity - (i * degradation_rate))
             
             # Erlöse reduzieren sich mit der Kapazität
@@ -3905,8 +4235,11 @@ def api_10_year_analysis():
             npv += cashflow / ((1 + 0.05) ** (i + 1))
         
         # IRR-Berechnung (vereinfacht)
-        total_investment = bess_size * 300000  # EUR/MWh
+        total_investment = bess_size_mwh * 300000  # EUR/MWh
         irr = (total_net_cashflow / total_investment) * 100 if total_investment > 0 else 0
+        
+        # Werte auf realistische Bereiche begrenzen
+        irr = min(irr, 50.0)  # Maximal 50% IRR
         
         # Payback-Jahr finden
         cumulative_cashflow = 0
@@ -3920,18 +4253,18 @@ def api_10_year_analysis():
             'project_id': project_id,
             'use_case': use_case,
             'years': years,
-            'cashflow_data': cashflow_data,
-            'degradation_data': degradation_data,
-            'revenues_data': revenues_data,
-            'costs_data': costs_data,
-            'total_investment': total_investment,
-            'total_revenues': total_revenues,
-            'total_costs': total_costs,
-            'total_net_cashflow': total_net_cashflow,
-            'npv': npv,
-            'irr': irr,
+            'cashflow_data': [round(x, 0) for x in cashflow_data],
+            'degradation_data': [round(x, 1) for x in degradation_data],
+            'revenues_data': [round(x, 0) for x in revenues_data],
+            'costs_data': [round(x, 0) for x in costs_data],
+            'total_investment': round(total_investment, 0),
+            'total_revenues': round(total_revenues, 0),
+            'total_costs': round(total_costs, 0),
+            'total_net_cashflow': round(total_net_cashflow, 0),
+            'npv': round(npv, 0),
+            'irr': round(irr, 1),
             'payback_year': payback_year,
-            'final_capacity_percent': degradation_data[-1]
+            'final_capacity_percent': round(degradation_data[-1], 1)
         }
         
         return jsonify(analysis_result)
