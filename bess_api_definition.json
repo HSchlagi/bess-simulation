@@ -1,0 +1,375 @@
+{
+  "api_version": "2.0",
+  "title": "BESS Simulation API - Enhanced Version",
+  "description": "Erweiterte API für BESS-Simulation mit CO₂-Bilanz, saisonalen Faktoren und detaillierten Auswertungen",
+  "base_url": "/api/v2",
+  
+  "endpoints": {
+    "simulation": {
+      "run_enhanced_simulation": {
+        "method": "POST",
+        "path": "/simulation/enhanced/run",
+        "description": "Führt erweiterte BESS-Simulation mit allen neuen Features durch",
+        "request_body": {
+          "project_id": "integer",
+          "use_case": "string (UC1|UC2|UC3)",
+          "bess_enabled": "boolean",
+          "simulation_year": "integer",
+          "bess_mode": "string (arbitrage|peak_shaving|frequency_regulation|backup)",
+          "optimization_target": "string (cost_minimization|revenue_maximization)",
+          "spot_price_scenario": "string (current|optimistic|pessimistic)",
+          "include_co2_calculation": "boolean",
+          "include_seasonal_factors": "boolean",
+          "include_soc_profile": "boolean"
+        },
+        "response": {
+          "success": "boolean",
+          "simulation_id": "integer",
+          "results": {
+            "basic_metrics": {
+              "eigenverbrauchsquote": "float (%)",
+              "jahresbilanz": "float (MWh)",
+              "energieneutralitaet": "float (%)",
+              "netto_erloes": "float (EUR)"
+            },
+            "enhanced_metrics": {
+              "co2_emission_kg": "float",
+              "co2_savings_kg": "float", 
+              "netto_co2_impact": "float",
+              "spot_revenue_eur": "float",
+              "regelreserve_revenue_eur": "float",
+              "foerderung_total_eur": "float",
+              "bess_efficiency": "float",
+              "cycle_efficiency": "float",
+              "soc_avg_percent": "float"
+            },
+            "seasonal_analysis": {
+              "winter_performance_factor": "float",
+              "summer_performance_factor": "float",
+              "spring_performance_factor": "float",
+              "autumn_performance_factor": "float"
+            },
+            "monthly_breakdown": {
+              "Jan": {
+                "strombezug": "float (MWh)",
+                "stromverkauf": "float (MWh)",
+                "eigenverbrauchsquote": "float (%)",
+                "spot_price": "float (EUR/MWh)",
+                "pv_erzeugung": "float (MWh)",
+                "hydro_erzeugung": "float (MWh)",
+                "bess_zyklen": "integer"
+              }
+            },
+            "soc_profile": {
+              "hourly_data": "array of {timestamp: string, soc_percent: float}",
+              "daily_average": "float (%)",
+              "min_soc": "float (%)",
+              "max_soc": "float (%)"
+            },
+            "financial_analysis": {
+              "total_investment": "float (EUR)",
+              "annual_operating_costs": "float (EUR)",
+              "payback_period_years": "float",
+              "roi_percent": "float",
+              "npv_20_years": "float (EUR)",
+              "irr_percent": "float"
+            }
+          },
+          "metadata": {
+            "simulation_timestamp": "datetime",
+            "calculation_time_ms": "integer",
+            "version": "string"
+          }
+        }
+      },
+      
+      "compare_scenarios": {
+        "method": "POST", 
+        "path": "/simulation/compare",
+        "description": "Vergleicht mehrere Simulationsszenarien",
+        "request_body": {
+          "scenarios": [
+            {
+              "name": "string",
+              "project_id": "integer",
+              "use_case": "string",
+              "bess_enabled": "boolean",
+              "bess_mode": "string",
+              "spot_price_scenario": "string"
+            }
+          ]
+        },
+        "response": {
+          "success": "boolean",
+          "comparison": {
+            "scenarios": [
+              {
+                "name": "string",
+                "results": "object (wie oben)",
+                "ranking": "integer"
+              }
+            ],
+            "best_scenario": "string",
+            "worst_scenario": "string",
+            "recommendations": "array of strings"
+          }
+        }
+      },
+      
+      "get_monthly_analysis": {
+        "method": "GET",
+        "path": "/simulation/{simulation_id}/monthly",
+        "description": "Detaillierte monatliche Auswertung einer Simulation",
+        "response": {
+          "success": "boolean",
+          "monthly_data": {
+            "summary": {
+              "total_strombezug": "float (MWh)",
+              "total_stromverkauf": "float (MWh)",
+              "avg_eigenverbrauchsquote": "float (%)",
+              "total_co2_savings": "float (kg)"
+            },
+            "monthly_breakdown": "object (wie oben)",
+            "seasonal_totals": {
+              "winter": "object",
+              "spring": "object", 
+              "summer": "object",
+              "autumn": "object"
+            }
+          }
+        }
+      }
+    },
+    
+    "dashboard": {
+      "get_overview": {
+        "method": "GET",
+        "path": "/dashboard/overview",
+        "description": "Dashboard-Übersicht mit allen wichtigen Kennzahlen",
+        "response": {
+          "success": "boolean",
+          "overview": {
+            "total_projects": "integer",
+            "active_simulations": "integer",
+            "total_co2_savings": "float (kg)",
+            "total_revenue": "float (EUR)",
+            "avg_eigenverbrauchsquote": "float (%)",
+            "recent_simulations": "array of simulation objects"
+          },
+          "charts": {
+            "revenue_trend": {
+              "type": "line",
+              "data": "array of {date: string, revenue: float}"
+            },
+            "co2_savings": {
+              "type": "bar", 
+              "data": "array of {project: string, savings: float}"
+            },
+            "eigenverbrauchsquote": {
+              "type": "pie",
+              "data": "array of {use_case: string, percentage: float}"
+            }
+          }
+        }
+      },
+      
+      "get_project_analytics": {
+        "method": "GET",
+        "path": "/dashboard/project/{project_id}/analytics",
+        "description": "Detaillierte Projekt-Analyse für Dashboard",
+        "response": {
+          "success": "boolean",
+          "analytics": {
+            "project_info": "object",
+            "simulation_history": "array",
+            "performance_metrics": "object",
+            "financial_summary": "object",
+            "environmental_impact": "object",
+            "recommendations": "array of strings"
+          }
+        }
+      }
+    },
+    
+    "data_management": {
+      "import_spot_prices": {
+        "method": "POST",
+        "path": "/data/spot-prices/import",
+        "description": "Importiert aktuelle Spot-Preise von verschiedenen Quellen",
+        "request_body": {
+          "source": "string (EPEX|ENTSO-E|APG)",
+          "region": "string (AT|DE|CH)",
+          "date_range": {
+            "start_date": "date",
+            "end_date": "date"
+          },
+          "price_type": "string (day_ahead|intraday)"
+        }
+      },
+      
+      "get_reference_prices": {
+        "method": "GET", 
+        "path": "/data/reference-prices",
+        "description": "Aktuelle Referenzpreise für verschiedene Energieträger",
+        "response": {
+          "success": "boolean",
+          "prices": {
+            "electricity": {
+              "current": "float (EUR/MWh)",
+              "trend": "string (rising|falling|stable)",
+              "forecast": "array of {date: string, price: float}"
+            },
+            "gas": "object",
+            "heating": "object"
+          }
+        }
+      },
+      
+      "update_subsidies": {
+        "method": "PUT",
+        "path": "/data/subsidies",
+        "description": "Aktualisiert Förderprogramme und Tarife",
+        "request_body": {
+          "technology_type": "string (pv|wind|hydro|bess)",
+          "region": "string",
+          "year": "integer", 
+          "subsidy_eur_mwh": "float",
+          "max_capacity_mw": "float"
+        }
+      }
+    },
+    
+    "optimization": {
+      "optimize_bess_size": {
+        "method": "POST",
+        "path": "/optimization/bess-size",
+        "description": "Optimiert BESS-Größe basierend auf Lastprofil und Preisen",
+        "request_body": {
+          "project_id": "integer",
+          "constraints": {
+            "max_investment": "float (EUR)",
+            "available_space": "float (m²)",
+            "grid_connection": "float (MW)"
+          },
+          "objectives": {
+            "primary": "string (cost_minimization|revenue_maximization|co2_reduction)",
+            "secondary": "string"
+          }
+        },
+        "response": {
+          "success": "boolean",
+          "optimization_results": {
+            "recommended_bess_size": "float (MWh)",
+            "recommended_bess_power": "float (MW)",
+            "expected_roi": "float (%)",
+            "payback_period": "float (years)",
+            "sensitivity_analysis": "object"
+          }
+        }
+      },
+      
+      "optimize_charging_schedule": {
+        "method": "POST",
+        "path": "/optimization/charging-schedule",
+        "description": "Optimiert Lade-/Entladeplan basierend auf Spot-Preisen",
+        "request_body": {
+          "project_id": "integer",
+          "date": "date",
+          "spot_prices": "array of {hour: integer, price: float}",
+          "load_profile": "array of {hour: integer, load: float}",
+          "bess_constraints": {
+            "max_charge_rate": "float (MW)",
+            "max_discharge_rate": "float (MW)",
+            "min_soc": "float (%)",
+            "max_soc": "float (%)"
+          }
+        },
+        "response": {
+          "success": "boolean",
+          "schedule": {
+            "hourly_plan": "array of {hour: integer, action: string, power: float, soc: float}",
+            "total_revenue": "float (EUR)",
+            "total_cost": "float (EUR)",
+            "net_benefit": "float (EUR)"
+          }
+        }
+      }
+    },
+    
+    "reports": {
+      "generate_simulation_report": {
+        "method": "POST",
+        "path": "/reports/simulation/{simulation_id}",
+        "description": "Generiert detaillierten Simulationsbericht als PDF",
+        "request_body": {
+          "report_type": "string (summary|detailed|executive)",
+          "include_charts": "boolean",
+          "include_recommendations": "boolean"
+        },
+        "response": {
+          "success": "boolean",
+          "report_url": "string",
+          "download_token": "string"
+        }
+      },
+      
+      "export_data": {
+        "method": "GET",
+        "path": "/reports/export/{simulation_id}",
+        "description": "Exportiert Simulationsdaten in verschiedenen Formaten",
+        "query_params": {
+          "format": "string (csv|excel|json)",
+          "include_monthly": "boolean",
+          "include_hourly": "boolean"
+        },
+        "response": {
+          "success": "boolean",
+          "download_url": "string",
+          "file_size": "integer"
+        }
+      }
+    }
+  },
+  
+  "error_responses": {
+    "400": {
+      "error": "Bad Request",
+      "message": "Ungültige Anfrage",
+      "details": "string"
+    },
+    "404": {
+      "error": "Not Found", 
+      "message": "Ressource nicht gefunden",
+      "details": "string"
+    },
+    "422": {
+      "error": "Unprocessable Entity",
+      "message": "Validierungsfehler",
+      "validation_errors": "array of strings"
+    },
+    "500": {
+      "error": "Internal Server Error",
+      "message": "Interner Serverfehler",
+      "details": "string"
+    }
+  },
+  
+  "authentication": {
+    "type": "JWT",
+    "endpoints": {
+      "login": "/auth/login",
+      "refresh": "/auth/refresh",
+      "logout": "/auth/logout"
+    }
+  },
+  
+  "rate_limiting": {
+    "requests_per_minute": 100,
+    "burst_limit": 20
+  },
+  
+  "documentation": {
+    "swagger_url": "/api/v2/docs",
+    "postman_collection": "/api/v2/postman.json"
+  }
+} 

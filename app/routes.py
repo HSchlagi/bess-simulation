@@ -3,13 +3,17 @@ from app import db, get_db
 import sys
 import os
 import sqlite3
+import pandas as pd
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice
+from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue
 from datetime import datetime, timedelta
 import random
 
 # EHYD Data Fetcher importieren
 from ehyd_data_fetcher import EHYDDataFetcher
+
+# PVGIS Data Fetcher importieren
+from pvgis_data_fetcher import PVGISDataFetcher
 
 main_bp = Blueprint('main', __name__)
 
@@ -85,6 +89,10 @@ def import_load():
 @main_bp.route('/bess-peak-shaving-analysis')
 def bess_peak_shaving_analysis():
     return render_template('bess_peak_shaving_analysis.html')
+
+@main_bp.route('/bess-simulation-enhanced')
+def bess_simulation_enhanced():
+    return render_template('bess_simulation_enhanced.html')
 
 @main_bp.route('/data_import_center')
 def data_import_center():
@@ -360,6 +368,50 @@ def api_load_profiles(project_id):
                 'data_type': row[4],
                 'source': 'load_profiles'
             })
+        
+        # 3. PVGIS-Solar-Daten als virtuelle Lastprofile hinzufügen
+        cursor.execute("""
+            SELECT DISTINCT location_key, year, 
+                   (SELECT COUNT(*) FROM solar_data WHERE location_key = sd.location_key AND year = sd.year) as data_points
+            FROM solar_data sd
+            ORDER BY location_key, year DESC
+        """)
+        
+        solar_profiles = []
+        for row in cursor.fetchall():
+            location_key, year, data_points = row
+            if data_points > 0:
+                # Standort-Informationen abrufen
+                try:
+                    fetcher = PVGISDataFetcher()
+                    locations = fetcher.get_available_locations()
+                    
+                    location_name = location_key
+                    for region, region_locations in locations.items():
+                        for loc in region_locations:
+                            if loc['key'] == location_key:
+                                location_name = loc['name']
+                                break
+                        if location_name != location_key:
+                            break
+                except Exception as e:
+                    print(f"⚠️ Fehler beim Abrufen der Standort-Informationen: {e}")
+                    location_name = location_key
+                
+                solar_profiles.append({
+                    'id': f"pvgis_{location_key}_{year}",
+                    'name': f"PVGIS Solar {location_name} ({year})",
+                    'created_at': f"{year}-01-01",
+                    'data_points': data_points,
+                    'data_type': 'solar',
+                    'source': 'pvgis',
+                    'location_key': location_key,
+                    'year': year,
+                    'location_name': location_name
+                })
+        
+        # Solar-Profile zu den normalen Profilen hinzufügen
+        profiles.extend(solar_profiles)
         
         print(f"📊 {len(profiles)} Lastprofile für Projekt {project_id} gefunden:")
         for profile in profiles:
@@ -1020,7 +1072,46 @@ def api_load_profile_data_range_string(profile_id):
         end_date = datetime.fromisoformat(data['end_date'])
         
         # Präfix entfernen und echte ID extrahieren
-        if profile_id.startswith('new_'):
+        if profile_id.startswith('pvgis_'):
+            # PVGIS-Solar-Daten verarbeiten
+            parts = profile_id.replace('pvgis_', '').split('_')
+            if len(parts) >= 2:
+                location_key = parts[0]
+                year = int(parts[1])
+                
+                # Solar-Daten aus der solar_data Tabelle laden
+                cursor = get_db().cursor()
+                cursor.execute("""
+                    SELECT datetime, global_irradiance, temperature_2m
+                    FROM solar_data 
+                    WHERE location_key = ? AND year = ?
+                    AND datetime BETWEEN ? AND ?
+                    ORDER BY datetime
+                """, (location_key, year, start_date, end_date))
+                
+                data_points = cursor.fetchall()
+                
+                if data_points:
+                    formatted_data = []
+                    for row in data_points:
+                        formatted_data.append({
+                            'timestamp': row[0],
+                            'value': float(row[1]) if row[1] is not None else 0.0,  # Globalstrahlung als Hauptwert
+                            'temperature': float(row[2]) if row[2] is not None else 0.0
+                        })
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': formatted_data,
+                        'source': f'PVGIS Solar {location_key} ({year})',
+                        'count': len(formatted_data),
+                        'data_type': 'solar'
+                    })
+                else:
+                    return jsonify({'error': f'Keine Solar-Daten für {location_key} ({year}) verfügbar'}), 404
+            else:
+                return jsonify({'error': 'Ungültige PVGIS-Profil-ID'}), 400
+        elif profile_id.startswith('new_'):
             real_id = int(profile_id.replace('new_', ''))
             table_name = 'load_profiles'
             data_table = 'load_profile_data'
@@ -1178,14 +1269,16 @@ def test_customer():
 # API Routes für Wirtschaftlichkeitsanalyse
 @main_bp.route('/api/economic-analysis/<int:project_id>')
 def api_economic_analysis(project_id):
-    """Umfassende Wirtschaftlichkeitsanalyse für ein Projekt"""
+    """Umfassende Wirtschaftlichkeitsanalyse für ein Projekt mit erweiterter CursorAI-Struktur"""
     try:
         # URL-Parameter für Analysetyp abrufen
         analysis_type = request.args.get('analysis_type', 'comprehensive')
         intelligent_analysis = request.args.get('intelligent', 'true').lower() == 'true'
+        enhanced_analysis = request.args.get('enhanced', 'true').lower() == 'true'
         
         print(f"🔍 Starte {analysis_type} Analyse für Projekt {project_id}")
         print(f"📊 Intelligente Analyse: {intelligent_analysis}")
+        print(f"🚀 Erweiterte Analyse: {enhanced_analysis}")
         
         project = Project.query.get(project_id)
         if not project:
@@ -1388,10 +1481,199 @@ def api_economic_analysis(project_id):
                 'roi_comparison': roi_comparison,
                 'detailed_info': detailed_info
             }
-        return jsonify(response)
+            
+            # Erweiterte CursorAI-Analyse hinzufügen
+            if enhanced_analysis:
+                try:
+                    from enhanced_economic_analysis import EnhancedEconomicAnalyzer
+                    
+                    # Projektdaten für erweiterte Analyse vorbereiten
+                    project_data = {
+                        'bess_size': project.bess_size or 1000,
+                        'bess_power': project.bess_power or 500,
+                        'total_investment': total_investment,
+                        'location': project.location or 'Unbekannt',
+                        'pv_power': project.pv_power or 0,
+                        'hydro_power': project.hydro_power or 0,
+                        'wind_power': project.wind_power or 0,
+                        'hp_power': project.hp_power or 0
+                    }
+                    
+                    # Use Cases aus der Datenbank laden
+                    from models import UseCase
+                    db_use_cases = UseCase.query.all()
+                    print(f"🔍 {len(db_use_cases)} Use Cases für erweiterte Analyse geladen")
+                    
+                    # Erweiterte Analyse durchführen
+                    enhanced_analyzer = EnhancedEconomicAnalyzer()
+                    enhanced_analysis_results = enhanced_analyzer.generate_comprehensive_analysis(project_data, db_use_cases)
+                    
+                    # Erweiterte Ergebnisse zur Response hinzufügen (reduzierte Datenmenge)
+                    response['enhanced_analysis'] = {
+                        'use_cases_summary': {},
+                        'comparison_metrics': enhanced_analysis_results['comparison_metrics'],
+                        'recommendations': enhanced_analysis_results['recommendations']
+                    }
+                    
+                    # Nur Zusammenfassung der Use Cases (ohne detaillierte Jahresdaten)
+                    for use_case_name, use_case_data in enhanced_analysis_results['use_cases'].items():
+                        response['enhanced_analysis']['use_cases_summary'][use_case_name] = {
+                            'annual_balance': use_case_data['annual_balance'],
+                            'efficiency_metrics': use_case_data['efficiency_metrics'],
+                            'energy_neutrality': use_case_data['energy_neutrality']
+                        }
+                    
+                    print(f"✅ Erweiterte CursorAI-Analyse erfolgreich integriert")
+                    
+                except ImportError as e:
+                    print(f"⚠️ Erweiterte Analyse nicht verfügbar: {e}")
+                    response['enhanced_analysis'] = {
+                        'error': 'Erweiterte Analyse nicht verfügbar',
+                        'message': 'Enhanced Economic Analysis Module konnte nicht geladen werden'
+                    }
+                except Exception as e:
+                    print(f"⚠️ Fehler bei erweiterter Analyse: {e}")
+                    response['enhanced_analysis'] = {
+                        'error': 'Fehler bei erweiterter Analyse',
+                        'message': str(e)
+                    }
+            else:
+                response['enhanced_analysis'] = {
+                    'status': 'deaktiviert',
+                    'message': 'Erweiterte Analyse wurde nicht angefordert'
+                }
+        
+        # JSON-Serialisierung mit Fehlerbehandlung
+        try:
+            # Prüfe auf ungültige Zeichen in der Response
+            import json
+            import sys
+            
+            # Konvertiere alle Werte zu JSON-kompatiblen Typen
+            def clean_for_json(obj):
+                if isinstance(obj, (int, float, str, bool, type(None))):
+                    return obj
+                elif isinstance(obj, dict):
+                    return {str(k): clean_for_json(v) for k, v in obj.items()}
+                elif isinstance(obj, list):
+                    return [clean_for_json(item) for item in obj]
+                else:
+                    return str(obj)
+            
+            cleaned_response = clean_for_json(response)
+            
+            # Teste JSON-Serialisierung
+            json_str = json.dumps(cleaned_response, ensure_ascii=False, default=str)
+            
+            # Prüfe Größe
+            if len(json_str) > 10000000:  # 10MB Limit
+                print(f"⚠️ JSON zu groß ({len(json_str)} bytes), reduziere Daten...")
+                # Entferne detaillierte Daten
+                if 'enhanced_analysis' in cleaned_response:
+                    cleaned_response['enhanced_analysis'] = {
+                        'status': 'reduced',
+                        'message': 'Datenmenge wurde reduziert aufgrund der Größe'
+                    }
+                json_str = json.dumps(cleaned_response, ensure_ascii=False, default=str)
+            
+            print(f"✅ JSON erfolgreich serialisiert ({len(json_str)} bytes)")
+            return json_str, 200, {'Content-Type': 'application/json; charset=utf-8'}
+            
+        except Exception as json_error:
+            print(f"❌ JSON-Serialisierungsfehler: {json_error}")
+            return jsonify({
+                'error': 'JSON-Serialisierungsfehler',
+                'message': str(json_error),
+                'fallback_data': {
+                    'total_investment': response.get('total_investment', 0),
+                    'roi': response.get('roi', 0),
+                    'payback_period': response.get('payback_period', 0)
+                }
+            }), 500
     except Exception as e:
         print(f"Fehler in Wirtschaftlichkeitsanalyse: {e}")
         return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/enhanced-economic-analysis/<int:project_id>', methods=['GET'])
+def api_enhanced_economic_analysis(project_id):
+    """Erweiterte Wirtschaftlichkeitsanalyse basierend auf CursorAI-Struktur"""
+    try:
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        print(f"🚀 Starte erweiterte CursorAI-Analyse für Projekt {project_id}")
+        
+        # Investitionskosten laden
+        investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
+        total_investment = sum(cost.cost_eur for cost in investment_costs)
+        
+        # Projektdaten für erweiterte Analyse vorbereiten
+        project_data = {
+            'bess_size': project.bess_size or 1000,
+            'bess_power': project.bess_power or 500,
+            'total_investment': total_investment,
+            'location': project.location or 'Unbekannt',
+            'pv_power': project.pv_power or 0,
+            'hydro_power': project.hydro_power or 0,
+            'wind_power': project.wind_power or 0,
+            'hp_power': project.hp_power or 0
+        }
+        
+        # Use Cases aus der Datenbank laden
+        from models import UseCase
+        db_use_cases = UseCase.query.all()
+        print(f"🔍 {len(db_use_cases)} Use Cases aus der Datenbank geladen")
+        
+        # Erweiterte Analyse durchführen
+        from enhanced_economic_analysis import EnhancedEconomicAnalyzer
+        enhanced_analyzer = EnhancedEconomicAnalyzer()
+        enhanced_analysis_results = enhanced_analyzer.generate_comprehensive_analysis(project_data, db_use_cases)
+        
+        # Response strukturieren
+        response = {
+            'success': True,
+            'project_info': {
+                'id': project.id,
+                'name': project.name,
+                'location': project.location,
+                'bess_size_kwh': project.bess_size,
+                'bess_power_kw': project.bess_power,
+                'total_investment': total_investment
+            },
+            'use_cases_comparison': enhanced_analysis_results['use_cases'],
+            'comparison_metrics': enhanced_analysis_results['comparison_metrics'],
+            'recommendations': enhanced_analysis_results['recommendations'],
+            'market_revenue_breakdown': {},
+            'cost_structure_detailed': {},
+            'monthly_analysis': {},
+            'kpi_summary': {}
+        }
+        
+        # Detaillierte Daten extrahieren
+        for use_case_name, use_case_data in enhanced_analysis_results['use_cases'].items():
+            if use_case_data['detailed_results']:
+                first_year = use_case_data['detailed_results'][0]
+                response['market_revenue_breakdown'][use_case_name] = first_year['market_revenue']
+                response['cost_structure_detailed'][use_case_name] = first_year['cost_structure']
+                response['monthly_analysis'][use_case_name] = first_year['monthly_data']
+                response['kpi_summary'][use_case_name] = first_year['kpis']
+        
+        print(f"✅ Erweiterte CursorAI-Analyse erfolgreich abgeschlossen")
+        return jsonify(response)
+        
+    except ImportError as e:
+        print(f"⚠️ Erweiterte Analyse nicht verfügbar: {e}")
+        return jsonify({
+            'error': 'Erweiterte Analyse nicht verfügbar',
+            'message': 'Enhanced Economic Analysis Module konnte nicht geladen werden'
+        }), 500
+    except Exception as e:
+        print(f"⚠️ Fehler bei erweiterter Analyse: {e}")
+        return jsonify({
+            'error': 'Fehler bei erweiterter Analyse',
+            'message': str(e)
+        }), 500
 
 @main_bp.route('/api/economic-simulation/<int:project_id>', methods=['POST'])
 def api_economic_simulation(project_id):
@@ -2691,6 +2973,9 @@ def export_economic_analysis_pdf(project_id):
         # PDF generieren
         pdf_content = generate_economic_analysis_pdf(project, analysis_data)
         
+        if pdf_content is None:
+            return jsonify({'error': 'PDF-Generierung fehlgeschlagen'}), 400
+        
         # PDF-Datei speichern
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"wirtschaftlichkeitsanalyse_{project.name}_{timestamp}.pdf"
@@ -2725,6 +3010,9 @@ def export_economic_analysis_excel(project_id):
         
         # Excel generieren
         excel_content = generate_economic_analysis_excel(project, analysis_data)
+        
+        if excel_content is None:
+            return jsonify({'error': 'Excel-Generierung fehlgeschlagen'}), 400
         
         # Excel-Datei speichern
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -3450,3 +3738,1097 @@ def calculate_bess_secondary_market_revenue(project):
         'flexibility_market': round(flexibility_market_revenue, 2),
         'total': round(total_revenue, 2)
     }
+
+# === NEUE API-ROUTES FÜR BESS-SIMULATION ERWEITERUNG ===
+
+@main_bp.route('/api/use-cases')
+def api_use_cases():
+    """Alle Use Cases abrufen"""
+    try:
+        use_cases = UseCase.query.all()
+        return jsonify([{
+            'id': uc.id,
+            'name': uc.name,
+            'description': uc.description,
+            'scenario_type': uc.scenario_type,
+            'pv_power_mwp': uc.pv_power_mwp,
+            'hydro_power_kw': uc.hydro_power_kw,
+            'hydro_energy_mwh_year': uc.hydro_energy_mwh_year,
+            'wind_power_kw': getattr(uc, 'wind_power_kw', 0.0),
+            'bess_size_mwh': getattr(uc, 'bess_size_mwh', 0.0),
+            'bess_power_mw': getattr(uc, 'bess_power_mw', 0.0),
+            'created_at': uc.created_at.isoformat() if uc.created_at else None
+        } for uc in use_cases])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Use Cases: {str(e)}'}), 500
+
+@main_bp.route('/api/use-cases', methods=['POST'])
+def api_create_use_case():
+    """Neuen Use Case erstellen"""
+    try:
+        data = request.get_json()
+        use_case = UseCase(
+            name=data['name'],
+            description=data.get('description', ''),
+            scenario_type=data.get('scenario_type', 'consumption_only'),
+            pv_power_mwp=data.get('pv_power_mwp', 0.0),
+            hydro_power_kw=data.get('hydro_power_kw', 0.0),
+            hydro_energy_mwh_year=data.get('hydro_energy_mwh_year', 0.0),
+            wind_power_kw=data.get('wind_power_kw', 0.0),
+            bess_size_mwh=data.get('bess_size_mwh', 0.0),
+            bess_power_mw=data.get('bess_power_mw', 0.0)
+        )
+        db.session.add(use_case)
+        db.session.commit()
+        return jsonify({'success': True, 'id': use_case.id}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': f'Fehler beim Erstellen des Use Cases: {str(e)}'}), 500
+
+@main_bp.route('/api/use-cases/<int:use_case_id>')
+def api_get_use_case(use_case_id):
+    """Einzelnen Use Case abrufen"""
+    try:
+        use_case = UseCase.query.get(use_case_id)
+        if not use_case:
+            return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
+        
+        return jsonify({
+            'id': use_case.id,
+            'name': use_case.name,
+            'description': use_case.description,
+            'scenario_type': use_case.scenario_type,
+            'pv_power_mwp': use_case.pv_power_mwp,
+            'hydro_power_kw': use_case.hydro_power_kw,
+            'hydro_energy_mwh_year': use_case.hydro_energy_mwh_year,
+            'wind_power_kw': getattr(use_case, 'wind_power_kw', 0.0),
+            'bess_size_mwh': getattr(use_case, 'bess_size_mwh', 0.0),
+            'bess_power_mw': getattr(use_case, 'bess_power_mw', 0.0),
+            'created_at': use_case.created_at.isoformat() if use_case.created_at else None
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/use-cases/<int:use_case_id>', methods=['PUT'])
+def api_update_use_case(use_case_id):
+    """Use Case aktualisieren"""
+    try:
+        use_case = UseCase.query.get(use_case_id)
+        if not use_case:
+            return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
+        
+        data = request.get_json()
+        
+        # Use Case-Daten aktualisieren
+        use_case.name = data.get('name', use_case.name)
+        use_case.description = data.get('description', use_case.description)
+        use_case.scenario_type = data.get('scenario_type', use_case.scenario_type)
+        use_case.pv_power_mwp = float(data.get('pv_power_mwp', 0.0))
+        use_case.hydro_power_kw = float(data.get('hydro_power_kw', 0.0))
+        use_case.hydro_energy_mwh_year = float(data.get('hydro_energy_mwh_year', 0.0))
+        use_case.wind_power_kw = float(data.get('wind_power_kw', 0.0))
+        use_case.bess_size_mwh = float(data.get('bess_size_mwh', 0.0))
+        use_case.bess_power_mw = float(data.get('bess_power_mw', 0.0))
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/use-cases/<int:use_case_id>', methods=['DELETE'])
+def api_delete_use_case(use_case_id):
+    """Use Case löschen"""
+    try:
+        use_case = UseCase.query.get(use_case_id)
+        if not use_case:
+            return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
+        
+        # Prüfen ob Use Case in Projekten verwendet wird
+        projects_using_case = Project.query.filter_by(use_case_id=use_case_id).count()
+        if projects_using_case > 0:
+            return jsonify({
+                'success': False, 
+                'error': f'Use Case wird noch in {projects_using_case} Projekt(en) verwendet'
+            }), 400
+        
+        db.session.delete(use_case)
+        db.session.commit()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/revenue-models')
+def api_revenue_models():
+    """Alle Erlösmodelle abrufen"""
+    try:
+        revenue_models = RevenueModel.query.all()
+        return jsonify([{
+            'id': rm.id,
+            'project_id': rm.project_id,
+            'name': rm.name,
+            'revenue_type': rm.revenue_type,
+            'price_eur_mwh': rm.price_eur_mwh,
+            'availability_hours': rm.availability_hours,
+            'efficiency_factor': rm.efficiency_factor,
+            'description': rm.description,
+            'created_at': rm.created_at.isoformat() if rm.created_at else None
+        } for rm in revenue_models])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Erlösmodelle: {str(e)}'}), 500
+
+@main_bp.route('/api/projects/<int:project_id>/revenue-models')
+def api_project_revenue_models(project_id):
+    """Erlösmodelle für ein spezifisches Projekt abrufen"""
+    try:
+        revenue_models = RevenueModel.query.filter_by(project_id=project_id).all()
+        return jsonify([{
+            'id': rm.id,
+            'name': rm.name,
+            'revenue_type': rm.revenue_type,
+            'price_eur_mwh': rm.price_eur_mwh,
+            'availability_hours': rm.availability_hours,
+            'efficiency_factor': rm.efficiency_factor,
+            'description': rm.description
+        } for rm in revenue_models])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Erlösmodelle: {str(e)}'}), 500
+
+@main_bp.route('/api/simulation/run', methods=['POST'])
+def api_run_simulation():
+    """BESS-Simulation ausführen mit Use Case-spezifischen Daten und BESS-Modus"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        use_case = data.get('use_case')  # UC1, UC2, UC3
+        simulation_year = data.get('simulation_year', 2024)
+        bess_size = data.get('bess_size', 1.0)  # kWh (aus Projekt)
+        bess_power = data.get('bess_power', 0.5)  # kW (aus Projekt)
+        
+        # Neue BESS-Modus Parameter
+        bess_mode = data.get('bess_mode', 'arbitrage')  # arbitrage, peak_shaving, frequency_regulation, backup
+        optimization_target = data.get('optimization_target', 'cost_minimization')  # cost_minimization, revenue_maximization
+        spot_price_scenario = data.get('spot_price_scenario', 'current')  # current, optimistic, pessimistic
+        
+        # Projekt abrufen
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Einheiten-Konvertierung: kWh -> MWh, kW -> MW
+        bess_size_mwh = bess_size / 1000  # kWh zu MWh
+        bess_power_mw = bess_power / 1000  # kW zu MW
+        
+        # Use Case-spezifische Parameter
+        use_case_config = {
+            'UC1': {
+                'pv_power_mwp': 0.0,
+                'hydro_power_kw': 0.0,
+                'annual_consumption_mwh': 4380.0,
+                'annual_pv_generation_mwh': 0.0,
+                'annual_hydro_generation_mwh': 0.0,
+                'description': 'Verbrauch ohne Eigenerzeugung'
+            },
+            'UC2': {
+                'pv_power_mwp': 1.95,
+                'hydro_power_kw': 0.0,
+                'annual_consumption_mwh': 4380.0,
+                'annual_pv_generation_mwh': 2190.0,  # 1.95 MWp * 1123 kWh/kWp
+                'annual_hydro_generation_mwh': 0.0,
+                'description': 'Verbrauch + PV (1,95 MWp)'
+            },
+            'UC3': {
+                'pv_power_mwp': 1.95,
+                'hydro_power_kw': 650.0,
+                'annual_consumption_mwh': 4380.0,
+                'annual_pv_generation_mwh': 2190.0,
+                'annual_hydro_generation_mwh': 2700.0,  # 650 kW * 4154 h/a
+                'description': 'Verbrauch + PV + Wasserkraft'
+            }
+        }
+        
+        if use_case not in use_case_config:
+            return jsonify({'error': 'Ungültiger Use Case'}), 400
+        
+        config = use_case_config[use_case]
+        
+        # Berechnungen basierend auf Use Case
+        annual_consumption = config['annual_consumption_mwh']
+        annual_pv_generation = config['annual_pv_generation_mwh']
+        annual_hydro_generation = config['annual_hydro_generation_mwh']
+        annual_generation = annual_pv_generation + annual_hydro_generation
+        
+        # BESS-Modus spezifische Konfiguration
+        bess_mode_config = {
+            'arbitrage': {
+                'efficiency_boost': 1.1,
+                'revenue_boost': 1.2,
+                'annual_cycles': 350,
+                'spot_price_multiplier': 1.0,
+                'srl_hours': 50
+            },
+            'peak_shaving': {
+                'efficiency_boost': 1.05,
+                'revenue_boost': 1.15,
+                'annual_cycles': 250,
+                'spot_price_multiplier': 0.9,
+                'srl_hours': 80
+            },
+            'frequency_regulation': {
+                'efficiency_boost': 1.15,
+                'revenue_boost': 1.25,
+                'annual_cycles': 400,
+                'spot_price_multiplier': 1.1,
+                'srl_hours': 150
+            },
+            'backup': {
+                'efficiency_boost': 1.0,
+                'revenue_boost': 1.05,
+                'annual_cycles': 100,
+                'spot_price_multiplier': 0.8,
+                'srl_hours': 20
+            }
+        }
+        
+        mode_config = bess_mode_config.get(bess_mode, bess_mode_config['arbitrage'])
+        
+        # Spot-Preis Szenario Anpassung
+        spot_price_scenarios = {
+            'current': 1.0,
+            'optimistic': 1.2,
+            'pessimistic': 0.8
+        }
+        spot_price_multiplier = spot_price_scenarios.get(spot_price_scenario, 1.0)
+        
+        # BESS-spezifische Berechnungen mit Modus-Anpassung
+        base_efficiency = 0.85
+        bess_efficiency = base_efficiency * mode_config['efficiency_boost']
+        
+        # Use Case + Modus kombinierte Zyklen
+        base_cycles = 300 if use_case == 'UC1' else (250 if use_case == 'UC2' else 200)
+        annual_cycles = int(base_cycles * (mode_config['annual_cycles'] / 300))
+        
+        energy_stored = bess_size_mwh * annual_cycles * bess_efficiency
+        energy_discharged = energy_stored * bess_efficiency
+        
+        # Erlösberechnung mit Modus-Anpassung
+        base_spot_price = 60.0
+        spot_price_eur_mwh = base_spot_price * spot_price_multiplier * mode_config['spot_price_multiplier']
+        srl_positive_price = 80.0  # EUR/MWh
+        srl_negative_price = 40.0  # EUR/MWh
+        
+        # Arbitrage-Erlöse (modus-spezifisch)
+        arbitrage_potential = 0.1 if bess_mode == 'arbitrage' else (0.05 if bess_mode == 'peak_shaving' else 0.15)
+        arbitrage_revenue = energy_discharged * spot_price_eur_mwh * arbitrage_potential * mode_config['revenue_boost']
+        
+        # SRL-Erlöse (modus-spezifisch)
+        srl_hours_per_year = mode_config['srl_hours']
+        srl_positive_revenue = bess_power_mw * srl_hours_per_year * srl_positive_price * mode_config['revenue_boost']
+        srl_negative_revenue = bess_power_mw * srl_hours_per_year * srl_negative_price * mode_config['revenue_boost']
+        
+        # PV-Einspeisung (nur UC2, UC3)
+        pv_feed_in_revenue = annual_pv_generation * spot_price_eur_mwh * 0.3 if use_case in ['UC2', 'UC3'] else 0
+        
+        # Gesamterlöse
+        annual_revenues = arbitrage_revenue + srl_positive_revenue + srl_negative_revenue + pv_feed_in_revenue
+        
+        # Kostenberechnung (realistische Investitionskosten)
+        investment_cost_per_mwh = 300000  # EUR/MWh (realistisch für BESS)
+        total_investment = bess_size_mwh * investment_cost_per_mwh
+        
+        # Betriebskosten (realistisch)
+        annual_operating_costs = total_investment * 0.02  # 2% der Investition
+        
+        # Netzentgelte (realistisch)
+        grid_costs = annual_consumption * 15  # 15 EUR/MWh
+        
+        annual_costs = annual_operating_costs + grid_costs
+        annual_net_cashflow = annual_revenues - annual_costs
+        
+        # ROI und Amortisation (mit realistischen Grenzen)
+        roi_percent = (annual_net_cashflow / total_investment) * 100 if total_investment > 0 else 0
+        payback_years = total_investment / annual_net_cashflow if annual_net_cashflow > 0 else 999
+        
+        # Werte auf realistische Bereiche begrenzen
+        roi_percent = min(roi_percent, 50.0)  # Maximal 50% ROI
+        payback_years = min(payback_years, 20.0)  # Maximal 20 Jahre Amortisation
+        
+        # MONATLICHE DATEN FÜR DASHBOARD-CHART
+        monthly_data = generate_monthly_chart_data(use_case, annual_consumption, annual_pv_generation, annual_hydro_generation)
+        
+        simulation_result = {
+            'project_id': project_id,
+            'use_case': use_case,
+            'simulation_year': simulation_year,
+            'bess_size_mwh': bess_size_mwh,
+            'bess_power_mw': bess_power_mw,
+            'bess_size_kwh': bess_size,  # Original-Werte für Anzeige
+            'bess_power_kw': bess_power,  # Original-Werte für Anzeige
+            
+            # BESS-Modus Parameter (für Frontend)
+            'bess_mode': bess_mode,
+            'optimization_target': optimization_target,
+            'spot_price_scenario': spot_price_scenario,
+            
+            # Jahresbilanz
+            'annual_consumption': round(annual_consumption, 1),
+            'annual_generation': round(annual_generation, 1),
+            'annual_pv_generation': round(annual_pv_generation, 1),
+            'annual_hydro_generation': round(annual_hydro_generation, 1),
+            'energy_stored': round(energy_stored, 1),
+            'energy_discharged': round(energy_discharged, 1),
+            'annual_cycles': annual_cycles,
+            
+            # Erlöse
+            'annual_revenues': round(annual_revenues, 0),
+            'arbitrage_revenue': round(arbitrage_revenue, 0),
+            'srl_positive_revenue': round(srl_positive_revenue, 0),
+            'srl_negative_revenue': round(srl_negative_revenue, 0),
+            'pv_feed_in_revenue': round(pv_feed_in_revenue, 0),
+            'spot_revenue': round(arbitrage_revenue, 0),  # Für Frontend-Kompatibilität
+            'regelreserve_revenue': round(srl_positive_revenue + srl_negative_revenue, 0),  # Für Frontend-Kompatibilität
+            'day_ahead_revenue': 0,  # Platzhalter
+            
+            # Kosten
+            'annual_costs': round(annual_costs, 0),
+            'operating_costs': round(annual_operating_costs, 0),
+            'grid_costs': round(grid_costs, 0),
+            
+            # Wirtschaftlichkeit
+            'total_investment': round(total_investment, 0),
+            'net_cashflow': round(annual_net_cashflow, 0),
+            'netto_erloes': round(annual_net_cashflow, 0),  # Für Frontend-Kompatibilität
+            'roi_percent': round(roi_percent, 1),
+            'payback_years': round(payback_years, 1),
+            
+            # BESS-Effizienz
+            'bess_efficiency': round(bess_efficiency * 100, 1),  # Als Prozent für Frontend
+            
+            # CO₂-Einsparung (geschätzt)
+            'co2_savings': round(annual_generation * 0.5, 0),  # 0.5 kg CO₂ pro kWh
+            
+            # Use Case Details
+            'use_case_description': config['description'],
+            'pv_power_mwp': config['pv_power_mwp'],
+            'hydro_power_kw': config['hydro_power_kw'],
+            
+            # MONATLICHE CHART-DATEN
+            'monthly_data': monthly_data
+        }
+        
+        return jsonify(simulation_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der Simulation: {str(e)}'}), 500
+
+def generate_monthly_chart_data(use_case, annual_consumption, annual_pv_generation, annual_hydro_generation):
+    """Generiert monatliche Chart-Daten mit korrigierter PV-Generationskurve"""
+    
+    # Monatliche Verbrauchsdaten (realistisches Lastprofil)
+    monthly_consumption = {
+        1: 420, 2: 380, 3: 360, 4: 340, 5: 320, 6: 300,  # Winter hoch, Sommer niedrig
+        7: 280, 8: 290, 9: 320, 10: 360, 11: 400, 12: 430
+    }
+    
+    # KORRIGIERTE monatliche PV-Generationsdaten (REALISTISCH)
+    # Asymmetrische Kurve basierend auf realer Sonneneinstrahlung in Österreich
+    # Keine Sinus-Form, sondern realistische saisonale Verteilung
+    monthly_pv_generation = {
+        1: 60,  2: 100, 3: 160, 4: 240, 5: 320, 6: 380,  # Winter zu Sommer (steiler Anstieg)
+        7: 400, 8: 380, 9: 300, 10: 200, 11: 100, 12: 60  # Sommer zu Winter (langsamer Abfall)
+    }
+    
+    # Monatliche Wasserkraft-Daten (konstant für UC3)
+    monthly_hydro_generation = {
+        1: 225, 2: 200, 3: 225, 4: 220, 5: 225, 6: 220,  # Leicht saisonal
+        7: 225, 8: 225, 9: 220, 10: 225, 11: 220, 12: 225
+    }
+    
+    # Skaliere auf jährliche Werte
+    consumption_scale = annual_consumption / sum(monthly_consumption.values())
+    pv_scale = annual_pv_generation / sum(monthly_pv_generation.values()) if annual_pv_generation > 0 else 0
+    hydro_scale = annual_hydro_generation / sum(monthly_hydro_generation.values()) if annual_hydro_generation > 0 else 0
+    
+    # Berechne monatliche Werte
+    monthly_data = {
+        'months': ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'],
+        'strombezug': [round(monthly_consumption[m] * consumption_scale, 0) for m in range(1, 13)],
+        'stromverkauf': [round(max(0, monthly_pv_generation[m] * pv_scale + monthly_hydro_generation[m] * hydro_scale - monthly_consumption[m] * consumption_scale), 0) for m in range(1, 13)],
+        'pv_erzeugung': [round(monthly_pv_generation[m] * pv_scale, 0) for m in range(1, 13)]
+    }
+    
+    return monthly_data
+
+@main_bp.route('/api/simulation/10-year-analysis', methods=['POST'])
+def api_10_year_analysis():
+    """10-Jahres-Analyse mit Batterie-Degradation und BESS-Modus"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        use_case = data.get('use_case')
+        bess_size = data.get('bess_size', 1.0)  # kWh (aus Projekt)
+        bess_power = data.get('bess_power', 0.5)  # kW (aus Projekt)
+        
+        # Neue BESS-Modus Parameter
+        bess_mode = data.get('bess_mode', 'arbitrage')
+        optimization_target = data.get('optimization_target', 'cost_minimization')
+        spot_price_scenario = data.get('spot_price_scenario', 'current')
+        
+        # Projekt abrufen
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Einheiten-Konvertierung: kWh -> MWh, kW -> MW
+        bess_size_mwh = bess_size / 1000  # kWh zu MWh
+        bess_power_mw = bess_power / 1000  # kW zu MW
+        
+        # Basis-Simulation für erstes Jahr
+        base_simulation_data = {
+            'project_id': project_id,
+            'use_case': use_case,
+            'simulation_year': 2024,
+            'bess_size': bess_size,
+            'bess_power': bess_power
+        }
+        
+        # Simuliere 10 Jahre mit Degradation
+        years = list(range(2024, 2034))
+        cashflow_data = []
+        degradation_data = []
+        revenues_data = []
+        costs_data = []
+        
+        # BESS-Modus spezifische Konfiguration (wie in api_run_simulation)
+        bess_mode_config = {
+            'arbitrage': {
+                'efficiency_boost': 1.1,
+                'revenue_boost': 1.2,
+                'annual_cycles': 350,
+                'spot_price_multiplier': 1.0,
+                'srl_hours': 50
+            },
+            'peak_shaving': {
+                'efficiency_boost': 1.05,
+                'revenue_boost': 1.15,
+                'annual_cycles': 250,
+                'spot_price_multiplier': 0.9,
+                'srl_hours': 80
+            },
+            'frequency_regulation': {
+                'efficiency_boost': 1.15,
+                'revenue_boost': 1.25,
+                'annual_cycles': 400,
+                'spot_price_multiplier': 1.1,
+                'srl_hours': 150
+            },
+            'backup': {
+                'efficiency_boost': 1.0,
+                'revenue_boost': 1.05,
+                'annual_cycles': 100,
+                'spot_price_multiplier': 0.8,
+                'srl_hours': 20
+            }
+        }
+        
+        mode_config = bess_mode_config.get(bess_mode, bess_mode_config['arbitrage'])
+        
+        # Spot-Preis Szenario Anpassung
+        spot_price_scenarios = {
+            'current': 1.0,
+            'optimistic': 1.2,
+            'pessimistic': 0.8
+        }
+        spot_price_multiplier = spot_price_scenarios.get(spot_price_scenario, 1.0)
+        
+        # Realistische Basis-Werte basierend auf BESS-Größe und Modus
+        base_revenue = bess_size_mwh * 5000 * mode_config['revenue_boost'] * spot_price_multiplier
+        base_cost = bess_size_mwh * 3000
+        base_capacity = 1.0    # 100% Kapazität im ersten Jahr
+        
+        for i, year in enumerate(years):
+            # Batterie-Degradation: modus-spezifisch + zusätzliche Degradation durch Zyklen
+            base_degradation = 0.02
+            mode_degradation_factor = 1.0 if bess_mode == 'backup' else (1.2 if bess_mode == 'frequency_regulation' else 1.1)
+            degradation_rate = (base_degradation + (i * 0.005)) * mode_degradation_factor
+            capacity_factor = max(0.7, base_capacity - (i * degradation_rate))
+            
+            # Erlöse reduzieren sich mit der Kapazität
+            year_revenue = base_revenue * capacity_factor
+            year_cost = base_cost * (1 + i * 0.01)  # Kosten steigen leicht
+            
+            year_cashflow = year_revenue - year_cost
+            
+            cashflow_data.append(year_cashflow)
+            degradation_data.append(capacity_factor * 100)  # Prozent
+            revenues_data.append(year_revenue)
+            costs_data.append(year_cost)
+        
+        # Berechne Gesamtmetriken
+        total_revenues = sum(revenues_data)
+        total_costs = sum(costs_data)
+        total_net_cashflow = sum(cashflow_data)
+        
+        # NPV-Berechnung (5% Diskontierung)
+        npv = 0
+        for i, cashflow in enumerate(cashflow_data):
+            npv += cashflow / ((1 + 0.05) ** (i + 1))
+        
+        # IRR-Berechnung (vereinfacht)
+        total_investment = bess_size_mwh * 300000  # EUR/MWh
+        irr = (total_net_cashflow / total_investment) * 100 if total_investment > 0 else 0
+        
+        # Werte auf realistische Bereiche begrenzen
+        irr = min(irr, 50.0)  # Maximal 50% IRR
+        
+        # Payback-Jahr finden
+        cumulative_cashflow = 0
+        payback_year = None
+        for i, cashflow in enumerate(cashflow_data):
+            cumulative_cashflow += cashflow
+            if cumulative_cashflow >= total_investment and payback_year is None:
+                payback_year = years[i]
+        
+        analysis_result = {
+            'project_id': project_id,
+            'use_case': use_case,
+            'years': years,
+            'cashflow_data': [round(x, 0) for x in cashflow_data],
+            'degradation_data': [round(x, 1) for x in degradation_data],
+            'revenues_data': [round(x, 0) for x in revenues_data],
+            'costs_data': [round(x, 0) for x in costs_data],
+            'total_investment': round(total_investment, 0),
+            'total_revenues': round(total_revenues, 0),
+            'total_costs': round(total_costs, 0),
+            'total_net_cashflow': round(total_net_cashflow, 0),
+            'npv': round(npv, 0),
+            'irr': round(irr, 1),
+            'payback_year': payback_year,
+            'final_capacity_percent': round(degradation_data[-1], 1)
+        }
+        
+        return jsonify(analysis_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der 10-Jahres-Analyse: {str(e)}'}), 500
+
+@main_bp.route('/api/residual-load/calculate', methods=['POST'])
+def api_calculate_residual_load():
+    """Residuallast berechnen"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        use_case_id = data.get('use_case_id')
+        
+        # Hier würde die Residuallast-Berechnung ausgeführt werden
+        # Für jetzt geben wir Beispieldaten zurück
+        
+        residual_load_result = {
+            'project_id': project_id,
+            'use_case_id': use_case_id,
+            'data_points': [
+                {
+                    'timestamp': '2024-01-01T00:00:00',
+                    'consumption_kw': 500.0,
+                    'pv_generation_kw': 0.0,
+                    'hydro_generation_kw': 650.0,
+                    'residual_load_kw': -150.0
+                },
+                {
+                    'timestamp': '2024-01-01T12:00:00',
+                    'consumption_kw': 450.0,
+                    'pv_generation_kw': 1200.0,
+                    'hydro_generation_kw': 650.0,
+                    'residual_load_kw': -1400.0
+                }
+            ],
+            'statistics': {
+                'average_consumption_kw': 475.0,
+                'average_pv_generation_kw': 600.0,
+                'average_hydro_generation_kw': 650.0,
+                'average_residual_load_kw': -775.0
+            }
+        }
+        
+        return jsonify(residual_load_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der Residuallast-Berechnung: {str(e)}'}), 500
+
+@main_bp.route('/api/load-shifting/optimize', methods=['POST'])
+def api_optimize_load_shifting():
+    """Load-Shifting optimieren"""
+    try:
+        data = request.get_json()
+        project_id = data.get('project_id')
+        optimization_target = data.get('optimization_target', 'cost_minimization')
+        
+        # Hier würde die Load-Shifting-Optimierung ausgeführt werden
+        # Für jetzt geben wir Beispieldaten zurück
+        
+        optimization_result = {
+            'project_id': project_id,
+            'optimization_target': optimization_target,
+            'schedule': [
+                {
+                    'timestamp': '2024-01-01T00:00:00',
+                    'charge_power_kw': 500.0,
+                    'discharge_power_kw': 0.0,
+                    'battery_soc_percent': 50.0,
+                    'spot_price_eur_mwh': 45.0,
+                    'cost_eur': 5.63,
+                    'revenue_eur': 0.0
+                },
+                {
+                    'timestamp': '2024-01-01T12:00:00',
+                    'charge_power_kw': 0.0,
+                    'discharge_power_kw': 500.0,
+                    'battery_soc_percent': 30.0,
+                    'spot_price_eur_mwh': 85.0,
+                    'cost_eur': 0.0,
+                    'revenue_eur': 10.63
+                }
+            ],
+            'summary': {
+                'total_charge_energy_mwh': 1000.0,
+                'total_discharge_energy_mwh': 850.0,
+                'total_cost_eur': 45000.0,
+                'total_revenue_eur': 72000.0,
+                'net_benefit_eur': 27000.0
+            }
+        }
+        
+        return jsonify(optimization_result)
+        
+    except Exception as e:
+        return jsonify({'error': f'Fehler bei der Load-Shifting-Optimierung: {str(e)}'}), 500
+
+@main_bp.route('/api/grid-tariffs')
+def api_grid_tariffs():
+    """Netzentgelte abrufen"""
+    try:
+        grid_tariffs = GridTariff.query.all()
+        return jsonify([{
+            'id': gt.id,
+            'name': gt.name,
+            'tariff_type': gt.tariff_type,
+            'base_price_eur_mwh': gt.base_price_eur_mwh,
+            'spot_multiplier': gt.spot_multiplier,
+            'region': gt.region,
+            'valid_from': gt.valid_from.isoformat() if gt.valid_from else None,
+            'valid_to': gt.valid_to.isoformat() if gt.valid_to else None
+        } for gt in grid_tariffs])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Netzentgelte: {str(e)}'}), 500
+
+@main_bp.route('/api/legal-charges')
+def api_legal_charges():
+    """Gesetzliche Abgaben abrufen"""
+    try:
+        legal_charges = LegalCharges.query.all()
+        return jsonify([{
+            'id': lc.id,
+            'name': lc.name,
+            'charge_type': lc.charge_type,
+            'amount_eur_mwh': lc.amount_eur_mwh,
+            'region': lc.region,
+            'valid_from': lc.valid_from.isoformat() if lc.valid_from else None,
+            'valid_to': lc.valid_to.isoformat() if lc.valid_to else None,
+            'description': lc.description
+        } for lc in legal_charges])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der gesetzlichen Abgaben: {str(e)}'}), 500
+
+@main_bp.route('/api/regulatory-changes')
+def api_regulatory_changes():
+    """Gesetzliche Änderungen abrufen"""
+    try:
+        regulatory_changes = RegulatoryChanges.query.all()
+        return jsonify([{
+            'id': rc.id,
+            'name': rc.name,
+            'change_type': rc.change_type,
+            'old_value_eur_mwh': rc.old_value_eur_mwh,
+            'new_value_eur_mwh': rc.new_value_eur_mwh,
+            'change_year': rc.change_year,
+            'region': rc.region,
+            'description': rc.description
+        } for rc in regulatory_changes])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der gesetzlichen Änderungen: {str(e)}'}), 500
+
+# -------------------------
+# PVGIS SOLAR-DATEN API
+# -------------------------
+
+@main_bp.route('/api/pvgis/locations')
+def api_pvgis_locations():
+    """Verfügbare PVGIS-Standorte abrufen - gruppiert nach Regionen"""
+    try:
+        fetcher = PVGISDataFetcher()
+        locations = fetcher.get_available_locations()
+        
+        # Standorte nach Regionen gruppieren
+        grouped_locations = {}
+        for key, location in locations.items():
+            region = location.get('region', 'Sonstige')
+            if region not in grouped_locations:
+                grouped_locations[region] = []
+            grouped_locations[region].append({
+                'key': key,
+                'name': location['name'],
+                'lat': location['lat'],
+                'lon': location['lon'],
+                'altitude': location.get('altitude', 0),
+                'description': location.get('description', ''),
+                'region': region
+            })
+        
+        # Regionen sortieren (Hauptstandort zuerst)
+        sorted_regions = {}
+        if 'Oberösterreich' in grouped_locations:
+            sorted_regions['Oberösterreich'] = grouped_locations['Oberösterreich']
+        for region in sorted(grouped_locations.keys()):
+            if region != 'Oberösterreich':
+                sorted_regions[region] = grouped_locations[region]
+        
+        return jsonify({
+            'success': True,
+            'locations': sorted_regions,
+            'total_count': len(locations)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/fetch-solar-data', methods=['POST'])
+def api_pvgis_fetch_solar_data():
+    """Solar-Daten von PVGIS abrufen und in Datenbank speichern"""
+    try:
+        data = request.get_json()
+        location_key = data.get('location_key')
+        year = data.get('year', 2024)
+        custom_lat = data.get('custom_lat')
+        custom_lon = data.get('custom_lon')
+        
+        if not location_key:
+            return jsonify({'success': False, 'error': 'location_key ist erforderlich'}), 400
+        
+        fetcher = PVGISDataFetcher()
+        result = fetcher.fetch_solar_data(location_key, year, custom_lat, custom_lon)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': f"Solar-Daten erfolgreich geladen für {result['location']} ({result['year']})",
+                'records': result['records'],
+                'location': result['location'],
+                'year': result['year'],
+                'database_saved': result['database_saved']
+            })
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/solar-data/<location_key>/<int:year>')
+def api_pvgis_get_solar_data(location_key, year):
+    """Solar-Daten aus Datenbank abrufen"""
+    try:
+        print(f"🔄 Lade Solar-Daten für {location_key}, Jahr {year}...")
+        
+        # Direkte Datenbankabfrage
+        conn = get_db()
+        df = pd.read_sql_query('''
+            SELECT * FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if not df.empty:
+            print(f"✅ {len(df)} Datensätze gefunden")
+            
+            # Daten für JSON-Serialisierung vorbereiten
+            data = []
+            for _, row in df.iterrows():
+                data.append({
+                    'datetime': row['datetime'],
+                    'global_irradiance': float(row['global_irradiance']) if pd.notna(row['global_irradiance']) else None,
+                    'beam_irradiance': float(row['beam_irradiance']) if pd.notna(row['beam_irradiance']) else None,
+                    'diffuse_irradiance': float(row['diffuse_irradiance']) if pd.notna(row['diffuse_irradiance']) else None,
+                    'sun_height': float(row['sun_height']) if pd.notna(row['sun_height']) else None,
+                    'temperature_2m': float(row['temperature_2m']) if pd.notna(row['temperature_2m']) else None,
+                    'wind_speed_10m': float(row['wind_speed_10m']) if pd.notna(row['wind_speed_10m']) else None
+                })
+            
+            return jsonify({
+                'success': True,
+                'location_key': location_key,
+                'year': year,
+                'records': len(data),
+                'data': data
+            })
+        else:
+            print(f"❌ Keine Daten gefunden für {location_key} ({year})")
+            return jsonify({
+                'success': False,
+                'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Solar-Daten: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/expand-locations/<int:project_id>', methods=['POST'])
+def api_pvgis_expand_locations(project_id):
+    """Intelligente Standort-Erweiterung für ein Projekt"""
+    try:
+        from intelligent_location_expander import IntelligentLocationExpander
+        
+        expander = IntelligentLocationExpander()
+        result = expander.expand_locations_for_project(project_id)
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': f"Standorte für Projekt {project_id} erweitert",
+                'added_count': result['added_count'],
+                'new_locations': result['new_locations']
+            })
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/add-location', methods=['POST'])
+def api_pvgis_add_location():
+    """Neuen benutzerdefinierten Standort hinzufügen"""
+    try:
+        data = request.get_json()
+        key = data.get('key')
+        name = data.get('name')
+        lat = data.get('lat')
+        lon = data.get('lon')
+        altitude = data.get('altitude')
+        description = data.get('description', '')
+        
+        if not all([key, name, lat, lon]):
+            return jsonify({'success': False, 'error': 'key, name, lat, lon sind erforderlich'}), 400
+        
+        fetcher = PVGISDataFetcher()
+        success = fetcher.add_custom_location(key, name, lat, lon, altitude, description)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Standort {name} erfolgreich hinzugefügt'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': f'Standort mit Schlüssel {key} existiert bereits'
+            }), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/pvgis/solar-statistics/<location_key>/<int:year>')
+def api_pvgis_solar_statistics(location_key, year):
+    """Statistiken für Solar-Daten berechnen"""
+    try:
+        print(f"🔄 Berechne Solar-Statistiken für {location_key} ({year})")
+        
+        # Prüfe ob die Tabelle existiert
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Prüfe ob solar_data Tabelle existiert
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='solar_data'
+        """)
+        
+        if not cursor.fetchone():
+            # Demo-Daten zurückgeben wenn keine Tabelle existiert
+            print(f"⚠️ Solar-Daten Tabelle nicht gefunden - verwende Demo-Daten")
+            demo_statistics = {
+                'avg_irradiance': 450.5,
+                'max_irradiance': 1050.2,
+                'min_irradiance': 0.0,
+                'std_irradiance': 320.8,
+                'total_annual_kwh': 3950.0
+            }
+            
+            return jsonify({
+                'success': True,
+                'location_key': location_key,
+                'year': year,
+                'statistics': demo_statistics,
+                'data_points': 8760,
+                'demo_data': True
+            })
+        
+        # Prüfe ob Daten für den Standort existieren
+        cursor.execute("""
+            SELECT COUNT(*) FROM solar_data 
+            WHERE location_key = ? AND year = ?
+        """, (location_key, year))
+        
+        data_count = cursor.fetchone()[0]
+        if data_count == 0:
+            # Demo-Daten zurückgeben wenn keine Daten existieren
+            print(f"⚠️ Keine Solar-Daten für {location_key} ({year}) - verwende Demo-Daten")
+            demo_statistics = {
+                'avg_irradiance': 450.5,
+                'max_irradiance': 1050.2,
+                'min_irradiance': 0.0,
+                'std_irradiance': 320.8,
+                'total_annual_kwh': 3950.0
+            }
+            
+            return jsonify({
+                'success': True,
+                'location_key': location_key,
+                'year': year,
+                'statistics': demo_statistics,
+                'data_points': 8760,
+                'demo_data': True
+            })
+        
+        # Daten laden mit pandas
+        df = pd.read_sql_query('''
+            SELECT datetime, global_irradiance, temperature_2m, wind_speed_10m
+            FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if df.empty:
+            return jsonify({
+                'success': False,
+                'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
+            }), 404
+        
+        # Datetime konvertieren
+        df['datetime'] = pd.to_datetime(df['datetime'])
+        
+        # Berechne vereinfachte Statistiken für die Anzeige
+        avg_irradiance = float(df['global_irradiance'].mean()) if 'global_irradiance' in df.columns else 0
+        max_irradiance = float(df['global_irradiance'].max()) if 'global_irradiance' in df.columns else 0
+        
+        # Erstelle vereinfachte Antwort für die Frontend-Anzeige
+        statistics = {
+            'avg_irradiance': round(avg_irradiance, 1),
+            'max_irradiance': round(max_irradiance, 1),
+            'min_irradiance': round(float(df['global_irradiance'].min()), 1) if 'global_irradiance' in df.columns else 0,
+            'std_irradiance': round(float(df['global_irradiance'].std()), 1) if 'global_irradiance' in df.columns else 0,
+            'total_annual_kwh': round(float(df['global_irradiance'].sum() / 1000), 2) if 'global_irradiance' in df.columns else 0
+        }
+        
+        print(f"✅ Solar-Statistiken berechnet: {len(df)} Datensätze")
+        
+        return jsonify({
+            'success': True,
+            'location_key': location_key,
+            'year': year,
+            'statistics': statistics,
+            'data_points': len(df),
+            'demo_data': False
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler bei Solar-Statistiken: {e}")
+        return jsonify({
+            'success': False, 
+            'error': f'Fehler bei der Solar-Potential Berechnung: {str(e)}'
+        }), 500
+
+@main_bp.route('/api/bess/simulation-with-solar', methods=['POST'])
+def api_bess_simulation_with_solar():
+    """BESS-Simulation mit Solar-Daten durchführen"""
+    try:
+        data = request.get_json()
+        location_key = data.get('location_key')
+        year = data.get('year', 2020)
+        pv_capacity = data.get('pv_capacity', 1950)  # kWp
+        bess_size = data.get('bess_size', 1000)      # kWh
+        bess_power = data.get('bess_power', 500)     # kW
+        
+        print(f"🔄 BESS-Simulation mit Solar-Daten: {location_key}, {pv_capacity} kWp, {bess_size} kWh")
+        
+        # Solar-Daten abrufen
+        conn = get_db()
+        df = pd.read_sql_query('''
+            SELECT datetime, global_irradiance, temperature_2m
+            FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if df.empty:
+            return jsonify({'success': False, 'error': 'Keine Solar-Daten verfügbar'}), 404
+        
+        # PV-Erzeugung berechnen (vereinfacht)
+        df['pv_generation'] = df['global_irradiance'] * pv_capacity * 0.75 / 1000  # kW
+        
+        # BESS-Simulation (vereinfacht)
+        bess_soc = 0.5  # Start-SOC 50%
+        bess_energy = []
+        grid_import = []
+        grid_export = []
+        
+        for _, row in df.iterrows():
+            pv_gen = row['pv_generation']
+            
+            # BESS-Logik (vereinfacht)
+            if pv_gen > 0:  # Tagsüber
+                # Überschüssige Energie in BESS laden
+                excess = max(0, pv_gen - bess_power)
+                bess_charge = min(bess_power, excess)
+                bess_soc = min(1.0, bess_soc + bess_charge / bess_size)
+                grid_export.append(excess)
+                grid_import.append(0)
+            else:  # Nachts
+                # BESS entladen
+                bess_discharge = min(bess_power, bess_size * bess_soc)
+                bess_soc = max(0.0, bess_soc - bess_discharge / bess_size)
+                grid_import.append(bess_discharge)
+                grid_export.append(0)
+            
+            bess_energy.append(bess_soc * bess_size)
+        
+        # Ergebnisse berechnen
+        total_pv_energy = df['pv_generation'].sum() / 1000  # MWh
+        total_grid_import = sum(grid_import) / 1000  # MWh
+        total_grid_export = sum(grid_export) / 1000  # MWh
+        self_consumption_rate = (total_pv_energy - total_grid_export) / total_pv_energy * 100
+        
+        results = {
+            'total_pv_energy_mwh': round(total_pv_energy, 2),
+            'total_grid_import_mwh': round(total_grid_import, 2),
+            'total_grid_export_mwh': round(total_grid_export, 2),
+            'self_consumption_rate_percent': round(self_consumption_rate, 1),
+            'bess_utilization_hours': round(total_grid_import / bess_power * 1000, 0),
+            'data_points': len(df)
+        }
+        
+        return jsonify({
+            'success': True,
+            'simulation_results': results,
+            'parameters': {
+                'location_key': location_key,
+                'year': year,
+                'pv_capacity_kwp': pv_capacity,
+                'bess_size_kwh': bess_size,
+                'bess_power_kw': bess_power
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler bei BESS-Simulation: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500

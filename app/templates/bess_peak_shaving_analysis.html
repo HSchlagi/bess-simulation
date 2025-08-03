@@ -80,6 +80,14 @@
                 </div>
                 <p class="text-sm text-cyan-700">EHYD-Pegelstanddaten für BESS-Simulation</p>
             </button>
+            
+            <button onclick="addAnalysisCard('solar-potential')" class="analysis-type-btn bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 rounded-lg p-4 text-left transition-all">
+                <div class="flex items-center mb-2">
+                    <i class="fas fa-solar-panel text-orange-600 text-xl mr-3"></i>
+                    <h3 class="font-semibold text-orange-900">Solar-Potential</h3>
+                </div>
+                <p class="text-sm text-orange-700">PVGIS-Solardaten für BESS-Optimierung</p>
+            </button>
         </div>
     </div>
 
@@ -158,6 +166,127 @@
             <div class="mt-4">
                 <button onclick="simulateBESSWithWaterData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
                     <i class="fas fa-play"></i> BESS-Simulation mit Wasserstanddaten starten
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Solar-Potential Analyse Karte -->
+    <div id="solar-potential-card" class="analysis-card bg-white rounded-lg shadow-md p-6 hidden">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-orange-800">
+                <i class="fas fa-solar-panel text-orange-600 mr-2"></i>
+                Solar-Potential Analyse
+            </h3>
+            <button onclick="removeAnalysisCard('solar-potential')" class="text-gray-400 hover:text-red-500">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- PVGIS-Standort Auswahl -->
+        <div class="bg-orange-50 border-l-4 border-orange-400 p-4 mb-6">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-map-marker-alt text-orange-400"></i>
+                </div>
+                <div class="ml-3">
+                    <h4 class="text-sm font-medium text-orange-800">PVGIS-Solar-Daten verfügbar</h4>
+                    <div class="mt-2 text-sm text-orange-700">
+                        <p><strong>8.784 Datenpunkte</strong> für Hinterstoder verfügbar</p>
+                        <p><strong>Zeitraum:</strong> 2020-01-01 bis 2020-12-31</p>
+                        <p><strong>Quelle:</strong> PVGIS (Photovoltaic Geographical Information System)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Standort und Jahr Auswahl -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">PVGIS-Standort</label>
+                <select id="solarLocationSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="">Standort auswählen...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Jahr</label>
+                <select id="solarYearSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="2020">2020</option>
+                    <option value="2019">2019</option>
+                    <option value="2018">2018</option>
+                    <option value="2017">2017</option>
+                    <option value="2016">2016</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Aktion</label>
+                <button onclick="loadSolarData()" class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-md text-sm">
+                    <i class="fas fa-solar-panel mr-2"></i>Solar-Daten laden
+                </button>
+            </div>
+        </div>
+        
+        <!-- Chart-Container -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-semibold text-gray-800 mb-4">Solar-Einstrahlung & Temperatur</h4>
+            <div id="solarChartContainer" class="h-96">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-chart-line text-4xl mb-4"></i>
+                    <p>Klicken Sie auf "Solar-Daten laden" um die Analyse zu starten</p>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button onclick="exportSolarData()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-download"></i> Daten exportieren
+                </button>
+                <button onclick="calculateSolarPotential()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-calculator"></i> Solar-Potential berechnen
+                </button>
+            </div>
+        </div>
+        
+        <!-- Solar-Potential Ergebnisse -->
+        <div id="solarResults" class="bg-green-50 border-2 border-green-200 rounded-lg p-6 mb-6 hidden">
+            <h4 class="text-lg font-bold text-green-800 mb-4">
+                <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                🎯 Solar-Potential Analyse Ergebnisse
+            </h4>
+            <div id="solarResultsContent" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <!-- Ergebnisse werden hier dynamisch eingefügt -->
+            </div>
+            <div class="mt-4 text-sm text-green-700">
+                <i class="fas fa-info-circle mr-1"></i>
+                Diese Werte basieren auf den PVGIS-Solar-Daten für den ausgewählten Standort.
+            </div>
+        </div>
+        
+        <!-- BESS-Integration -->
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
+            <h4 class="text-md font-semibold text-blue-800 mb-4">
+                <i class="fas fa-battery-three-quarters text-blue-600 mr-2"></i>
+                BESS-Simulation mit Solar-Daten
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">PV-Anlage (kWp)</label>
+                    <input type="number" id="pvCapacity" value="1950" min="1" max="10000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">1.950 kWp für Hinterstoder</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Größe (kWh)</label>
+                    <input type="number" id="bessSizeSolar" value="1000" min="1" max="10000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Leistung (kW)</label>
+                    <input type="number" id="bessPowerSolar" value="500" min="1" max="5000" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="mt-4">
+                <button onclick="simulateBESSWithSolarData()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                    <i class="fas fa-play"></i> BESS-Simulation mit Solar-Daten starten
                 </button>
             </div>
         </div>
@@ -991,6 +1120,12 @@ function addAnalysisCard(analysisType) {
             icon: 'fas fa-water',
             color: 'cyan',
             description: 'EHYD-Pegelstanddaten für BESS-Simulation'
+        },
+        'solar-potential': {
+            title: 'Solar-Potential',
+            icon: 'fas fa-solar-panel',
+            color: 'orange',
+            description: 'PVGIS-Solardaten für BESS-Optimierung'
         }
     };
     
@@ -1030,6 +1165,15 @@ function addAnalysisCard(analysisType) {
             </div>
         </div>
     `;
+    
+    // Spezielle Behandlung für Solar-Potential Analyse
+    if (analysisType === 'solar-potential') {
+        // Solar-Potential Karte direkt anzeigen
+        document.getElementById('solar-potential-card').classList.remove('hidden');
+        // PVGIS-Standorte laden
+        loadSolarLocations();
+        return;
+    }
     
     analysisCards.insertAdjacentHTML('beforeend', cardHTML);
     
@@ -2185,6 +2329,411 @@ function closeResultsModal() {
     if (modal) {
         modal.remove();
     }
+}
+
+// ================ SOLAR-POTENTIAL ANALYSE FUNKTIONEN ================
+
+// PVGIS-Standorte laden
+async function loadSolarLocations() {
+    try {
+        console.log('🔄 Lade PVGIS-Standorte für Solar-Analyse...');
+        const response = await fetch('/api/pvgis/locations');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 PVGIS-Standorte erhalten:', data);
+        
+        const select = document.getElementById('solarLocationSelect');
+        select.innerHTML = '<option value="">Standort auswählen...</option>';
+        
+        // Standorte nach Regionen gruppiert hinzufügen
+        Object.keys(data.locations).forEach(region => {
+            const locations = data.locations[region];
+            
+            // Optgroup für Region erstellen
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = `${region} (${locations.length} Standorte)`;
+            
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = location.key;
+                option.textContent = `${location.name} (${location.lat}°, ${location.lon}°)`;
+                optgroup.appendChild(option);
+            });
+            
+            select.appendChild(optgroup);
+        });
+        
+        console.log(`✅ ${data.total_count} PVGIS-Standorte geladen`);
+    } catch (error) {
+        console.error('Fehler beim Laden der PVGIS-Standorte:', error);
+        showNotification('Fehler beim Laden der PVGIS-Standorte', 'error');
+    }
+}
+
+// Solar-Daten laden und Chart anzeigen
+async function loadSolarData() {
+    const locationKey = document.getElementById('solarLocationSelect').value;
+    const year = parseInt(document.getElementById('solarYearSelect').value);
+    
+    if (!locationKey) {
+        showNotification('Bitte wählen Sie einen PVGIS-Standort aus', 'error');
+        return;
+    }
+    
+    try {
+        console.log(`🔄 Lade Solar-Daten für ${locationKey}, Jahr ${year}...`);
+        
+        const response = await fetch(`/api/pvgis/solar-data/${locationKey}/${year}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+            console.log(`✅ ${data.records} Solar-Datenpunkte geladen`);
+            createSolarChart(data.data, locationKey, year);
+            showNotification(`✅ ${data.records} Solar-Datenpunkte geladen!`, 'success');
+        } else {
+            console.log('Keine Solar-Daten verfügbar');
+            showNotification('Keine Solar-Daten für diesen Standort verfügbar', 'warning');
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Solar-Daten:', error);
+        showNotification('Fehler beim Laden der Solar-Daten', 'error');
+    }
+}
+
+// Solar-Chart erstellen
+function createSolarChart(solarData, locationKey, year) {
+    const container = document.getElementById('solarChartContainer');
+    
+    // Bestehenden Chart zerstören falls vorhanden
+    if (window.solarChart) {
+        window.solarChart.destroy();
+    }
+    
+    // Canvas erstellen
+    container.innerHTML = '<canvas id="solarChart" width="800" height="400"></canvas>';
+    const canvas = document.getElementById('solarChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Daten für Chart vorbereiten (nur jeden 10. Datenpunkt für Performance)
+    const chartData = solarData.filter((_, index) => index % 10 === 0);
+    
+    const labels = chartData.map(d => {
+        const date = new Date(d.datetime);
+        return date.toLocaleDateString('de-DE', {month: 'short', day: 'numeric'}) + 
+               ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit'});
+    });
+    
+    const irradianceData = chartData.map(d => d.global_irradiance || 0);
+    const temperatureData = chartData.map(d => d.temperature_2m || 0);
+    
+    // Chart erstellen
+    window.solarChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Globalstrahlung (W/m²)',
+                    data: irradianceData,
+                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.1,
+                    pointRadius: 1,
+                    borderWidth: 2
+                },
+                {
+                    label: 'Temperatur (°C)',
+                    data: temperatureData,
+                    borderColor: '#4ECDC4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.1,
+                    pointRadius: 1,
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Solar-Daten ${locationKey} (${year})`,
+                    font: { size: 16, weight: 'bold' }
+                },
+                legend: { 
+                    display: true, 
+                    position: 'top' 
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: 'white',
+                    bodyColor: 'white',
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.label.includes('Globalstrahlung')) {
+                                return `Globalstrahlung: ${context.parsed.y.toFixed(1)} W/m²`;
+                            } else {
+                                return `Temperatur: ${context.parsed.y.toFixed(1)} °C`;
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { 
+                        display: true, 
+                        text: 'Datum & Zeit',
+                        font: { weight: 'bold' }
+                    },
+                    ticks: { 
+                        maxTicksLimit: 15,
+                        maxRotation: 45
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { 
+                        display: true, 
+                        text: 'Globalstrahlung (W/m²)',
+                        font: { weight: 'bold' }
+                    },
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { 
+                        display: true, 
+                        text: 'Temperatur (°C)',
+                        font: { weight: 'bold' }
+                    },
+                    beginAtZero: false,
+                    grid: {
+                        drawOnChartArea: false,
+                    },
+                }
+            }
+        }
+    });
+}
+
+// Solar-Potential berechnen
+async function calculateSolarPotential() {
+    const locationKey = document.getElementById('solarLocationSelect').value;
+    const year = parseInt(document.getElementById('solarYearSelect').value);
+    const pvCapacity = parseFloat(document.getElementById('pvCapacity').value);
+    
+    if (!locationKey) {
+        showNotification('Bitte wählen Sie einen PVGIS-Standort aus', 'error');
+        return;
+    }
+    
+    try {
+        console.log(`🔄 Berechne Solar-Potential für ${locationKey}, ${pvCapacity} kWp...`);
+        
+        const response = await fetch(`/api/pvgis/solar-statistics/${locationKey}/${year}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displaySolarResults(data.statistics, pvCapacity);
+            if (data.demo_data) {
+                showNotification('✅ Solar-Potential berechnet (Demo-Daten)!', 'info');
+            } else {
+                showNotification('✅ Solar-Potential erfolgreich berechnet!', 'success');
+            }
+        } else {
+            showNotification('Fehler bei der Solar-Potential Berechnung', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Fehler bei Solar-Potential Berechnung:', error);
+        showNotification('Fehler bei der Solar-Potential Berechnung', 'error');
+    }
+}
+
+// Solar-Ergebnisse anzeigen
+function displaySolarResults(statistics, pvCapacity) {
+    console.log('📊 Zeige Solar-Ergebnisse:', statistics, pvCapacity);
+    
+    const resultsDiv = document.getElementById('solarResults');
+    const contentDiv = document.getElementById('solarResultsContent');
+    
+    if (!resultsDiv || !contentDiv) {
+        console.error('❌ Ergebnisse-Container nicht gefunden');
+        return;
+    }
+    
+    // Jährliche Energieerzeugung berechnen
+    const annualEnergy = (statistics.avg_irradiance * pvCapacity * 0.75 * 8760) / 1000; // MWh
+    const fullLoadHours = (annualEnergy * 1000 / pvCapacity);
+    
+    console.log('⚡ Berechnete Werte:', {
+        avg_irradiance: statistics.avg_irradiance,
+        max_irradiance: statistics.max_irradiance,
+        pv_capacity: pvCapacity,
+        annual_energy: annualEnergy,
+        full_load_hours: fullLoadHours
+    });
+    
+    contentDiv.innerHTML = `
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-blue-600">${statistics.avg_irradiance.toFixed(1)}</div>
+            <div class="text-sm text-gray-600">Ø Globalstrahlung (W/m²)</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-green-600">${statistics.max_irradiance.toFixed(1)}</div>
+            <div class="text-sm text-gray-600">Max Globalstrahlung (W/m²)</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-orange-600">${annualEnergy.toFixed(0)}</div>
+            <div class="text-sm text-gray-600">Jährliche Energie (MWh)</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-purple-600">${fullLoadHours.toFixed(0)}</div>
+            <div class="text-sm text-gray-600">Vollaststunden (h/a)</div>
+        </div>
+    `;
+    
+    // Container sichtbar machen
+    resultsDiv.classList.remove('hidden');
+    console.log('✅ Solar-Ergebnisse angezeigt');
+    
+    // Scroll zu den Ergebnissen
+    resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+// BESS-Simulation mit Solar-Daten starten
+async function simulateBESSWithSolarData() {
+    const locationKey = document.getElementById('solarLocationSelect').value;
+    const year = parseInt(document.getElementById('solarYearSelect').value);
+    const pvCapacity = parseFloat(document.getElementById('pvCapacity').value);
+    const bessSize = parseFloat(document.getElementById('bessSizeSolar').value);
+    const bessPower = parseFloat(document.getElementById('bessPowerSolar').value);
+    
+    if (!locationKey) {
+        showNotification('Bitte wählen Sie einen PVGIS-Standort aus', 'error');
+        return;
+    }
+    
+    try {
+        console.log(`🔄 Starte BESS-Simulation mit Solar-Daten...`);
+        
+        const response = await fetch('/api/bess/simulation-with-solar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                location_key: locationKey,
+                year: year,
+                pv_capacity: pvCapacity,
+                bess_size: bessSize,
+                bess_power: bessPower
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayBESSResults(data.simulation_results, data.parameters);
+            showNotification('✅ BESS-Simulation erfolgreich abgeschlossen!', 'success');
+        } else {
+            showNotification('Fehler bei der BESS-Simulation: ' + data.error, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Fehler bei BESS-Simulation:', error);
+        showNotification('Fehler bei der BESS-Simulation', 'error');
+    }
+}
+
+// BESS-Ergebnisse anzeigen
+function displayBESSResults(results, parameters) {
+    const resultsDiv = document.getElementById('solarResults');
+    const contentDiv = document.getElementById('solarResultsContent');
+    
+    contentDiv.innerHTML = `
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-blue-600">${results.total_pv_energy_mwh}</div>
+            <div class="text-sm text-gray-600">PV-Energie (MWh/a)</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-green-600">${results.self_consumption_rate_percent}%</div>
+            <div class="text-sm text-gray-600">Eigenverbrauchsrate</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-orange-600">${results.total_grid_import_mwh}</div>
+            <div class="text-sm text-gray-600">Netzbezug (MWh/a)</div>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow">
+            <div class="text-2xl font-bold text-purple-600">${results.bess_utilization_hours}</div>
+            <div class="text-sm text-gray-600">BESS-Nutzung (h/a)</div>
+        </div>
+    `;
+    
+    resultsDiv.classList.remove('hidden');
+    
+    // Zusätzliche Details anzeigen
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'bg-blue-50 rounded-lg p-4 mt-4';
+    detailsDiv.innerHTML = `
+        <h5 class="font-semibold text-blue-800 mb-2">Simulations-Parameter:</h5>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div><strong>Standort:</strong> ${parameters.location_key}</div>
+            <div><strong>Jahr:</strong> ${parameters.year}</div>
+            <div><strong>PV-Leistung:</strong> ${parameters.pv_capacity_kwp} kWp</div>
+            <div><strong>BESS-Größe:</strong> ${parameters.bess_size_kwh} kWh</div>
+            <div><strong>BESS-Leistung:</strong> ${parameters.bess_power_kw} kW</div>
+            <div><strong>Datenpunkte:</strong> ${results.data_points}</div>
+        </div>
+    `;
+    
+    resultsDiv.appendChild(detailsDiv);
+}
+
+// Solar-Daten exportieren
+function exportSolarData() {
+    showNotification('📥 Solar-Daten Export gestartet...', 'info');
+    // Hier würde der Export implementiert
+}
+
+// Notification-Funktion
+function showNotification(message, type = 'info') {
+    // Einfache Alert-Implementierung
+    alert(`${type.toUpperCase()}: ${message}`);
 }
 </script>
 {% endblock %} 

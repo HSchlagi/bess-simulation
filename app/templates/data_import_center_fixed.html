@@ -34,6 +34,9 @@
                 <button onclick="showTab('weather')" id="tab-weather" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-cloud mr-2"></i>Wetterdaten
                 </button>
+                <button onclick="showTab('pvgis')" id="tab-pvgis" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-solar-panel mr-2"></i>PVGIS Solar
+                </button>
             </nav>
         </div>
 
@@ -415,6 +418,111 @@
                 </div>
             </div>
         </div>
+
+        <!-- PVGIS Solar Tab -->
+        <div id="tab-content-pvgis" class="tab-content p-6 hidden">
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-6">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-solar-panel text-yellow-600 mr-2"></i>
+                    PVGIS Solar-Daten Import
+                </h3>
+                <p class="text-gray-600 mb-6">
+                    Laden Sie Solar-Einstrahlungsdaten direkt von PVGIS (Photovoltaic Geographical Information System) 
+                    für verschiedene Standorte in Österreich.
+                </p>
+
+                <!-- Standort-Auswahl -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-3">Standort auswählen</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Bekannte Standorte</label>
+                                <select id="pvgis-location-select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Standort auswählen...</option>
+                                </select>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Oder benutzerdefinierten Standort hinzufügen
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-3">Benutzerdefinierter Standort</h4>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Standort-Name</label>
+                                <input type="text" id="custom-location-name" placeholder="z.B. Meine Anlage" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+                                    <input type="number" id="custom-lat" step="0.0001" placeholder="47.6969" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+                                    <input type="number" id="custom-lon" step="0.0001" placeholder="14.1500" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                            <button onclick="addCustomLocation()" 
+                                    class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-200">
+                                <i class="fas fa-plus mr-2"></i>Standort hinzufügen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Datenabruf -->
+                <div class="bg-white rounded-lg p-4 border border-gray-200 mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-3">Daten abrufen</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Standort</label>
+                            <select id="pvgis-fetch-location" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Standort auswählen...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
+                            <select id="pvgis-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="2024">2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2022">2022</option>
+                                <option value="2021">2021</option>
+                                <option value="2020">2020</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="fetchPVGISData()" 
+                                    class="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors duration-200">
+                                <i class="fas fa-download mr-2"></i>Daten abrufen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status und Ergebnisse -->
+                <div id="pvgis-status" class="hidden">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-3">Status</h4>
+                        <div id="pvgis-status-content" class="text-sm"></div>
+                    </div>
+                </div>
+
+                <!-- Verfügbare Daten -->
+                <div id="pvgis-available-data" class="hidden">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <h4 class="font-semibold text-gray-800 mb-3">Verfügbare Solar-Daten</h4>
+                        <div id="pvgis-data-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Intelligente Verarbeitung -->
@@ -541,7 +649,8 @@ let importedData = {
     solar: [],
     hydro: [],
     pvsol: [],
-    weather: []
+    weather: [],
+    pvgis: []
 };
 
 // Tab-Funktionalität
@@ -576,7 +685,8 @@ async function loadProjects() {
             'solarProjectSelect', 
             'hydroProjectSelect',
             'pvsolProjectSelect',
-            'weatherProjectSelect'
+            'weatherProjectSelect',
+            'pvgisProjectSelect'
         ];
         
         projectSelects.forEach(selectId => {
@@ -3319,7 +3429,192 @@ document.addEventListener('DOMContentLoaded', function() {
             ehydFetcher.loadEHYDData();
         });
     }
+    
+    // PVGIS-Standorte beim Laden der Seite laden
+    loadPVGISLocations();
 });
+
+// -------------------------
+// PVGIS FUNKTIONEN
+// -------------------------
+
+// PVGIS-Standorte laden
+async function loadPVGISLocations() {
+    try {
+        const response = await fetch('/api/pvgis/locations');
+        const result = await response.json();
+        
+        if (result.success) {
+            const locations = result.locations;
+            const locationSelects = ['pvgis-location-select', 'pvgis-fetch-location'];
+            
+            locationSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '<option value="">Standort auswählen...</option>';
+                    
+                    Object.keys(locations).forEach(key => {
+                        const location = locations[key];
+                        const option = document.createElement('option');
+                        option.value = key;
+                        option.textContent = `${location.name} (${location.lat.toFixed(4)}, ${location.lon.toFixed(4)})`;
+                        select.appendChild(option);
+                    });
+                }
+            });
+            
+            console.log('✅ PVGIS-Standorte geladen');
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der PVGIS-Standorte:', error);
+    }
+}
+
+// Benutzerdefinierten Standort hinzufügen
+async function addCustomLocation() {
+    const name = document.getElementById('custom-location-name').value;
+    const lat = parseFloat(document.getElementById('custom-lat').value);
+    const lon = parseFloat(document.getElementById('custom-lon').value);
+    
+    if (!name || isNaN(lat) || isNaN(lon)) {
+        showNotification('Bitte füllen Sie alle Felder korrekt aus', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/pvgis/add-location', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                key: name.toLowerCase().replace(/\s+/g, '_'),
+                name: name,
+                lat: lat,
+                lon: lon
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            // Standorte neu laden
+            loadPVGISLocations();
+            // Felder zurücksetzen
+            document.getElementById('custom-location-name').value = '';
+            document.getElementById('custom-lat').value = '';
+            document.getElementById('custom-lon').value = '';
+        } else {
+            showNotification(result.error, 'error');
+        }
+    } catch (error) {
+        console.error('Fehler beim Hinzufügen des Standorts:', error);
+        showNotification('Fehler beim Hinzufügen des Standorts', 'error');
+    }
+}
+
+// PVGIS-Daten abrufen
+async function fetchPVGISData() {
+    const locationKey = document.getElementById('pvgis-fetch-location').value;
+    const year = parseInt(document.getElementById('pvgis-year').value);
+    
+    if (!locationKey) {
+        showNotification('Bitte wählen Sie einen Standort aus', 'error');
+        return;
+    }
+    
+    // Status anzeigen
+    const statusDiv = document.getElementById('pvgis-status');
+    const statusContent = document.getElementById('pvgis-status-content');
+    statusDiv.classList.remove('hidden');
+    statusContent.innerHTML = `
+        <div class="flex items-center">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            <span>Lade Solar-Daten von PVGIS...</span>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch('/api/pvgis/fetch-solar-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                location_key: locationKey,
+                year: year
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            statusContent.innerHTML = `
+                <div class="text-green-600">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    ${result.message}
+                </div>
+                <div class="text-sm text-gray-600 mt-2">
+                    ${result.records} Datensätze geladen
+                </div>
+            `;
+            
+            // Verfügbare Daten anzeigen
+            showAvailablePVGISData();
+        } else {
+            statusContent.innerHTML = `
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    ${result.error}
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Fehler beim Abrufen der PVGIS-Daten:', error);
+        statusContent.innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                Netzwerkfehler beim Abrufen der Daten
+            </div>
+        `;
+    }
+}
+
+// Verfügbare PVGIS-Daten anzeigen
+async function showAvailablePVGISData() {
+    const dataDiv = document.getElementById('pvgis-available-data');
+    const dataList = document.getElementById('pvgis-data-list');
+    
+    dataDiv.classList.remove('hidden');
+    dataList.innerHTML = '<div class="text-gray-500">Lade verfügbare Daten...</div>';
+    
+    try {
+        // Hier könnten wir alle verfügbaren Standorte/Jahre abrufen
+        // Für jetzt zeigen wir nur eine Nachricht
+        dataList.innerHTML = `
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                    <span class="text-green-800">Solar-Daten erfolgreich in der Datenbank gespeichert</span>
+                </div>
+                <div class="text-sm text-green-600 mt-1">
+                    Die Daten können jetzt in der BESS-Simulation verwendet werden.
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Fehler beim Laden der verfügbaren Daten:', error);
+        dataList.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                    <span class="text-red-800">Fehler beim Laden der verfügbaren Daten</span>
+                </div>
+            </div>
+        `;
+    }
+}
 </script>
 
 <style>

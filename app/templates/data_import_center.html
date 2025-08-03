@@ -44,6 +44,9 @@
                 <button onclick="showTab('weather')" id="tab-weather" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-cloud mr-2"></i>Wetterdaten
                 </button>
+                <button onclick="showTab('pvgis')" id="tab-pvgis" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-solar-panel mr-2"></i>PVGIS Solar
+                </button>
             </nav>
         </div>
 
@@ -425,6 +428,111 @@
                 </div>
             </div>
         </div>
+
+        <!-- PVGIS Solar Tab -->
+        <div id="tab-content-pvgis" class="tab-content p-6 hidden">
+            <!-- Projekt- und Profilauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">PVGIS Solar-Daten Import</h3>
+                <p class="text-gray-600 mb-4">
+                    Laden Sie Solar-Einstrahlungsdaten direkt von PVGIS (Photovoltaic Geographical Information System)
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="pvgisProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Solar-Profil Name *</label>
+                        <input type="text" id="pvgisProfileName" required 
+                               placeholder="z.B. PVGIS Solar 2024"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- PVGIS Standort-Auswahl -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <i class="fas fa-map-marker-alt text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Standort auswählen</h3>
+                    <p class="text-sm text-gray-600 mb-4">Wählen Sie einen vordefinierten Standort</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Standort</label>
+                            <select id="pvgis-location-select" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Standort auswählen...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Jahr</label>
+                            <select id="pvgis-year" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="2020">2020 (PVGIS unterstützt)</option>
+                                <option value="2019">2019</option>
+                                <option value="2018">2018</option>
+                                <option value="2017">2017</option>
+                                <option value="2016">2016</option>
+                                <option value="2015">2015</option>
+                                <option value="2014">2014</option>
+                                <option value="2013">2013</option>
+                                <option value="2012">2012</option>
+                                <option value="2011">2011</option>
+                                <option value="2010">2010</option>
+                                <option value="2009">2009</option>
+                                <option value="2008">2008</option>
+                                <option value="2007">2007</option>
+                                <option value="2006">2006</option>
+                                <option value="2005">2005</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 gap-2">
+                            <button onclick="fetchPVGISData()"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                <i class="fas fa-download mr-2"></i>Solar-Daten abrufen
+                            </button>
+                            <button onclick="expandLocationsForProject()"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                                <i class="fas fa-magic mr-2"></i>Standorte intelligent erweitern
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PVGIS Status & Verfügbare Daten -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <i class="fas fa-info-circle text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Status & Verfügbare Daten</h3>
+                    <p class="text-sm text-gray-600 mb-4">Übersicht der geladenen Solar-Daten</p>
+                    
+                    <!-- Status Anzeige -->
+                    <div id="pvgis-status" class="hidden">
+                        <div class="bg-blue-50 p-3 rounded-md mb-4">
+                            <div id="pvgis-status-content" class="text-sm"></div>
+                        </div>
+                    </div>
+
+                    <!-- Verfügbare Daten -->
+                    <div id="pvgis-available-data" class="hidden">
+                        <h4 class="font-medium text-gray-800 mb-2">Verfügbare Solar-Daten:</h4>
+                        <div id="pvgis-data-list" class="space-y-2"></div>
+                        
+                        <!-- Solar-Daten Visualisierung -->
+                                    <div id="pvgis-chart-container" class="mt-6 hidden">
+                <h4 class="font-medium text-gray-800 mb-4 text-lg">Solar-Daten Visualisierung:</h4>
+                <div class="bg-white border border-gray-200 p-6 rounded-lg shadow-sm">
+                    <canvas id="pvgis-chart" width="800" height="400"></canvas>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <span id="pvgis-chart-info">Lade Chart...</span>
+                </div>
+            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Intelligente Verarbeitung -->
@@ -586,7 +694,8 @@ async function loadProjects() {
             'solarProjectSelect', 
             'hydroProjectSelect',
             'pvsolProjectSelect',
-            'weatherProjectSelect'
+            'weatherProjectSelect',
+            'pvgisProjectSelect'
         ];
         
         projectSelects.forEach(selectId => {
@@ -3337,7 +3446,466 @@ document.addEventListener('DOMContentLoaded', function() {
             ehydFetcher.loadEHYDData();
         });
     }
+    
+    // PVGIS-Standorte beim Laden der Seite laden
+    loadPVGISLocations();
 });
+
+// PVGIS FUNKTIONEN
+// ================
+
+// Intelligente Standort-Erweiterung für Projekt
+async function expandLocationsForProject() {
+    const projectSelect = document.getElementById('pvgis-project-select');
+    const projectId = projectSelect.value;
+    
+    if (!projectId) {
+        showNotification('Bitte wählen Sie zuerst ein Projekt aus', 'error');
+        return;
+    }
+    
+    try {
+        console.log(`🔄 Erweitere Standorte für Projekt ${projectId}...`);
+        
+        // Status anzeigen
+        const statusDiv = document.getElementById('pvgis-status');
+        const statusContent = document.getElementById('pvgis-status-content');
+        statusDiv.classList.remove('hidden');
+        statusContent.innerHTML = `
+            <div class="flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600 mr-2"></div>
+                <span>Erweitere Standorte intelligent...</span>
+            </div>
+        `;
+        
+        const response = await fetch(`/api/pvgis/expand-locations/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ Standorte erweitert:', result);
+        
+        // Status aktualisieren
+        statusContent.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-2"></i>
+                ${result.added_count} neue Standorte hinzugefügt
+            </div>
+        `;
+        
+        // Standorte neu laden
+        await loadPVGISLocations();
+        
+        // Verfügbare Daten aktualisieren
+        showAvailablePVGISData();
+        
+        showNotification(`✅ ${result.added_count} neue Standorte hinzugefügt!`, 'success');
+        
+    } catch (error) {
+        console.error('Fehler bei Standort-Erweiterung:', error);
+        statusContent.innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                Fehler bei Standort-Erweiterung: ${error.message}
+            </div>
+        `;
+        showNotification('Fehler bei Standort-Erweiterung', 'error');
+    }
+}
+
+// PVGIS-Standorte laden (gruppiert nach Regionen)
+async function loadPVGISLocations() {
+    try {
+        console.log('🔄 Lade PVGIS-Standorte...');
+        const response = await fetch('/api/pvgis/locations');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 PVGIS-Standorte erhalten:', data);
+        
+        // Alle PVGIS-Location-Selects aktualisieren
+        const locationSelects = ['pvgis-location-select'];
+        
+        locationSelects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                // Bestehende Optionen löschen (außer der ersten)
+                select.innerHTML = '<option value="">Standort auswählen...</option>';
+                
+                // Neue Optionen nach Regionen gruppiert hinzufügen
+                Object.keys(data.locations).forEach(region => {
+                    const locations = data.locations[region];
+                    
+                    // Optgroup für Region erstellen
+                    const optgroup = document.createElement('optgroup');
+                    optgroup.label = `${region} (${locations.length} Standorte)`;
+                    
+                    locations.forEach(location => {
+                        const option = document.createElement('option');
+                        option.value = location.key;
+                        option.textContent = `${location.name} (${location.lat}°, ${location.lon}°) - ${location.description}`;
+                        optgroup.appendChild(option);
+                    });
+                    
+                    select.appendChild(optgroup);
+                });
+            }
+        });
+        
+        console.log(`✅ ${data.total_count} PVGIS-Standorte in ${Object.keys(data.locations).length} Regionen geladen`);
+    } catch (error) {
+        console.error('Fehler beim Laden der PVGIS-Standorte:', error);
+        showNotification('Fehler beim Laden der PVGIS-Standorte', 'error');
+    }
+}
+
+// PVGIS-Daten abrufen
+async function fetchPVGISData() {
+    const locationKey = document.getElementById('pvgis-location-select').value;
+    const year = parseInt(document.getElementById('pvgis-year').value);
+    
+    if (!locationKey) {
+        showNotification('Bitte wählen Sie einen Standort aus', 'error');
+        return;
+    }
+    
+    try {
+        console.log(`🔄 Lade PVGIS-Daten für ${locationKey}, Jahr ${year}...`);
+        
+        // Status anzeigen
+        const statusDiv = document.getElementById('pvgis-status');
+        const statusContent = document.getElementById('pvgis-status-content');
+        statusDiv.classList.remove('hidden');
+        statusContent.innerHTML = `
+            <div class="flex items-center">
+                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                <span>Lade Solar-Daten von PVGIS...</span>
+            </div>
+        `;
+        
+        const response = await fetch('/api/pvgis/fetch-solar-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                location_key: locationKey,
+                year: year
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ PVGIS-Daten erfolgreich geladen:', result);
+        
+        // Status aktualisieren
+        statusContent.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-2"></i>
+                Solar-Daten erfolgreich geladen: ${result.records || result.data_points || 'unbekannt'} Datenpunkte
+            </div>
+        `;
+        
+        // Verfügbare Daten anzeigen
+        showAvailablePVGISData();
+        
+        showNotification('PVGIS-Daten erfolgreich geladen!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Abrufen der PVGIS-Daten:', error);
+        statusContent.innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Fehler beim Laden der PVGIS-Daten: ${error.message}
+            </div>
+        `;
+        showNotification('Fehler beim Laden der PVGIS-Daten', 'error');
+    }
+}
+
+// Verfügbare PVGIS-Daten anzeigen (gruppiert nach Regionen)
+async function showAvailablePVGISData() {
+    try {
+        const dataDiv = document.getElementById('pvgis-available-data');
+        const dataList = document.getElementById('pvgis-data-list');
+        
+        const response = await fetch('/api/pvgis/locations');
+        const data = await response.json();
+        
+        dataList.innerHTML = '';
+        
+        // Standorte nach Regionen gruppiert anzeigen
+        Object.keys(data.locations).forEach(region => {
+            const locations = data.locations[region];
+            
+            // Region-Header
+            const regionHeader = document.createElement('div');
+            regionHeader.className = 'bg-blue-100 p-2 rounded-md mb-2';
+            regionHeader.innerHTML = `
+                <div class="font-semibold text-blue-800">${region} (${locations.length} Standorte)</div>
+            `;
+            dataList.appendChild(regionHeader);
+            
+            // Standorte in der Region
+            locations.forEach(location => {
+                const locationDiv = document.createElement('div');
+                locationDiv.className = 'bg-gray-50 p-3 rounded-md ml-4 mb-2';
+                locationDiv.innerHTML = `
+                    <div class="font-medium text-gray-800">${location.name}</div>
+                    <div class="text-sm text-gray-600">${location.description}</div>
+                    <div class="text-xs text-gray-500">Koordinaten: ${location.lat}°, ${location.lon}° | Höhe: ${location.altitude}m</div>
+                `;
+                dataList.appendChild(locationDiv);
+            });
+        });
+        
+        dataDiv.classList.remove('hidden');
+        
+        // Chart-Container anzeigen
+        const chartContainer = document.getElementById('pvgis-chart-container');
+        chartContainer.classList.remove('hidden');
+        
+        // Solar-Daten für Chart laden
+        loadPVGISChartData();
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der verfügbaren PVGIS-Daten:', error);
+    }
+}
+
+// PVGIS-Chart-Daten laden und visualisieren
+async function loadPVGISChartData() {
+    try {
+        const locationKey = document.getElementById('pvgis-location-select').value;
+        const year = parseInt(document.getElementById('pvgis-year').value);
+        
+        if (!locationKey) {
+            console.log('Kein Standort ausgewählt für Chart');
+            return;
+        }
+        
+        console.log(`🔄 Lade Chart-Daten für ${locationKey}, Jahr ${year}...`);
+        
+        const response = await fetch(`/api/pvgis/solar-data/${locationKey}/${year}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+            console.log(`✅ ${data.records} Chart-Datenpunkte geladen`);
+            createPVGISChart(data.data, locationKey, year);
+        } else {
+            console.log('Keine Solar-Daten für Chart verfügbar');
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Chart-Daten:', error);
+    }
+}
+
+// PVGIS-Chart erstellen
+function createPVGISChart(solarData, locationKey, year) {
+    const canvas = document.getElementById('pvgis-chart');
+    const chartInfo = document.getElementById('pvgis-chart-info');
+    
+    if (!canvas) {
+        console.error('PVGIS-Chart Canvas nicht gefunden');
+        return;
+    }
+    
+    // Bestehenden Chart zerstören falls vorhanden
+    if (window.pvgisChart) {
+        window.pvgisChart.destroy();
+    }
+    
+    // Daten für Chart vorbereiten (nur jeden 5. Datenpunkt für bessere Auflösung)
+    const chartData = solarData.filter((_, index) => index % 5 === 0);
+    
+    const labels = chartData.map(d => {
+        const date = new Date(d.datetime);
+        return date.toLocaleDateString('de-DE', {month: 'short', day: 'numeric'}) + 
+               ' ' + date.toLocaleTimeString('de-DE', {hour: '2-digit'});
+    });
+    
+    const irradianceData = chartData.map(d => d.global_irradiance || 0);
+    const temperatureData = chartData.map(d => d.temperature_2m || 0);
+    
+    // Chart erstellen
+    window.pvgisChart = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Globalstrahlung (W/m²)',
+                    data: irradianceData,
+                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    yAxisID: 'y',
+                    tension: 0.2,
+                    pointRadius: 2,
+                    borderWidth: 2
+                },
+                {
+                    label: 'Temperatur (°C)',
+                    data: temperatureData,
+                    borderColor: '#4ECDC4',
+                    backgroundColor: 'rgba(78, 205, 196, 0.1)',
+                    yAxisID: 'y1',
+                    tension: 0.2,
+                    pointRadius: 2,
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Solar-Daten ${locationKey} (${year})`,
+                    font: { size: 18, weight: 'bold' },
+                    color: '#374151'
+                },
+                legend: { 
+                    display: true, 
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 14 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#FF6B35',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            if (context.dataset.label.includes('Globalstrahlung')) {
+                                return `Globalstrahlung: ${context.parsed.y.toFixed(1)} W/m²`;
+                            } else {
+                                return `Temperatur: ${context.parsed.y.toFixed(1)} °C`;
+                            }
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: { 
+                        display: true, 
+                        text: 'Datum & Zeit',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    ticks: { 
+                        maxTicksLimit: 15,
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { 
+                        display: true, 
+                        text: 'Globalstrahlung (W/m²)',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#FF6B35',
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { 
+                        display: true, 
+                        text: 'Temperatur (°C)',
+                        font: { size: 14, weight: 'bold' }
+                    },
+                    beginAtZero: false,
+                    ticks: {
+                        color: '#4ECDC4',
+                        font: { size: 12 }
+                    },
+                    grid: {
+                        drawOnChartArea: false,
+                        color: 'rgba(0, 0, 0, 0.1)'
+                    },
+                }
+            }
+        }
+    });
+    
+    // Chart-Info aktualisieren
+    const avgIrradiance = irradianceData.reduce((a, b) => a + b, 0) / irradianceData.length;
+    const maxIrradiance = Math.max(...irradianceData);
+    const minTemp = Math.min(...temperatureData);
+    const maxTemp = Math.max(...temperatureData);
+    const avgTemp = temperatureData.reduce((a, b) => a + b, 0) / temperatureData.length;
+    
+    chartInfo.innerHTML = `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h5 class="font-semibold text-blue-800 mb-2">📊 Solar-Daten Statistiken:</h5>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div class="text-center">
+                    <div class="font-bold text-orange-600">${avgIrradiance.toFixed(1)} W/m²</div>
+                    <div class="text-gray-600">Ø Globalstrahlung</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-bold text-orange-600">${maxIrradiance.toFixed(1)} W/m²</div>
+                    <div class="text-gray-600">Max Globalstrahlung</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-bold text-cyan-600">${avgTemp.toFixed(1)} °C</div>
+                    <div class="text-gray-600">Ø Temperatur</div>
+                </div>
+                <div class="text-center">
+                    <div class="font-bold text-cyan-600">${minTemp.toFixed(1)}°C - ${maxTemp.toFixed(1)}°C</div>
+                    <div class="text-gray-600">Temp. Bereich</div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    console.log('✅ PVGIS-Chart erfolgreich erstellt');
+}
 </script>
 
 <style>
