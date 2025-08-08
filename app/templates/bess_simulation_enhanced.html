@@ -474,6 +474,12 @@ async function loadProjectDetails() {
             document.getElementById('bessPower').value = project.bess_power;
         }
         
+        // Automatisch UC1 auswählen wenn Projekt geladen wird
+        if (!selectedUseCase) {
+            selectUseCase('UC1');
+            console.log('🔄 Automatisch UC1 ausgewählt für neues Projekt');
+        }
+        
     } catch (error) {
         console.error('Fehler beim Laden der Projektdetails:', error);
     }
@@ -500,10 +506,16 @@ function selectUseCase(useCase) {
         currentCard.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
     }
     
-    // Debug-Ausgabe
+    // Debug-Log
     console.log('Use Case ausgewählt:', useCase);
+    console.log('Projekt ausgewählt:', selectedProject);
     console.log('selectedUseCase:', selectedUseCase);
     console.log('useCaseSelect.value:', useCaseSelect ? useCaseSelect.value : 'Element nicht gefunden');
+    
+    // Prüfe ob Projekt und Use Case ausgewählt sind
+    if (selectedProject && selectedUseCase) {
+        console.log('✅ Projekt und Use Case sind ausgewählt - Simulation kann gestartet werden');
+    }
 }
 
 // Simulation starten
