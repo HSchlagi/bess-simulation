@@ -536,9 +536,9 @@ document.getElementById('timeRange').addEventListener('change', function() {
             endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
             break;
         case 'year':
-            // Dieses Jahr
-            startDate = new Date(today.getFullYear(), 0, 1).toISOString().split('T')[0];
-            endDate = new Date(today.getFullYear(), 11, 31).toISOString().split('T')[0];
+            // Dieses Jahr - verwende 2024 für echte APG-Daten
+            startDate = '2024-01-01';
+            endDate = '2024-12-31';
             break;
         case 'custom':
             // Benutzerdefiniert - Datumsfelder bleiben unverändert
@@ -552,16 +552,25 @@ document.getElementById('timeRange').addEventListener('change', function() {
     loadSpotPrices();
 });
 
-// Seite laden
+// Seite laden - nur einmal beim Start
 document.addEventListener('DOMContentLoaded', function() {
-    // Standard-Datum auf 2024 setzen (wo echte APG-Daten verfügbar sind)
-    document.getElementById('startDate').value = '2024-01-01';
-    document.getElementById('endDate').value = '2024-12-31';
+    // Nur beim ersten Laden: Standard-Werte setzen
+    const timeRangeSelect = document.getElementById('timeRange');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
     
-    // Zeitraum auf "Dieses Jahr" setzen
-    document.getElementById('timeRange').value = 'year';
-    
-    loadSpotPrices();
+    // Prüfe ob bereits Werte gesetzt sind
+    if (!startDateInput.value || !endDateInput.value) {
+        // Standard-Datum auf 2024 setzen (wo echte APG-Daten verfügbar sind)
+        startDateInput.value = '2024-01-01';
+        endDateInput.value = '2024-12-31';
+        
+        // Zeitraum auf "Dieses Jahr" setzen
+        timeRangeSelect.value = 'year';
+        
+        // Nur beim ersten Laden Daten laden
+        loadSpotPrices();
+    }
 });
 </script>
 {% endblock %} 

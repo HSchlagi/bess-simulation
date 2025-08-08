@@ -4,6 +4,7 @@ import sys
 import os
 import sqlite3
 import pandas as pd
+import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue
 from datetime import datetime, timedelta
@@ -122,18 +123,37 @@ def api_projects():
     try:
         cursor = get_db().cursor()
         cursor.execute("""
-            SELECT p.id, p.name, p.location, c.name as customer_name 
+            SELECT p.id, p.name, p.location, p.bess_size, p.bess_power, p.pv_power, 
+                   p.hp_power, p.wind_power, p.hydro_power, p.other_power, 
+                   p.current_electricity_cost, c.name as customer_name 
             FROM project p 
             LEFT JOIN customer c ON p.customer_id = c.id
+            ORDER BY p.name ASC
         """)
         projects = cursor.fetchall()
         
-        return jsonify([{
+        projects_data = [{
             'id': p[0],
             'name': p[1],
             'location': p[2],
-            'customer_name': p[3] if p[3] else None
-        } for p in projects])
+            'bess_size': p[3],
+            'bess_power': p[4],
+            'pv_power': p[5],
+            'hp_power': p[6],
+            'wind_power': p[7],
+            'hydro_power': p[8],
+            'other_power': p[9],
+            'current_electricity_cost': p[10],
+            'customer_name': p[11] if p[11] else None
+        } for p in projects]
+        
+        print(f"📊 Projekte geladen: {len(projects_data)} Projekte")
+        for project in projects_data:
+            print(f"   - {project['name']} (Kunde: {project['customer_name'] or 'Kein Kunde'})")
+            print(f"     BESS: {project['bess_size']} kWh / {project['bess_power']} kW")
+            print(f"     PV: {project['pv_power']} kW, Stromkosten: {project['current_electricity_cost']} Ct/kWh")
+        
+        return jsonify(projects_data)
     except Exception as e:
         print(f"Fehler beim Laden der Projekte: {e}")
         return jsonify([])
@@ -164,11 +184,21 @@ def api_create_project():
 def api_get_project(project_id):
     project = Project.query.get_or_404(project_id)
     
+    print(f"=== DEBUG: Projekt laden ===")
+    print(f"Projekt ID: {project_id}")
+    print(f"Projekt Name: {project.name}")
+    print(f"BESS Size: {project.bess_size}")
+    print(f"BESS Power: {project.bess_power}")
+    print(f"PV Power: {project.pv_power}")
+    print(f"Current Electricity Cost: {project.current_electricity_cost}")
+    print(f"Customer ID: {project.customer_id}")
+    
     # Lade Investitionskosten aus der InvestmentCost Tabelle
     investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
     costs_dict = {}
     for cost in investment_costs:
         costs_dict[cost.component_type] = cost.cost_eur
+        print(f"Investment Cost {cost.component_type}: {cost.cost_eur} €")
     
     return jsonify({
         'id': project.id,
@@ -182,6 +212,7 @@ def api_get_project(project_id):
         'wind_power': project.wind_power,
         'hydro_power': project.hydro_power,
         'other_power': project.other_power,
+        'current_electricity_cost': project.current_electricity_cost,
         'customer_id': project.customer_id,
         'customer': {
             'id': project.customer.id,
@@ -369,46 +400,59 @@ def api_load_profiles(project_id):
                 'source': 'load_profiles'
             })
         
-        # 3. PVGIS-Solar-Daten als virtuelle Lastprofile hinzufügen
-        cursor.execute("""
-            SELECT DISTINCT location_key, year, 
-                   (SELECT COUNT(*) FROM solar_data WHERE location_key = sd.location_key AND year = sd.year) as data_points
-            FROM solar_data sd
-            ORDER BY location_key, year DESC
-        """)
-        
-        solar_profiles = []
-        for row in cursor.fetchall():
-            location_key, year, data_points = row
-            if data_points > 0:
-                # Standort-Informationen abrufen
-                try:
-                    fetcher = PVGISDataFetcher()
-                    locations = fetcher.get_available_locations()
-                    
-                    location_name = location_key
-                    for region, region_locations in locations.items():
-                        for loc in region_locations:
-                            if loc['key'] == location_key:
-                                location_name = loc['name']
-                                break
-                        if location_name != location_key:
-                            break
-                except Exception as e:
-                    print(f"⚠️ Fehler beim Abrufen der Standort-Informationen: {e}")
-                    location_name = location_key
+        # 3. PVGIS-Solar-Daten als virtuelle Lastprofile hinzufügen (nur wenn solar_data Tabelle existiert)
+        try:
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='solar_data'
+            """)
+            
+            if cursor.fetchone():
+                cursor.execute("""
+                    SELECT DISTINCT location_key, year, 
+                           (SELECT COUNT(*) FROM solar_data WHERE location_key = sd.location_key AND year = sd.year) as data_points
+                    FROM solar_data sd
+                    ORDER BY location_key, year DESC
+                """)
                 
-                solar_profiles.append({
-                    'id': f"pvgis_{location_key}_{year}",
-                    'name': f"PVGIS Solar {location_name} ({year})",
-                    'created_at': f"{year}-01-01",
-                    'data_points': data_points,
-                    'data_type': 'solar',
-                    'source': 'pvgis',
-                    'location_key': location_key,
-                    'year': year,
-                    'location_name': location_name
-                })
+                solar_profiles = []
+                for row in cursor.fetchall():
+                    location_key, year, data_points = row
+                    if data_points > 0:
+                        # Standort-Informationen abrufen
+                        try:
+                            fetcher = PVGISDataFetcher()
+                            locations = fetcher.get_available_locations()
+                            
+                            location_name = location_key
+                            for region, region_locations in locations.items():
+                                for loc in region_locations:
+                                    if loc['key'] == location_key:
+                                        location_name = loc['name']
+                                        break
+                                if location_name != location_key:
+                                    break
+                        except Exception as e:
+                            print(f"⚠️ Fehler beim Abrufen der Standort-Informationen: {e}")
+                            location_name = location_key
+                        
+                        solar_profiles.append({
+                            'id': f"pvgis_{location_key}_{year}",
+                            'name': f"PVGIS Solar {location_name} ({year})",
+                            'created_at': f"{year}-01-01",
+                            'data_points': data_points,
+                            'data_type': 'solar',
+                            'source': 'pvgis',
+                            'location_key': location_key,
+                            'year': year,
+                            'location_name': location_name
+                        })
+            else:
+                print("ℹ️ solar_data Tabelle nicht vorhanden, überspringe PVGIS-Daten")
+                solar_profiles = []
+        except Exception as e:
+            print(f"⚠️ Fehler beim Laden der PVGIS-Daten: {e}")
+            solar_profiles = []
         
         # Solar-Profile zu den normalen Profilen hinzufügen
         profiles.extend(solar_profiles)
@@ -896,7 +940,22 @@ def api_spot_prices():
                 from apg_data_fetcher import APGDataFetcher
                 fetcher = APGDataFetcher()
                 
-                # Versuche echte APG-Daten zu laden
+                # Versuche ENTSO-E Daten zuerst (echte Daten)
+                print("🌐 Versuche ENTSO-E Daten (echte österreichische Spot-Preise)...")
+                entsoe_data = fetcher.fetch_entsoe_data()
+                
+                if entsoe_data and len(entsoe_data) > 0:
+                    print(f"✅ {len(entsoe_data)} echte ENTSO-E Preise erfolgreich geladen!")
+                    # Echte ENTSO-E Daten verfügbar - in Datenbank speichern
+                    save_apg_data_to_db(entsoe_data)
+                    return jsonify({
+                        'success': True,
+                        'data': entsoe_data,
+                        'source': 'ENTSO-E (Live - Echte österreichische Day-Ahead Preise)',
+                        'message': f'{len(entsoe_data)} echte österreichische Spot-Preise geladen'
+                    })
+                
+                # Fallback: Versuche echte APG-Daten zu laden
                 print("🌐 Versuche echte APG-Daten von markt.apg.at zu holen...")
                 apg_data = fetcher.fetch_current_prices()
                 
@@ -939,43 +998,64 @@ def api_spot_prices():
 def save_apg_data_to_db(apg_data):
     """Speichert APG-Daten in der Datenbank"""
     try:
-        cursor = get_db().cursor()
+        conn = get_db()
+        cursor = conn.cursor()
         
+        # Prüfe ob Tabelle existiert
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS spot_price (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL,
+                price_eur_mwh REAL NOT NULL,
+                source TEXT,
+                region TEXT,
+                price_type TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Lösche alte Daten für den gleichen Zeitraum (optional)
+        # cursor.execute("DELETE FROM spot_price WHERE source = 'ENTSO-E (Live)'")
+        
+        # Füge neue Daten hinzu
         for price_entry in apg_data:
-            timestamp = datetime.fromisoformat(price_entry['timestamp'])
+            timestamp = price_entry['timestamp']
             price = price_entry['price']
-            source = price_entry.get('source', 'APG')
+            source = price_entry.get('source', 'ENTSO-E (Live)')
             market = price_entry.get('market', 'Day-Ahead')
             region = price_entry.get('region', 'AT')
             
-            # Prüfe ob Eintrag bereits existiert
             cursor.execute("""
-                SELECT id FROM spot_price 
-                WHERE timestamp = ? AND source = ?
-            """, (timestamp, source))
-            
-            existing = cursor.fetchone()
-            
-            if existing:
-                # Update existierenden Eintrag
-                cursor.execute("""
-                    UPDATE spot_price 
-                    SET price_eur_mwh = ?, price_type = ?, region = ?, created_at = datetime('now')
-                    WHERE id = ?
-                """, (price, market, region, existing[0]))
-            else:
-                # Neuen Eintrag erstellen
-                cursor.execute("""
-                    INSERT INTO spot_price (timestamp, price_eur_mwh, source, region, price_type, created_at)
-                    VALUES (?, ?, ?, ?, ?, datetime('now'))
-                """, (timestamp, price, source, region, market))
+                INSERT OR REPLACE INTO spot_price 
+                (timestamp, price_eur_mwh, source, region, price_type)
+                VALUES (?, ?, ?, ?, ?)
+            """, (timestamp, price, source, region, market))
         
-        get_db().commit()
-        print(f"💾 {len(apg_data)} APG-Daten in Datenbank gespeichert")
-        
+        # Commit mit Retry-Logik
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                conn.commit()
+                print(f"✅ {len(apg_data)} APG-Daten erfolgreich in Datenbank gespeichert")
+                break
+            except Exception as e:
+                if "database is locked" in str(e) and attempt < max_retries - 1:
+                    print(f"⚠️ Datenbank gesperrt, Versuch {attempt + 1}/{max_retries}...")
+                    time.sleep(0.5)  # Kurze Pause
+                    continue
+                else:
+                    print(f"❌ Fehler beim Speichern der APG-Daten: {e}")
+                    break
+                    
     except Exception as e:
         print(f"❌ Fehler beim Speichern der APG-Daten: {e}")
-        get_db().rollback()
+        # Fallback: Versuche Verbindung neu aufzubauen
+        try:
+            conn.close()
+            conn = get_db()
+            conn.commit()
+        except:
+            pass
 
 @main_bp.route('/api/spot-prices/refresh', methods=['POST'])
 def api_refresh_spot_prices():
@@ -1768,28 +1848,144 @@ def run_economic_simulation(project):
         }
 
 def calculate_peak_shaving_savings(project):
-    """Berechnet Peak Shaving Ersparnisse"""
+    """Berechnet Peak-Shaving Ersparnisse basierend auf echten Spot-Preisen"""
     if not project.bess_power:
         return 0
     
-    # Vereinfachte Peak Shaving Berechnung
-    peak_reduction_kw = project.bess_power * 0.15  # 15% Peak-Reduktion
-    peak_price_eur_mwh = 150  # Hoher Peak-Preis
-    hours_per_year = 8760
-    
-    return peak_reduction_kw * peak_price_eur_mwh * 0.1  # 10% der Zeit im Peak
+    try:
+        # Echte Spot-Preise aus der Datenbank laden
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Lade die letzten 30 Tage Spot-Preise für Peak-Shaving-Analyse
+        cursor.execute("""
+            SELECT timestamp, price_eur_mwh 
+            FROM spot_price 
+            WHERE timestamp >= date('now', '-30 days')
+            ORDER BY timestamp ASC
+        """)
+        
+        spot_prices = cursor.fetchall()
+        
+        if not spot_prices:
+            print("⚠️ Keine Spot-Preise verfügbar, verwende Fallback-Werte")
+            # Fallback: Vereinfachte Berechnung
+            peak_reduction_kw = project.bess_power * 0.15
+            peak_price_eur_mwh = 150
+            hours_per_year = 8760
+            return peak_reduction_kw * peak_price_eur_mwh * 0.1
+        
+        # Analysiere Peak-Preise
+        prices = [float(row[1]) for row in spot_prices]
+        avg_price = sum(prices) / len(prices)
+        
+        # Identifiziere Peak-Stunden (obere 25% der Preise)
+        sorted_prices = sorted(prices)
+        peak_threshold = sorted_prices[int(len(sorted_prices) * 0.75)]  # 75. Perzentil
+        peak_prices = [p for p in prices if p >= peak_threshold]
+        
+        if not peak_prices:
+            peak_prices = prices  # Fallback
+        
+        avg_peak_price = sum(peak_prices) / len(peak_prices)
+        peak_premium_eur_mwh = avg_peak_price - avg_price
+        
+        # Peak-Shaving Parameter
+        peak_reduction_kw = project.bess_power * 0.15  # 15% Peak-Reduktion
+        peak_hours_per_year = len(peak_prices) * 24 / len(prices)  # Anteil Peak-Stunden
+        bess_efficiency = 0.9  # 90% Effizienz für Peak-Shaving
+        
+        # Peak-Shaving Ersparnisse berechnen
+        peak_shaving_savings = (
+            peak_reduction_kw * 
+            peak_premium_eur_mwh * 
+            bess_efficiency * 
+            peak_hours_per_year / 1000  # kW zu MW
+        )
+        
+        print(f"📊 Peak-Shaving-Berechnung mit echten Daten:")
+        print(f"   - Durchschnittspreis: {avg_price:.2f} €/MWh")
+        print(f"   - Durchschnittlicher Peak-Preis: {avg_peak_price:.2f} €/MWh")
+        print(f"   - Peak-Premium: {peak_premium_eur_mwh:.2f} €/MWh")
+        print(f"   - Peak-Shaving-Ersparnisse: {peak_shaving_savings:.2f} €/Jahr")
+        
+        return peak_shaving_savings
+        
+    except Exception as e:
+        print(f"❌ Fehler bei Peak-Shaving-Berechnung: {e}")
+        # Fallback-Werte
+        peak_reduction_kw = project.bess_power * 0.15
+        peak_price_eur_mwh = 150
+        hours_per_year = 8760
+        return peak_reduction_kw * peak_price_eur_mwh * 0.1
 
 def calculate_arbitrage_savings(project):
-    """Berechnet Arbitrage Ersparnisse"""
+    """Berechnet Arbitrage Ersparnisse basierend auf echten Spot-Preisen"""
     if not project.bess_size:
         return 0
     
-    # Vereinfachte Arbitrage Berechnung
-    daily_cycles = 1  # 1 Zyklus pro Tag
-    price_spread_eur_mwh = 50  # Preisunterschied zwischen Peak und Off-Peak
-    days_per_year = 365
-    
-    return project.bess_size * daily_cycles * price_spread_eur_mwh * days_per_year / 1000
+    try:
+        # Echte Spot-Preise aus der Datenbank laden
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Lade die letzten 30 Tage Spot-Preise für realistische Arbitrage-Berechnung
+        cursor.execute("""
+            SELECT timestamp, price_eur_mwh 
+            FROM spot_price 
+            WHERE timestamp >= date('now', '-30 days')
+            ORDER BY timestamp ASC
+        """)
+        
+        spot_prices = cursor.fetchall()
+        
+        if not spot_prices:
+            print("⚠️ Keine Spot-Preise verfügbar, verwende Fallback-Werte")
+            # Fallback: Vereinfachte Berechnung
+            daily_cycles = 1
+            price_spread_eur_mwh = 50
+            days_per_year = 365
+            return project.bess_size * daily_cycles * price_spread_eur_mwh * days_per_year / 1000
+        
+        # Analysiere Preisunterschiede für Arbitrage
+        prices = [float(row[1]) for row in spot_prices]
+        min_price = min(prices)
+        max_price = max(prices)
+        avg_price = sum(prices) / len(prices)
+        
+        # Berechne durchschnittlichen Preisunterschied (Peak vs. Off-Peak)
+        price_spread_eur_mwh = max_price - min_price
+        avg_spread_eur_mwh = price_spread_eur_mwh * 0.3  # 30% des Spreads nutzbar
+        
+        # BESS-spezifische Parameter
+        bess_efficiency = 0.85  # 85% Effizienz
+        daily_cycles = 1  # 1 Zyklus pro Tag
+        days_per_year = 365
+        
+        # Arbitrage-Erlös berechnen
+        arbitrage_revenue = (
+            project.bess_size * 
+            daily_cycles * 
+            avg_spread_eur_mwh * 
+            bess_efficiency * 
+            days_per_year / 1000  # kWh zu MWh
+        )
+        
+        print(f"📊 Arbitrage-Berechnung mit echten Daten:")
+        print(f"   - Min Preis: {min_price:.2f} €/MWh")
+        print(f"   - Max Preis: {max_price:.2f} €/MWh")
+        print(f"   - Durchschnittlicher Spread: {avg_spread_eur_mwh:.2f} €/MWh")
+        print(f"   - Arbitrage-Erlös: {arbitrage_revenue:.2f} €/Jahr")
+        
+        return arbitrage_revenue
+        
+    except Exception as e:
+        print(f"❌ Fehler bei Arbitrage-Berechnung: {e}")
+        # Fallback-Werte
+        daily_cycles = 1
+        price_spread_eur_mwh = 50
+        days_per_year = 365
+        return project.bess_size * daily_cycles * price_spread_eur_mwh * days_per_year / 1000
 
 def calculate_grid_stability_bonus(project):
     """Berechnet Netzstabilitäts-Bonus"""
@@ -3996,13 +4192,60 @@ def api_run_simulation():
         
         mode_config = bess_mode_config.get(bess_mode, bess_mode_config['arbitrage'])
         
-        # Spot-Preis Szenario Anpassung
-        spot_price_scenarios = {
-            'current': 1.0,
-            'optimistic': 1.2,
-            'pessimistic': 0.8
-        }
-        spot_price_multiplier = spot_price_scenarios.get(spot_price_scenario, 1.0)
+        # Echte Spot-Preise aus der Datenbank laden
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            # Lade Spot-Preise für das Simulationsjahr
+            cursor.execute("""
+                SELECT timestamp, price_eur_mwh 
+                FROM spot_price 
+                WHERE timestamp LIKE ? || '%'
+                ORDER BY timestamp ASC
+            """, (str(simulation_year),))
+            
+            spot_prices = cursor.fetchall()
+            
+            if spot_prices:
+                # Analysiere echte Spot-Preise
+                prices = [float(row[1]) for row in spot_prices]
+                avg_spot_price = sum(prices) / len(prices)
+                min_spot_price = min(prices)
+                max_spot_price = max(prices)
+                
+                print(f"📊 BESS-Simulation mit echten Spot-Preisen für {simulation_year}:")
+                print(f"   - Durchschnittspreis: {avg_spot_price:.2f} €/MWh")
+                print(f"   - Min Preis: {min_spot_price:.2f} €/MWh")
+                print(f"   - Max Preis: {max_spot_price:.2f} €/MWh")
+                print(f"   - Anzahl Datenpunkte: {len(prices)}")
+                
+                # Spot-Preis Szenario Anpassung basierend auf echten Daten
+                spot_price_scenarios = {
+                    'current': avg_spot_price,
+                    'optimistic': max_spot_price * 0.8,  # 80% des Maximums
+                    'pessimistic': min_spot_price * 1.2   # 120% des Minimums
+                }
+                base_spot_price = spot_price_scenarios.get(spot_price_scenario, avg_spot_price)
+            else:
+                print("⚠️ Keine Spot-Preise für Simulationsjahr verfügbar, verwende Fallback")
+                # Fallback: Vereinfachte Szenarien
+                spot_price_scenarios = {
+                    'current': 80.0,  # 80 €/MWh
+                    'optimistic': 100.0,  # 100 €/MWh
+                    'pessimistic': 60.0   # 60 €/MWh
+                }
+                base_spot_price = spot_price_scenarios.get(spot_price_scenario, 80.0)
+                
+        except Exception as e:
+            print(f"❌ Fehler beim Laden der Spot-Preise: {e}")
+            # Fallback: Vereinfachte Szenarien
+            spot_price_scenarios = {
+                'current': 80.0,
+                'optimistic': 100.0,
+                'pessimistic': 60.0
+            }
+            base_spot_price = spot_price_scenarios.get(spot_price_scenario, 80.0)
         
         # BESS-spezifische Berechnungen mit Modus-Anpassung
         base_efficiency = 0.85
@@ -4015,9 +4258,8 @@ def api_run_simulation():
         energy_stored = bess_size_mwh * annual_cycles * bess_efficiency
         energy_discharged = energy_stored * bess_efficiency
         
-        # Erlösberechnung mit Modus-Anpassung
-        base_spot_price = 60.0
-        spot_price_eur_mwh = base_spot_price * spot_price_multiplier * mode_config['spot_price_multiplier']
+        # Erlösberechnung mit echten Spot-Preisen
+        spot_price_eur_mwh = base_spot_price * mode_config['spot_price_multiplier']
         srl_positive_price = 80.0  # EUR/MWh
         srl_negative_price = 40.0  # EUR/MWh
         

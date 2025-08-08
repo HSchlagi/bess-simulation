@@ -1,291 +1,128 @@
 #!/usr/bin/env python3
 """
-ERSTELLT DIE FEHLENDEN DATENBANK-TABELLEN FÜR LASTPROFILE!
+Repariert die Datenbankstruktur nach der Wiederherstellung
 """
 
 import sqlite3
-import json
-from datetime import datetime
+import os
 
-def create_load_profile_tables():
-    """Erstellt die fehlenden Tabellen für Lastprofile"""
-    
-    print("🗄️ ERSTELLE FEHLENDE DATENBANK-TABELLEN!")
-    print("=" * 60)
+def fix_database_structure():
+    """Repariert die Datenbankstruktur"""
     
     try:
-        # Verbindung zur Datenbank
         conn = sqlite3.connect('instance/bess.db')
         cursor = conn.cursor()
         
-        # Prüfe ob load_profiles Tabelle existiert
-        cursor.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='load_profiles'
-        """)
+        print("🔧 Repariere Datenbankstruktur...")
         
-        if not cursor.fetchone():
-            print("📋 Erstelle load_profiles Tabelle...")
+        # Prüfe und füge fehlende Spalten hinzu
+        cursor.execute("PRAGMA table_info(project)")
+        columns = [col[1] for col in cursor.fetchall()]
+        
+        print(f"Bestehende Spalten in project: {columns}")
+        
+        # Füge current_electricity_cost hinzu, falls fehlend
+        if 'current_electricity_cost' not in columns:
+            print("➕ Füge current_electricity_cost Spalte hinzu...")
             cursor.execute("""
-                CREATE TABLE load_profiles (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    project_id INTEGER NOT NULL,
-                    data_type TEXT DEFAULT 'load',
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT,
-                    FOREIGN KEY (project_id) REFERENCES projects (id)
-                )
+                ALTER TABLE project 
+                ADD COLUMN current_electricity_cost REAL DEFAULT 12.5
             """)
-            print("✅ load_profiles Tabelle erstellt")
-        else:
-            print("✅ load_profiles Tabelle bereits vorhanden")
+            print("✅ current_electricity_cost Spalte hinzugefügt")
         
-        # Prüfe ob load_profile_data Tabelle existiert
-        cursor.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='load_profile_data'
-        """)
-        
-        if not cursor.fetchone():
-            print("📋 Erstelle load_profile_data Tabelle...")
+        # Füge other_power hinzu, falls fehlend
+        if 'other_power' not in columns:
+            print("➕ Füge other_power Spalte hinzu...")
             cursor.execute("""
-                CREATE TABLE load_profile_data (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    load_profile_id INTEGER NOT NULL,
-                    timestamp TEXT NOT NULL,
-                    value REAL NOT NULL,
-                    unit TEXT DEFAULT 'kW',
-                    metadata TEXT,
-                    FOREIGN KEY (load_profile_id) REFERENCES load_profiles (id)
-                )
+                ALTER TABLE project 
+                ADD COLUMN other_power REAL
             """)
-            print("✅ load_profile_data Tabelle erstellt")
-        else:
-            print("✅ load_profile_data Tabelle bereits vorhanden")
+            print("✅ other_power Spalte hinzugefügt")
         
-        # Prüfe ob projects Tabelle existiert
-        cursor.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='projects'
-        """)
-        
-        if not cursor.fetchone():
-            print("📋 Erstelle projects Tabelle...")
+        # Füge use_case_id hinzu, falls fehlend
+        if 'use_case_id' not in columns:
+            print("➕ Füge use_case_id Spalte hinzu...")
             cursor.execute("""
-                CREATE TABLE projects (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    customer_id INTEGER,
-                    bess_size REAL,
-                    bess_power REAL,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT,
-                    FOREIGN KEY (customer_id) REFERENCES customers (id)
-                )
+                ALTER TABLE project 
+                ADD COLUMN use_case_id INTEGER
             """)
-            print("✅ projects Tabelle erstellt")
-            
-            # Erstelle Standard-Projekt
-            cursor.execute("""
-                INSERT INTO projects (name, description, created_at)
-                VALUES (?, ?, ?)
-            """, ('BESS Hinterstoder', 'Standard BESS-Projekt für Hinterstoder', datetime.now().isoformat()))
-            print("✅ Standard-Projekt 'BESS Hinterstoder' erstellt")
-        else:
-            print("✅ projects Tabelle bereits vorhanden")
+            print("✅ use_case_id Spalte hinzugefügt")
         
-        # Prüfe ob customers Tabelle existiert
-        cursor.execute("""
-            SELECT name FROM sqlite_master 
-            WHERE type='table' AND name='customers'
-        """)
-        
-        if not cursor.fetchone():
-            print("📋 Erstelle customers Tabelle...")
+        # Füge simulation_year hinzu, falls fehlend
+        if 'simulation_year' not in columns:
+            print("➕ Füge simulation_year Spalte hinzu...")
             cursor.execute("""
-                CREATE TABLE customers (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    email TEXT,
-                    phone TEXT,
-                    address TEXT,
-                    created_at TEXT NOT NULL,
-                    updated_at TEXT
-                )
+                ALTER TABLE project 
+                ADD COLUMN simulation_year INTEGER DEFAULT 2024
             """)
-            print("✅ customers Tabelle erstellt")
-            
-            # Erstelle Standard-Kunde
-            cursor.execute("""
-                INSERT INTO customers (name, email, created_at)
-                VALUES (?, ?, ?)
-            """, ('Standard Kunde', 'kunde@example.com', datetime.now().isoformat()))
-            print("✅ Standard-Kunde erstellt")
-        else:
-            print("✅ customers Tabelle bereits vorhanden")
+            print("✅ simulation_year Spalte hinzugefügt")
         
-        # Commit und schließen
+        # Füge created_at hinzu, falls fehlend
+        if 'created_at' not in columns:
+            print("➕ Füge created_at Spalte hinzu...")
+            cursor.execute("""
+                ALTER TABLE project 
+                ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            """)
+            print("✅ created_at Spalte hinzugefügt")
+        
+        # Prüfe customer Tabelle
+        cursor.execute("PRAGMA table_info(customer)")
+        customer_columns = [col[1] for col in cursor.fetchall()]
+        print(f"Bestehende Spalten in customer: {customer_columns}")
+        
+        # Füge company Spalte hinzu, falls fehlend
+        if 'company' not in customer_columns:
+            print("➕ Füge company Spalte zu customer hinzu...")
+            cursor.execute("""
+                ALTER TABLE customer 
+                ADD COLUMN company TEXT
+            """)
+            print("✅ company Spalte hinzugefügt")
+        
+        # Prüfe investment_cost Tabelle
+        cursor.execute("PRAGMA table_info(investment_cost)")
+        cost_columns = [col[1] for col in cursor.fetchall()]
+        print(f"Bestehende Spalten in investment_cost: {cost_columns}")
+        
+        # Füge description Spalte hinzu, falls fehlend
+        if 'description' not in cost_columns:
+            print("➕ Füge description Spalte zu investment_cost hinzu...")
+            cursor.execute("""
+                ALTER TABLE investment_cost 
+                ADD COLUMN description TEXT
+            """)
+            print("✅ description Spalte hinzugefügt")
+        
+        # Füge created_at Spalte hinzu, falls fehlend
+        if 'created_at' not in cost_columns:
+            print("➕ Füge created_at Spalte zu investment_cost hinzu...")
+            cursor.execute("""
+                ALTER TABLE investment_cost 
+                ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            """)
+            print("✅ created_at Spalte hinzugefügt")
+        
         conn.commit()
+        print("✅ Datenbankstruktur erfolgreich repariert!")
+        
+        # Überprüfung
+        cursor.execute("SELECT * FROM customer")
+        customers = cursor.fetchall()
+        print(f"\n📋 Kunden ({len(customers)}):")
+        for customer in customers:
+            print(f"   - {customer[1]} ({customer[2]})")
+        
+        cursor.execute("SELECT * FROM project")
+        projects = cursor.fetchall()
+        print(f"\n📋 Projekte ({len(projects)}):")
+        for project in projects:
+            print(f"   - {project[1]} (Kunde-ID: {project[12]})")
+        
         conn.close()
         
-        print("✅ Alle fehlenden Tabellen erfolgreich erstellt!")
-        return True
-        
     except Exception as e:
-        print(f"❌ Fehler beim Erstellen der Tabellen: {e}")
-        return False
-
-def create_water_level_load_profiles():
-    """Erstellt die Wasserstand-Lastprofile nach der Tabellen-Erstellung"""
-    
-    print("🌊 ERSTELLE WASSERSTAND-LASTPROFILE!")
-    print("=" * 60)
-    
-    try:
-        # Verbindung zur Datenbank
-        conn = sqlite3.connect('instance/bess.db')
-        cursor = conn.cursor()
-        
-        # Hole alle Wasserstanddaten für Steyr
-        cursor.execute("""
-            SELECT timestamp, water_level_cm, river_name, station_name
-            FROM water_levels 
-            WHERE river_name = 'Steyr'
-            ORDER BY timestamp
-            LIMIT 1000
-        """)
-        water_level_data = cursor.fetchall()
-        
-        if not water_level_data:
-            print("❌ Keine Wasserstanddaten für Steyr gefunden!")
-            return None
-        
-        print(f"📊 {len(water_level_data)} Wasserstanddaten für Steyr gefunden")
-        
-        # 1. Wasserstand-Lastprofil
-        load_profile_name = f"Steyr Wasserstand {datetime.now().strftime('%Y-%m-%d')}"
-        load_profile_description = f"EHYD-Pegelstanddaten für Steyr - {len(water_level_data)} Datenpunkte"
-        
-        cursor.execute("""
-            INSERT INTO load_profiles (name, description, project_id, data_type, created_at)
-            VALUES (?, ?, ?, ?, ?)
-        """, (load_profile_name, load_profile_description, 1, 'water_level', datetime.now().isoformat()))
-        
-        water_level_profile_id = cursor.lastrowid
-        print(f"✅ Wasserstand-Lastprofil erstellt: ID {water_level_profile_id}")
-        
-        # Speichere Wasserstand-Daten
-        for timestamp, water_level_cm, river_name, station_name in water_level_data:
-            # Konvertiere Pegelstand zu Last (vereinfachte Formel)
-            load_value = (water_level_cm / 100.0) * 10  # Skalierung für Lastprofil
-            
-            cursor.execute("""
-                INSERT INTO load_profile_data (load_profile_id, timestamp, value, unit, metadata)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                water_level_profile_id,
-                timestamp,
-                round(load_value, 2),
-                'kW',
-                json.dumps({
-                    'water_level_cm': water_level_cm,
-                    'river_name': river_name,
-                    'station_name': station_name,
-                    'original_unit': 'cm'
-                })
-            ))
-        
-        # 2. Wasserkraft-Erzeugungs-Lastprofil
-        power_nominal = 540  # kW
-        efficiency = 0.85    # 85%
-        head = 15           # m
-        water_density = 1000 # kg/m³
-        gravity = 9.81      # m/s²
-        
-        hydro_profile_name = f"Steyr Wasserkraft 540kW {datetime.now().strftime('%Y-%m-%d')}"
-        hydro_profile_description = f"Wasserkraft-Erzeugung basierend auf EHYD-Pegelständen - {len(water_level_data)} Datenpunkte"
-        
-        cursor.execute("""
-            INSERT INTO load_profiles (name, description, project_id, data_type, created_at)
-            VALUES (?, ?, ?, ?, ?)
-        """, (hydro_profile_name, hydro_profile_description, 1, 'hydro_power', datetime.now().isoformat()))
-        
-        hydro_profile_id = cursor.lastrowid
-        print(f"✅ Wasserkraft-Lastprofil erstellt: ID {hydro_profile_id}")
-        
-        # Speichere Wasserkraft-Daten
-        for timestamp, water_level_cm, river_name, station_name in water_level_data:
-            # Wasserkraft-Berechnung
-            water_level_m = water_level_cm / 100.0
-            
-            # Durchfluss basierend auf Pegelstand
-            flow_coefficient = 0.8  # m³/s pro m^1.5
-            flow = flow_coefficient * (water_level_m ** 1.5)
-            
-            # Wasserkraft-Formel: P = η * ρ * g * H * Q
-            theoretical_power = efficiency * water_density * gravity * head * flow
-            actual_power = min(theoretical_power, power_nominal * 1000)  # Begrenzt auf Nennleistung
-            generation_kw = actual_power / 1000  # W zu kW
-            
-            cursor.execute("""
-                INSERT INTO load_profile_data (load_profile_id, timestamp, value, unit, metadata)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                hydro_profile_id,
-                timestamp,
-                round(generation_kw, 2),
-                'kW',
-                json.dumps({
-                    'water_level_cm': water_level_cm,
-                    'flow_m3s': round(flow, 3),
-                    'efficiency': efficiency,
-                    'head_m': head,
-                    'power_nominal_kw': power_nominal,
-                    'river_name': river_name,
-                    'station_name': station_name
-                })
-            ))
-        
-        # Commit und schließen
-        conn.commit()
-        conn.close()
-        
-        print(f"✅ {len(water_level_data)} Datenpunkte in beiden Lastprofilen gespeichert")
-        print(f"✅ Wasserstand-Lastprofil: '{load_profile_name}'")
-        print(f"✅ Wasserkraft-Lastprofil: '{hydro_profile_name}'")
-        
-        return water_level_profile_id, hydro_profile_id
-        
-    except Exception as e:
-        print(f"❌ Fehler beim Erstellen der Lastprofile: {e}")
-        return None
-
-def main():
-    """Hauptfunktion"""
-    
-    print("🚀 BEHEBE DATENBANK-STRUKTUR UND ERSTELLE LASTPROFILE!")
-    print("=" * 60)
-    
-    # Erstelle fehlende Tabellen
-    if create_load_profile_tables():
-        # Erstelle Wasserstand-Lastprofile
-        result = create_water_level_load_profiles()
-        
-        print("\n" + "=" * 60)
-        print("🎯 DATENBANK-BEHEBUNG ABGESCHLOSSEN!")
-        
-        if result:
-            water_id, hydro_id = result
-            print(f"✅ Wasserstand-Lastprofil: ID {water_id}")
-            print(f"✅ Wasserkraft-Lastprofil: ID {hydro_id}")
-        
-        print("🌐 Öffnen Sie: http://127.0.0.1:5000/bess_peak_shaving_analysis")
-        print("🎯 Jetzt können Sie die Wasserstand-Lastprofile auswählen!")
-    else:
-        print("❌ Fehler bei der Datenbank-Behebung!")
+        print(f"❌ Fehler bei der Reparatur: {e}")
 
 if __name__ == "__main__":
-    main() 
+    fix_database_structure() 

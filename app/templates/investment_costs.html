@@ -95,6 +95,7 @@
                         <option value="pv">PV-Anlage</option>
                         <option value="inverter">Wechselrichter</option>
                         <option value="installation">Installation</option>
+                        <option value="hydro">Hydro Wasserkraft</option>
                         <option value="grid_connection">Netzanschluss</option>
                         <option value="monitoring">Monitoring</option>
                         <option value="other">Sonstiges</option>
@@ -136,6 +137,7 @@
                         <option value="pv">PV-Anlage</option>
                         <option value="inverter">Wechselrichter</option>
                         <option value="installation">Installation</option>
+                        <option value="hydro">Hydro Wasserkraft</option>
                         <option value="grid_connection">Netzanschluss</option>
                         <option value="monitoring">Monitoring</option>
                         <option value="other">Sonstiges</option>
@@ -192,7 +194,13 @@ async function loadProjects() {
 // Investitionskosten laden
 async function loadInvestmentCosts(projectId = null) {
     try {
-        const url = projectId ? `/api/investment-costs?project_id=${projectId}` : '/api/investment-costs';
+        // Wenn kein Projekt ausgewählt ist, leere Anzeige
+        if (!projectId) {
+            updateCostsDisplay([]);
+            return;
+        }
+        
+        const url = `/api/investment-costs?project_id=${projectId}`;
         const response = await fetch(url);
         
         if (response.ok) {
@@ -200,51 +208,15 @@ async function loadInvestmentCosts(projectId = null) {
             updateCostsDisplay(costs);
         } else {
             console.error('Fehler beim Laden der Investitionskosten');
-            // Demo-Daten verwenden
-            updateCostsDisplay(generateDemoCosts());
+            updateCostsDisplay([]);
         }
     } catch (error) {
         console.error('Fehler:', error);
-        // Demo-Daten verwenden
-        updateCostsDisplay(generateDemoCosts());
+        updateCostsDisplay([]);
     }
 }
 
-// Demo-Kosten generieren
-function generateDemoCosts() {
-    return [
-        {
-            id: 1,
-            component_type: 'bess',
-            cost_eur: 150000,
-            description: 'BESS-System 100kWh/100kW'
-        },
-        {
-            id: 2,
-            component_type: 'pv',
-            cost_eur: 80000,
-            description: 'PV-Anlage 50kWp'
-        },
-        {
-            id: 3,
-            component_type: 'inverter',
-            cost_eur: 25000,
-            description: 'Wechselrichter 100kW'
-        },
-        {
-            id: 4,
-            component_type: 'installation',
-            cost_eur: 30000,
-            description: 'Installation und Montage'
-        },
-        {
-            id: 5,
-            component_type: 'grid_connection',
-            cost_eur: 15000,
-            description: 'Netzanschluss'
-        }
-    ];
-}
+
 
 // Kosten-Anzeige aktualisieren
 function updateCostsDisplay(costs) {
@@ -263,12 +235,42 @@ function updateCostsDisplay(costs) {
     const tableBody = document.getElementById('costsTableBody');
     tableBody.innerHTML = '';
     
+    // Wenn keine Kosten vorhanden sind, Nachricht anzeigen
+    if (costs.length === 0) {
+        const projectSelect = document.getElementById('projectSelect');
+        if (projectSelect.value === '') {
+            // Kein Projekt ausgewählt
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p class="text-lg font-medium">Bitte wählen Sie ein Projekt aus</p>
+                        <p class="text-sm">Wählen Sie ein Projekt aus dem Dropdown-Menü oben, um die Investitionskosten anzuzeigen.</p>
+                    </td>
+                </tr>
+            `;
+        } else {
+            // Projekt ausgewählt, aber keine Kosten vorhanden
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-plus-circle text-2xl mb-2"></i>
+                        <p class="text-lg font-medium">Keine Investitionskosten vorhanden</p>
+                        <p class="text-sm">Klicken Sie auf "Neue Kosten" um Investitionskosten für dieses Projekt hinzuzufügen.</p>
+                    </td>
+                </tr>
+            `;
+        }
+        return;
+    }
+    
     costs.forEach(cost => {
         const componentNames = {
             'bess': 'BESS-System',
             'pv': 'PV-Anlage',
             'inverter': 'Wechselrichter',
             'installation': 'Installation',
+            'hydro': 'Hydro Wasserkraft',
             'grid_connection': 'Netzanschluss',
             'monitoring': 'Monitoring',
             'other': 'Sonstiges'
@@ -305,12 +307,13 @@ function updateCostsChart(costs) {
         costsChart.destroy();
     }
     
-    const componentTypes = ['bess', 'pv', 'inverter', 'installation', 'grid_connection', 'monitoring', 'other'];
+    const componentTypes = ['bess', 'pv', 'inverter', 'installation', 'hydro', 'grid_connection', 'monitoring', 'other'];
     const componentNames = {
         'bess': 'BESS-System',
         'pv': 'PV-Anlage',
         'inverter': 'Wechselrichter',
         'installation': 'Installation',
+        'hydro': 'Hydro Wasserkraft',
         'grid_connection': 'Netzanschluss',
         'monitoring': 'Monitoring',
         'other': 'Sonstiges'
@@ -494,7 +497,8 @@ document.getElementById('projectSelect').addEventListener('change', function() {
 // Seite laden
 document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
-    loadInvestmentCosts();
+    // Keine Kosten laden, bis ein Projekt ausgewählt wird
+    updateCostsDisplay([]);
 });
 </script>
 {% endblock %} 

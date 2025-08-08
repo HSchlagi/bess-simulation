@@ -358,29 +358,58 @@
 let cashFlowChart, roiChart;
 let currentProjectId = null;
 
+function testProjectSelection() {
+    console.log('🧪 Teste Projektauswahl...');
+    const select = document.getElementById('projectSelect');
+    console.log('📋 Dropdown-Optionen:');
+    
+    for (let i = 0; i < select.options.length; i++) {
+        const option = select.options[i];
+        console.log(`   ${i}: "${option.text}" (Wert: ${option.value})`);
+    }
+    
+    if (select.value) {
+        console.log(`✅ Ausgewähltes Projekt: "${select.options[select.selectedIndex].text}"`);
+    } else {
+        console.log('⚠️ Kein Projekt ausgewählt');
+    }
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
     setupEventListeners();
+    
+    // Test nach 2 Sekunden
+    setTimeout(testProjectSelection, 2000);
 });
 
 function loadProjects() {
+    console.log('🔄 Lade Projekte...');
     fetch('/api/projects')
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 API-Antwort Status:', response.status);
+            return response.json();
+        })
         .then(projects => {
+            console.log('📊 Geladene Projekte:', projects);
             const select = document.getElementById('projectSelect');
             select.innerHTML = '<option value="">Projekt auswählen...</option>';
             
             projects.forEach(project => {
                 const option = document.createElement('option');
                 option.value = project.id;
-                const customerName = project.customer_name || project.customer?.name || 'Kein Kunde';
-                option.textContent = `${project.name} (${customerName})`;
+                const customerName = project.customer_name || 'Kein Kunde zugeordnet';
+                const displayText = `${project.name} (${customerName})`;
+                option.textContent = displayText;
+                console.log(`✅ Projekt hinzugefügt: ${displayText}`);
                 select.appendChild(option);
             });
+            
+            console.log(`✅ ${projects.length} Projekte erfolgreich geladen`);
         })
         .catch(error => {
-            console.error('Fehler beim Laden der Projekte:', error);
+            console.error('❌ Fehler beim Laden der Projekte:', error);
             showNotification('Fehler beim Laden der Projekte', 'error');
         });
 }

@@ -204,9 +204,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadProjectData(projectId) {
+    console.log(`=== DEBUG: Lade Projektdaten für ID ${projectId} ===`);
+    
     fetch(`/api/projects/${projectId}`)
         .then(response => response.json())
         .then(project => {
+            console.log('Empfangene Projektdaten:', project);
+            
             // Formular mit Projektdaten füllen
             document.getElementById('projectName').value = project.name || '';
             document.getElementById('projectLocation').value = project.location || '';
@@ -216,10 +220,16 @@ function loadProjectData(projectId) {
             document.getElementById('bessPower').value = project.bess_power || '';
             document.getElementById('pvPower').value = project.pv_power || '';
             document.getElementById('hpPower').value = project.hp_power || '';
-                    document.getElementById('windPower').value = project.wind_power || '';
-        document.getElementById('hydroPower').value = project.hydro_power || '';
-        document.getElementById('otherPower').value = project.other_power || '';
-        document.getElementById('currentElectricityCost').value = project.current_electricity_cost || 12.5;
+            document.getElementById('windPower').value = project.wind_power || '';
+            document.getElementById('hydroPower').value = project.hydro_power || '';
+            document.getElementById('otherPower').value = project.other_power || '';
+            document.getElementById('currentElectricityCost').value = project.current_electricity_cost || 12.5;
+            
+            console.log('Formularfelder gesetzt:');
+            console.log('  BESS Size:', document.getElementById('bessSize').value);
+            console.log('  BESS Power:', document.getElementById('bessPower').value);
+            console.log('  PV Power:', document.getElementById('pvPower').value);
+            console.log('  Current Electricity Cost:', document.getElementById('currentElectricityCost').value);
             
             // Kostenfelder laden (falls vorhanden)
             document.getElementById('bessCost').value = project.bess_cost || '';
@@ -228,6 +238,10 @@ function loadProjectData(projectId) {
             document.getElementById('windCost').value = project.wind_cost || '';
             document.getElementById('hydroCost').value = project.hydro_cost || '';
             document.getElementById('otherCost').value = project.other_cost || '';
+            
+            console.log('Kostenfelder gesetzt:');
+            console.log('  BESS Cost:', document.getElementById('bessCost').value);
+            console.log('  PV Cost:', document.getElementById('pvCost').value);
             
             // Gesamtkosten berechnen
             calculateTotalCost();
