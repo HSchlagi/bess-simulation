@@ -8,12 +8,12 @@
     <div class="text-center mb-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-4">BESS Simulation</h1>
         <p class="text-xl text-gray-600">
-            Professionelle Simulation von Batterie-Energiespeichersystemen mit Lastprofilen, Wetterdaten, PV-Simulation und Wasserkraft-Integration.
+            Professionelle Simulation von Batterie-Energiespeichersystemen mit Lastprofilen, Wetterdaten, PV-Simulation, Wasserkraft-Integration, Intraday-Arbitrage und österreichischen Marktdaten.
         </p>
     </div>
 
     <!-- Status Overview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-8">
         <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
             <div class="flex items-center">
                 <div class="bg-green-100 p-3 rounded-lg">
@@ -61,10 +61,34 @@
                 </div>
             </div>
         </div>
+
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div class="flex items-center">
+                <div class="bg-indigo-100 p-3 rounded-lg">
+                    <i class="fas fa-chart-line text-indigo-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Intraday</p>
+                    <p class="text-lg font-bold text-indigo-600">Aktiv</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div class="flex items-center">
+                <div class="bg-red-100 p-3 rounded-lg">
+                    <i class="fas fa-flag text-red-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">AT-Märkte</p>
+                    <p class="text-lg font-bold text-red-600">Verfügbar</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Hauptinhalt - Zwei Spalten -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Hauptinhalt - Drei Spalten -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <!-- Datenimport Section -->
         <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">
@@ -159,6 +183,83 @@
             </div>
         </div>
 
+        <!-- Neue Features Section -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">
+                <i class="fas fa-rocket mr-2"></i>Neue Features
+            </h2>
+            
+            <div class="space-y-4">
+                <!-- Intraday-Arbitrage -->
+                <div class="flex items-center justify-between p-4 bg-indigo-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-indigo-100 p-2 rounded-lg">
+                            <i class="fas fa-chart-line text-indigo-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Intraday-Arbitrage</h3>
+                            <p class="text-sm text-gray-600">Tageshandel, Spread- & Schwellenwert-Modelle</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('main.data_import_center') }}?tab=intraday" 
+                       class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm">
+                        Konfigurieren
+                    </a>
+                </div>
+
+                <!-- Österreichische Märkte -->
+                <div class="flex items-center justify-between p-4 bg-red-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-red-100 p-2 rounded-lg">
+                            <i class="fas fa-flag text-red-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">AT-Märkte</h3>
+                            <p class="text-sm text-gray-600">APG Regelenergie, EPEX Intraday</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('main.data_import_center') }}?tab=austrian" 
+                       class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm">
+                        Konfigurieren
+                    </a>
+                </div>
+
+                <!-- Erweiterte Wirtschaftlichkeit -->
+                <div class="flex items-center justify-between p-4 bg-emerald-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-emerald-100 p-2 rounded-lg">
+                            <i class="fas fa-calculator text-emerald-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Wirtschaftlichkeit</h3>
+                            <p class="text-sm text-gray-600">Erweiterte Erlösberechnung</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('main.economic_analysis') }}" 
+                       class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md text-sm">
+                        Analysieren
+                    </a>
+                </div>
+
+                <!-- Konfiguration -->
+                <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                    <div class="flex items-center space-x-3">
+                        <div class="bg-yellow-100 p-2 rounded-lg">
+                            <i class="fas fa-cog text-yellow-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-medium text-gray-900">Konfiguration</h3>
+                            <p class="text-sm text-gray-600">YAML-Editor für alle Einstellungen</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('main.data_import_center') }}?tab=config" 
+                       class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm">
+                        Bearbeiten
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Projektverwaltung Section -->
         <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
             <h2 class="text-xl font-semibold text-gray-900 mb-6">
@@ -232,10 +333,10 @@
     <!-- Unterstützte Datenformate Section -->
     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
         <h2 class="text-xl font-semibold text-gray-900 mb-6">
-            <i class="fas fa-star text-yellow-500 mr-2"></i>Unterstützte Datenformate
+            <i class="fas fa-star text-yellow-500 mr-2"></i>Unterstützte Datenformate & APIs
         </h2>
         
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-6">
             <div class="text-center">
                 <div class="bg-green-100 p-4 rounded-lg inline-block mb-3">
                     <i class="fas fa-file-csv text-green-600 text-2xl"></i>
@@ -264,8 +365,24 @@
                 <div class="bg-orange-100 p-4 rounded-lg inline-block mb-3">
                     <i class="fas fa-cloud text-orange-600 text-2xl"></i>
                 </div>
-                <h3 class="font-medium text-gray-900 mb-1">API-Daten</h3>
-                <p class="text-sm text-gray-600">Wetter-APIs, DWD-Daten</p>
+                <h3 class="font-medium text-gray-900 mb-1">Wetter-APIs</h3>
+                <p class="text-sm text-gray-600">DWD-Daten, PVGIS</p>
+            </div>
+
+            <div class="text-center">
+                <div class="bg-indigo-100 p-4 rounded-lg inline-block mb-3">
+                    <i class="fas fa-chart-line text-indigo-600 text-2xl"></i>
+                </div>
+                <h3 class="font-medium text-gray-900 mb-1">EPEX SPOT</h3>
+                <p class="text-sm text-gray-600">Intraday Auktionen (IDA1/2/3)</p>
+            </div>
+
+            <div class="text-center">
+                <div class="bg-red-100 p-4 rounded-lg inline-block mb-3">
+                    <i class="fas fa-flag text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="font-medium text-gray-900 mb-1">APG Regelenergie</h3>
+                <p class="text-sm text-gray-600">aFRR, FCR, mFRR Märkte</p>
             </div>
         </div>
     </div>

@@ -47,6 +47,15 @@
                 <button onclick="showTab('pvgis')" id="tab-pvgis" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-solar-panel mr-2"></i>PVGIS Solar
                 </button>
+                <button onclick="showTab('intraday')" id="tab-intraday" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-chart-area mr-2"></i>Intraday-Preise
+                </button>
+                <button onclick="showTab('austrian')" id="tab-austrian" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-flag mr-2"></i>AT-Märkte
+                </button>
+                <button onclick="showTab('config')" id="tab-config" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-cog mr-2"></i>Konfiguration
+                </button>
             </nav>
         </div>
 
@@ -533,6 +542,288 @@
                 </div>
             </div>
         </div>
+
+        <!-- Intraday-Preise Tab -->
+        <div id="tab-content-intraday" class="tab-content p-6 hidden">
+            <!-- Projekt- und Profilauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Intraday-Preis-Daten Import</h3>
+                <p class="text-gray-600 mb-4">
+                    Importieren Sie Intraday-Preis-Daten für Arbitrage-Berechnungen
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="intradayProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Preis-Profil Name *</label>
+                        <input type="text" id="intradayProfileName" required 
+                               placeholder="z.B. Intraday-Preise 2024"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- CSV Import für Intraday-Preise -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center drag-drop-area" 
+                     data-file-type="csv" data-data-type="intraday">
+                    <i class="fas fa-chart-area text-4xl text-purple-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">CSV-Datei</h3>
+                    <p class="text-sm text-gray-600 mb-4">Intraday-Preise mit Zeitstempel und EUR/MWh</p>
+                    <p class="text-xs text-purple-600 mb-4">📁 Datei hier hineinziehen oder klicken</p>
+                    <input type="file" id="intradayCsvFile" accept=".csv" class="hidden">
+                    <button onclick="document.getElementById('intradayCsvFile').click()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md">
+                        CSV auswählen
+                    </button>
+                </div>
+
+                <!-- Excel Import für Intraday-Preise -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center drag-drop-area" 
+                     data-file-type="excel" data-data-type="intraday">
+                    <i class="fas fa-file-excel text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Excel-Datei</h3>
+                    <p class="text-sm text-gray-600 mb-4">Mehrere Intraday-Preis-Serien</p>
+                    <p class="text-xs text-green-600 mb-4">📁 Datei hier hineinziehen oder klicken</p>
+                    <input type="file" id="intradayExcelFile" accept=".xlsx,.xls" class="hidden">
+                    <button onclick="document.getElementById('intradayExcelFile').click()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Excel auswählen
+                    </button>
+                </div>
+
+                <!-- API Import für Intraday-Preise -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <i class="fas fa-cloud-download-alt text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">API Import</h3>
+                    <p class="text-sm text-gray-600 mb-4">Direkt von EPEX/APG APIs</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">API-Quelle</label>
+                            <select id="intradayApiSource" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="epex">EPEX Intraday</option>
+                                <option value="apg">APG Regelenergie</option>
+                                <option value="entsoe">ENTSO-E</option>
+                            </select>
+                        </div>
+                        <button onclick="fetchIntradayApiData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md w-full">
+                            <i class="fas fa-download mr-2"></i>API-Daten abrufen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intraday-Konfiguration -->
+            <div class="bg-purple-50 p-4 rounded-lg mt-6">
+                <h3 class="text-lg font-semibold text-purple-900 mb-4">Intraday-Arbitrage Konfiguration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Arbitrage-Modus</label>
+                        <select id="intradayMode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="theoretical">Theoretisch</option>
+                            <option value="spread">Spread-basiert</option>
+                            <option value="threshold" selected>Schwellenwert-basiert</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Kauf-Schwelle (EUR/MWh)</label>
+                        <input type="number" id="buyThreshold" value="45" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Verkauf-Schwelle (EUR/MWh)</label>
+                        <input type="number" id="sellThreshold" value="85" step="0.1" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Österreichische Märkte Tab -->
+        <div id="tab-content-austrian" class="tab-content p-6 hidden">
+            <!-- Projekt- und Profilauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Österreichische Marktdaten Import</h3>
+                <p class="text-gray-600 mb-4">
+                    Importieren Sie APG Regelenergie und EPEX Intraday Auktionen Daten
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="austrianProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Markt-Profil Name *</label>
+                        <input type="text" id="austrianProfileName" required 
+                               placeholder="z.B. AT-Marktdaten 2024"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- APG Regelenergie -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <i class="fas fa-flag text-4xl text-red-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">APG Regelenergie</h3>
+                    <p class="text-sm text-gray-600 mb-4">Kapazitäts- und Aktivierungspreise</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Produkt</label>
+                            <select id="apgProduct" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="afrr">aFRR (Automatic Frequency Restoration Reserve)</option>
+                                <option value="fcr">FCR (Frequency Containment Reserve)</option>
+                                <option value="mfrr">mFRR (Manual Frequency Restoration Reserve)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CSV-Datei</label>
+                            <input type="file" id="apgCsvFile" accept=".csv" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button onclick="importAPGData()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md w-full">
+                            <i class="fas fa-upload mr-2"></i>APG-Daten importieren
+                        </button>
+                    </div>
+                </div>
+
+                <!-- EPEX Intraday Auktionen -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <i class="fas fa-gavel text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">EPEX Intraday Auktionen</h3>
+                    <p class="text-sm text-gray-600 mb-4">IDA1, IDA2, IDA3 Preise</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Auktionstyp</label>
+                            <select id="epexAuctionType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="ida1">IDA1 (Intraday Auction 1)</option>
+                                <option value="ida2">IDA2 (Intraday Auction 2)</option>
+                                <option value="ida3">IDA3 (Intraday Auction 3)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CSV-Datei</label>
+                            <input type="file" id="epexCsvFile" accept=".csv" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button onclick="importEPEXData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md w-full">
+                            <i class="fas fa-upload mr-2"></i>EPEX-Daten importieren
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Markt-Konfiguration -->
+            <div class="bg-red-50 p-4 rounded-lg mt-6">
+                <h3 class="text-lg font-semibold text-red-900 mb-4">Markt-Konfiguration</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Bidding Zone</label>
+                        <select id="biddingZone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="AT" selected>Österreich (AT)</option>
+                            <option value="DE">Deutschland (DE)</option>
+                            <option value="CH">Schweiz (CH)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
+                        <select id="marketPeriod" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="2024">2024</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Konfiguration Tab -->
+        <div id="tab-content-config" class="tab-content p-6 hidden">
+            <!-- Konfigurations-Editor -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">BESS-Simulation Konfiguration</h3>
+                <p class="text-gray-600 mb-4">
+                    Bearbeiten Sie die erweiterte Konfiguration für Intraday-Arbitrage und österreichische Märkte
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- YAML Editor -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white border border-gray-300 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="text-lg font-medium text-gray-800">config_enhanced.yaml</h4>
+                            <div class="space-x-2">
+                                <button onclick="loadConfig()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="fas fa-download mr-1"></i>Laden
+                                </button>
+                                <button onclick="saveConfig()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="fas fa-save mr-1"></i>Speichern
+                                </button>
+                                <button onclick="validateConfig()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="fas fa-check mr-1"></i>Validieren
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="configEditor" rows="30" 
+                                  class="w-full p-3 border border-gray-300 rounded-md font-mono text-sm bg-gray-50"
+                                  placeholder="YAML-Konfiguration wird geladen..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Konfigurations-Vorschau -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white border border-gray-300 rounded-lg p-4">
+                        <h4 class="text-lg font-medium text-gray-800 mb-4">Konfigurations-Vorschau</h4>
+                        <div id="configPreview" class="space-y-4">
+                            <div class="bg-blue-50 p-3 rounded-md">
+                                <h5 class="font-medium text-blue-800 mb-2">Intraday-Arbitrage</h5>
+                                <div id="intradayConfigPreview" class="text-sm text-blue-700">
+                                    Wird geladen...
+                                </div>
+                            </div>
+                            <div class="bg-red-50 p-3 rounded-md">
+                                <h5 class="font-medium text-red-800 mb-2">Österreichische Märkte</h5>
+                                <div id="austrianConfigPreview" class="text-sm text-red-700">
+                                    Wird geladen...
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-3 rounded-md">
+                                <h5 class="font-medium text-green-800 mb-2">Wirtschaftlichkeit</h5>
+                                <div id="economicsConfigPreview" class="text-sm text-green-700">
+                                    Wird geladen...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Konfigurations-Aktionen -->
+            <div class="bg-yellow-50 p-4 rounded-lg mt-6">
+                <h3 class="text-lg font-semibold text-yellow-900 mb-4">Konfigurations-Aktionen</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <button onclick="resetToDefaults()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-undo mr-2"></i>Standardwerte
+                    </button>
+                    <button onclick="exportConfig()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-download mr-2"></i>Exportieren
+                    </button>
+                    <button onclick="importConfig()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-upload mr-2"></i>Importieren
+                    </button>
+                    <button onclick="testConfig()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md">
+                        <i class="fas fa-play mr-2"></i>Testen
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Intelligente Verarbeitung -->
@@ -680,6 +971,11 @@ function showTab(dataType) {
     document.getElementById(`tab-${dataType}`).classList.add('active', 'border-blue-500', 'text-blue-600');
     
     currentDataType = dataType;
+    
+    // Für neue Tabs sicherstellen, dass Projekte geladen sind
+    if (dataType === 'intraday' || dataType === 'austrian' || dataType === 'config') {
+        loadProjects();
+    }
 }
 
 // Projekte laden
@@ -695,7 +991,9 @@ async function loadProjects() {
             'hydroProjectSelect',
             'pvsolProjectSelect',
             'weatherProjectSelect',
-            'pvgisProjectSelect'
+            'pvgisProjectSelect',
+            'intradayProjectSelect',
+            'austrianProjectSelect'
         ];
         
         projectSelects.forEach(selectId => {
@@ -3906,6 +4204,331 @@ function createPVGISChart(solarData, locationKey, year) {
     
     console.log('✅ PVGIS-Chart erfolgreich erstellt');
 }
+
+// ============================================================================
+// NEUE FUNKTIONEN FÜR INTRADAY-PREISE, ÖSTERREICHISCHE MÄRKTE UND KONFIGURATION
+// ============================================================================
+
+// Intraday-Preis API-Daten abrufen
+async function fetchIntradayApiData() {
+    const apiSource = document.getElementById('intradayApiSource').value;
+    const projectId = document.getElementById('intradayProjectSelect').value;
+    const profileName = document.getElementById('intradayProfileName').value;
+    
+    if (!projectId || !profileName) {
+        showNotification('Bitte Projekt und Profilname auswählen', 'warning');
+        return;
+    }
+    
+    try {
+        showNotification('Lade Intraday-Daten von API...', 'info');
+        
+        const response = await fetch('/api/intraday/fetch-api-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                api_source: apiSource,
+                project_id: projectId,
+                profile_name: profileName
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        showNotification('Intraday-Daten erfolgreich geladen!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Intraday-Daten:', error);
+        showNotification('Fehler beim Laden der Intraday-Daten', 'error');
+    }
+}
+
+// APG-Daten importieren
+async function importAPGData() {
+    const fileInput = document.getElementById('apgCsvFile');
+    const projectId = document.getElementById('austrianProjectSelect').value;
+    const profileName = document.getElementById('austrianProfileName').value;
+    const product = document.getElementById('apgProduct').value;
+    
+    if (!fileInput.files[0] || !projectId || !profileName) {
+        showNotification('Bitte Datei, Projekt und Profilname auswählen', 'warning');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('project_id', projectId);
+        formData.append('profile_name', profileName);
+        formData.append('product', product);
+        
+        const response = await fetch('/api/austrian-markets/import-apg', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        showNotification('APG-Daten erfolgreich importiert!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Importieren der APG-Daten:', error);
+        showNotification('Fehler beim Importieren der APG-Daten', 'error');
+    }
+}
+
+// EPEX-Daten importieren
+async function importEPEXData() {
+    const fileInput = document.getElementById('epexCsvFile');
+    const projectId = document.getElementById('austrianProjectSelect').value;
+    const profileName = document.getElementById('austrianProfileName').value;
+    const auctionType = document.getElementById('epexAuctionType').value;
+    
+    if (!fileInput.files[0] || !projectId || !profileName) {
+        showNotification('Bitte Datei, Projekt und Profilname auswählen', 'warning');
+        return;
+    }
+    
+    try {
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+        formData.append('project_id', projectId);
+        formData.append('profile_name', profileName);
+        formData.append('auction_type', auctionType);
+        
+        const response = await fetch('/api/austrian-markets/import-epex', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        showNotification('EPEX-Daten erfolgreich importiert!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Importieren der EPEX-Daten:', error);
+        showNotification('Fehler beim Importieren der EPEX-Daten', 'error');
+    }
+}
+
+// Konfiguration laden
+async function loadConfig() {
+    try {
+        const response = await fetch('/api/config/load');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        document.getElementById('configEditor').value = result.config;
+        updateConfigPreview(result.config);
+        showNotification('Konfiguration erfolgreich geladen!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Konfiguration:', error);
+        showNotification('Fehler beim Laden der Konfiguration', 'error');
+    }
+}
+
+// Konfiguration speichern
+async function saveConfig() {
+    const configText = document.getElementById('configEditor').value;
+    
+    try {
+        const response = await fetch('/api/config/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ config: configText })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        showNotification('Konfiguration erfolgreich gespeichert!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Speichern der Konfiguration:', error);
+        showNotification('Fehler beim Speichern der Konfiguration', 'error');
+    }
+}
+
+// Konfiguration validieren
+async function validateConfig() {
+    const configText = document.getElementById('configEditor').value;
+    
+    try {
+        const response = await fetch('/api/config/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ config: configText })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.valid) {
+            showNotification('Konfiguration ist gültig!', 'success');
+        } else {
+            showNotification(`Konfigurationsfehler: ${result.error}`, 'error');
+        }
+        
+    } catch (error) {
+        console.error('Fehler bei der Konfigurationsvalidierung:', error);
+        showNotification('Fehler bei der Konfigurationsvalidierung', 'error');
+    }
+}
+
+// Konfigurations-Vorschau aktualisieren
+function updateConfigPreview(configText) {
+    try {
+        // Einfache YAML-Parsing für Vorschau
+        const lines = configText.split('\n');
+        let currentSection = '';
+        
+        const intradayPreview = [];
+        const austrianPreview = [];
+        const economicsPreview = [];
+        
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('intraday:')) {
+                currentSection = 'intraday';
+            } else if (trimmed.startsWith('austrian_markets:')) {
+                currentSection = 'austrian';
+            } else if (trimmed.startsWith('economics:')) {
+                currentSection = 'economics';
+            } else if (trimmed.includes(':') && currentSection) {
+                const [key, value] = trimmed.split(':').map(s => s.trim());
+                const previewItem = `${key}: ${value}`;
+                
+                switch (currentSection) {
+                    case 'intraday':
+                        intradayPreview.push(previewItem);
+                        break;
+                    case 'austrian':
+                        austrianPreview.push(previewItem);
+                        break;
+                    case 'economics':
+                        economicsPreview.push(previewItem);
+                        break;
+                }
+            }
+        });
+        
+        document.getElementById('intradayConfigPreview').innerHTML = 
+            intradayPreview.slice(0, 5).join('<br>') + (intradayPreview.length > 5 ? '<br>...' : '');
+        document.getElementById('austrianConfigPreview').innerHTML = 
+            austrianPreview.slice(0, 5).join('<br>') + (austrianPreview.length > 5 ? '<br>...' : '');
+        document.getElementById('economicsConfigPreview').innerHTML = 
+            economicsPreview.slice(0, 5).join('<br>') + (economicsPreview.length > 5 ? '<br>...' : '');
+        
+    } catch (error) {
+        console.error('Fehler bei der Konfigurations-Vorschau:', error);
+    }
+}
+
+// Standardwerte zurücksetzen
+async function resetToDefaults() {
+    if (confirm('Möchten Sie wirklich alle Konfigurationswerte auf Standard zurücksetzen?')) {
+        try {
+            const response = await fetch('/api/config/reset');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            document.getElementById('configEditor').value = result.config;
+            updateConfigPreview(result.config);
+            showNotification('Konfiguration auf Standardwerte zurückgesetzt!', 'success');
+            
+        } catch (error) {
+            console.error('Fehler beim Zurücksetzen der Konfiguration:', error);
+            showNotification('Fehler beim Zurücksetzen der Konfiguration', 'error');
+        }
+    }
+}
+
+// Konfiguration exportieren
+function exportConfig() {
+    const configText = document.getElementById('configEditor').value;
+    const blob = new Blob([configText], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'config_enhanced.yaml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification('Konfiguration exportiert!', 'success');
+}
+
+// Konfiguration importieren
+function importConfig() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.yaml,.yml';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('configEditor').value = e.target.result;
+                updateConfigPreview(e.target.result);
+                showNotification('Konfiguration importiert!', 'success');
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+// Konfiguration testen
+async function testConfig() {
+    try {
+        const response = await fetch('/api/config/test');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        showNotification('Konfiguration erfolgreich getestet!', 'success');
+        
+    } catch (error) {
+        console.error('Fehler beim Testen der Konfiguration:', error);
+        showNotification('Fehler beim Testen der Konfiguration', 'error');
+    }
+}
+
+// Event-Listener für Konfigurations-Editor
+document.addEventListener('DOMContentLoaded', function() {
+    const configEditor = document.getElementById('configEditor');
+    if (configEditor) {
+        configEditor.addEventListener('input', function() {
+            updateConfigPreview(this.value);
+        });
+    }
+});
 </script>
 
 <style>

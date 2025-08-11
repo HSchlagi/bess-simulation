@@ -1,0 +1,127 @@
+# Erweiterte BESS-Simulation Konfiguration
+# ======================================
+
+# Basis-BESS-Konfiguration
+bess:
+  max_soc: 0.9
+  min_soc: 0.1
+  roundtrip_efficiency: 0.85
+  degradation_rate_per_year: 0.02
+  availability: 0.97
+
+# Intraday-Arbitrage Konfiguration
+intraday:
+  enabled: true
+  mode: threshold                    # theoretical | spread | threshold
+  delta_p_eur_per_kWh: 0.06         # für theoretical Modus
+  cycles_per_day: 1.0               # für theoretical Modus
+  buy_threshold_eur_per_MWh: 45     # für threshold Modus
+  sell_threshold_eur_per_MWh: 85    # für threshold Modus
+  cycles_per_day_cap: 1.0           # <= 12*P/E ist automatische Begrenzung
+  prices_csv: prices_intraday.csv   # Pfad unter ./data/
+
+# Österreichische Energiemärkte
+austrian_markets:
+  enabled: true
+  
+  # APG Regelenergie
+  apg:
+    enabled: true
+    product_filter: "afrr"          # afrr, fcr, mfrr
+    capacity_csv: "data/apg_capacity.csv"
+    activation_csv: "data/apg_activation.csv"
+    
+  # EPEX Intraday Auktionen
+  epex:
+    enabled: true
+    ida_csv_paths:
+      - "data/IDA1_AT.csv"
+      - "data/IDA2_AT.csv"
+      - "data/IDA3_AT.csv"
+
+# Wirtschaftlichkeitsanalyse
+economics:
+  discount_rate: 0.08               # 8% Diskontierung
+  analysis_period_years: 10
+  electricity_cost_eur_mwh: 120.0
+  feed_in_tariff_eur_mwh: 8.0
+  grid_tariff_eur_mwh: 15.0
+  legal_charges_eur_mwh: 5.0
+  
+  # Investitionskosten (EUR/kWh)
+  bess_cost_per_kwh: 1000.0
+  pv_cost_per_kw: 1200.0
+  installation_cost_percent: 0.05   # 5% der Gesamtinvestition
+  
+  # Betriebskosten
+  maintenance_cost_percent: 0.02    # 2% der Investition pro Jahr
+  insurance_cost_percent: 0.005     # 0.5% der Investition pro Jahr
+
+# Simulationseinstellungen
+simulation:
+  time_resolution_minutes: 15
+  simulation_period_days: 30
+  load_profile_source: "database"   # database | csv | api
+  
+  # Peak Shaving
+  peak_shaving:
+    enabled: true
+    target_reduction_percent: 0.2   # 20% Peak-Reduktion
+    
+  # Energiemanagement
+  energy_management:
+    priority_peak_shaving: 0.6      # 60% für Peak Shaving
+    priority_arbitrage: 0.3         # 30% für Arbitrage
+    priority_backup: 0.1            # 10% für Backup
+
+# Datenquellen
+data_sources:
+  # ENTSO-E API
+  entsoe:
+    enabled: true
+    api_key: ""                     # ENTSO-E API Key
+    zone: "AT"
+    
+  # APG Website
+  apg:
+    enabled: true
+    base_url: "https://markt.apg.at"
+    
+  # EHYD (Wasserstände)
+  ehyd:
+    enabled: true
+    station_id: "207945"            # Steyr Station
+    
+  # PVGIS (Solarstrahlung)
+  pvgis:
+    enabled: true
+    latitude: 48.2082
+    longitude: 16.3738
+
+# Ausgabe und Berichte
+output:
+  charts_enabled: true
+  detailed_reports: true
+  export_formats: ["csv", "json", "excel"]
+  
+  # Dashboard
+  dashboard:
+    refresh_interval_seconds: 300   # 5 Minuten
+    show_realtime_data: true
+    show_forecasts: true
+    
+  # Berichte
+  reports:
+    daily_summary: true
+    weekly_analysis: true
+    monthly_report: true
+    annual_review: true
+
+# Logging und Debugging
+logging:
+  level: "INFO"                     # DEBUG | INFO | WARNING | ERROR
+  log_to_file: true
+  log_file: "bess_simulation.log"
+  max_log_size_mb: 10
+  backup_count: 5
+

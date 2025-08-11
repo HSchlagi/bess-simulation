@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Erweiterte Wirtschaftlichkeitsanalyse für BESS-Simulation
-mit 10-Jahres-Prognose und Batterie-Degradation
+mit 10-Jahres-Prognose, Batterie-Degradation und Intraday-Arbitrage
 """
 
 import pandas as pd
@@ -11,6 +11,25 @@ from datetime import datetime, date
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 import json
+import os
+
+# Intraday-Arbitrage Integration
+try:
+    from src.intraday_arbitrage import (
+        theoretical_revenue, spread_based_revenue, thresholds_based_revenue, _ensure_price_kwh
+    )
+    INTRADAY_AVAILABLE = True
+except ImportError:
+    INTRADAY_AVAILABLE = False
+    print("Warnung: Intraday-Arbitrage Modul nicht verfügbar")
+
+# Österreichische Marktdaten Integration
+try:
+    from src.bess_market_intel_at import ATMarketIntegrator, BESSSpec
+    AT_MARKET_AVAILABLE = True
+except ImportError:
+    AT_MARKET_AVAILABLE = False
+    print("Warnung: Österreichische Marktdaten-Modul nicht verfügbar")
 
 @dataclass
 class InvestmentData:
@@ -79,6 +98,116 @@ class BatteryDegradationModel:
         capacity_factor = self.calculate_capacity_factor(year, cycles_per_year)
         return self.initial_capacity * capacity_factor
 
+def intraday_revenue(cfg: Dict, E_kWh: float, P_kW: float, DoD: float, eta_rt: float) -> float:
+    """
+    Berechnet Intraday-Arbitrage-Erlöse gemäß Konfiguration
+    
+    Args:
+        cfg: Konfigurations-Dictionary
+        E_kWh: Batteriekapazität in kWh
+        P_kW: Batterieleistung in kW
+        DoD: Depth of Discharge (0-1)
+        eta_rt: Roundtrip-Effizienz (0-1)
+        
+    Returns:
+        float: Intraday-Erlöse in EUR für den Preis-Serien-Zeitraum (oder pro Jahr für theoretical)
+    """
+    if not INTRADAY_AVAILABLE:
+        return 0.0
+        
+    intr = cfg.get("intraday", {})
+    prices_csv = intr.get("prices_csv")
+    mode = intr.get("mode", "threshold")
+
+    prices = None
+    if prices_csv:
+        try:
+            prices_df = pd.read_csv(f"data/{prices_csv}")
+            prices = _ensure_price_kwh(prices_df)
+        except Exception as e:
+            print(f"Warnung: Konnte Intraday-Preisdaten nicht laden: {e}")
+            return 0.0
+
+    if mode == "theoretical":
+        return theoretical_revenue(E_kWh, DoD, eta_rt,
+                                   intr.get("delta_p_eur_per_kWh", 0.06),
+                                   intr.get("cycles_per_day", 1.0),
+                                   days=365)
+    elif mode == "spread":
+        if prices is None: 
+            return 0.0
+        rev, _ = spread_based_revenue(prices, E_kWh=E_kWh, DoD=DoD, P_kW=P_kW,
+                                      eta_rt=eta_rt, cycles_cap_per_day=intr.get("cycles_per_day_cap", 1.0))
+        return rev
+    elif mode == "threshold":
+        if prices is None: 
+            return 0.0
+        rev, _ = thresholds_based_revenue(prices, E_kWh, DoD, P_kW, eta_rt,
+            intr.get("buy_threshold_eur_per_MWh", 45)/1000.0,
+            intr.get("sell_threshold_eur_per_MWh", 85)/1000.0,
+            intr.get("cycles_per_day_cap", 1.0))
+        return rev
+    else:
+        return 0.0
+
+def calculate_austrian_market_revenue(cfg: Dict, E_kWh: float, P_kW: float) -> Dict[str, float]:
+    """
+    Berechnet Erlöse aus österreichischen Energiemärkten
+    
+    Args:
+        cfg: Konfigurations-Dictionary
+        E_kWh: Batteriekapazität in kWh
+        P_kW: Batterieleistung in kW
+        
+    Returns:
+        Dict[str, float]: Erlöse aus verschiedenen Märkten
+    """
+    if not AT_MARKET_AVAILABLE:
+        return {}
+        
+    market_config = cfg.get("austrian_markets", {})
+    spec = BESSSpec(power_mw=P_kW/1000.0, energy_mwh=E_kWh/1000.0)
+    
+    revenues = {}
+    
+    # APG Regelenergie
+    apg_config = market_config.get("apg", {})
+    if apg_config.get("enabled", False):
+        try:
+            integrator = ATMarketIntegrator()
+            
+            # Kapazitätsmärkte
+            cap_path = apg_config.get("capacity_csv")
+            if cap_path and os.path.exists(cap_path):
+                cap_series = integrator.load_apg_capacity(cap_path, apg_config.get("product_filter"))
+                revenues["apg_capacity_revenue"] = revenue_from_capacity(spec, cap_series)
+            
+            # Aktivierungsmärkte
+            act_path = apg_config.get("activation_csv")
+            if act_path and os.path.exists(act_path):
+                act_series = integrator.load_apg_activation(act_path, apg_config.get("product_filter"))
+                revenues["apg_activation_revenue"] = revenue_from_activation(spec, act_series)
+                
+        except Exception as e:
+            print(f"Warnung: APG Marktdaten konnten nicht verarbeitet werden: {e}")
+    
+    # EPEX Intraday Auktionen
+    epex_config = market_config.get("epex", {})
+    if epex_config.get("enabled", False):
+        try:
+            integrator = ATMarketIntegrator()
+            ida_paths = epex_config.get("ida_csv_paths", [])
+            
+            if ida_paths:
+                ida_df = integrator.load_ida_csvs(ida_paths)
+                ida_series = integrator.ida_quarter_series(ida_df)
+                revenues["epex_ida_revenue"] = revenue_from_ida(spec, ida_series)
+                
+        except Exception as e:
+            print(f"Warnung: EPEX Marktdaten konnten nicht verarbeitet werden: {e}")
+    
+    return revenues
+
 class RegulatoryChangeModel:
     """Modelliert gesetzliche Änderungen über Zeit"""
     
@@ -120,13 +249,20 @@ class EconomicAnalysisEnhanced:
         self.degradation_model = BatteryDegradationModel(investment.bess_cost_eur / 1000)  # Annahme: 1000 EUR/kWh
         self.regulatory_model = RegulatoryChangeModel()
         
-    def calculate_annual_revenues(self, year: int, capacity_factor: float) -> Dict[str, float]:
-        """Berechnet jährliche Erlöse"""
+    def calculate_annual_revenues(self, year: int, capacity_factor: float, config: Dict = None) -> Dict[str, float]:
+        """
+        Berechnet jährliche Erlöse inklusive Intraday-Arbitrage und österreichischer Märkte
+        
+        Args:
+            year: Jahr seit Inbetriebnahme
+            capacity_factor: Kapazitätsfaktor (Degradation)
+            config: Konfigurations-Dictionary für erweiterte Features
+        """
         # Basis-Energiemengen mit Degradation
         energy_stored = self.operating.annual_energy_stored_mwh * capacity_factor
         energy_discharged = self.operating.annual_energy_discharged_mwh * capacity_factor
         
-        # Arbitrage-Erlöse
+        # Basis-Arbitrage-Erlöse
         arbitrage_revenue = energy_discharged * self.operating.average_spot_price_eur_mwh * 0.85  # Wirkungsgrad
         
         # SRL-Erlöse (Annahme: 5% der Zeit aktiviert)
@@ -138,6 +274,7 @@ class EconomicAnalysisEnhanced:
         # PV-Förderung
         pv_subsidy = self.operating.annual_energy_generation_mwh * self.regulatory_model.get_pv_subsidy(year)
         
+        # Basis-Erlöse
         revenues = {
             'arbitrage': arbitrage_revenue,
             'srl_positive': srl_positive_revenue,
@@ -145,6 +282,34 @@ class EconomicAnalysisEnhanced:
             'pv_subsidy': pv_subsidy,
             'feed_in_tariff': self.operating.annual_energy_generation_mwh * self.financial.feed_in_tariff_eur_mwh
         }
+        
+        # Erweiterte Erlöse (Intraday-Arbitrage)
+        if config and INTRADAY_AVAILABLE:
+            try:
+                # BESS-Parameter schätzen
+                E_kWh = self.investment.bess_cost_eur / 1000  # Annahme: 1000 EUR/kWh
+                P_kW = E_kWh * 0.25  # Annahme: 4h Speicher
+                DoD = 0.9  # Depth of Discharge
+                eta_rt = 0.85  # Roundtrip-Effizienz
+                
+                intraday_rev = intraday_revenue(config, E_kWh, P_kW, DoD, eta_rt)
+                revenues['intraday_arbitrage'] = intraday_rev
+                
+            except Exception as e:
+                print(f"Warnung: Intraday-Arbitrage-Berechnung fehlgeschlagen: {e}")
+                revenues['intraday_arbitrage'] = 0.0
+        
+        # Österreichische Markt-Erlöse
+        if config and AT_MARKET_AVAILABLE:
+            try:
+                E_kWh = self.investment.bess_cost_eur / 1000
+                P_kW = E_kWh * 0.25
+                
+                austrian_revenues = calculate_austrian_market_revenue(config, E_kWh, P_kW)
+                revenues.update(austrian_revenues)
+                
+            except Exception as e:
+                print(f"Warnung: Österreichische Markt-Berechnung fehlgeschlagen: {e}")
         
         revenues['total'] = sum(revenues.values())
         return revenues

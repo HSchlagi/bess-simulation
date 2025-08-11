@@ -16,6 +16,19 @@ from ehyd_data_fetcher import EHYDDataFetcher
 # PVGIS Data Fetcher importieren
 from pvgis_data_fetcher import PVGISDataFetcher
 
+# Intraday-Arbitrage und österreichische Marktdaten Integration
+try:
+    from src.intraday_arbitrage import (
+        theoretical_revenue, spread_based_revenue, thresholds_based_revenue, _ensure_price_kwh
+    )
+    from src.bess_market_intel_at import ATMarketIntegrator, BESSSpec
+    INTRADAY_AVAILABLE = True
+    AT_MARKET_AVAILABLE = True
+except ImportError:
+    INTRADAY_AVAILABLE = False
+    AT_MARKET_AVAILABLE = False
+    print("Warnung: Intraday-Arbitrage oder österreichische Marktdaten-Module nicht verfügbar")
+
 main_bp = Blueprint('main', __name__)
 
 @main_bp.route('/')
@@ -5160,6 +5173,291 @@ def api_pvgis_solar_statistics(location_key, year):
 
 @main_bp.route('/api/bess/simulation-with-solar', methods=['POST'])
 def api_bess_simulation_with_solar():
+    """BESS-Simulation mit Solar-Daten durchführen"""
+    try:
+        data = request.get_json()
+        # TODO: Implementierung der BESS-Simulation mit Solar-Daten
+        return jsonify({
+            'success': True,
+            'message': 'BESS-Simulation mit Solar-Daten - Implementierung in Arbeit'
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'Fehler bei BESS-Simulation: {str(e)}',
+            'success': False
+        }), 500
+
+# ============================================================================
+# NEUE API-ENDPUNKTE FÜR INTRADAY-ARBITRAGE UND ÖSTERREICHISCHE MÄRKTE
+# ============================================================================
+
+@main_bp.route('/api/intraday/calculate', methods=['POST'])
+def api_calculate_intraday_revenue():
+    """
+    Berechnet Intraday-Arbitrage-Erlöse für verschiedene Strategien
+    """
+    if not INTRADAY_AVAILABLE:
+        return jsonify({
+            'error': 'Intraday-Arbitrage Modul nicht verfügbar',
+            'available': False
+        }), 400
+    
+    try:
+        data = request.get_json()
+        
+        # BESS-Parameter
+        E_kWh = data.get('bess_capacity_kwh', 1000.0)
+        P_kW = data.get('bess_power_kw', 250.0)
+        DoD = data.get('depth_of_discharge', 0.9)
+        eta_rt = data.get('roundtrip_efficiency', 0.85)
+        
+        # Arbitrage-Parameter
+        mode = data.get('mode', 'threshold')
+        buy_threshold = data.get('buy_threshold_eur_per_mwh', 45.0)
+        sell_threshold = data.get('sell_threshold_eur_per_mwh', 85.0)
+        cycles_per_day = data.get('cycles_per_day', 1.0)
+        delta_p = data.get('delta_p_eur_per_kwh', 0.06)
+        
+        # Preisdaten laden
+        prices_csv = data.get('prices_csv', 'data/prices_intraday.csv')
+        prices = None
+        
+        if os.path.exists(prices_csv):
+            prices_df = pd.read_csv(prices_csv)
+            prices = _ensure_price_kwh(prices_df)
+        
+        results = {}
+        
+        # Theoretische Erlöse
+        if mode == 'theoretical' or mode == 'all':
+            theoretical_rev = theoretical_revenue(E_kWh, DoD, eta_rt, delta_p, cycles_per_day)
+            results['theoretical'] = {
+                'revenue_eur': theoretical_rev,
+                'revenue_eur_per_year': theoretical_rev,
+                'cycles_per_day': cycles_per_day,
+                'delta_p_eur_per_kwh': delta_p
+            }
+        
+        # Spread-basierte Erlöse
+        if (mode == 'spread' or mode == 'all') and prices is not None:
+            spread_rev, spread_details = spread_based_revenue(
+                prices, E_kWh, DoD, P_kW, eta_rt, cycles_per_day
+            )
+            results['spread'] = {
+                'revenue_eur': spread_rev,
+                'revenue_eur_per_year': spread_rev * (365 / len(prices.index.date.unique())),
+                'daily_details': spread_details.to_dict('records') if not spread_details.empty else []
+            }
+        
+        # Schwellenwert-basierte Erlöse
+        if (mode == 'threshold' or mode == 'all') and prices is not None:
+            threshold_rev, threshold_details = thresholds_based_revenue(
+                prices, E_kWh, DoD, P_kW, eta_rt,
+                buy_threshold/1000.0, sell_threshold/1000.0, cycles_per_day
+            )
+            results['threshold'] = {
+                'revenue_eur': threshold_rev,
+                'revenue_eur_per_year': threshold_rev * (365 / len(prices.index.date.unique())),
+                'buy_threshold_eur_per_mwh': buy_threshold,
+                'sell_threshold_eur_per_mwh': sell_threshold,
+                'daily_details': threshold_details.to_dict('records') if not threshold_details.empty else []
+            }
+        
+        # Zusammenfassung
+        total_revenue = sum([r.get('revenue_eur', 0) for r in results.values()])
+        
+        return jsonify({
+            'success': True,
+            'bess_parameters': {
+                'capacity_kwh': E_kWh,
+                'power_kw': P_kW,
+                'depth_of_discharge': DoD,
+                'roundtrip_efficiency': eta_rt
+            },
+            'arbitrage_parameters': {
+                'mode': mode,
+                'cycles_per_day': cycles_per_day,
+                'prices_csv': prices_csv
+            },
+            'results': results,
+            'total_revenue_eur': total_revenue,
+            'price_data_available': prices is not None
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Fehler bei Intraday-Berechnung: {str(e)}',
+            'success': False
+        }), 500
+
+@main_bp.route('/api/austrian-markets/calculate', methods=['POST'])
+def api_calculate_austrian_market_revenue():
+    """
+    Berechnet Erlöse aus österreichischen Energiemärkten
+    """
+    if not AT_MARKET_AVAILABLE:
+        return jsonify({
+            'error': 'Österreichische Marktdaten-Modul nicht verfügbar',
+            'available': False
+        }), 400
+    
+    try:
+        data = request.get_json()
+        
+        # BESS-Parameter
+        E_kWh = data.get('bess_capacity_kwh', 1000.0)
+        P_kW = data.get('bess_power_kw', 250.0)
+        
+        # Markt-Konfiguration
+        market_config = data.get('market_config', {})
+        
+        spec = BESSSpec(power_mw=P_kW/1000.0, energy_mwh=E_kWh/1000.0)
+        integrator = ATMarketIntegrator()
+        
+        results = {}
+        
+        # APG Regelenergie
+        apg_config = market_config.get('apg', {})
+        if apg_config.get('enabled', False):
+            apg_results = {}
+            
+            # Kapazitätsmärkte
+            cap_path = apg_config.get('capacity_csv')
+            if cap_path and os.path.exists(cap_path):
+                try:
+                    cap_series = integrator.load_apg_capacity(cap_path, apg_config.get('product_filter'))
+                    cap_revenue = integrator.kpis(cap_series=cap_series, spec=spec)
+                    apg_results['capacity'] = cap_revenue
+                except Exception as e:
+                    apg_results['capacity_error'] = str(e)
+            
+            # Aktivierungsmärkte
+            act_path = apg_config.get('activation_csv')
+            if act_path and os.path.exists(act_path):
+                try:
+                    act_series = integrator.load_apg_activation(act_path, apg_config.get('product_filter'))
+                    act_revenue = integrator.kpis(act_series=act_series, spec=spec)
+                    apg_results['activation'] = act_revenue
+                except Exception as e:
+                    apg_results['activation_error'] = str(e)
+            
+            results['apg'] = apg_results
+        
+        # EPEX Intraday Auktionen
+        epex_config = market_config.get('epex', {})
+        if epex_config.get('enabled', False):
+            epex_results = {}
+            
+            ida_paths = epex_config.get('ida_csv_paths', [])
+            if ida_paths:
+                try:
+                    ida_df = integrator.load_ida_csvs(ida_paths)
+                    ida_series = integrator.ida_quarter_series(ida_df)
+                    ida_revenue = integrator.kpis(ida_series=ida_series, spec=spec)
+                    epex_results['ida'] = ida_revenue
+                except Exception as e:
+                    epex_results['ida_error'] = str(e)
+            
+            results['epex'] = epex_results
+        
+        return jsonify({
+            'success': True,
+            'bess_parameters': {
+                'capacity_kwh': E_kWh,
+                'power_kw': P_kW,
+                'power_mw': P_kW/1000.0,
+                'energy_mwh': E_kWh/1000.0
+            },
+            'market_results': results
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Fehler bei österreichischer Markt-Berechnung: {str(e)}',
+            'success': False
+        }), 500
+
+@main_bp.route('/api/intraday/config', methods=['GET'])
+def api_get_intraday_config():
+    """
+    Gibt die aktuelle Intraday-Konfiguration zurück
+    """
+    try:
+        config_path = 'config_enhanced.yaml'
+        if os.path.exists(config_path):
+            import yaml
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                intraday_config = config.get('intraday', {})
+        else:
+            # Standard-Konfiguration
+            intraday_config = {
+                'enabled': True,
+                'mode': 'threshold',
+                'delta_p_eur_per_kWh': 0.06,
+                'cycles_per_day': 1.0,
+                'buy_threshold_eur_per_MWh': 45,
+                'sell_threshold_eur_per_MWh': 85,
+                'cycles_per_day_cap': 1.0,
+                'prices_csv': 'prices_intraday.csv'
+            }
+        
+        return jsonify({
+            'success': True,
+            'config': intraday_config,
+            'available_modes': ['theoretical', 'spread', 'threshold'],
+            'module_available': INTRADAY_AVAILABLE
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Fehler beim Laden der Konfiguration: {str(e)}',
+            'success': False
+        }), 500
+
+@main_bp.route('/api/austrian-markets/config', methods=['GET'])
+def api_get_austrian_markets_config():
+    """
+    Gibt die aktuelle österreichische Markt-Konfiguration zurück
+    """
+    try:
+        config_path = 'config_enhanced.yaml'
+        if os.path.exists(config_path):
+            import yaml
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                markets_config = config.get('austrian_markets', {})
+        else:
+            # Standard-Konfiguration
+            markets_config = {
+                'enabled': True,
+                'apg': {
+                    'enabled': True,
+                    'product_filter': 'afrr',
+                    'capacity_csv': 'data/apg_capacity.csv',
+                    'activation_csv': 'data/apg_activation.csv'
+                },
+                'epex': {
+                    'enabled': True,
+                    'ida_csv_paths': [
+                        'data/IDA1_AT.csv',
+                        'data/IDA2_AT.csv',
+                        'data/IDA3_AT.csv'
+                    ]
+                }
+            }
+        
+        return jsonify({
+            'success': True,
+            'config': markets_config,
+            'module_available': AT_MARKET_AVAILABLE
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': f'Fehler beim Laden der Konfiguration: {str(e)}',
+            'success': False
+        }), 500
     """BESS-Simulation mit Solar-Daten durchführen"""
     try:
         data = request.get_json()
