@@ -7,9 +7,145 @@
 <!-- Chart.js Bibliothek -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+<!-- EINFACHE TAB-TEST-FUNKTION -->
+<script>
+function testTabClick(tabName) {
+    console.log('Tab geklickt:', tabName);
+    
+    // Alle Tabs ausblenden
+    var allTabs = document.querySelectorAll('.tab-content');
+    console.log('Gefundene Tabs:', allTabs.length);
+    for (var i = 0; i < allTabs.length; i++) {
+        allTabs[i].style.display = 'none';
+        allTabs[i].classList.add('hidden');
+        console.log('Tab ausgeblendet:', allTabs[i].id);
+    }
+    
+    // Alle Buttons zurücksetzen
+    var allButtons = document.querySelectorAll('.tab-button');
+    console.log('Gefundene Buttons:', allButtons.length);
+    for (var i = 0; i < allButtons.length; i++) {
+        allButtons[i].classList.remove('active', 'border-blue-500', 'text-blue-600');
+        allButtons[i].classList.add('border-transparent', 'text-gray-500');
+        console.log('Button zurückgesetzt:', allButtons[i].id);
+    }
+    
+    // Gewählten Tab anzeigen
+    var targetTab = document.getElementById('tab-content-' + tabName);
+    var targetButton = document.getElementById('tab-' + tabName);
+    
+    console.log('Suche nach Tab:', 'tab-content-' + tabName);
+    console.log('Suche nach Button:', 'tab-' + tabName);
+    
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.remove('hidden');
+        console.log('✅ Tab angezeigt:', tabName);
+    } else {
+        console.error('❌ Tab nicht gefunden:', 'tab-content-' + tabName);
+        // Alle verfügbaren Tabs auflisten
+        var availableTabs = document.querySelectorAll('.tab-content');
+        console.log('Verfügbare Tabs:');
+        for (var i = 0; i < availableTabs.length; i++) {
+            console.log('  -', availableTabs[i].id);
+        }
+    }
+    
+    if (targetButton) {
+        targetButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        console.log('✅ Button aktiviert:', tabName);
+    } else {
+        console.error('❌ Button nicht gefunden:', 'tab-' + tabName);
+        // Alle verfügbaren Buttons auflisten
+        var availableButtons = document.querySelectorAll('.tab-button');
+        console.log('Verfügbare Buttons:');
+        for (var i = 0; i < availableButtons.length; i++) {
+            console.log('  -', availableButtons[i].id);
+        }
+    }
+    
+    // Projekte laden für alle Tabs
+    console.log('Lade Projekte für Tab:', tabName);
+    if (typeof loadProjectsSimple === 'function') {
+        loadProjectsSimple();
+    }
+}
 
-<!-- Chart.js Bibliothek -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+// EINFACHE PROJEKT-LOADING-FUNKTION
+async function loadProjectsSimple() {
+    try {
+        console.log('Lade Projekte...');
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        console.log('Projekte vom Server erhalten:', projects.length);
+        
+        // Alle Projektauswahl-Elemente
+        const projectSelects = [
+            'loadProjectSelect',
+            'solarProjectSelect', 
+            'hydroProjectSelect',
+            'pvsolProjectSelect',
+            'weatherProjectSelect',
+            'pvgisProjectSelect',
+            'intradayProjectSelect',
+            'austrianProjectSelect'
+        ];
+        
+        projectSelects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.innerHTML = '<option value="">Projekt auswählen...</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = `${project.name}${project.location ? ' - ' + project.location : ''}`;
+                    select.appendChild(option);
+                });
+                
+                console.log('Projekte in', selectId, 'geladen:', projects.length);
+            } else {
+                console.log('Select-Element nicht gefunden:', selectId);
+            }
+        });
+        
+        console.log('✅ Alle Projekte erfolgreich geladen');
+    } catch (error) {
+        console.error('Fehler beim Laden der Projekte:', error);
+    }
+}
+
+// Event-Listener für API-Button hinzufügen
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Seite geladen - lade Projekte...');
+    loadProjectsSimple();
+    
+    // API-Button Event-Listener
+    const apiButton = document.getElementById('intradayApiButton');
+    if (apiButton) {
+        console.log('✅ API-Button gefunden, Event-Listener hinzugefügt');
+        apiButton.addEventListener('click', function() {
+            console.log('🚀 API-Button geklickt!');
+            
+            // Test-Funktion aufrufen
+            if (typeof testApiFunction === 'function') {
+                testApiFunction();
+            }
+            
+            // API-Funktion aufrufen
+            if (typeof fetchIntradayApiData === 'function') {
+                fetchIntradayApiData();
+            } else {
+                console.error('❌ fetchIntradayApiData Funktion nicht gefunden!');
+                showSimpleNotification('Fehler: API-Funktion nicht verfügbar', 'error');
+            }
+        });
+    } else {
+        console.error('❌ API-Button nicht gefunden!');
+    }
+});
+</script>
 
 <!-- CSRF-Token für AJAX-Requests -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -29,31 +165,31 @@
     <div class="bg-white rounded-lg shadow-md mb-6">
         <div class="border-b border-gray-200">
             <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                <button onclick="showTab('load')" id="tab-load" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                <button onclick="testTabClick('load')" id="tab-load" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
                     <i class="fas fa-chart-line mr-2"></i>Lastprofile
                 </button>
-                <button onclick="showTab('solar')" id="tab-solar" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('solar')" id="tab-solar" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-sun mr-2"></i>Einstrahlung
                 </button>
-                <button onclick="showTab('hydro')" id="tab-hydro" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('hydro')" id="tab-hydro" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-water mr-2"></i>Pegelstände
                 </button>
-                <button onclick="showTab('pvsol')" id="tab-pvsol" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('pvsol')" id="tab-pvsol" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-solar-panel mr-2"></i>PVSol Export
                 </button>
-                <button onclick="showTab('weather')" id="tab-weather" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('weather')" id="tab-weather" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-cloud mr-2"></i>Wetterdaten
                 </button>
-                <button onclick="showTab('pvgis')" id="tab-pvgis" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('pvgis')" id="tab-pvgis" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-solar-panel mr-2"></i>PVGIS Solar
                 </button>
-                <button onclick="showTab('intraday')" id="tab-intraday" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('intraday')" id="tab-intraday" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-chart-area mr-2"></i>Intraday-Preise
                 </button>
-                <button onclick="showTab('austrian')" id="tab-austrian" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('austrian')" id="tab-austrian" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-flag mr-2"></i>AT-Märkte
                 </button>
-                <button onclick="showTab('config')" id="tab-config" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('config')" id="tab-config" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
                     <i class="fas fa-cog mr-2"></i>Konfiguration
                 </button>
             </nav>
@@ -609,7 +745,7 @@
                                 <option value="entsoe">ENTSO-E</option>
                             </select>
                         </div>
-                        <button onclick="fetchIntradayApiData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md w-full">
+                        <button id="intradayApiButton" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md w-full">
                             <i class="fas fa-download mr-2"></i>API-Daten abrufen
                         </button>
                     </div>
@@ -953,8 +1089,10 @@ let importedData = {
     weather: []
 };
 
-// Tab-Funktionalität
-function showTab(dataType) {
+// EINFACHE TAB-FUNKTION - Funktioniert garantiert
+function simpleTabSwitch(dataType) {
+    console.log('Tab geklickt:', dataType);
+    
     // Alle Tabs ausblenden
     document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.add('hidden');
@@ -967,14 +1105,81 @@ function showTab(dataType) {
     });
     
     // Gewählten Tab anzeigen
-    document.getElementById(`tab-content-${dataType}`).classList.remove('hidden');
-    document.getElementById(`tab-${dataType}`).classList.add('active', 'border-blue-500', 'text-blue-600');
+    const tabContent = document.getElementById(`tab-content-${dataType}`);
+    const tabButton = document.getElementById(`tab-${dataType}`);
+    
+    if (tabContent) {
+        tabContent.classList.remove('hidden');
+        console.log('Tab-Content angezeigt:', dataType);
+    } else {
+        console.error('Tab-Content nicht gefunden:', `tab-content-${dataType}`);
+    }
+    
+    if (tabButton) {
+        tabButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        console.log('Tab-Button aktiviert:', dataType);
+    } else {
+        console.error('Tab-Button nicht gefunden:', `tab-${dataType}`);
+    }
     
     currentDataType = dataType;
     
     // Für neue Tabs sicherstellen, dass Projekte geladen sind
     if (dataType === 'intraday' || dataType === 'austrian' || dataType === 'config') {
         loadProjects();
+    }
+}
+
+
+
+// Tab-Funktionalität
+function showTab(dataType) {
+    console.log('showTab aufgerufen mit:', dataType);
+    
+    try {
+        // Alle Tabs ausblenden
+        const allTabs = document.querySelectorAll('.tab-content');
+        allTabs.forEach(tab => {
+            tab.style.display = 'none';
+            tab.classList.add('hidden');
+        });
+        
+        // Alle Tab-Buttons zurücksetzen
+        const allButtons = document.querySelectorAll('.tab-button');
+        allButtons.forEach(button => {
+            button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+            button.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        // Gewählten Tab anzeigen
+        const targetContent = document.getElementById(`tab-content-${dataType}`);
+        const targetButton = document.getElementById(`tab-${dataType}`);
+        
+        if (targetContent) {
+            targetContent.style.display = 'block';
+            targetContent.classList.remove('hidden');
+            console.log('Tab angezeigt:', dataType);
+        } else {
+            console.error('Tab-Content nicht gefunden:', `tab-content-${dataType}`);
+        }
+        
+        if (targetButton) {
+            targetButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+            targetButton.classList.remove('border-transparent', 'text-gray-500');
+            console.log('Button aktiviert:', dataType);
+        } else {
+            console.error('Tab-Button nicht gefunden:', `tab-${dataType}`);
+        }
+        
+        currentDataType = dataType;
+        
+        // Für neue Tabs sicherstellen, dass Projekte geladen sind
+        if (dataType === 'intraday' || dataType === 'austrian' || dataType === 'config') {
+            loadProjects();
+        }
+        
+    } catch (error) {
+        console.error('Fehler in showTab:', error);
     }
 }
 
@@ -2458,19 +2663,84 @@ function getDataTypeFromInputId(inputId) {
 
 // Benachrichtigung anzeigen
 function showNotification(message, type = 'info') {
-    // Einfache Benachrichtigung
+    // Bestehende Benachrichtigungen entfernen
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Neue Benachrichtigung erstellen
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${
-        type === 'success' ? 'bg-green-600' : 
-        type === 'error' ? 'bg-red-600' : 'bg-blue-600'
+    notification.className = `notification-toast fixed top-4 right-4 p-4 rounded-lg text-white z-50 shadow-lg max-w-md ${
+        type === 'success' ? 'bg-green-600 border-l-4 border-green-400' : 
+        type === 'error' ? 'bg-red-600 border-l-4 border-red-400' : 
+        type === 'warning' ? 'bg-yellow-600 border-l-4 border-yellow-400' :
+        'bg-blue-600 border-l-4 border-blue-400'
     }`;
-    notification.textContent = message;
+    
+    // Icon basierend auf Typ
+    const icon = type === 'success' ? '✅' : 
+                 type === 'error' ? '❌' : 
+                 type === 'warning' ? '⚠️' : 'ℹ️';
+    
+    notification.innerHTML = `
+        <div class="flex items-start">
+            <div class="text-xl mr-3">${icon}</div>
+            <div class="flex-1">
+                <p class="font-medium">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
     
     document.body.appendChild(notification);
     
+    // Automatisch nach 5 Sekunden entfernen
     setTimeout(() => {
-        notification.remove();
-    }, 3000);
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+
+
+// Datenvorschau anzeigen
+function showDataPreview(data, title) {
+    const previewContainer = document.getElementById('dataPreview');
+    if (!previewContainer) return;
+    
+    let tableHtml = `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <h4 class="text-lg font-semibold text-blue-800 mb-3">📊 ${title} - Vorschau (${data.length} von ${data.length} Datenpunkten)</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-white border border-gray-300 rounded-lg">
+                    <thead class="bg-gray-50">
+                        <tr>
+    `;
+    
+    // Tabellen-Header basierend auf den Daten
+    if (data.length > 0) {
+        const headers = Object.keys(data[0]);
+        headers.forEach(header => {
+            tableHtml += `<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">${header}</th>`;
+        });
+        tableHtml += '</tr></thead><tbody>';
+        
+        // Tabellen-Daten
+        data.forEach((row, index) => {
+            tableHtml += '<tr class="hover:bg-gray-50">';
+            headers.forEach(header => {
+                const value = row[header];
+                tableHtml += `<td class="px-4 py-2 text-sm text-gray-900 border-b">${value}</td>`;
+            });
+            tableHtml += '</tr>';
+        });
+        
+        tableHtml += '</tbody></table></div></div>';
+    }
+    
+    previewContainer.innerHTML = tableHtml;
 }
 
 // Daten an Server uploaden
@@ -3718,7 +3988,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const activeTab = urlParams.get('tab') || 'load';
     console.log('🎯 Aktiver Tab aus URL-Parameter:', activeTab);
-    showTab(activeTab);
+    
+    // Tab direkt setzen ohne rekursiven Aufruf
+    try {
+        // Alle Tabs ausblenden
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.add('hidden');
+        });
+        
+        // Alle Tab-Buttons zurücksetzen
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+            button.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        // Gewählten Tab anzeigen
+        const tabContent = document.getElementById(`tab-content-${activeTab}`);
+        const tabButton = document.getElementById(`tab-${activeTab}`);
+        
+        if (tabContent) {
+            tabContent.classList.remove('hidden');
+        }
+        
+        if (tabButton) {
+            tabButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        }
+        
+        currentDataType = activeTab;
+        
+    } catch (error) {
+        console.error('Fehler beim Setzen des aktiven Tabs:', error);
+    }
     
     // Projekte laden
     loadProjects();
@@ -4209,42 +4509,147 @@ function createPVGISChart(solarData, locationKey, year) {
 // NEUE FUNKTIONEN FÜR INTRADAY-PREISE, ÖSTERREICHISCHE MÄRKTE UND KONFIGURATION
 // ============================================================================
 
+// EINFACHE TEST-FUNKTION
+function testApiFunction() {
+    console.log('🧪 Test-Funktion aufgerufen - API-Funktion ist verfügbar!');
+    return true;
+}
+
+// EINFACHE BENACHRICHTIGUNGS-FUNKTION (für API-Bereich)
+function showSimpleNotification(message, type = 'info') {
+    console.log(`🔔 Benachrichtigung [${type}]: ${message}`);
+    
+    // Bestehende Benachrichtigungen entfernen
+    const existingNotifications = document.querySelectorAll('.simple-notification');
+    existingNotifications.forEach(notification => notification.remove());
+    
+    // Neue Benachrichtigung erstellen
+    const notification = document.createElement('div');
+    notification.className = `simple-notification fixed top-4 right-4 p-4 rounded-lg text-white z-50 shadow-lg max-w-md ${
+        type === 'success' ? 'bg-green-600' : 
+        type === 'error' ? 'bg-red-600' : 
+        type === 'warning' ? 'bg-yellow-600' :
+        'bg-blue-600'
+    }`;
+    
+    // Icon basierend auf Typ
+    const icon = type === 'success' ? '✅' : 
+                 type === 'error' ? '❌' : 
+                 type === 'warning' ? '⚠️' : 'ℹ️';
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <span class="text-xl mr-3">${icon}</span>
+            <span class="font-medium">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                ✕
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Automatisch nach 5 Sekunden entfernen
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
 // Intraday-Preis API-Daten abrufen
 async function fetchIntradayApiData() {
+    console.log('🚀 fetchIntradayApiData gestartet');
+    
     const apiSource = document.getElementById('intradayApiSource').value;
     const projectId = document.getElementById('intradayProjectSelect').value;
     const profileName = document.getElementById('intradayProfileName').value;
     
+    console.log('Parameter:', { apiSource, projectId, profileName });
+    
+    // Button finden
+    const button = document.querySelector('button[onclick="fetchIntradayApiData()"]');
+    
     if (!projectId || !profileName) {
-        showNotification('Bitte Projekt und Profilname auswählen', 'warning');
+        console.log('❌ Fehlende Parameter:', { projectId, profileName });
+        showSimpleNotification('Bitte Projekt und Profilname auswählen', 'warning');
         return;
     }
     
+    console.log('✅ Alle Parameter vorhanden, starte API-Aufruf...');
+    
+    // Button-Zustand ändern (nur wenn Button gefunden wurde)
+    let originalText = '';
+    if (button) {
+        originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Lade Daten...';
+        button.disabled = true;
+        button.className = 'bg-gray-400 text-white px-4 py-2 rounded-md w-full cursor-not-allowed';
+    }
+    
     try {
-        showNotification('Lade Intraday-Daten von API...', 'info');
+        console.log('🌐 Starte API-Aufruf an /api/intraday/fetch-api-data...');
+        showSimpleNotification(`Lade Intraday-Daten von ${apiSource}...`, 'info');
+        
+        const requestBody = {
+            api_source: apiSource,
+            project_id: projectId,
+            profile_name: profileName
+        };
+        
+        console.log('📤 Request Body:', requestBody);
         
         const response = await fetch('/api/intraday/fetch-api-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                api_source: apiSource,
-                project_id: projectId,
-                profile_name: profileName
-            })
+            body: JSON.stringify(requestBody)
         });
+        
+        console.log('📥 Response Status:', response.status, response.statusText);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const result = await response.json();
-        showNotification('Intraday-Daten erfolgreich geladen!', 'success');
+        console.log('📥 Response Data:', result);
+        
+        if (result.success) {
+            showSimpleNotification(`✅ ${result.message}`, 'success');
+            
+            // Detaillierte Informationen anzeigen
+            if (result.data_points) {
+                showSimpleNotification(`📊 ${result.data_points} Datenpunkte geladen`, 'info');
+            }
+            
+            if (result.price_range) {
+                showSimpleNotification(`💰 Preisbereich: ${result.price_range}`, 'info');
+            }
+            
+            if (result.filename) {
+                showSimpleNotification(`💾 Datei gespeichert: ${result.filename}`, 'info');
+            }
+            
+            // Optional: Daten in der Vorschau anzeigen
+            if (result.data && result.data.length > 0) {
+                showDataPreview(result.data, 'Intraday-Preise');
+            }
+        } else {
+            showSimpleNotification(`⚠️ ${result.message || 'Keine Daten verfügbar'}`, 'warning');
+        }
         
     } catch (error) {
         console.error('Fehler beim Abrufen der Intraday-Daten:', error);
-        showNotification('Fehler beim Laden der Intraday-Daten', 'error');
+        showSimpleNotification(`❌ Fehler beim Laden der Intraday-Daten: ${error.message}`, 'error');
+    } finally {
+        // Button-Zustand zurücksetzen (nur wenn Button gefunden wurde)
+        if (button && originalText) {
+            button.innerHTML = originalText;
+            button.disabled = false;
+            button.className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md w-full';
+        }
     }
 }
 

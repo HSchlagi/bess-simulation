@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md">
+        <div class="border-b border-gray-200">
+            <nav class="flex space-x-8 px-6" aria-label="Tabs">
+                <button onclick="testTab('load')" id="tab-load" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+                    Lastprofile
+                </button>
+                <button onclick="testTab('solar')" id="tab-solar" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    Einstrahlung
+                </button>
+                <button onclick="testTab('intraday')" id="tab-intraday" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                    Intraday-Preise
+                </button>
+            </nav>
+        </div>
+
+        <div id="tab-content-load" class="tab-content p-6">
+            <h2>Lastprofile Tab</h2>
+            <p>Dies ist der Lastprofile Tab.</p>
+        </div>
+
+        <div id="tab-content-solar" class="tab-content p-6 hidden">
+            <h2>Einstrahlung Tab</h2>
+            <p>Dies ist der Einstrahlung Tab.</p>
+        </div>
+
+        <div id="tab-content-intraday" class="tab-content p-6 hidden">
+            <h2>Intraday-Preise Tab</h2>
+            <p>Dies ist der Intraday-Preise Tab.</p>
+        </div>
+    </div>
+
+    <script>
+        function testTab(dataType) {
+            console.log('Tab geklickt:', dataType);
+            
+            // Alle Tabs ausblenden
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Alle Tab-Buttons zurücksetzen
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                button.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // Gewählten Tab anzeigen
+            const tabContent = document.getElementById(`tab-content-${dataType}`);
+            const tabButton = document.getElementById(`tab-${dataType}`);
+            
+            if (tabContent) {
+                tabContent.classList.remove('hidden');
+                console.log('Tab-Content angezeigt:', dataType);
+            } else {
+                console.error('Tab-Content nicht gefunden:', `tab-content-${dataType}`);
+            }
+            
+            if (tabButton) {
+                tabButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+                console.log('Tab-Button aktiviert:', dataType);
+            } else {
+                console.error('Tab-Button nicht gefunden:', `tab-${dataType}`);
+            }
+        }
+    </script>
+</body>
+</html>
