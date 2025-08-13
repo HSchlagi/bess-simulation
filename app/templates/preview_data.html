@@ -25,10 +25,15 @@
                     <option value="">Projekt auswählen...</option>
                 </select>
             </div>
-            <div>
+            <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Datenart</label>
-                <select id="dataTypeSelect" onchange="loadDataPreview()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
-                    <option value="">Datenart auswählen...</option>
+                <select id="dataTypeSelect" onchange="loadDataPreview()" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <option value="">Bitte wählen...</option>
+                    <option value="load_profile">Lastprofile</option>
+                    <option value="water_level">Wasserstände</option>
+                    <option value="pvsol_export">PV-Export</option>
+                    <option value="weather">Wetterdaten</option>
+                    <option value="overlay">Last & Erzeugung Overlay</option>
                 </select>
             </div>
             <div>
@@ -240,7 +245,7 @@ function loadDataTypes() {
     currentProjectId = projectId;
     
     // Alle verfügbaren Datenarten anzeigen
-    dataTypeSelect.innerHTML = '<option value="">Datenart auswählen...</option>';
+    dataTypeSelect.innerHTML = '<option value="">Bitte wählen...</option>';
     
     Object.entries(dataTypes).forEach(([key, config]) => {
         const option = document.createElement('option');
@@ -360,6 +365,12 @@ function updateDataTypeInfo() {
 function updateStatistics() {
     if (currentData.length === 0) return;
     
+    // Spezielle Behandlung für Overlay-Statistiken
+    if (currentDataType === 'overlay') {
+        updateOverlayStatistics();
+        return;
+    }
+    
     const config = dataTypes[currentDataType];
     const values = currentData.map(item => parseFloat(item.value)).filter(v => !isNaN(v));
     
@@ -398,7 +409,64 @@ function updateStatistics() {
     `;
 }
 
+function updateOverlayStatistics() {
+    const loadValues = currentData.map(item => parseFloat(item.load)).filter(v => !isNaN(v));
+    const pvValues = currentData.map(item => parseFloat(item.pv_generation)).filter(v => !isNaN(v));
+    const hydroValues = currentData.map(item => parseFloat(item.hydro_generation)).filter(v => !isNaN(v));
+    const netLoadValues = currentData.map(item => parseFloat(item.net_load)).filter(v => !isNaN(v));
+    
+    const loadMax = Math.max(...loadValues);
+    const loadMin = Math.min(...loadValues);
+    const loadAvg = loadValues.reduce((a, b) => a + b, 0) / loadValues.length;
+    
+    const pvMax = Math.max(...pvValues);
+    const pvMin = Math.min(...pvValues);
+    const pvAvg = pvValues.reduce((a, b) => a + b, 0) / pvValues.length;
+    
+    const hydroMax = Math.max(...hydroValues);
+    const hydroMin = Math.min(...hydroValues);
+    const hydroAvg = hydroValues.reduce((a, b) => a + b, 0) / hydroValues.length;
+    
+    const netLoadMax = Math.max(...netLoadValues);
+    const netLoadMin = Math.min(...netLoadValues);
+    const netLoadAvg = netLoadValues.reduce((a, b) => a + b, 0) / netLoadValues.length;
+    
+    const statsGrid = document.getElementById('statisticsGrid');
+    statsGrid.innerHTML = `
+        <div class="text-center">
+            <div class="text-lg font-bold text-gray-800">Last</div>
+            <div class="text-sm text-green-600">Max: ${loadMax.toFixed(2)} kW</div>
+            <div class="text-sm text-blue-600">Ø: ${loadAvg.toFixed(2)} kW</div>
+            <div class="text-sm text-orange-600">Min: ${loadMin.toFixed(2)} kW</div>
+        </div>
+        <div class="text-center">
+            <div class="text-lg font-bold text-gray-800">PV-Erzeugung</div>
+            <div class="text-sm text-green-600">Max: ${pvMax.toFixed(2)} kW</div>
+            <div class="text-sm text-blue-600">Ø: ${pvAvg.toFixed(2)} kW</div>
+            <div class="text-sm text-orange-600">Min: ${pvMin.toFixed(2)} kW</div>
+        </div>
+        <div class="text-center">
+            <div class="text-lg font-bold text-gray-800">Wasserkraft</div>
+            <div class="text-sm text-green-600">Max: ${hydroMax.toFixed(2)} kW</div>
+            <div class="text-sm text-blue-600">Ø: ${hydroAvg.toFixed(2)} kW</div>
+            <div class="text-sm text-orange-600">Min: ${hydroMin.toFixed(2)} kW</div>
+        </div>
+        <div class="text-center">
+            <div class="text-lg font-bold text-gray-800">Netto-Last</div>
+            <div class="text-sm text-green-600">Max: ${netLoadMax.toFixed(2)} kW</div>
+            <div class="text-sm text-blue-600">Ø: ${netLoadAvg.toFixed(2)} kW</div>
+            <div class="text-sm text-orange-600">Min: ${netLoadMin.toFixed(2)} kW</div>
+        </div>
+    `;
+}
+
 function updateChart() {
+    // Spezielle Behandlung für Overlay-Chart
+    if (currentDataType === 'overlay') {
+        updateOverlayChart();
+        return;
+    }
+    
     const config = dataTypes[currentDataType];
     const labels = currentData.map(item => new Date(item.timestamp).toLocaleString('de-DE'));
     const values = currentData.map(item => item.value);
@@ -448,6 +516,110 @@ function updateChart() {
     });
 }
 
+function updateOverlayChart() {
+    if (currentChart) {
+        currentChart.destroy();
+    }
+    
+    const ctx = document.getElementById('dataChart').getContext('2d');
+    const labels = currentData.map(item => new Date(item.timestamp).toLocaleString('de-DE'));
+    
+    // Datasets für Overlay-Chart
+    const datasets = [];
+    
+    // Wasserkraft (blauer Bereich)
+    if (currentData.some(item => item.hydro_generation > 0)) {
+        datasets.push({
+            label: 'Wasserkraft Erzeugung',
+            data: currentData.map(item => item.hydro_generation),
+            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+            borderColor: 'rgba(59, 130, 246, 1)',
+            borderWidth: 1,
+            fill: true,
+            order: 1
+        });
+    }
+    
+    // PV-Erzeugung (gelber Bereich, gestapelt)
+    if (currentData.some(item => item.pv_generation > 0)) {
+        datasets.push({
+            label: 'PV Erzeugung',
+            data: currentData.map(item => item.pv_generation),
+            backgroundColor: 'rgba(255, 205, 86, 0.6)',
+            borderColor: 'rgba(255, 205, 86, 1)',
+            borderWidth: 1,
+            fill: true,
+            order: 2
+        });
+    }
+    
+    // Gesamtlast (graue gestrichelte Linie)
+    datasets.push({
+        label: 'Hinterstoder Gesamt Last',
+        data: currentData.map(item => item.load),
+        borderColor: 'rgba(128, 128, 128, 1)',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        borderDash: [5, 5],
+        fill: false,
+        order: 3
+    });
+    
+    // Verkabelungslast (rote Linie)
+    datasets.push({
+        label: 'Hinterstoder Verkabelung Last',
+        data: currentData.map(item => item.net_load),
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        fill: false,
+        order: 4
+    });
+    
+    currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `Last und Erzeugung - ${getTimeRangeLabel()}`
+                },
+                legend: {
+                    display: true,
+                    position: 'bottom'
+                }
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Zeit'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Last / kW'
+                    },
+                    beginAtZero: true
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+}
+
 function getColorForDataType(dataType, alpha = 1) {
     const colors = {
         'load_profile': `rgba(59, 130, 246, ${alpha})`,
@@ -460,10 +632,17 @@ function getColorForDataType(dataType, alpha = 1) {
 }
 
 function updateDataTable() {
-    const config = dataTypes[currentDataType];
     const startIndex = (currentPage - 1) * rowsPerPage;
     const endIndex = startIndex + rowsPerPage;
     const pageData = currentData.slice(startIndex, endIndex);
+    
+    // Spezielle Behandlung für Overlay-Tabelle
+    if (currentDataType === 'overlay') {
+        updateOverlayTable(pageData);
+        return;
+    }
+    
+    const config = dataTypes[currentDataType];
     
     // Tabellen-Header
     const header = document.getElementById('tableHeader');
@@ -485,6 +664,47 @@ function updateDataTable() {
             <tr>
                 <td class="px-3 py-2 text-sm text-gray-900">${new Date(item.timestamp).toLocaleString('de-DE')}</td>
                 <td class="px-3 py-2 text-sm text-gray-900">${parseFloat(item.value).toFixed(2)}</td>
+            </tr>
+        `).join('');
+    }
+    
+    // Paginierung aktualisieren
+    updatePagination();
+}
+
+function updateOverlayTable(pageData) {
+    // Tabellen-Header für Overlay
+    const header = document.getElementById('tableHeader');
+    header.innerHTML = `
+        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Zeitstempel
+        </th>
+        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Last (kW)
+        </th>
+        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            PV (kW)
+        </th>
+        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Wasserkraft (kW)
+        </th>
+        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            Netto-Last (kW)
+        </th>
+    `;
+    
+    // Tabellen-Daten
+    const tbody = document.getElementById('dataTable');
+    if (pageData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-2 text-center text-gray-500 text-sm">Keine Daten verfügbar</td></tr>';
+    } else {
+        tbody.innerHTML = pageData.map(item => `
+            <tr>
+                <td class="px-3 py-2 text-sm text-gray-900">${new Date(item.timestamp).toLocaleString('de-DE')}</td>
+                <td class="px-3 py-2 text-sm text-gray-900">${parseFloat(item.load).toFixed(2)}</td>
+                <td class="px-3 py-2 text-sm text-gray-900">${parseFloat(item.pv_generation).toFixed(2)}</td>
+                <td class="px-3 py-2 text-sm text-gray-900">${parseFloat(item.hydro_generation).toFixed(2)}</td>
+                <td class="px-3 py-2 text-sm text-gray-900">${parseFloat(item.net_load).toFixed(2)}</td>
             </tr>
         `).join('');
     }

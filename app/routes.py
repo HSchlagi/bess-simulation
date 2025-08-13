@@ -2703,6 +2703,10 @@ def get_project_data(project_id, data_type):
         elif start_date and end_date:
             time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
         
+        # Spezielle Behandlung für Overlay-Daten
+        if data_type == 'overlay':
+            return get_overlay_data(project_id, time_range, start_date, end_date)
+        
         # Datenart-spezifische Tabellen
         table_mapping = {
             'load_profile': 'load_value',
@@ -2774,6 +2778,106 @@ def get_project_data(project_id, data_type):
         
     except Exception as e:
         print(f"Fehler beim Laden der Daten: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+def get_overlay_data(project_id, time_range, start_date, end_date):
+    """Lädt alle relevanten Daten für das Last & Erzeugung Overlay"""
+    try:
+        # Zeitbereich-Filter erstellen
+        time_filter = ""
+        if time_range == 'week':
+            time_filter = "AND timestamp >= datetime('now', '-7 days')"
+        elif time_range == 'month':
+            time_filter = "AND timestamp >= datetime('now', '-1 month')"
+        elif time_range == 'year':
+            time_filter = "AND timestamp >= '2024-01-01' AND timestamp <= '2024-12-31'"
+        elif start_date and end_date:
+            time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
+        
+        cursor = get_db().cursor()
+        
+        # 1. Lastprofil-Daten laden
+        load_query = f"""
+        SELECT strftime('%Y-%m-%d %H:%M:%S', lv.timestamp) as timestamp, lv.power_kw as load_value
+        FROM load_value lv
+        JOIN load_profile lp ON lv.load_profile_id = lp.id
+        WHERE lp.project_id = ? {time_filter}
+        ORDER BY lv.timestamp
+        """
+        cursor.execute(load_query, (project_id,))
+        load_data = cursor.fetchall()
+        
+        # 2. PV-Daten laden (falls vorhanden)
+        pv_query = f"""
+        SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, power_kw as pv_value
+        FROM pvsol_export 
+        WHERE project_id = ? {time_filter}
+        ORDER BY timestamp
+        """
+        cursor.execute(pv_query, (project_id,))
+        pv_data = cursor.fetchall()
+        
+        # 3. Wasserkraft-Daten laden (falls vorhanden)
+        hydro_query = f"""
+        SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, power_kw as hydro_value
+        FROM hydro_power 
+        WHERE project_id = ? {time_filter}
+        ORDER BY timestamp
+        """
+        cursor.execute(hydro_query, (project_id,))
+        hydro_data = cursor.fetchall()
+        
+        # Daten zusammenführen
+        overlay_data = []
+        timestamps = set()
+        
+        # Alle Timestamps sammeln
+        for row in load_data:
+            timestamps.add(row[0])
+        for row in pv_data:
+            timestamps.add(row[0])
+        for row in hydro_data:
+            timestamps.add(row[0])
+        
+        # Daten nach Timestamp sortieren
+        sorted_timestamps = sorted(timestamps)
+        
+        # Dictionaries für schnellen Zugriff erstellen
+        load_dict = {row[0]: row[1] for row in load_data}
+        pv_dict = {row[0]: row[1] for row in pv_data}
+        hydro_dict = {row[0]: row[1] for row in hydro_data}
+        
+
+        
+        # Overlay-Daten erstellen
+        for timestamp in sorted_timestamps:
+            load_val = float(load_dict.get(timestamp, 0))
+            pv_val = float(pv_dict.get(timestamp, 0))
+            hydro_val = float(hydro_dict.get(timestamp, 0))
+            
+            overlay_point = {
+                'timestamp': timestamp,
+                'load': load_val,
+                'pv_generation': pv_val,
+                'hydro_generation': hydro_val,
+                'total_generation': pv_val + hydro_val,
+                'net_load': load_val - pv_val - hydro_val
+            }
+            overlay_data.append(overlay_point)
+        
+        return jsonify({
+            'success': True,
+            'data': overlay_data,
+            'count': len(overlay_data),
+            'data_types': {
+                'load_available': len(load_data) > 0,
+                'pv_available': len(pv_data) > 0,
+                'hydro_available': len(hydro_data) > 0
+            }
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Overlay-Daten: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
 @main_bp.route('/api/projects/<int:project_id>/data-overview')
