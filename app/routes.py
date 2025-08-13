@@ -9,6 +9,38 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue
 from datetime import datetime, timedelta
 import random
+import math
+
+def generate_legacy_demo_water_levels(start_date, end_date):
+    """Generiert Legacy Demo-Wasserpegel-Daten für Fallback"""
+    demo_data = []
+    current_date = start_date
+    
+    while current_date <= end_date:
+        # Generiere 24 Stunden pro Tag
+        for hour in range(24):
+            timestamp = current_date.replace(hour=hour, minute=0, second=0, microsecond=0)
+            
+            # Realistische Wasserpegel-Werte für österreichische Flüsse
+            base_level = random.uniform(0.5, 3.0)  # Meter
+            seasonal_variation = 0.3 * abs(math.sin((current_date.timetuple().tm_yday / 365) * 2 * math.pi))
+            hourly_variation = 0.1 * random.random()
+            
+            water_level = base_level + seasonal_variation + hourly_variation
+            
+            demo_data.append({
+                'timestamp': timestamp.isoformat(),
+                'water_level_m': round(water_level, 2),
+                'flow_rate_m3s': round(random.uniform(10, 100), 1),
+                'river_name': 'Demo Fluss',
+                'station_name': 'Demo Station',
+                'source': 'Demo (Legacy)',
+                'region': 'AT'
+            })
+        
+        current_date += timedelta(days=1)
+    
+    return demo_data
 
 # EHYD Data Fetcher importieren
 from ehyd_data_fetcher import EHYDDataFetcher
@@ -1215,7 +1247,28 @@ def api_load_profile_data_range_string(profile_id):
             data_table = 'load_value'
             value_column = 'power_kw'  # Alte Tabelle verwendet 'power_kw'
         else:
-            return jsonify({'error': 'Ungültige Profil-ID'}), 400
+            # Fallback: Versuche beide Tabellen
+            real_id = int(profile_id)
+            # Prüfe zuerst die alte Tabelle
+            cursor = get_db().cursor()
+            cursor.execute("SELECT COUNT(*) FROM load_value WHERE load_profile_id = ?", (real_id,))
+            old_count = cursor.fetchone()[0]
+            
+            if old_count > 0:
+                table_name = 'load_profile'
+                data_table = 'load_value'
+                value_column = 'power_kw'
+            else:
+                # Prüfe die neue Tabelle
+                cursor.execute("SELECT COUNT(*) FROM load_profile_data WHERE load_profile_id = ?", (real_id,))
+                new_count = cursor.fetchone()[0]
+                
+                if new_count > 0:
+                    table_name = 'load_profiles'
+                    data_table = 'load_profile_data'
+                    value_column = 'value'
+                else:
+                    return jsonify({'error': f'Keine Daten für Lastprofil {profile_id} gefunden'}), 404
         
         cursor = get_db().cursor()
         
@@ -1300,7 +1353,26 @@ def api_get_load_profile_string(profile_id):
             table_name = 'load_profile'
             data_table = 'load_value'
         else:
-            return jsonify({'error': 'Ungültige Profil-ID'}), 400
+            # Fallback: Versuche beide Tabellen
+            real_id = int(profile_id)
+            # Prüfe zuerst die alte Tabelle
+            cursor = get_db().cursor()
+            cursor.execute("SELECT COUNT(*) FROM load_value WHERE load_profile_id = ?", (real_id,))
+            old_count = cursor.fetchone()[0]
+            
+            if old_count > 0:
+                table_name = 'load_profile'
+                data_table = 'load_value'
+            else:
+                # Prüfe die neue Tabelle
+                cursor.execute("SELECT COUNT(*) FROM load_profile_data WHERE load_profile_id = ?", (real_id,))
+                new_count = cursor.fetchone()[0]
+                
+                if new_count > 0:
+                    table_name = 'load_profiles'
+                    data_table = 'load_profile_data'
+                else:
+                    return jsonify({'error': f'Keine Daten für Lastprofil {profile_id} gefunden'}), 404
         
         cursor = get_db().cursor()
         
@@ -2626,7 +2698,8 @@ def get_project_data(project_id, data_type):
         elif time_range == 'month':
             time_filter = "AND timestamp >= datetime('now', '-1 month')"
         elif time_range == 'year':
-            time_filter = "AND timestamp >= datetime('now', '-1 year')"
+            # Für "Letztes Jahr" verwenden wir 2024 als festes Jahr
+            time_filter = "AND timestamp >= '2024-01-01' AND timestamp <= '2024-12-31'"
         elif start_date and end_date:
             time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
         
@@ -2651,6 +2724,27 @@ def get_project_data(project_id, data_type):
             JOIN load_profile lp ON lv.load_profile_id = lp.id
             WHERE lp.project_id = ? {time_filter}
             ORDER BY lv.timestamp
+            """
+        elif data_type == 'solar_radiation':
+            query = f"""
+            SELECT timestamp, global_irradiance as value 
+            FROM solar_data 
+            WHERE project_id = ? {time_filter}
+            ORDER BY timestamp
+            """
+        elif data_type == 'water_level':
+            query = f"""
+            SELECT timestamp, water_level as value 
+            FROM hydro_data 
+            WHERE project_id = ? {time_filter}
+            ORDER BY timestamp
+            """
+        elif data_type == 'weather':
+            query = f"""
+            SELECT timestamp, temperature_2m as value 
+            FROM weather_data 
+            WHERE project_id = ? {time_filter}
+            ORDER BY timestamp
             """
         else:
             query = f"""
