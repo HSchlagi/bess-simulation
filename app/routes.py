@@ -51,7 +51,7 @@ from pvgis_data_fetcher import PVGISDataFetcher
 # Intraday-Arbitrage und österreichische Marktdaten Integration
 try:
     from src.intraday import (
-        theoretical_revenue, spread_based_revenue, thresholds_based_revenue
+        theoretical_revenue, spread_based_revenue, thresholds_based_revenue, _ensure_price_kwh
     )
     from src.markets import ATMarketIntegrator, BESSSpec
     INTRADAY_AVAILABLE = True
