@@ -21,8 +21,8 @@ def test_intraday_arbitrage():
     print("🧪 Teste Intraday-Arbitrage Modul...")
     
     try:
-        from src.intraday_arbitrage import (
-            theoretical_revenue, spread_based_revenue, thresholds_based_revenue, _ensure_price_kwh
+        from src.intraday import (
+            theoretical_revenue, spread_based_revenue, thresholds_based_revenue
         )
         
         # Test-Daten erstellen
@@ -72,7 +72,7 @@ def test_austrian_markets():
     print("\n🧪 Teste österreichische Marktdaten-Modul...")
     
     try:
-        from src.bess_market_intel_at import ATMarketIntegrator, BESSSpec
+        from src.markets import ATMarketIntegrator, BESSSpec
         
         # Test BESSSpec
         spec = BESSSpec(power_mw=2.0, energy_mwh=8.0)

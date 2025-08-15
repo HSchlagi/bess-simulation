@@ -15,8 +15,8 @@ import os
 
 # Intraday-Arbitrage Integration
 try:
-    from src.intraday_arbitrage import (
-        theoretical_revenue, spread_based_revenue, thresholds_based_revenue, _ensure_price_kwh
+    from src.intraday import (
+        theoretical_revenue, spread_based_revenue, thresholds_based_revenue
     )
     INTRADAY_AVAILABLE = True
 except ImportError:
@@ -25,7 +25,7 @@ except ImportError:
 
 # Österreichische Marktdaten Integration
 try:
-    from src.bess_market_intel_at import ATMarketIntegrator, BESSSpec
+    from src.markets import ATMarketIntegrator, BESSSpec
     AT_MARKET_AVAILABLE = True
 except ImportError:
     AT_MARKET_AVAILABLE = False
