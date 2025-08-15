@@ -1,9 +1,0 @@
-# --- In optimize.py (inside sizing_sweep loop, after your existing 'annual_savings' calc) ---
-from src.economics import intraday_revenue
-
-intr_rev = intraday_revenue(cfg, E, P, cfg["bess"].get("max_soc", 0.9), cfg["bess"]["roundtrip_efficiency"])
-# If spread/threshold modes sum daily EUR over provided period, scale to annual if needed:
-# Example (if your price file covers N days):
-# days = (load.index[-1] - load.index[0]).total_seconds() / 86400.0
-# if days > 0: intr_rev *= 365.0 / days
-annual_savings += intr_rev

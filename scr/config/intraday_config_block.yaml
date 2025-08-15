@@ -1,9 +1,0 @@
-# --- Merge this block into your config.yaml ---
-intraday:
-  mode: threshold                   # theoretical | spread | threshold
-  delta_p_eur_per_kWh: 0.06         # for theoretical
-  cycles_per_day: 1.0               # for theoretical
-  buy_threshold_eur_per_MWh: 45     # for threshold
-  sell_threshold_eur_per_MWh: 85    # for threshold
-  cycles_per_day_cap: 1.0           # <= 12*P/E is auto cap
-  prices_csv: prices_intraday.csv   # path under ./data/

@@ -32,6 +32,7 @@ def test_intraday_arbitrage():
         })
         
         # Test _ensure_price_kwh
+        from src.intraday import _ensure_price_kwh
         prices = _ensure_price_kwh(test_data)
         print(f"✅ Preis-Serie erstellt: {len(prices)} Datenpunkte")
         
