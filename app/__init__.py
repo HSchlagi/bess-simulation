@@ -27,9 +27,14 @@ def create_app():
     from .routes_config import config_bp
     app.register_blueprint(config_bp)
     
+    # Auth-Blueprint registrieren
+    from .auth_routes import auth_bp
+    app.register_blueprint(auth_bp)
+    
     # CSRF für API-Routen deaktivieren (NACH der Blueprint-Registrierung)
     csrf.exempt(app.blueprints.get('main'))
     csrf.exempt(app.blueprints.get('config'))
+    csrf.exempt(app.blueprints.get('auth'))
 
     with app.app_context():
         # Import models to ensure they are registered

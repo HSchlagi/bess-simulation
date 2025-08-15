@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BESS Profil – Battery Energy Simulation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div class="max-w-4xl mx-auto py-8 px-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-green-400">🔋 BESS Profil</h1>
+      <div class="flex space-x-4">
+        <a href="{{ url_for('main.dashboard') }}" class="text-green-400 hover:underline">Dashboard</a>
+        <a href="{{ url_for('auth.logout') }}" class="text-red-400 hover:underline">Logout</a>
+      </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="mb-4 p-3 rounded-md {% if category == 'error' %}bg-red-500 text-white{% elif category == 'success' %}bg-green-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Profil-Informationen -->
+    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+      <h2 class="text-2xl font-semibold mb-4 text-green-400">Benutzerinformationen</h2>
+      
+      {% if user %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">E-Mail</label>
+            <p class="text-white">{{ user.email }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Benutzer-ID</label>
+            <p class="text-white font-mono text-sm">{{ user.id }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-1">Registriert am</label>
+            <p class="text-white">{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else 'Unbekannt' }}</p>
+          </div>
+        </div>
+      {% else %}
+        <p class="text-gray-400">Keine Benutzerinformationen verfügbar.</p>
+      {% endif %}
+    </div>
+
+    <!-- Schnellzugriff -->
+    <div class="bg-gray-800 rounded-lg p-6">
+      <h2 class="text-2xl font-semibold mb-4 text-green-400">Schnellzugriff</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="{{ url_for('main.projects') }}" class="bg-green-600 hover:bg-green-700 p-4 rounded-lg text-center transition">
+          <div class="text-2xl mb-2">📊</div>
+          <div class="font-semibold">Projekte</div>
+          <div class="text-sm text-gray-300">Verwalten Sie Ihre BESS-Projekte</div>
+        </a>
+        <a href="{{ url_for('main.customers') }}" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg text-center transition">
+          <div class="text-2xl mb-2">👥</div>
+          <div class="font-semibold">Kunden</div>
+          <div class="text-sm text-gray-300">Kundenverwaltung</div>
+        </a>
+        <a href="{{ url_for('main.economic_analysis') }}" class="bg-purple-600 hover:bg-purple-700 p-4 rounded-lg text-center transition">
+          <div class="text-2xl mb-2">💰</div>
+          <div class="font-semibold">Wirtschaftlichkeit</div>
+          <div class="text-sm text-gray-300">Analyse und Berechnungen</div>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
