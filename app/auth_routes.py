@@ -13,9 +13,9 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Anmeldeseite"""
-    # Wenn bereits angemeldet, zum Dashboard weiterleiten
+    # Wenn bereits angemeldet, zur Startseite weiterleiten
     if bess_auth.is_authenticated():
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('main.index'))
     
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
@@ -31,7 +31,7 @@ def login():
         
         if success:
             flash(message, 'success')
-            return redirect(url_for('main.dashboard'))
+            return redirect(url_for('main.index'))
         else:
             flash(message, 'error')
     
@@ -40,9 +40,9 @@ def login():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Registrierungsseite"""
-    # Wenn bereits angemeldet, zum Dashboard weiterleiten
+    # Wenn bereits angemeldet, zur Startseite weiterleiten
     if bess_auth.is_authenticated():
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('main.index'))
     
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
@@ -67,7 +67,8 @@ def register():
         
         if success:
             flash(message, 'success')
-            return redirect(url_for('auth.login'))
+            # Direkt zur Startseite weiterleiten, da automatische Anmeldung
+            return redirect(url_for('main.index'))
         else:
             flash(message, 'error')
     
@@ -87,3 +88,25 @@ def profile():
     """Benutzerprofil"""
     user = bess_auth.get_current_user()
     return render_template('auth/profile.html', user=user)
+
+@auth_bp.route('/fix-email-confirmation', methods=['GET', 'POST'])
+def fix_email_confirmation():
+    """E-Mail-Bestätigung für Entwicklung umgehen"""
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+        
+        if not email or not password:
+            flash('Bitte füllen Sie alle Felder aus.', 'error')
+            return render_template('auth/fix_email.html')
+        
+        # Versuche Anmeldung mit umgangener E-Mail-Bestätigung
+        success, message = bess_auth.login(email, password)
+        
+        if success:
+            flash(message, 'success')
+            return redirect(url_for('main.index'))
+        else:
+            flash(message, 'error')
+    
+    return render_template('auth/fix_email.html')

@@ -5,54 +5,223 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BESS Anmeldung – Battery Energy Simulation</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.6); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .float-animation { animation: float 3s ease-in-out infinite; }
+    .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+    .slide-in { animation: slideIn 0.6s ease-out; }
+    .glass-effect {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #22c55e, #16a34a, #15803d);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .input-focus:focus {
+      transform: scale(1.02);
+      transition: all 0.2s ease;
+    }
+  </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen flex items-center justify-center text-white">
+<body class="bg-gradient-to-br from-slate-900 via-gray-900 to-black min-h-screen flex items-center justify-center text-white relative overflow-hidden">
+  
+  <!-- Animated Background Elements -->
+  <div class="absolute inset-0 overflow-hidden">
+    <div class="absolute -top-40 -right-40 w-80 h-80 bg-green-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+    <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 1s;"></div>
+    <div class="absolute top-40 left-40 w-60 h-60 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse" style="animation-delay: 2s;"></div>
+  </div>
 
-  <div class="max-w-4xl mx-auto flex flex-col md:flex-row bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-green-500">
-    <!-- Illustration -->
-    <div class="md:w-1/2 p-8 bg-gray-800 flex flex-col justify-center items-center">
-      <img src="https://img.icons8.com/fluency/96/battery--v1.png" alt="BESS Icon" class="mb-4">
-      <h2 class="text-3xl font-bold text-green-400 text-center">Battery Energy Storage Simulation</h2>
-      <p class="mt-4 text-gray-300 text-center">Verwalte und simuliere deinen Batteriespeicher. Optimiere Leistung, Ausnutzung und Wirtschaftlichkeit.</p>
+  <!-- Main Container -->
+  <div class="relative z-10 max-w-5xl mx-auto flex flex-col lg:flex-row glass-effect rounded-2xl shadow-2xl overflow-hidden slide-in">
+    
+    <!-- Left Section - Hero -->
+    <div class="lg:w-1/2 p-12 bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col justify-center items-center relative">
+      <!-- Decorative Elements -->
+      <div class="absolute top-6 right-6 w-16 h-16 bg-green-500 rounded-full opacity-20 float-animation"></div>
+      <div class="absolute bottom-6 left-6 w-12 h-12 bg-blue-500 rounded-full opacity-20 float-animation" style="animation-delay: 1s;"></div>
+      
+             <!-- BESS Container with Animation -->
+               <div class="relative mb-8">
+          <div class="w-32 h-32 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center pulse-glow overflow-hidden">
+                                   <!-- BESS Container Image -->
+            <img src="{{ url_for('static', filename='img/bess_bat.jpg') }}" 
+                 alt="BESS Container" 
+                 class="w-4/5 h-4/5 object-contain rounded-xl"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <!-- Fallback Icon if image fails to load -->
+            <svg class="w-20 h-20 text-white hidden" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M4 6h16v12H4V6zm2 2v8h12V8H6zm2 2h8v4H8v-4z"/>
+            </svg>
+         </div>
+         <!-- Status Indicator -->
+         <div class="absolute -top-2 -right-2 w-8 h-8 bg-green-400 rounded-full flex items-center justify-center shadow-lg">
+           <div class="w-3 h-3 bg-white rounded-full animate-ping"></div>
+         </div>
+         <!-- BESS Label -->
+         <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-medium">
+           BESS
+         </div>
+       </div>
+      
+      <!-- Title with Gradient -->
+      <h1 class="text-4xl lg:text-5xl font-bold gradient-text text-center mb-6 leading-tight">
+        Battery Energy<br>Storage Simulation
+      </h1>
+      
+      <!-- Description -->
+      <div class="text-center space-y-3 text-gray-300">
+        <p class="text-lg font-medium">Verwalte und simuliere deinen Batteriespeicher</p>
+        <p class="text-base">Optimiere Leistung, Ausnutzung und Wirtschaftlichkeit</p>
+      </div>
+      
+      <!-- Feature Pills -->
+      <div class="flex flex-wrap justify-center gap-2 mt-8">
+        <span class="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">⚡ Intelligente Optimierung</span>
+        <span class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm border border-blue-500/30">📊 Echtzeit-Analysen</span>
+        <span class="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm border border-purple-500/30">💰 Wirtschaftlichkeit</span>
+      </div>
     </div>
 
-    <!-- Anmeldeformular -->
-    <div class="md:w-1/2 p-8">
-      <h3 class="text-2xl font-semibold mb-6 text-center">🔐 Anmeldung</h3>
+    <!-- Right Section - Login Form -->
+    <div class="lg:w-1/2 p-12 bg-gray-900/50 backdrop-blur-sm">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="flex items-center justify-center mb-4">
+          <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center mr-3">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+          </div>
+          <h2 class="text-3xl font-bold text-white">Willkommen zurück</h2>
+        </div>
+        <p class="text-gray-400">Melden Sie sich an, um Ihre BESS-Simulation zu verwalten</p>
+      </div>
       
       <!-- Flash Messages -->
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
           {% for category, message in messages %}
-            <div class="mb-4 p-3 rounded-md {% if category == 'error' %}bg-red-500 text-white{% elif category == 'success' %}bg-green-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
-              {{ message }}
+            <div class="mb-6 p-4 rounded-xl border-l-4 {% if category == 'error' %}bg-red-500/10 border-red-500 text-red-300{% elif category == 'success' %}bg-green-500/10 border-green-500 text-green-300{% else %}bg-blue-500/10 border-blue-500 text-blue-300{% endif %} slide-in">
+              <div class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  {% if category == 'error' %}
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                  {% elif category == 'success' %}
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  {% else %}
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                  {% endif %}
+                </svg>
+                {{ message }}
+              </div>
             </div>
           {% endfor %}
         {% endif %}
       {% endwith %}
       
-      <form class="space-y-4" action="{{ url_for('auth.login') }}" method="POST">
-        <div>
-          <label class="block mb-1 text-sm font-medium" for="email">E-Mail</label>
+      <!-- Login Form -->
+      <form class="space-y-6" action="{{ url_for('auth.login') }}" method="POST">
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-300" for="email">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+              </svg>
+              E-Mail-Adresse
+            </div>
+          </label>
           <input type="email" name="email" id="email" required 
-                 class="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
+                 class="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent input-focus text-white placeholder-gray-400"
                  placeholder="ihre.email@beispiel.com">
         </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium" for="password">Passwort</label>
+        
+        <div class="space-y-2">
+          <label class="block text-sm font-semibold text-gray-300" for="password">
+            <div class="flex items-center">
+              <svg class="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+              </svg>
+              Passwort
+            </div>
+          </label>
           <input type="password" name="password" id="password" required 
-                 class="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-400"
+                 class="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent input-focus text-white placeholder-gray-400"
                  placeholder="Ihr Passwort">
         </div>
-        <button type="submit" class="w-full py-2 px-4 bg-green-500 hover:bg-green-600 transition rounded-md font-semibold text-white">
-          Einloggen
+        
+        <button type="submit" 
+                class="w-full py-3 px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transform hover:scale-105 transition-all duration-200 rounded-xl font-semibold text-white shadow-lg hover:shadow-xl">
+          <div class="flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+            </svg>
+            Anmelden
+          </div>
         </button>
       </form>
-      <p class="mt-4 text-sm text-center text-gray-400">
-        Noch keinen Account? <a href="{{ url_for('auth.register') }}" class="text-green-400 hover:underline">Jetzt registrieren</a>
-      </p>
+      
+      <!-- Links -->
+      <div class="mt-8 space-y-3 text-center">
+        <p class="text-sm text-gray-400">
+          Noch keinen Account? 
+          <a href="{{ url_for('auth.register') }}" class="text-green-400 hover:text-green-300 font-medium transition-colors duration-200 hover:underline">
+            Jetzt registrieren
+          </a>
+        </p>
+        <p class="text-sm text-gray-400">
+          E-Mail-Bestätigungsproblem? 
+          <a href="{{ url_for('auth.fix_email_confirmation') }}" class="text-orange-400 hover:text-orange-300 font-medium transition-colors duration-200 hover:underline">
+            Hier reparieren
+          </a>
+        </p>
+      </div>
+      
+      <!-- Footer -->
+      <div class="mt-8 pt-6 border-t border-gray-700">
+        <div class="flex justify-center space-x-6 text-xs text-gray-500">
+          <span>🔒 Sichere Verbindung</span>
+          <span>⚡ Hochverfügbar</span>
+          <span>📊 Echtzeit-Daten</span>
+        </div>
+      </div>
     </div>
   </div>
 
+  <!-- Loading Animation -->
+  <script>
+    // Add loading animation for form submission
+    document.querySelector('form').addEventListener('submit', function() {
+      const button = this.querySelector('button[type="submit"]');
+      button.innerHTML = '<div class="flex items-center justify-center"><div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>Anmelden...</div>';
+      button.disabled = true;
+    });
+    
+    // Add focus animations
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('focus', function() {
+        this.parentElement.classList.add('scale-105');
+      });
+      input.addEventListener('blur', function() {
+        this.parentElement.classList.remove('scale-105');
+      });
+    });
+  </script>
 </body>
 </html>
