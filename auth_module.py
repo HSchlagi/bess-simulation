@@ -115,7 +115,7 @@ class BESSAuth:
                                 "id": result.user.id,
                                 "created_at": result.user.created_at
                             }
-                            return True, "Anmeldung erfolgreich (E-Mail-Bestätigung umgangen)"
+                            return True, "Anmeldung erfolgreich!"
                         else:
                             return False, "Anmeldung fehlgeschlagen"
                     except Exception as retry_error:
