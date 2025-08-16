@@ -240,15 +240,35 @@ async function loadSpotPrices() {
 // Demo Spot-Preise generieren
 function generateDemoSpotPrices() {
     const prices = [];
-    const startDate = new Date('2025-01-01');
     
-    for (let i = 0; i < 24 * 7; i++) { // 1 Woche
+    // Aktuelle Start- und Enddaten verwenden
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    
+    if (!startDateInput.value || !endDateInput.value) {
+        // Fallback: Diese Woche
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const weekStart = new Date(today.getTime() - (daysToMonday * 24 * 60 * 60 * 1000));
+        const weekEnd = new Date(weekStart.getTime() + (6 * 24 * 60 * 60 * 1000));
+        
+        startDateInput.value = weekStart.toISOString().split('T')[0];
+        endDateInput.value = weekEnd.toISOString().split('T')[0];
+    }
+    
+    const startDate = new Date(startDateInput.value + 'T00:00:00');
+    const endDate = new Date(endDateInput.value + 'T23:59:59');
+    
+    // Anzahl Stunden zwischen Start und Ende berechnen
+    const hoursDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60));
+    
+    for (let i = 0; i < hoursDiff; i++) {
         const date = new Date(startDate);
-        date.setHours(i % 24, 0, 0, 0);
-        date.setDate(startDate.getDate() + Math.floor(i / 24));
+        date.setHours(startDate.getHours() + i);
         
         // Basis-Preis mit Tageszeit-Schwankungen
-        let basePrice = 50 + 30 * Math.sin((i % 24 - 6) * Math.PI / 12);
+        let basePrice = 50 + 30 * Math.sin((date.getHours() - 6) * Math.PI / 12);
         basePrice += Math.random() * 20 - 10; // Zufällige Schwankungen
         
         prices.push({
