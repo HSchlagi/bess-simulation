@@ -19,33 +19,8 @@
         }
     </script>
     
-    <!-- Font Awesome - Robuste Einbindung -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css" crossorigin="anonymous">
-    <script>
-        // Font Awesome Fallback mit besserer Erkennung
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(function() {
-                // Prüfe ob Font Awesome Icons sichtbar sind
-                const testIcon = document.createElement('i');
-                testIcon.className = 'fas fa-check';
-                testIcon.style.position = 'absolute';
-                testIcon.style.left = '-9999px';
-                document.body.appendChild(testIcon);
-                
-                const iconWidth = testIcon.offsetWidth;
-                document.body.removeChild(testIcon);
-                
-                // Wenn Icon zu klein ist, lade Font Awesome neu
-                if (iconWidth < 10) {
-                    const link = document.createElement('link');
-                    link.rel = 'stylesheet';
-                    link.href = 'https://kit.fontawesome.com/a076d05399.js';
-                    document.head.appendChild(link);
-                }
-            }, 1000);
-        });
-    </script>
+    <!-- Font Awesome - Einfache, robuste Einbindung -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <!-- XLSX Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -58,27 +33,9 @@
         .fallback-button { background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; display: inline-block; }
         .fallback-button:hover { background: #2563eb; }
         
-        /* Font Awesome Fallback - Elegante Lösung */
-        .fa:not(.fa-check):not(.fa-exclamation-triangle)::before {
-            content: "";
-            display: inline-block;
-            width: 1em;
-            height: 1em;
-            background-color: currentColor;
-            mask-size: contain;
-            mask-repeat: no-repeat;
-            mask-position: center;
-        }
-        
-        /* Spezielle Icons für wichtige Elemente */
+        /* Einfache Fallback-Lösung nur für kritische Icons */
         .fa-user::before { content: "👤"; }
         .fa-sign-out-alt::before { content: "🚪"; }
-        .fa-tachometer-alt::before { content: "📊"; }
-        .fa-project-diagram::before { content: "📋"; }
-        .fa-users::before { content: "👥"; }
-        .fa-database::before { content: "💾"; }
-        .fa-calculator::before { content: "🧮"; }
-        .fa-chart-line::before { content: "📈"; }
     </style>
 </head>
 <body class="bg-gray-100">
