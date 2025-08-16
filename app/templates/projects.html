@@ -73,8 +73,8 @@
     </div>
 
     <!-- Use Case Manager Modal -->
-    <div id="useCaseModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+    <div id="useCaseModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onclick="closeUseCaseManager()">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white" onclick="event.stopPropagation()">
             <div class="mt-3">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-900">Use Case Manager</h3>
@@ -204,6 +204,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (useCaseFilter) useCaseFilter.addEventListener('change', filterProjects);
     if (sortSelect) sortSelect.addEventListener('change', filterProjects);
     if (createUseCaseForm) createUseCaseForm.addEventListener('submit', createUseCase);
+    
+    // Escape-Taste zum Schließen des Modals
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('useCaseModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeUseCaseManager();
+            }
+        }
+    });
     
     console.log('Event Listeners registriert');
 });
@@ -394,7 +404,14 @@ function openUseCaseManager() {
 }
 
 function closeUseCaseManager() {
-    document.getElementById('useCaseModal').classList.add('hidden');
+    console.log('closeUseCaseManager aufgerufen');
+    const modal = document.getElementById('useCaseModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        console.log('Modal geschlossen');
+    } else {
+        console.error('Modal nicht gefunden!');
+    }
     resetUseCaseForm();
     currentProjectId = null; // Reset current project
 }
