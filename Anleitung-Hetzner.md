@@ -91,6 +91,29 @@ sudo python3 -m venv venv
 sudo /opt/bess-simulation/venv/bin/pip install -r requirements.txt
 ```
 
+### 8.5. 🔐 Supabase-Authentifizierung konfigurieren
+
+```bash
+# WICHTIG: E-Mail-Bestätigung für Produktion aktivieren
+sudo nano /opt/bess-simulation/auth_module.py
+
+# Zeile 108 ändern von:
+# "options": {"email_confirm": False}
+# zu:
+# "options": {"email_confirm": True}
+
+# Umgebungsvariablen für Produktion setzen
+sudo nano /etc/environment
+
+# Folgende Zeilen hinzufügen:
+SUPABASE_URL=https://wxkbyeueyrxoevcwwqop.supabase.co
+SUPABASE_KEY=ihr-produktions-supabase-key
+FLASK_SECRET_KEY=sicherer-produktions-secret-key
+
+# Umgebungsvariablen neu laden
+source /etc/environment
+```
+
 ### 9. 🔍 Systemd-Service prüfen
 
 ```bash
@@ -127,6 +150,10 @@ sudo netstat -tlnp | grep :5050
 
 # Web-Interface testen
 curl http://localhost:5050
+
+# Supabase-Auth testen
+curl http://localhost:5050/login
+curl http://localhost:5050/register
 ```
 
 ## 🔧 Troubleshooting
@@ -146,6 +173,10 @@ sudo systemctl start bess-simulation
 # 3. Berechtigungen prüfen
 sudo chown -R root:root /opt/bess-simulation
 sudo chmod -R 755 /opt/bess-simulation
+
+# 4. Supabase-Auth prüfen
+sudo cat /opt/bess-simulation/auth_module.py | grep "email_confirm"
+sudo env | grep SUPABASE
 ```
 
 ### Nginx-Konfiguration prüfen:
@@ -165,6 +196,8 @@ sudo cat /etc/nginx/sites-available/bess-simulation
 3. **Konfiguration prüfen** - Besonders `config.py` und nginx-Settings
 4. **Logs beobachten** - Nach dem Start die Logs prüfen
 5. **Testen** - Web-Interface und alle Funktionen testen
+6. **Supabase-Auth konfigurieren** - E-Mail-Bestätigung für Produktion aktivieren
+7. **Umgebungsvariablen setzen** - SUPABASE_URL, SUPABASE_KEY, FLASK_SECRET_KEY
 
 ## 🎯 Rollback-Plan
 
@@ -185,6 +218,28 @@ Bei Problemen:
 - Logs prüfen: `sudo journalctl -u bess-simulation -f`
 - Nginx-Logs: `sudo tail -f /var/log/nginx/error.log`
 - System-Status: `sudo systemctl status bess-simulation`
+- Supabase-Auth: `sudo cat /opt/bess-simulation/auth_module.py | grep -A 5 -B 5 "email_confirm"`
+- Umgebungsvariablen: `sudo env | grep -E "(SUPABASE|FLASK)"`
+
+## 🔐 Neue Features nach Deployment
+
+### ✅ Supabase-Authentifizierung:
+- **Login/Register/Logout** über `/login`, `/register`, `/logout`
+- **Session-Management** mit Flask
+- **Route-Protection** für geschützte Bereiche
+- **E-Mail-Bestätigung** für neue Benutzer (Produktion)
+
+### ✅ UI/UX-Verbesserungen:
+- **Echtes BESS-Container-Bild** auf Login-Seite
+- **Moderne Login-UI** mit TailwindCSS
+- **Responsive Design** für alle Geräte
+- **Animations und Glassmorphism-Effekte**
+
+### ✅ Sicherheit:
+- **Supabase Backend** für sichere Authentifizierung
+- **CSRF-Schutz** für alle Formulare
+- **Umgebungsvariablen** für API-Keys
+- **Session-Timeout** und sichere Cookies
 
 ---
 
