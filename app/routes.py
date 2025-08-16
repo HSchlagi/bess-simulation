@@ -954,84 +954,99 @@ def api_spot_prices():
             else:
                 print("⚠️ Keine Daten für den gewählten Zeitraum gefunden")
                 
-                # Versuche 2024-Daten als Fallback zu laden
-                print("🔄 Versuche 2024-Daten als Fallback...")
-                cursor.execute("""
-                    SELECT timestamp, price_eur_mwh, source, region, price_type
-                    FROM spot_price 
-                    WHERE timestamp LIKE '2024%'
-                    ORDER BY timestamp ASC
-                    LIMIT 100
-                """)
-                
-                fallback_data = cursor.fetchall()
-                
-                if fallback_data and len(fallback_data) > 0:
-                    print(f"✅ {len(fallback_data)} 2024-Daten als Fallback geladen")
+                # Generiere Demo-Daten für den gewählten Zeitraum
+                print("🔄 Generiere Demo-Daten für gewählten Zeitraum...")
+                demo_data = generate_legacy_demo_prices(start_date, end_date)
+                return jsonify({
+                    'success': True,
+                    'data': demo_data,
+                    'source': 'Demo (Legacy)',
+                    'message': f'{len(demo_data)} Demo-Preise für gewählten Zeitraum ({start_date.date()} - {end_date.date()})'
+                })
                     
-                    # Konvertiere zu JSON-Format
-                    prices = []
-                    for row in fallback_data:
-                        prices.append({
-                            'timestamp': row[0],
-                            'price': float(row[1]),
-                            'source': row[2],
-                            'region': row[3],
-                            'market': row[4]
-                        })
-                    
-                    return jsonify({
-                        'success': True,
-                        'data': prices,
-                        'source': "APG (Austrian Power Grid) - Echte österreichische Day-Ahead Preise für 2024",
-                        'message': f'{len(prices)} 2024-Daten als Fallback geladen (keine Daten für gewählten Zeitraum)'
-                    })
-                else:
-                    print("⚠️ Keine 2024-Daten verfügbar, verwende APG Data Fetcher")
-                    
-                # Fallback: APG Data Fetcher verwenden
+                # PRIORITÄT: Echte APG-Daten laden
+                print("🌐 PRIORITÄT: Lade echte APG-Daten...")
                 from apg_data_fetcher import APGDataFetcher
                 fetcher = APGDataFetcher()
                 
-                # Versuche ENTSO-E Daten zuerst (echte Daten)
-                print("🌐 Versuche ENTSO-E Daten (echte österreichische Spot-Preise)...")
-                entsoe_data = fetcher.fetch_entsoe_data()
+                # 1. Versuche ENTSO-E Daten (echte österreichische Spot-Preise)
+                print("🌐 1. Versuche ENTSO-E Daten (echte österreichische Spot-Preise)...")
+                try:
+                    entsoe_data = fetcher.fetch_entsoe_data()
+                    if entsoe_data and len(entsoe_data) > 0:
+                        print(f"✅ {len(entsoe_data)} echte ENTSO-E Preise erfolgreich geladen!")
+                        # Echte ENTSO-E Daten verfügbar - in Datenbank speichern
+                        save_apg_data_to_db(entsoe_data)
+                        return jsonify({
+                            'success': True,
+                            'data': entsoe_data,
+                            'source': 'ENTSO-E (Live - Echte österreichische Day-Ahead Preise)',
+                            'message': f'{len(entsoe_data)} echte österreichische Spot-Preise geladen'
+                        })
+                except Exception as e:
+                    print(f"⚠️ ENTSO-E Fehler: {e}")
                 
-                if entsoe_data and len(entsoe_data) > 0:
-                    print(f"✅ {len(entsoe_data)} echte ENTSO-E Preise erfolgreich geladen!")
-                    # Echte ENTSO-E Daten verfügbar - in Datenbank speichern
-                    save_apg_data_to_db(entsoe_data)
-                    return jsonify({
-                        'success': True,
-                        'data': entsoe_data,
-                        'source': 'ENTSO-E (Live - Echte österreichische Day-Ahead Preise)',
-                        'message': f'{len(entsoe_data)} echte österreichische Spot-Preise geladen'
-                    })
+                # 2. Versuche echte APG-Daten von markt.apg.at
+                print("🌐 2. Versuche echte APG-Daten von markt.apg.at...")
+                try:
+                    apg_data = fetcher.fetch_current_prices()
+                    if apg_data and len(apg_data) > 0:
+                        print(f"✅ {len(apg_data)} echte APG-Preise erfolgreich geladen!")
+                        # Echte APG-Daten verfügbar - in Datenbank speichern
+                        save_apg_data_to_db(apg_data)
+                        return jsonify({
+                            'success': True,
+                            'data': apg_data,
+                            'source': 'APG (Live)',
+                            'message': f'{len(apg_data)} echte österreichische Spot-Preise geladen'
+                        })
+                except Exception as e:
+                    print(f"⚠️ APG API Fehler: {e}")
                 
-                # Fallback: Versuche echte APG-Daten zu laden
-                print("🌐 Versuche echte APG-Daten von markt.apg.at zu holen...")
-                apg_data = fetcher.fetch_current_prices()
+                # 3. Versuche historische 2024-Daten aus der Datenbank
+                print("🌐 3. Versuche historische 2024-Daten aus der Datenbank...")
+                try:
+                    cursor.execute("""
+                        SELECT timestamp, price_eur_mwh, source, region, price_type
+                        FROM spot_price 
+                        WHERE timestamp LIKE '2024%' AND source NOT LIKE '%Demo%'
+                        ORDER BY timestamp DESC
+                        LIMIT 168
+                    """)
+                    
+                    historical_data = cursor.fetchall()
+                    if historical_data and len(historical_data) > 0:
+                        print(f"✅ {len(historical_data)} historische echte Daten geladen!")
+                        
+                        # Konvertiere zu JSON-Format
+                        prices = []
+                        for row in historical_data:
+                            prices.append({
+                                'timestamp': row[0],
+                                'price': float(row[1]),
+                                'source': row[2],
+                                'region': row[3],
+                                'market': row[4]
+                            })
+                        
+                        return jsonify({
+                            'success': True,
+                            'data': prices,
+                            'source': 'APG (Historische echte Daten aus 2024)',
+                            'message': f'{len(prices)} historische echte APG-Daten geladen'
+                        })
+                except Exception as e:
+                    print(f"⚠️ Historische Daten Fehler: {e}")
                 
-                if apg_data and len(apg_data) > 0:
-                    print(f"✅ {len(apg_data)} echte APG-Preise erfolgreich geladen!")
-                    # Echte APG-Daten verfügbar - in Datenbank speichern
-                    save_apg_data_to_db(apg_data)
-                    return jsonify({
-                        'success': True,
-                        'data': apg_data,
-                        'source': 'APG (Live)',
-                        'message': f'{len(apg_data)} echte österreichische Spot-Preise geladen'
-                    })
-                else:
-                    print("⚠️ Keine echten APG-Daten verfügbar, verwende intelligente Demo-Daten")
-                    # Fallback: Intelligente Demo-Daten basierend auf APG-Mustern
-                    demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
-                    return jsonify({
-                        'success': True,
-                        'data': demo_data,
-                        'source': 'APG (Demo - basierend auf echten Mustern)',
-                        'message': f'{len(demo_data)} Demo-Preise basierend auf APG-Mustern'
-                    })
+                # 4. Nur als letzter Fallback: Demo-Daten
+                print("⚠️ Keine echten APG-Daten verfügbar, verwende Demo-Daten als letzter Fallback")
+                demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
+                return jsonify({
+                    'success': True,
+                    'data': demo_data,
+                    'source': 'APG (Demo - nur als Fallback)',
+                    'message': f'{len(demo_data)} Demo-Preise (keine echten Daten verfügbar)'
+                })
                     
         except ImportError as e:
             print(f"❌ APG Data Fetcher nicht verfügbar: {e}")
