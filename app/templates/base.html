@@ -19,8 +19,21 @@
         }
     </script>
     
-    <!-- Font Awesome -->
+    <!-- Font Awesome - Mehrere CDN-Fallbacks -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        // Font Awesome Fallback
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prüfe ob Font Awesome geladen ist
+            if (!document.querySelector('.fa')) {
+                // Fallback: Lade Font Awesome von alternativer Quelle
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://use.fontawesome.com/releases/v6.0.0/css/all.css';
+                document.head.appendChild(link);
+            }
+        });
+    </script>
     
     <!-- XLSX Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -32,6 +45,34 @@
         .fallback-card { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); padding: 20px; margin-bottom: 20px; }
         .fallback-button { background: #3b82f6; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; display: inline-block; }
         .fallback-button:hover { background: #2563eb; }
+        
+        /* Font Awesome Fallback Icons */
+        .fa-battery-three-quarters::before { content: "🔋"; }
+        .fa-tachometer-alt::before { content: "📊"; }
+        .fa-project-diagram::before { content: "📋"; }
+        .fa-users::before { content: "👥"; }
+        .fa-database::before { content: "💾"; }
+        .fa-calculator::before { content: "🧮"; }
+        .fa-chart-line::before { content: "📈"; }
+        .fa-user::before { content: "👤"; }
+        .fa-user-cog::before { content: "⚙️"; }
+        .fa-sign-out-alt::before { content: "🚪"; }
+        .fa-sign-in-alt::before { content: "🔑"; }
+        .fa-list::before { content: "📝"; }
+        .fa-plus::before { content: "➕"; }
+        .fa-user-plus::before { content: "👤➕"; }
+        .fa-bolt::before { content: "⚡"; }
+        .fa-eye::before { content: "👁️"; }
+        .fa-euro-sign::before { content: "€"; }
+        .fa-cog::before { content: "⚙️"; }
+        .fa-chart-bar::before { content: "📊"; }
+        .fa-rocket::before { content: "🚀"; }
+        .fa-bars::before { content: "☰"; }
+        .fa-chevron-down::before { content: "▼"; }
+        .fa-clock::before { content: "🕐"; }
+        .fa-folder::before { content: "📁"; }
+        .fa-check-circle::before { content: "✅"; }
+        .fa-exclamation-triangle::before { content: "⚠️"; }
     </style>
 </head>
 <body class="bg-gray-100">
