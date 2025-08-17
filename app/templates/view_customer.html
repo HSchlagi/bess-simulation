@@ -80,7 +80,7 @@ function displayCustomerDetails(customer) {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Registriert am</label>
-                    <p class="text-lg text-gray-900">${new Date(customer.created_at).toLocaleDateString('de-DE')}</p>
+                    <p class="text-lg text-gray-900">${customer.created_at ? new Date(customer.created_at).toLocaleDateString('de-DE') : 'Nicht verfügbar'}</p>
                 </div>
             </div>
         </div>
@@ -129,7 +129,7 @@ function displayCustomerProjects(projects) {
                 <div>
                     <h4 class="font-medium text-gray-900">${project.name}</h4>
                     <p class="text-sm text-gray-600">${project.location || 'Kein Standort angegeben'}</p>
-                    <p class="text-xs text-gray-500">Erstellt: ${new Date(project.created_at).toLocaleDateString('de-DE')}</p>
+                                            <p class="text-xs text-gray-500">Erstellt: ${project.created_at ? new Date(project.created_at).toLocaleDateString('de-DE') : 'Nicht verfügbar'}</p>
                 </div>
                 <a href="/view_project?id=${project.id}" 
                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">

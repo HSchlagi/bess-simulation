@@ -24,9 +24,9 @@ class Project(db.Model):
     current_electricity_cost = db.Column(db.Float, default=12.5)  # Ct/kWh - Aktuelle Stromkosten
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
     customer = db.relationship('Customer', backref='projects')
-    # Neue Felder für Use Case Management
-    use_case_id = db.Column(db.Integer, db.ForeignKey('use_case.id'))
-    use_case = db.relationship('UseCase', backref='projects')
+    # Neue Felder für Use Case Management (entfernt - Use Cases sind jetzt projektabhängig)
+    # use_case_id = db.Column(db.Integer, db.ForeignKey('use_case.id'))
+    # use_case = db.relationship('UseCase', backref='projects')
     simulation_year = db.Column(db.Integer, default=2024)  # Simulationsjahr
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -155,8 +155,10 @@ class WindValue(db.Model):
 # === NEUE TABELLEN FÜR BESS-SIMULATION ERWEITERUNG ===
 
 class UseCase(db.Model):
-    """Use Cases für BESS-Simulation (UC1, UC2, UC3)"""
+    """Use Cases für BESS-Simulation (UC1, UC2, UC3) - Projektabhängig"""
     id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='use_cases')
     name = db.Column(db.String(100), nullable=False)  # 'UC1', 'UC2', 'UC3'
     description = db.Column(db.Text)
     scenario_type = db.Column(db.String(50))  # 'consumption_only', 'pv_consumption', 'pv_hydro_consumption'

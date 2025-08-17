@@ -87,6 +87,11 @@ def projects():
 def customers():
     return render_template('customers.html')
 
+@main_bp.route('/use-case-manager')
+def use_case_manager():
+    """Use Case Manager Seite"""
+    return render_template('use_case_manager.html')
+
 @main_bp.route('/spot_prices')
 def spot_prices():
     return render_template('spot_prices.html')
@@ -178,7 +183,7 @@ def api_projects():
         cursor.execute("""
             SELECT p.id, p.name, p.location, p.bess_size, p.bess_power, p.pv_power, 
                    p.hp_power, p.wind_power, p.hydro_power, p.other_power, 
-                   p.current_electricity_cost, c.name as customer_name 
+                   p.current_electricity_cost, c.name as customer_name, p.created_at
             FROM project p 
             LEFT JOIN customer c ON p.customer_id = c.id
             ORDER BY p.name ASC
@@ -197,7 +202,8 @@ def api_projects():
             'hydro_power': p[8],
             'other_power': p[9],
             'current_electricity_cost': p[10],
-            'customer_name': p[11] if p[11] else None
+            'customer_name': p[11] if p[11] else None,
+            'created_at': p[12] if p[12] else None
         } for p in projects]
         
         print(f"📊 Projekte geladen: {len(projects_data)} Projekte")
@@ -225,12 +231,65 @@ def api_create_project():
             pv_power=data.get('pv_power'),
             hp_power=data.get('hp_power'),
             wind_power=data.get('wind_power'),
-            hydro_power=data.get('hydro_power')
+            hydro_power=data.get('hydro_power'),
+            current_electricity_cost=data.get('current_electricity_cost')
         )
         db.session.add(project)
         db.session.commit()
+        
+        # Investitionskosten speichern
+        if data.get('bess_cost'):
+            bess_cost = InvestmentCost(
+                project_id=project.id,
+                component_type='bess',
+                cost_eur=data.get('bess_cost')
+            )
+            db.session.add(bess_cost)
+        
+        if data.get('pv_cost'):
+            pv_cost = InvestmentCost(
+                project_id=project.id,
+                component_type='pv',
+                cost_eur=data.get('pv_cost')
+            )
+            db.session.add(pv_cost)
+        
+        if data.get('hp_cost'):
+            hp_cost = InvestmentCost(
+                project_id=project.id,
+                component_type='hp',
+                cost_eur=data.get('hp_cost')
+            )
+            db.session.add(hp_cost)
+        
+        if data.get('wind_cost'):
+            wind_cost = InvestmentCost(
+                project_id=project.id,
+                component_type='wind',
+                cost_eur=data.get('wind_cost')
+            )
+            db.session.add(wind_cost)
+        
+        if data.get('hydro_cost'):
+            hydro_cost = InvestmentCost(
+                project_id=project.id,
+                component_type='hydro',
+                cost_eur=data.get('hydro_cost')
+            )
+            db.session.add(hydro_cost)
+        
+        if data.get('other_cost'):
+            other_cost = InvestmentCost(
+                project_id=project.id,
+                component_type='other',
+                cost_eur=data.get('other_cost')
+            )
+            db.session.add(other_cost)
+        
+        db.session.commit()
         return jsonify({'success': True, 'id': project.id}), 201
     except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
 @main_bp.route('/api/projects/<int:project_id>')
@@ -271,7 +330,7 @@ def api_get_project(project_id):
             'id': project.customer.id,
             'name': project.customer.name
         } if project.customer else None,
-        'created_at': project.created_at.isoformat(),
+        'created_at': project.created_at,
         # Investitionskosten
         'bess_cost': costs_dict.get('bess'),
         'pv_cost': costs_dict.get('pv'),
@@ -533,7 +592,8 @@ def api_customers():
         'company': c.company,
         'contact': c.contact,
         'phone': c.phone,
-        'projects_count': len(c.projects)
+        'projects_count': len(c.projects),
+        'created_at': c.created_at if c.created_at else None
     } for c in customers])
 
 @main_bp.route('/api/customers', methods=['POST'])
@@ -572,7 +632,7 @@ def api_get_customer(customer_id):
         'company': customer.company,
         'contact': customer.contact,
         'phone': customer.phone,
-        'created_at': customer.created_at.isoformat()
+        'created_at': customer.created_at
     })
 
 @main_bp.route('/api/customers/<int:customer_id>', methods=['PUT'])
@@ -635,7 +695,7 @@ def api_customer_projects(customer_id):
             'id': p.id,
             'name': p.name,
             'location': p.location,
-            'created_at': p.created_at.isoformat()
+            'created_at': p.created_at
         } for p in projects]
     })
 
@@ -657,7 +717,7 @@ def api_investment_costs():
         'component_type': c.component_type,
         'cost_eur': c.cost_eur,
         'description': c.description,
-        'created_at': c.created_at.isoformat() if c.created_at else None
+        'created_at': c.created_at if c.created_at else None
     } for c in costs])
 
 @main_bp.route('/api/investment-costs', methods=['POST'])
@@ -4235,11 +4295,19 @@ def calculate_bess_secondary_market_revenue(project):
 
 @main_bp.route('/api/use-cases')
 def api_use_cases():
-    """Alle Use Cases abrufen"""
+    """Alle Use Cases abrufen (projektabhängig)"""
     try:
-        use_cases = UseCase.query.all()
+        project_id = request.args.get('project_id', type=int)
+        if project_id:
+            # Use Cases für spezifisches Projekt
+            use_cases = UseCase.query.filter_by(project_id=project_id).all()
+        else:
+            # Alle Use Cases (für Kompatibilität)
+            use_cases = UseCase.query.all()
+        
         return jsonify([{
             'id': uc.id,
+            'project_id': uc.project_id,
             'name': uc.name,
             'description': uc.description,
             'scenario_type': uc.scenario_type,
@@ -4249,17 +4317,51 @@ def api_use_cases():
             'wind_power_kw': getattr(uc, 'wind_power_kw', 0.0),
             'bess_size_mwh': getattr(uc, 'bess_size_mwh', 0.0),
             'bess_power_mw': getattr(uc, 'bess_power_mw', 0.0),
-            'created_at': uc.created_at.isoformat() if uc.created_at else None
+            'created_at': uc.created_at if uc.created_at else None
+        } for uc in use_cases])
+    except Exception as e:
+        return jsonify({'error': f'Fehler beim Abrufen der Use Cases: {str(e)}'}), 500
+
+@main_bp.route('/api/projects/<int:project_id>/use-cases')
+def api_project_use_cases(project_id):
+    """Use Cases für ein spezifisches Projekt abrufen"""
+    try:
+        use_cases = UseCase.query.filter_by(project_id=project_id).all()
+        return jsonify([{
+            'id': uc.id,
+            'project_id': uc.project_id,
+            'name': uc.name,
+            'description': uc.description,
+            'scenario_type': uc.scenario_type,
+            'pv_power_mwp': uc.pv_power_mwp,
+            'hydro_power_kw': uc.hydro_power_kw,
+            'hydro_energy_mwh_year': uc.hydro_energy_mwh_year,
+            'wind_power_kw': getattr(uc, 'wind_power_kw', 0.0),
+            'bess_size_mwh': getattr(uc, 'bess_size_mwh', 0.0),
+            'bess_power_mw': getattr(uc, 'bess_power_mw', 0.0),
+            'created_at': uc.created_at if uc.created_at else None
         } for uc in use_cases])
     except Exception as e:
         return jsonify({'error': f'Fehler beim Abrufen der Use Cases: {str(e)}'}), 500
 
 @main_bp.route('/api/use-cases', methods=['POST'])
 def api_create_use_case():
-    """Neuen Use Case erstellen"""
+    """Neuen Use Case erstellen (projektabhängig)"""
     try:
         data = request.get_json()
+        
+        # Projekt-ID ist jetzt erforderlich
+        project_id = data.get('project_id')
+        if not project_id:
+            return jsonify({'success': False, 'error': 'project_id ist erforderlich'}), 400
+        
+        # Prüfen ob Projekt existiert
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'success': False, 'error': 'Projekt nicht gefunden'}), 404
+        
         use_case = UseCase(
+            project_id=project_id,
             name=data['name'],
             description=data.get('description', ''),
             scenario_type=data.get('scenario_type', 'consumption_only'),
@@ -4287,6 +4389,7 @@ def api_get_use_case(use_case_id):
         
         return jsonify({
             'id': use_case.id,
+            'project_id': use_case.project_id,
             'name': use_case.name,
             'description': use_case.description,
             'scenario_type': use_case.scenario_type,
@@ -4296,7 +4399,7 @@ def api_get_use_case(use_case_id):
             'wind_power_kw': getattr(use_case, 'wind_power_kw', 0.0),
             'bess_size_mwh': getattr(use_case, 'bess_size_mwh', 0.0),
             'bess_power_mw': getattr(use_case, 'bess_power_mw', 0.0),
-            'created_at': use_case.created_at.isoformat() if use_case.created_at else None
+            'created_at': use_case.created_at if use_case.created_at else None
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -4332,26 +4435,21 @@ def api_update_use_case(use_case_id):
 
 @main_bp.route('/api/use-cases/<int:use_case_id>', methods=['DELETE'])
 def api_delete_use_case(use_case_id):
-    """Use Case löschen"""
+    """Use Case löschen (projektabhängig)"""
     try:
         use_case = UseCase.query.get(use_case_id)
         if not use_case:
             return jsonify({'success': False, 'error': 'Use Case nicht gefunden'}), 404
         
-        # Prüfen ob Use Case in Projekten verwendet wird
-        projects_using_case = Project.query.filter_by(use_case_id=use_case_id).count()
-        if projects_using_case > 0:
-            return jsonify({
-                'success': False, 
-                'error': f'Use Case wird noch in {projects_using_case} Projekt(en) verwendet'
-            }), 400
-        
+        # Use Case kann direkt gelöscht werden, da er projektabhängig ist
+        # und keine anderen Tabellen mehr darauf verweisen
         db.session.delete(use_case)
         db.session.commit()
         
         return jsonify({'success': True})
         
     except Exception as e:
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @main_bp.route('/api/revenue-models')

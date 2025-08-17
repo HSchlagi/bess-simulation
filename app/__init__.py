@@ -31,10 +31,15 @@ def create_app():
     from .auth_routes import auth_bp
     app.register_blueprint(auth_bp)
     
+    # Multi-User Blueprint registrieren
+    from multi_user.multi_user_routes import multi_user_bp
+    app.register_blueprint(multi_user_bp)
+    
     # CSRF für API-Routen deaktivieren (NACH der Blueprint-Registrierung)
     csrf.exempt(app.blueprints.get('main'))
     csrf.exempt(app.blueprints.get('config'))
     csrf.exempt(app.blueprints.get('auth'))
+    csrf.exempt(app.blueprints.get('multi_user'))
 
     with app.app_context():
         # Import models to ensure they are registered

@@ -79,7 +79,7 @@ function displayProjectDetails(project) {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Erstellt am</label>
-                    <p class="text-lg text-gray-900">${new Date(project.created_at).toLocaleDateString('de-DE')}</p>
+                    <p class="text-lg text-gray-900">${project.created_at ? new Date(project.created_at).toLocaleDateString('de-DE') : 'Nicht verfügbar'}</p>
                 </div>
             </div>
         </div>
@@ -279,7 +279,7 @@ function displayLoadProfiles(loadProfiles) {
                         </div>
                         <div class="flex items-center text-sm text-gray-600 space-x-4">
                             <span><i class="fas fa-database mr-1"></i>ID: ${displayId}</span>
-                            <span><i class="fas fa-calendar mr-1"></i>${new Date(profile.created_at).toLocaleDateString('de-DE')}</span>
+                            <span><i class="fas fa-calendar mr-1"></i>${profile.created_at ? new Date(profile.created_at).toLocaleDateString('de-DE') : 'Nicht verfügbar'}</span>
                             <span><i class="fas fa-chart-bar mr-1"></i>${profile.data_points || 0} Datenpunkte</span>
                             <span><i class="fas fa-info-circle mr-1"></i>${source}</span>
                         </div>
