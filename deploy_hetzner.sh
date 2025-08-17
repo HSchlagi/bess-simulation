@@ -13,17 +13,17 @@ sudo apt install -y python3 python3-pip python3-venv nginx
 
 # 3. Verzeichnis erstellen
 echo "📁 Verzeichnis erstellen..."
-sudo mkdir -p /var/www/bess-simulation
-sudo chown -R $USER:$USER /var/www/bess-simulation
+sudo mkdir -p /opt/bess-simulation
+sudo chown -R $USER:$USER /opt/bess-simulation
 
 # 4. Projekt klonen/kopieren
 echo "📋 Projekt kopieren..."
-# git clone https://github.com/HSchlagi/bess-simulation.git /var/www/bess-simulation
+# git clone https://github.com/HSchlagi/bess-simulation.git /opt/bess-simulation
 # ODER: Dateien manuell kopieren
 
 # 5. Virtual Environment erstellen
 echo "🔧 Virtual Environment..."
-cd /var/www/bess-simulation
+cd /opt/bess-simulation
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements_deployment.txt
@@ -34,8 +34,8 @@ python init_db.py
 
 # 7. Berechtigungen setzen
 echo "🔐 Berechtigungen..."
-sudo chown -R www-data:www-data /var/www/bess-simulation
-sudo chmod -R 755 /var/www/bess-simulation
+sudo chown -R www-data:www-data /opt/bess-simulation
+sudo chmod -R 755 /opt/bess-simulation
 
 # 8. Systemd Service einrichten
 echo "⚙️ Systemd Service..."

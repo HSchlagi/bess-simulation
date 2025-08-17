@@ -5,9 +5,9 @@ After=network.target
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/bess-simulation
-Environment="PATH=/var/www/bess-simulation/venv/bin"
-ExecStart=/var/www/bess-simulation/venv/bin/gunicorn --workers 3 --bind unix:bess-simulation.sock -m 007 wsgi_deployment:app
+WorkingDirectory=/opt/bess-simulation
+Environment="PATH=/opt/bess-simulation/venv/bin"
+ExecStart=/opt/bess-simulation/venv/bin/gunicorn --workers 3 --bind unix:bess-simulation.sock -m 007 wsgi_deployment:app
 ExecReload=/bin/kill -s HUP $MAINPID
 KillMode=mixed
 TimeoutStopSec=5

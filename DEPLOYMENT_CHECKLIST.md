@@ -27,15 +27,15 @@ export SUPABASE_KEY="your-supabase-key"  # Falls verwendet
 ### 1. Projekt übertragen
 ```bash
 # Option A: Git Clone
-git clone https://github.com/HSchlagi/bess-simulation.git /var/www/bess-simulation
+git clone https://github.com/HSchlagi/bess-simulation.git /opt/bess-simulation
 
 # Option B: Dateien manuell kopieren
-scp -r ./* user@hetzner-server:/var/www/bess-simulation/
+scp -r ./* user@hetzner-server:/opt/bess-simulation/
 ```
 
 ### 2. Deployment ausführen
 ```bash
-cd /var/www/bess-simulation
+cd /opt/bess-simulation
 chmod +x deploy_hetzner.sh
 ./deploy_hetzner.sh
 ```
@@ -76,7 +76,7 @@ python fix_created_at_dates.py
 ## Troubleshooting
 
 ### Häufige Probleme
-1. **Permission Denied**: `sudo chown -R www-data:www-data /var/www/bess-simulation`
+1. **Permission Denied**: `sudo chown -R www-data:www-data /opt/bess-simulation`
 2. **Port bereits belegt**: `sudo netstat -tlnp | grep :80`
 3. **Datenbank-Fehler**: `python check_database_structure.py`
 
