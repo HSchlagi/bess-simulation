@@ -50,30 +50,9 @@ def projects():
 
 @multi_user_bp.route('/projects/new', methods=['GET', 'POST'])
 def new_project():
-    """Neues Projekt erstellen"""
-    if request.method == 'POST':
-        user_id = session.get('user_id', str(uuid.uuid4()))
-        
-        project_data = {
-            'name': request.form.get('name', ''),
-            'description': request.form.get('description', ''),
-            'bess_capacity_kwh': float(request.form.get('bess_capacity_kwh', 0)),
-            'bess_power_kw': float(request.form.get('bess_power_kw', 0)),
-            'solar_capacity_kw': float(request.form.get('solar_capacity_kw', 0)),
-            'hydro_capacity_kw': float(request.form.get('hydro_capacity_kw', 0)),
-            'investment_cost_per_kwh': float(request.form.get('investment_cost_per_kwh', 0)),
-            'electricity_cost_per_kwh': float(request.form.get('electricity_cost_per_kwh', 0))
-        }
-        
-        success, message, project_id = supabase_multi.create_project(user_id, project_data)
-        
-        if success:
-            flash("Projekt erfolgreich erstellt!", "success")
-            return redirect(url_for('multi_user.view_project', project_id=project_id))
-        else:
-            flash(f"Fehler beim Erstellen des Projekts: {message}", "error")
-    
-    return render_template('multi_user/new_project.html')
+    """Neues Projekt erstellen - Weiterleitung zur vollständigen Version"""
+    # Weiterleitung zur vollständigen new_project Seite
+    return redirect(url_for('main.new_project'))
 
 @multi_user_bp.route('/projects/<project_id>')
 def view_project(project_id):
