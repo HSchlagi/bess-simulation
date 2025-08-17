@@ -1,0 +1,5 @@
+[33m03e5fed[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Hetzner Deployment: YAML-Abhängigkeit hinzugefügt und Nginx-Konfiguration korrigiert
+[33m132aecf[m Hetzner Deployment: Verzeichnispfad korrigiert von /var/www/bess-simulation zu /opt/bess-simulation
+[33m4bb20f4[m Hetzner Deployment: Vollständige Deployment-Vorbereitung mit Datenbank-Optimierung
+[33mec8c275[m Use Case Manager: Projektabhängige Use Cases implementiert und Invalid Date Problem behoben
+[33mef35caa[m Datenbank-Bereinigung: Skript zum Löschen alter Spot-Preis-Daten

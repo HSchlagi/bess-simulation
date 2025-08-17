@@ -80,7 +80,7 @@
             <i class="fas fa-folder text-gray-400 text-6xl mb-4"></i>
             <p class="text-gray-600 mb-2">Keine Projekte vorhanden</p>
             <p class="text-sm text-gray-500 mb-4">Erstellen Sie Ihr erstes BESS-Simulationsprojekt</p>
-            <a href="{{ url_for('main.new_project') }}" 
+            <a href="{{ url_for('multi_user.new_project') }}" 
                class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md">
                 <i class="fas fa-plus mr-2"></i>+ Neues Projekt erstellen
             </a>
@@ -99,7 +99,7 @@
                 <p class="text-gray-600 mb-4">
                     Erstellen Sie ein neues BESS-Simulationsprojekt mit allen notwendigen Komponenten.
                 </p>
-                <a href="{{ url_for('main.new_project') }}" 
+                <a href="{{ url_for('multi_user.new_project') }}" 
                    class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
                     Projekt erstellen
                 </a>
