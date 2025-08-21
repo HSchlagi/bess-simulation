@@ -699,6 +699,100 @@ def api_customer_projects(customer_id):
         } for p in projects]
     })
 
+# Dashboard-Statistiken API
+@main_bp.route('/api/dashboard/stats')
+def api_dashboard_stats():
+    try:
+        cursor = get_db().cursor()
+        
+        # Projekt-Anzahl
+        cursor.execute("SELECT COUNT(*) FROM project")
+        projects_count = cursor.fetchone()[0]
+        
+        # Kunden-Anzahl
+        cursor.execute("SELECT COUNT(*) FROM customer")
+        customers_count = cursor.fetchone()[0]
+        
+        # Load Profile Anzahl
+        cursor.execute("SELECT COUNT(*) FROM load_profile")
+        load_profiles_count = cursor.fetchone()[0]
+        
+        # Spot Price Datensätze
+        cursor.execute("SELECT COUNT(*) FROM spot_price")
+        spot_prices_count = cursor.fetchone()[0]
+        
+        # Letzte Aktivitäten (letzte 5 Projekte)
+        cursor.execute("""
+            SELECT p.name, p.location, p.created_at, c.name as customer_name
+            FROM project p 
+            LEFT JOIN customer c ON p.customer_id = c.id
+            ORDER BY p.created_at DESC 
+            LIMIT 5
+        """)
+        recent_activities = cursor.fetchall()
+        
+        # Aktive Projekte (Projekte mit Load Profiles)
+        cursor.execute("""
+            SELECT COUNT(DISTINCT p.id) 
+            FROM project p 
+            INNER JOIN load_profile lp ON p.id = lp.project_id
+        """)
+        active_projects_count = cursor.fetchone()[0]
+        
+        # Gesamte BESS-Kapazität
+        cursor.execute("SELECT SUM(bess_size) FROM project WHERE bess_size IS NOT NULL")
+        total_bess_capacity = cursor.fetchone()[0] or 0
+        
+        # Gesamte PV-Kapazität
+        cursor.execute("SELECT SUM(pv_power) FROM project WHERE pv_power IS NOT NULL")
+        total_pv_capacity = cursor.fetchone()[0] or 0
+        
+        # Durchschnittliche Stromkosten
+        cursor.execute("SELECT AVG(current_electricity_cost) FROM project WHERE current_electricity_cost IS NOT NULL")
+        avg_electricity_cost = cursor.fetchone()[0] or 0
+        
+        stats = {
+            'projects_count': projects_count,
+            'customers_count': customers_count,
+            'load_profiles_count': load_profiles_count,
+            'spot_prices_count': spot_prices_count,
+            'active_projects_count': active_projects_count,
+            'total_bess_capacity': round(total_bess_capacity, 1),
+            'total_pv_capacity': round(total_pv_capacity, 1),
+            'avg_electricity_cost': round(avg_electricity_cost, 2),
+            'recent_activities': [{
+                'name': activity[0],
+                'location': activity[1],
+                'created_at': activity[2].strftime('%d.%m.%Y') if activity[2] else None,
+                'customer_name': activity[3]
+            } for activity in recent_activities]
+        }
+        
+        print(f"📊 Dashboard-Statistiken geladen:")
+        print(f"   - Projekte: {projects_count}")
+        print(f"   - Kunden: {customers_count}")
+        print(f"   - Load Profiles: {load_profiles_count}")
+        print(f"   - Spot Prices: {spot_prices_count}")
+        print(f"   - Aktive Projekte: {active_projects_count}")
+        print(f"   - Gesamte BESS-Kapazität: {total_bess_capacity} kWh")
+        print(f"   - Gesamte PV-Kapazität: {total_pv_capacity} kW")
+        
+        return jsonify(stats)
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Dashboard-Statistiken: {e}")
+        return jsonify({
+            'projects_count': 0,
+            'customers_count': 0,
+            'load_profiles_count': 0,
+            'spot_prices_count': 0,
+            'active_projects_count': 0,
+            'total_bess_capacity': 0,
+            'total_pv_capacity': 0,
+            'avg_electricity_cost': 0,
+            'recent_activities': []
+        })
+
 # API Routes für Investitionskosten
 @main_bp.route('/api/investment-costs')
 def api_investment_costs():
