@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Rolle bearbeiten - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Rolle bearbeiten</h1>
+                <p class="text-gray-600">Rollen-Informationen und Berechtigungen ändern</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <form method="POST" action="{{ url_for('admin.edit_role', role_id=role.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <!-- Rollen-Informationen -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Rollen-Informationen</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">Rollenname</label>
+                            <input type="text" id="name" name="name" value="{{ role.name }}" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   {% if role.name in ['admin', 'user', 'viewer'] %}readonly{% endif %}>
+                            {% if role.name in ['admin', 'user', 'viewer'] %}
+                            <p class="text-sm text-gray-500 mt-1">System-Rollen können nicht umbenannt werden.</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
+                            <textarea id="description" name="description" rows="3" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ role.description or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Berechtigungen -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Berechtigungen</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% set current_permissions = role.permissions.split(',') if role.permissions else [] %}
+                        
+                        <!-- Projekt-Berechtigungen -->
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Projekt-Berechtigungen</h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="project_create" 
+                                           {% if 'project_create' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Projekte erstellen</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="project_read" 
+                                           {% if 'project_read' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Projekte lesen</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="project_update" 
+                                           {% if 'project_update' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Projekte bearbeiten</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="project_delete" 
+                                           {% if 'project_delete' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Projekte löschen</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Kunden-Berechtigungen -->
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Kunden-Berechtigungen</h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="customer_create" 
+                                           {% if 'customer_create' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Kunden erstellen</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="customer_read" 
+                                           {% if 'customer_read' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Kunden lesen</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="customer_update" 
+                                           {% if 'customer_update' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Kunden bearbeiten</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="customer_delete" 
+                                           {% if 'customer_delete' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Kunden löschen</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- System-Berechtigungen -->
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">System-Berechtigungen</h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="dashboard_viewer" 
+                                           {% if 'dashboard_viewer' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Dashboard anzeigen</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="data_import" 
+                                           {% if 'data_import' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Daten importieren</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="reports_view" 
+                                           {% if 'reports_view' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Berichte anzeigen</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Admin-Berechtigungen -->
+                        <div class="space-y-2">
+                            <h4 class="font-medium text-gray-900">Admin-Berechtigungen</h4>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="user_manage" 
+                                           {% if 'user_manage' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Benutzer verwalten</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="role_manage" 
+                                           {% if 'role_manage' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">Rollen verwalten</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions" value="system_settings" 
+                                           {% if 'system_settings' in current_permissions %}checked{% endif %}
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <span class="ml-2 text-sm text-gray-700">System-Einstellungen</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aktions-Buttons -->
+                <div class="flex items-center justify-between pt-6 border-t border-gray-200">
+                    <a href="{{ url_for('admin.roles') }}" class="text-gray-600 hover:text-gray-800 flex items-center">
+                        <i class="fas fa-arrow-left mr-2"></i>Zurück zur Rollenliste
+                    </a>
+                    <div class="flex space-x-3">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                            Änderungen speichern
+                        </button>
+                        <a href="{{ url_for('admin.roles') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg">
+                            Abbrechen
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Rollen-Informationen -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Rollen-Informationen</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <span class="text-gray-600">Rollenname:</span>
+                    <span class="text-gray-900 ml-2">{{ role.name|title }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Benutzer mit dieser Rolle:</span>
+                    <span class="text-gray-900 ml-2">{{ role.users|length if role.users else 0 }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">Aktuelle Berechtigungen:</span>
+                    <span class="text-gray-900 ml-2">{{ current_permissions|length if current_permissions else 0 }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-600">System-Rolle:</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                        {% if role.name in ['admin', 'user', 'viewer'] %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-800{% endif %} ml-2">
+                        {% if role.name in ['admin', 'user', 'viewer'] %}Ja{% else %}Nein{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

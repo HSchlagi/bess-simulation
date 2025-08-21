@@ -3,6 +3,137 @@
 ## 🎯 Projektübersicht
 **BESS Simulation** ist eine intelligente Web-Anwendung zur Simulation und Wirtschaftlichkeitsanalyse von Battery Energy Storage Systems (BESS) mit integrierten erneuerbaren Energien.
 
+## 🔄 **BACKUP-SYSTEM - Automatisierte Datenbank-Sicherung**
+
+### 📋 **Übersicht**
+Das BESS-System verfügt über ein vollständig automatisiertes Backup-System, das tägliche, wöchentliche und monatliche Datenbank-Sicherungen erstellt und verwaltet.
+
+### 🚀 **Schnellstart**
+
+#### **Manuelles Backup erstellen:**
+```powershell
+# Tägliches Backup
+python backup_automation.py
+
+# Oder mit PowerShell
+.\backup_automation.ps1
+
+# Oder mit Batch-Script
+backup_daily.bat
+```
+
+#### **Backup-Statistiken anzeigen:**
+```powershell
+.\backup_automation.ps1 -ShowStats
+```
+
+#### **Verfügbare Backups auflisten:**
+```powershell
+.\backup_automation.ps1 -ListBackups
+```
+
+### ⚙️ **Backup-Konfiguration**
+
+Die Backup-Konfiguration wird in `backup_config.json` gespeichert:
+
+```json
+{
+  "retention": {
+    "daily": 7,      // 7 tägliche Backups behalten
+    "weekly": 4,     // 4 wöchentliche Backups behalten
+    "monthly": 12    // 12 monatliche Backups behalten
+  },
+  "compression": true,
+  "email_notifications": false,
+  "email_config": {
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "username": "",
+    "password": "",
+    "to_email": ""
+  }
+}
+```
+
+### 🔄 **Automatische Backups einrichten**
+
+#### **Windows Task Scheduler:**
+1. **Task Scheduler öffnen:** Windows + R → `taskschd.msc`
+2. **Neuen Task erstellen:** "Create Basic Task" → "Daily"
+3. **Name:** "BESS Daily Backup"
+4. **Start time:** 02:00 (nachts)
+5. **Action:** Program: `powershell.exe`
+6. **Arguments:** `-ExecutionPolicy Bypass -File "C:\Pfad\zu\backup_automation.ps1"`
+
+#### **PowerShell Scheduled Job:**
+```powershell
+# Tägliches Backup um 02:00 Uhr
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-ExecutionPolicy Bypass -File `"$PWD\backup_automation.ps1`""
+$trigger = New-ScheduledTaskTrigger -Daily -At 2am
+Register-ScheduledTask -TaskName "BESS Daily Backup" -Action $action -Trigger $trigger -RunLevel Highest
+```
+
+### 📊 **Backup-Features**
+
+#### **Automatische Komprimierung:**
+- SQL-Dumps werden automatisch mit GZIP komprimiert
+- Reduziert Speicherplatz um ~70%
+- Beispiel: `bess_daily_2025-08-21_22-36-31.sql.gz` (6,4 MB)
+
+#### **Backup-Rotation:**
+- **Täglich:** 7 Backups behalten
+- **Wöchentlich:** 4 Backups behalten
+- **Monatlich:** 12 Backups behalten
+- Alte Backups werden automatisch gelöscht
+
+#### **Monitoring & Statistiken:**
+- Erfolgsrate: 100%
+- Gesamtgröße: 6,41 MB
+- Letztes Backup: 2025-08-21 22:36:31
+- Log-Dateien: `backup.log`, `backup_automation.log`
+
+### 🔧 **Backup-Dateien**
+
+#### **Hauptverzeichnis:**
+- `backup_automation.py` - Haupt-Backup-Script (Python)
+- `backup_automation.ps1` - PowerShell-Wrapper für Windows
+- `backup_daily.bat` - Einfaches Batch-Script
+- `BACKUP_ANLEITUNG.md` - Detaillierte Anleitung
+
+#### **Backup-Verzeichnis:**
+- `backups/` - Komprimierte SQL-Dumps
+- `backup_stats.json` - Backup-Statistiken
+- `backup.log` - Backup-Log-Datei
+
+### 🧪 **Backup-Test**
+
+#### **Wiederherstellungstest durchführen:**
+```powershell
+.\backup_automation.ps1 -TestRestore
+```
+
+#### **Backup-Validierung:**
+- Automatische Prüfung der Backup-Integrität
+- Test-Verbindung zur wiederhergestellten Datenbank
+- Tabellen-Anzahl Validierung
+
+### 🔒 **Sicherheitshinweise**
+
+1. **Backup-Verzeichnis sichern:** Stellen Sie sicher, dass das `backups/` Verzeichnis sicher ist
+2. **E-Mail-Passwörter:** Verwenden Sie App-Passwörter für E-Mail-Benachrichtigungen
+3. **Regelmäßige Tests:** Führen Sie regelmäßig Wiederherstellungstests durch
+4. **Offsite-Backups:** Kopieren Sie wichtige Backups an einen externen Standort
+
+### 📞 **Backup-Support**
+
+Bei Problemen mit dem Backup-System:
+1. Prüfen Sie die Log-Dateien: `backup.log`, `backup_automation.log`
+2. Führen Sie manuelle Backups durch: `python backup_automation.py`
+3. Testen Sie die Wiederherstellung: `.\backup_automation.ps1 -TestRestore`
+4. Kontaktieren Sie den Systemadministrator
+
+---
+
 ## 🆕 **MAJOR UPDATE: Erweiterte BESS-Simulation basierend auf CursorAI_Analyse (01.08.2025)**
 
 ### 🚀 **Konstruktive und intelligente Verbesserungsvorschläge umgesetzt**

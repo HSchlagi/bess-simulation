@@ -1,5 +1,82 @@
 from app import db
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# === BENUTZER-ROLLEN SYSTEM ===
+
+class Role(db.Model):
+    """Benutzer-Rollen für das BESS-System"""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)  # 'admin', 'user', 'viewer'
+    description = db.Column(db.String(200))
+    permissions = db.Column(db.Text)  # JSON-String mit Berechtigungen
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Role {self.name}>'
+
+class User(db.Model):
+    """Benutzer-Modell für das BESS-System"""
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    first_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    company = db.Column(db.String(200))
+    phone = db.Column(db.String(50))
+    is_active = db.Column(db.Boolean, default=True)
+    is_verified = db.Column(db.Boolean, default=False)
+    last_login = db.Column(db.DateTime)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
+    role = db.relationship('Role', backref='users')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def set_password(self, password):
+        """Passwort hashen und speichern"""
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        """Passwort überprüfen"""
+        return check_password_hash(self.password_hash, password)
+    
+    def has_permission(self, permission):
+        """Prüfen ob Benutzer eine bestimmte Berechtigung hat"""
+        if not self.role or not self.role.permissions:
+            return False
+        import json
+        permissions = json.loads(self.role.permissions)
+        return permission in permissions
+    
+    def is_admin(self):
+        """Prüfen ob Benutzer Admin ist"""
+        return self.role.name == 'admin' if self.role else False
+    
+    def is_user(self):
+        """Prüfen ob Benutzer normale User-Rolle hat"""
+        return self.role.name == 'user' if self.role else False
+    
+    def is_viewer(self):
+        """Prüfen ob Benutzer Viewer-Rolle hat"""
+        return self.role.name == 'viewer' if self.role else False
+    
+    def __repr__(self):
+        return f'<User {self.username}>'
+
+class UserProject(db.Model):
+    """Verknüpfung zwischen Benutzern und Projekten (Berechtigungen)"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    permission_level = db.Column(db.String(20), default='read')  # 'read', 'write', 'admin'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref='project_permissions')
+    project = db.relationship('Project', backref='user_permissions')
+    
+    def __repr__(self):
+        return f'<UserProject {self.user_id}:{self.project_id}>'
 
 class Customer(db.Model):
     id = db.Column(db.Integer, primary_key=True)

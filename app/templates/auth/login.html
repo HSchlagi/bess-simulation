@@ -136,7 +136,7 @@
       {% endwith %}
       
       <!-- Login Form -->
-      <form class="space-y-6" action="{{ url_for('auth.login') }}" method="POST">
+      <form class="space-y-6" action="{{ url_for('auth_local.login') }}" method="POST">
         <div class="space-y-2">
           <label class="block text-sm font-semibold text-gray-300" for="email">
             <div class="flex items-center">
@@ -181,9 +181,9 @@
       <div class="mt-8 space-y-3 text-center">
         <p class="text-sm text-gray-400">
           Noch keinen Account? 
-          <a href="{{ url_for('auth.register') }}" class="text-green-400 hover:text-green-300 font-medium transition-colors duration-200 hover:underline">
-            Jetzt registrieren
-          </a>
+                     <a href="{{ url_for('auth_local.register') }}" class="text-green-400 hover:text-green-300 font-medium transition-colors duration-200 hover:underline">
+             Jetzt registrieren
+           </a>
         </p>
       </div>
       

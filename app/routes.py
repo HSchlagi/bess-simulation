@@ -49,7 +49,8 @@ from ehyd_data_fetcher import EHYDDataFetcher
 from pvgis_data_fetcher import PVGISDataFetcher
 
 # Auth-Module importieren
-from auth_module import bess_auth, login_required, auth_optional
+from auth_module import bess_auth, auth_optional
+from permissions import login_required
 
 # Intraday-Arbitrage und österreichische Marktdaten Integration
 try:
@@ -71,7 +72,7 @@ main_bp = Blueprint('main', __name__)
 def index():
     # Wenn Auth verfügbar und Benutzer nicht angemeldet, zum Login weiterleiten
     if bess_auth.available and not bess_auth.is_authenticated():
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('auth_local.login'))
     return render_template('index.html')
 
 @main_bp.route('/dashboard')

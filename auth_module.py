@@ -41,7 +41,7 @@ def login_required(f):
         
         if "user" not in session:
             flash("Bitte melden Sie sich an, um diese Seite zu sehen.", "warning")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for("auth_local.login"))
         return f(*args, **kwargs)
     return decorated_function
 

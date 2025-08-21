@@ -31,7 +31,7 @@
         {% endif %}
       {% endwith %}
       
-      <form class="space-y-4" action="{{ url_for('auth.register') }}" method="POST">
+             <form class="space-y-4" action="{{ url_for('auth_local.register') }}" method="POST">
         <div>
           <label class="block mb-1 text-sm font-medium" for="email">E-Mail</label>
           <input type="email" name="email" id="email" required 
@@ -55,7 +55,7 @@
         </button>
       </form>
       <p class="mt-4 text-sm text-center text-gray-400">
-        Bereits registriert? <a href="{{ url_for('auth.login') }}" class="text-green-400 hover:underline">Zum Login</a>
+        Bereits registriert? <a href="{{ url_for('auth_local.login') }}" class="text-green-400 hover:underline">Zum Login</a>
       </p>
     </div>
   </div>

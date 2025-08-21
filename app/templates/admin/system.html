@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}System-Einstellungen - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">System-Einstellungen</h1>
+                <p class="text-gray-600">Backup, Logs und System-Konfiguration</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- System-Status -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">System-Status</h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Datenbank</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Online
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Backup-System</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Aktiv
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Letztes Backup</span>
+                    <span class="text-sm text-gray-900">{{ system_status.last_backup if system_status else 'Unbekannt' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Speicherplatz</span>
+                    <span class="text-sm text-gray-900">{{ system_status.disk_usage if system_status else 'Unbekannt' }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Server-Uptime</span>
+                    <span class="text-sm text-gray-900">2 Tage, 14 Stunden</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Schnellaktionen</h3>
+            <div class="space-y-3">
+                <form method="POST" action="{{ url_for('admin.backup_now') }}" class="inline">
+                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md">
+                        🔄 Backup jetzt erstellen
+                    </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.clear_logs') }}" class="inline">
+                    <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 rounded-md" onclick="return confirm('Logs wirklich bereinigen?')">
+                        🗑️ Logs bereinigen
+                    </button>
+                </form>
+                <a href="{{ url_for('admin.logs') }}" class="block w-full text-left px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 rounded-md">
+                    📋 System-Logs anzeigen
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup-Konfiguration -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Backup-Konfiguration</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Backup-Frequenz</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>Täglich</option>
+                    <option>Wöchentlich</option>
+                    <option>Monatlich</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Backup-Zeit</label>
+                <input type="time" value="02:00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Aufbewahrung</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>30 Tage</option>
+                    <option>90 Tage</option>
+                    <option>1 Jahr</option>
+                </select>
+            </div>
+        </div>
+        <div class="mt-4">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                Konfiguration speichern
+            </button>
+        </div>
+    </div>
+
+    <!-- System-Logs -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Letzte System-Logs</h3>
+            <a href="{{ url_for('admin.logs') }}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Alle anzeigen</a>
+        </div>
+        
+        <div class="bg-gray-50 rounded-lg p-4 font-mono text-sm">
+            <div class="space-y-2">
+                <div class="text-green-600">[2025-08-21 23:30:15] INFO: Backup erfolgreich erstellt</div>
+                <div class="text-blue-600">[2025-08-21 23:25:42] INFO: Benutzer admin@bess-simulation.com angemeldet</div>
+                <div class="text-yellow-600">[2025-08-21 23:20:18] WARNING: Datenbank-Verbindung langsam</div>
+                <div class="text-green-600">[2025-08-21 23:15:33] INFO: System gestartet</div>
+                <div class="text-gray-600">[2025-08-21 23:10:05] DEBUG: Cache geleert</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System-Informationen -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">System-Informationen</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h4 class="text-md font-medium text-gray-900 mb-3">Anwendung</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Version:</span>
+                        <span class="text-gray-900">1.0.0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Python:</span>
+                        <span class="text-gray-900">3.9.0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Flask:</span>
+                        <span class="text-gray-900">2.3.0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Datenbank:</span>
+                        <span class="text-gray-900">{{ system_info.database_size if system_info else 'Unbekannt' }}</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-md font-medium text-gray-900 mb-3">Server</h4>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Betriebssystem:</span>
+                        <span class="text-gray-900">Windows 10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">CPU:</span>
+                        <span class="text-gray-900">Intel i7-8700K</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">RAM:</span>
+                        <span class="text-gray-900">16 GB</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Backup-Anzahl:</span>
+                        <span class="text-gray-900">{{ system_info.backup_count if system_info else 0 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zurück zum Admin-Dashboard -->
+    <div class="mt-6">
+        <a href="{{ url_for('admin.dashboard') }}" class="text-blue-600 hover:text-blue-800 flex items-center">
+            <i class="fas fa-arrow-left mr-2"></i>Zurück zum Admin-Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}

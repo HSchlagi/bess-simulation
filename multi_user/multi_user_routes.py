@@ -21,19 +21,42 @@ def dashboard():
         
         # Zähle Simulationsergebnisse
         simulation_count = 0
+        total_bess_capacity = 0
+        total_solar_capacity = 0
+        total_hydro_capacity = 0
+        
         for project in projects:
             simulations = supabase_multi.get_simulation_results(project['id'], user_id)
             simulation_count += len(simulations)
+            
+            # Summiere Kapazitäten
+            total_bess_capacity += project.get('bess_capacity_kwh', 0)
+            total_solar_capacity += project.get('solar_capacity_kw', 0)
+            total_hydro_capacity += project.get('hydro_capacity_kw', 0)
+        
+        # Berechne durchschnittliche Stromkosten
+        avg_electricity_cost = 0
+        if projects:
+            total_cost = sum(project.get('electricity_cost_per_kwh', 0) for project in projects)
+            avg_electricity_cost = total_cost / len(projects)
         
         return render_template('multi_user/dashboard.html', 
                              project_count=project_count,
                              simulation_count=simulation_count,
+                             total_bess_capacity=total_bess_capacity,
+                             total_solar_capacity=total_solar_capacity,
+                             total_hydro_capacity=total_hydro_capacity,
+                             avg_electricity_cost=round(avg_electricity_cost, 2),
                              recent_projects=projects[:5])
     except Exception as e:
         flash(f"Fehler beim Laden des Dashboards: {e}", "error")
         return render_template('multi_user/dashboard.html', 
                              project_count=0,
                              simulation_count=0,
+                             total_bess_capacity=0,
+                             total_solar_capacity=0,
+                             total_hydro_capacity=0,
+                             avg_electricity_cost=0,
                              recent_projects=[])
 
 @multi_user_bp.route('/projects')
