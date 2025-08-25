@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Export – BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-4xl mx-auto py-8 px-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-green-400">📦 Batch Export</h1>
+            <div class="flex space-x-4">
+                <a href="{{ url_for('export.export_center') }}" class="text-green-400 hover:underline">
+                    <i class="fas fa-arrow-left mr-2"></i>Zurück zum Export-Zentrum
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-3 rounded-md {% if category == 'error' %}bg-red-500 text-white{% elif category == 'success' %}bg-green-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="space-y-6">
+            <!-- Projektauswahl -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">
+                    <i class="fas fa-project-diagram mr-2"></i>Projekte auswählen
+                </h2>
+                
+                {% if projects %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {% for project in projects %}
+                            <div class="flex items-center p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                                <input type="checkbox" name="projects" value="{{ project.id }}" 
+                                       id="project_{{ project.id }}" class="mr-3 h-4 w-4 text-green-600">
+                                <label for="project_{{ project.id }}" class="flex-1 cursor-pointer">
+                                    <div class="font-semibold">{{ project.name }}</div>
+                                    <div class="text-sm text-gray-400">{{ project.location }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        BESS: {{ project.bess_size or 0 }} kWh | 
+                                        PV: {{ project.pv_power or 0 }} kW
+                                    </div>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="flex justify-between items-center">
+                        <button type="button" onclick="selectAllProjects()" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-check-double mr-1"></i>Alle auswählen
+                        </button>
+                        <button type="button" onclick="deselectAllProjects()" class="text-gray-400 hover:text-gray-300">
+                            <i class="fas fa-times mr-1"></i>Alle abwählen
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <i class="fas fa-folder-open text-4xl text-gray-500 mb-4"></i>
+                        <p class="text-gray-400">Keine Projekte verfügbar</p>
+                        <a href="{{ url_for('main.new_project') }}" class="inline-block mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md transition">
+                            <i class="fas fa-plus mr-2"></i>Neues Projekt erstellen
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Export-Formate -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">
+                    <i class="fas fa-file-export mr-2"></i>Export-Formate
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- PDF -->
+                    <div class="flex items-center p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                        <input type="checkbox" name="formats" value="pdf" id="format_pdf" class="mr-3 h-4 w-4 text-red-600">
+                        <label for="format_pdf" class="flex-1 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-pdf text-red-400 text-xl mr-2"></i>
+                                <div>
+                                    <div class="font-semibold">PDF</div>
+                                    <div class="text-sm text-gray-400">Projektberichte</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Excel -->
+                    <div class="flex items-center p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                        <input type="checkbox" name="formats" value="excel" id="format_excel" class="mr-3 h-4 w-4 text-green-600">
+                        <label for="format_excel" class="flex-1 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-excel text-green-400 text-xl mr-2"></i>
+                                <div>
+                                    <div class="font-semibold">Excel</div>
+                                    <div class="text-sm text-gray-400">Simulationsdaten</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- CSV -->
+                    <div class="flex items-center p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition">
+                        <input type="checkbox" name="formats" value="csv" id="format_csv" class="mr-3 h-4 w-4 text-blue-600">
+                        <label for="format_csv" class="flex-1 cursor-pointer">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-csv text-blue-400 text-xl mr-2"></i>
+                                <div>
+                                    <div class="font-semibold">CSV</div>
+                                    <div class="text-sm text-gray-400">Rohdaten</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export-Optionen -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">
+                    <i class="fas fa-cogs mr-2"></i>Export-Optionen
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Dateiname -->
+                    <div>
+                        <label for="filename" class="block text-sm font-medium text-gray-300 mb-2">
+                            Dateiname (optional)
+                        </label>
+                        <input type="text" id="filename" name="filename" 
+                               placeholder="BESS_Batch_Export"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <p class="text-xs text-gray-500 mt-1">Leer lassen für automatischen Namen</p>
+                    </div>
+
+                    <!-- Template -->
+                    <div>
+                        <label for="template" class="block text-sm font-medium text-gray-300 mb-2">
+                            Export-Template (optional)
+                        </label>
+                        <select id="template" name="template" 
+                                class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">Kein Template</option>
+                            <option value="kundenbericht">Kundenbericht</option>
+                            <option value="technische_dokumentation">Technische Dokumentation</option>
+                            <option value="wirtschaftlichkeitsanalyse">Wirtschaftlichkeitsanalyse</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zusammenfassung -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">
+                    <i class="fas fa-info-circle mr-2"></i>Zusammenfassung
+                </h2>
+                
+                <div id="summary" class="space-y-2 text-gray-300">
+                    <p>Wählen Sie Projekte und Formate aus, um eine Zusammenfassung zu sehen.</p>
+                </div>
+            </div>
+
+            <!-- Aktionen -->
+            <div class="flex justify-between items-center">
+                <a href="{{ url_for('export.export_center') }}" 
+                   class="px-6 py-2 bg-gray-600 hover:bg-gray-700 rounded-md transition">
+                    <i class="fas fa-times mr-2"></i>Abbrechen
+                </a>
+                
+                <button type="submit" id="export-btn" disabled
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-md transition">
+                    <i class="fas fa-download mr-2"></i>Batch Export starten
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // Projektauswahl-Funktionen
+        function selectAllProjects() {
+            document.querySelectorAll('input[name="projects"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSummary();
+        }
+
+        function deselectAllProjects() {
+            document.querySelectorAll('input[name="projects"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSummary();
+        }
+
+        // Zusammenfassung aktualisieren
+        function updateSummary() {
+            const selectedProjects = document.querySelectorAll('input[name="projects"]:checked');
+            const selectedFormats = document.querySelectorAll('input[name="formats"]:checked');
+            const exportBtn = document.getElementById('export-btn');
+            const summary = document.getElementById('summary');
+
+            if (selectedProjects.length === 0 || selectedFormats.length === 0) {
+                summary.innerHTML = '<p class="text-gray-400">Wählen Sie mindestens ein Projekt und ein Format aus.</p>';
+                exportBtn.disabled = true;
+                return;
+            }
+
+            const projectNames = Array.from(selectedProjects).map(cb => {
+                const label = document.querySelector(`label[for="project_${cb.value}"]`);
+                return label.querySelector('.font-semibold').textContent;
+            });
+
+            const formatNames = Array.from(selectedFormats).map(cb => {
+                const label = document.querySelector(`label[for="format_${cb.value}"]`);
+                return label.querySelector('.font-semibold').textContent;
+            });
+
+            summary.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <strong class="text-green-400">Ausgewählte Projekte (${selectedProjects.length}):</strong>
+                        <ul class="list-disc list-inside mt-1 text-sm">
+                            ${projectNames.map(name => `<li>${name}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <div>
+                        <strong class="text-green-400">Export-Formate (${selectedFormats.length}):</strong>
+                        <ul class="list-disc list-inside mt-1 text-sm">
+                            ${formatNames.map(name => `<li>${name}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-400 mt-2">
+                    Es werden ${selectedProjects.length * selectedFormats.length} Dateien erstellt und als ZIP-Datei zum Download bereitgestellt.
+                </p>
+            `;
+
+            exportBtn.disabled = false;
+        }
+
+        // Event-Listener
+        document.addEventListener('DOMContentLoaded', function() {
+            // Checkbox-Event-Listener
+            document.querySelectorAll('input[name="projects"], input[name="formats"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSummary);
+            });
+
+            // Initiale Zusammenfassung
+            updateSummary();
+        });
+    </script>
+</body>
+</html>

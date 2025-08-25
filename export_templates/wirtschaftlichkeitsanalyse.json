@@ -1,0 +1,10 @@
+{
+  "name": "Wirtschaftlichkeitsanalyse",
+  "sections": [
+    "wirtschaftlichkeit",
+    "szenarien_vergleich",
+    "sensitivity_analysis"
+  ],
+  "include_charts": true,
+  "language": "de"
+}

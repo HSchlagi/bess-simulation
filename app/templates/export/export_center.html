@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export-Zentrum – BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-green-400">📊 Export-Zentrum</h1>
+            <div class="flex space-x-4">
+                <a href="{{ url_for('multi_user.dashboard') }}" class="text-green-400 hover:underline">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+                <a href="{{ url_for('main.projects') }}" class="text-blue-400 hover:underline">
+                    <i class="fas fa-project-diagram mr-2"></i>Projekte
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-3 rounded-md {% if category == 'error' %}bg-red-500 text-white{% elif category == 'success' %}bg-green-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Export-Optionen -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- PDF Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-file-pdf text-red-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">PDF Export</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Professionelle Projektberichte als PDF-Datei mit allen wichtigen Informationen.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Projektübersicht
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Wirtschaftlichkeitsanalyse
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Technische Spezifikationen
+                    </div>
+                </div>
+                <a href="{{ url_for('main.projects') }}" class="inline-block bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-download mr-2"></i>Projekt auswählen
+                </a>
+            </div>
+
+            <!-- Excel Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-file-excel text-green-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Excel Export</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Simulationsdaten als Excel-Datei mit mehreren Arbeitsblättern und Grafiken.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Zeitreihendaten
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Wirtschaftlichkeitskennzahlen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Interaktive Grafiken
+                    </div>
+                </div>
+                <a href="{{ url_for('main.projects') }}" class="inline-block bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-download mr-2"></i>Projekt auswählen
+                </a>
+            </div>
+
+            <!-- CSV Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-file-csv text-blue-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">CSV Export</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Rohdaten als CSV-Datei für weitere Verarbeitung in anderen Programmen.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Einfache Textdatei
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Import in andere Tools
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Weiterverarbeitung
+                    </div>
+                </div>
+                <a href="{{ url_for('main.projects') }}" class="inline-block bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-download mr-2"></i>Projekt auswählen
+                </a>
+            </div>
+
+            <!-- Batch Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-archive text-purple-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Batch Export</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Mehrere Projekte gleichzeitig in verschiedenen Formaten exportieren.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Mehrere Projekte
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Verschiedene Formate
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        ZIP-Download
+                    </div>
+                </div>
+                <a href="{{ url_for('export.batch_export') }}" class="inline-block bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-cogs mr-2"></i>Batch Export starten
+                </a>
+            </div>
+
+            <!-- Templates -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-layer-group text-yellow-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Export Templates</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Vordefinierte Export-Templates für verschiedene Zwecke verwalten.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Kundenberichte
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Technische Dokumentation
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Anpassbare Layouts
+                    </div>
+                </div>
+                <a href="{{ url_for('export.export_templates') }}" class="inline-block bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-edit mr-2"></i>Templates verwalten
+                </a>
+            </div>
+
+            <!-- Hilfe -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-question-circle text-cyan-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Hilfe & Support</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Informationen und Anleitungen zu den Export-Funktionen.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-info-circle text-cyan-400 mr-2"></i>
+                        Anleitungen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-info-circle text-cyan-400 mr-2"></i>
+                        FAQ
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-info-circle text-cyan-400 mr-2"></i>
+                        Support
+                    </div>
+                </div>
+                                            <a href="{{ url_for('export.export_help') }}" class="inline-block bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-md transition">
+                                <i class="fas fa-book mr-2"></i>Hilfe öffnen
+                            </a>
+            </div>
+        </div>
+
+        <!-- Status-Informationen -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4 text-green-400">
+                <i class="fas fa-info-circle mr-2"></i>Export-Status
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="flex items-center">
+                    <i class="fas fa-file-pdf text-red-400 mr-2"></i>
+                    <span>PDF Export: <span class="text-green-400">Verfügbar</span></span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-file-excel text-green-400 mr-2"></i>
+                    <span>Excel Export: <span class="text-green-400">Verfügbar</span></span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-file-csv text-blue-400 mr-2"></i>
+                    <span>CSV Export: <span class="text-green-400">Verfügbar</span></span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-archive text-purple-400 mr-2"></i>
+                    <span>Batch Export: <span class="text-green-400">Verfügbar</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schnellzugriff -->
+        <div class="mt-8 bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4 text-green-400">
+                <i class="fas fa-bolt mr-2"></i>Schnellzugriff
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="{{ url_for('main.projects') }}" class="bg-green-600 hover:bg-green-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">📊</div>
+                    <div class="font-semibold">Projekte</div>
+                    <div class="text-sm text-gray-300">Projekte verwalten und exportieren</div>
+                </a>
+                <a href="{{ url_for('main.customers') }}" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">👥</div>
+                    <div class="font-semibold">Kunden</div>
+                    <div class="text-sm text-gray-300">Kundenverwaltung</div>
+                </a>
+                <a href="{{ url_for('main.economic_analysis') }}" class="bg-purple-600 hover:bg-purple-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">💰</div>
+                    <div class="font-semibold">Wirtschaftlichkeit</div>
+                    <div class="text-sm text-gray-300">Analysen exportieren</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Export-Status abrufen
+        fetch('{{ url_for("export.export_status") }}')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Export-Status:', data);
+                // Hier können Sie den Status dynamisch anzeigen
+            })
+            .catch(error => {
+                console.error('Fehler beim Abrufen des Export-Status:', error);
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "Kundenbericht",
+  "sections": [
+    "projekt_uebersicht",
+    "wirtschaftlichkeit",
+    "technische_details"
+  ],
+  "include_charts": true,
+  "language": "de"
+}

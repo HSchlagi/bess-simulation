@@ -1,0 +1,10 @@
+{
+  "name": "Technische Dokumentation",
+  "sections": [
+    "technische_details",
+    "simulationsergebnisse",
+    "zeitreihen"
+  ],
+  "include_charts": true,
+  "language": "de"
+}

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export-Hilfe – BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-6xl mx-auto py-8 px-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-green-400">📚 Export-Hilfe</h1>
+            <div class="flex space-x-4">
+                <a href="{{ url_for('export.export_center') }}" class="text-green-400 hover:underline">
+                    <i class="fas fa-arrow-left mr-2"></i>Zurück zum Export-Zentrum
+                </a>
+            </div>
+        </div>
+
+        <!-- Schnellnavigation -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-green-400">
+                <i class="fas fa-list mr-2"></i>Schnellnavigation
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="#formate" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">📋</div>
+                    <div class="font-semibold">Export-Formate</div>
+                </a>
+                <a href="#batch" class="bg-purple-600 hover:bg-purple-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">📦</div>
+                    <div class="font-semibold">Batch Export</div>
+                </a>
+                <a href="#templates" class="bg-yellow-600 hover:bg-yellow-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">🎨</div>
+                    <div class="font-semibold">Templates</div>
+                </a>
+                <a href="#fehler" class="bg-red-600 hover:bg-red-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">🛠️</div>
+                    <div class="font-semibold">Fehlerbehebung</div>
+                </a>
+                <a href="#faq" class="bg-green-600 hover:bg-green-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">❓</div>
+                    <div class="font-semibold">FAQ</div>
+                </a>
+                <a href="#best-practices" class="bg-cyan-600 hover:bg-cyan-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">🎯</div>
+                    <div class="font-semibold">Best Practices</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Export-Formate -->
+        <div id="formate" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-file-export mr-2"></i>Export-Formate
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- PDF Export -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-file-pdf text-red-400 text-2xl mr-3"></i>
+                        <h3 class="font-semibold text-lg">PDF Export</h3>
+                    </div>
+                    <p class="text-gray-300 mb-3">Professionelle Projektberichte für Kunden und Präsentationen</p>
+                    <ul class="text-sm text-gray-400 space-y-1 mb-4">
+                        <li>• Projektübersicht mit technischen Daten</li>
+                        <li>• Wirtschaftlichkeitsanalyse</li>
+                        <li>• Technische Spezifikationen</li>
+                        <li>• Professionelles Layout</li>
+                    </ul>
+                    <div class="text-xs text-gray-500">
+                        <strong>Anleitung:</strong><br>
+                        1. Projekte → Projekt auswählen<br>
+                        2. Export → PDF Export<br>
+                        3. Download startet automatisch
+                    </div>
+                </div>
+
+                <!-- Excel Export -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-file-excel text-green-400 text-2xl mr-3"></i>
+                        <h3 class="font-semibold text-lg">Excel Export</h3>
+                    </div>
+                    <p class="text-gray-300 mb-3">Detaillierte Simulationsdaten für weitere Analysen</p>
+                    <ul class="text-sm text-gray-400 space-y-1 mb-4">
+                        <li>• Projektübersicht</li>
+                        <li>• Zeitreihendaten</li>
+                        <li>• Wirtschaftlichkeitskennzahlen</li>
+                        <li>• Mehrere Arbeitsblätter</li>
+                    </ul>
+                    <div class="text-xs text-gray-500">
+                        <strong>Anleitung:</strong><br>
+                        1. Projekte → Projekt auswählen<br>
+                        2. Export → Excel Export<br>
+                        3. Download startet automatisch
+                    </div>
+                </div>
+
+                <!-- CSV Export -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center mb-3">
+                        <i class="fas fa-file-csv text-blue-400 text-2xl mr-3"></i>
+                        <h3 class="font-semibold text-lg">CSV Export</h3>
+                    </div>
+                    <p class="text-gray-300 mb-3">Rohdaten für Import in andere Programme</p>
+                    <ul class="text-sm text-gray-400 space-y-1 mb-4">
+                        <li>• Alle Projektdaten in Textform</li>
+                        <li>• Kompatibel mit Excel, Google Sheets</li>
+                        <li>• Ideal für weitere Verarbeitung</li>
+                        <li>• Kompakte Dateigröße</li>
+                    </ul>
+                    <div class="text-xs text-gray-500">
+                        <strong>Anleitung:</strong><br>
+                        1. Projekte → Projekt auswählen<br>
+                        2. Export → CSV Export<br>
+                        3. Download startet automatisch
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Export -->
+        <div id="batch" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-archive mr-2"></i>Batch Export
+            </h2>
+            
+            <div class="bg-gray-700 rounded-lg p-4 mb-4">
+                <h3 class="font-semibold text-lg mb-3 text-purple-400">Mehrere Projekte gleichzeitig exportieren</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="font-semibold mb-2 text-yellow-400">Vorteile:</h4>
+                        <ul class="text-sm text-gray-300 space-y-1">
+                            <li>• Zeitersparnis bei vielen Projekten</li>
+                            <li>• Einheitliche Formatierung</li>
+                            <li>• ZIP-Datei mit allen Exports</li>
+                            <li>• Verschiedene Formate möglich</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-2 text-yellow-400">Anleitung:</h4>
+                        <ol class="text-sm text-gray-300 space-y-1">
+                            <li>1. Export-Zentrum → Batch Export</li>
+                            <li>2. Projekte auswählen</li>
+                            <li>3. Export-Formate wählen</li>
+                            <li>4. Optional: Template auswählen</li>
+                            <li>5. Batch Export starten</li>
+                            <li>6. ZIP-Download startet automatisch</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates -->
+        <div id="templates" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-layer-group mr-2"></i>Export-Templates
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Kundenbericht -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-lg mb-2 text-blue-400">📋 Kundenbericht</h3>
+                    <p class="text-sm text-gray-300 mb-3">Professionelle Präsentation für Kunden</p>
+                    <ul class="text-xs text-gray-400 space-y-1">
+                        <li>• Projektübersicht</li>
+                        <li>• Wirtschaftlichkeit</li>
+                        <li>• Technische Details</li>
+                        <li>• Grafiken: Ja</li>
+                        <li>• Sprache: Deutsch</li>
+                    </ul>
+                </div>
+
+                <!-- Technische Dokumentation -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-lg mb-2 text-green-400">🔧 Technische Dokumentation</h3>
+                    <p class="text-sm text-gray-300 mb-3">Detaillierte technische Dokumentation</p>
+                    <ul class="text-xs text-gray-400 space-y-1">
+                        <li>• Technische Details</li>
+                        <li>• Simulationsergebnisse</li>
+                        <li>• Zeitreihen</li>
+                        <li>• Grafiken: Ja</li>
+                        <li>• Sprache: Deutsch</li>
+                    </ul>
+                </div>
+
+                <!-- Wirtschaftlichkeitsanalyse -->
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-lg mb-2 text-purple-400">💰 Wirtschaftlichkeitsanalyse</h3>
+                    <p class="text-sm text-gray-300 mb-3">Fokus auf wirtschaftliche Aspekte</p>
+                    <ul class="text-xs text-gray-400 space-y-1">
+                        <li>• Wirtschaftlichkeit</li>
+                        <li>• Szenarien-Vergleich</li>
+                        <li>• Sensitivitätsanalyse</li>
+                        <li>• Grafiken: Ja</li>
+                        <li>• Sprache: Deutsch</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fehlerbehebung -->
+        <div id="fehler" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-tools mr-2"></i>Fehlerbehebung
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                    <h3 class="font-semibold text-red-400 mb-2">❌ "PDF-Export nicht verfügbar"</h3>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Problem:</strong> Das reportlab-Paket ist nicht installiert</p>
+                    <p class="text-sm text-gray-300"><strong>Lösung:</strong> Führen Sie aus: <code class="bg-gray-700 px-2 py-1 rounded">pip install reportlab</code></p>
+                </div>
+
+                <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                    <h3 class="font-semibold text-red-400 mb-2">❌ "Excel-Export nicht verfügbar"</h3>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Problem:</strong> Das openpyxl-Paket ist nicht installiert</p>
+                    <p class="text-sm text-gray-300"><strong>Lösung:</strong> Führen Sie aus: <code class="bg-gray-700 px-2 py-1 rounded">pip install openpyxl</code></p>
+                </div>
+
+                <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                    <h3 class="font-semibold text-red-400 mb-2">❌ "Das System kann den angegebenen Pfad nicht finden"</h3>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Problem:</strong> Export-Verzeichnis existiert nicht</p>
+                    <p class="text-sm text-gray-300"><strong>Lösung:</strong> Führen Sie aus: <code class="bg-gray-700 px-2 py-1 rounded">python install_export_functions.py</code></p>
+                </div>
+
+                <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                    <h3 class="font-semibold text-red-400 mb-2">❌ "Template nicht gefunden"</h3>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Problem:</strong> Template-Datei fehlt</p>
+                    <p class="text-sm text-gray-300"><strong>Lösung:</strong> Gehen Sie zu Export Templates → Standard-Templates erstellen</p>
+                </div>
+
+                <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                    <h3 class="font-semibold text-red-400 mb-2">❌ "Download funktioniert nicht"</h3>
+                    <p class="text-sm text-gray-300 mb-2"><strong>Problem:</strong> Browser blockiert Downloads</p>
+                    <p class="text-sm text-gray-300"><strong>Lösung:</strong> Überprüfen Sie die Browser-Einstellungen, erlauben Sie Downloads von dieser Website</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div id="faq" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-question-circle mr-2"></i>Häufige Fragen (FAQ)
+            </h2>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-400 mb-2">Q: Kann ich mehrere Formate gleichzeitig exportieren?</h3>
+                    <p class="text-gray-300">A: Ja, verwenden Sie den Batch Export und wählen Sie mehrere Formate aus.</p>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-400 mb-2">Q: Wo werden die exportierten Dateien gespeichert?</h3>
+                    <p class="text-gray-300">A: Die Dateien werden automatisch zum Download bereitgestellt. Sie können den Speicherort in Ihrem Browser wählen.</p>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-400 mb-2">Q: Kann ich die Export-Templates anpassen?</h3>
+                    <p class="text-gray-300">A: Ja, Sie können eigene Templates erstellen oder bestehende bearbeiten.</p>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-400 mb-2">Q: Welche Dateigrößen kann ich erwarten?</h3>
+                    <ul class="text-gray-300 text-sm space-y-1">
+                        <li>• PDF: 50-200 KB (je nach Projektgröße)</li>
+                        <li>• Excel: 100-500 KB (je nach Datenmenge)</li>
+                        <li>• CSV: 10-50 KB (kompakte Textdatei)</li>
+                        <li>• ZIP: 200-1000 KB (je nach Anzahl und Größe der Projekte)</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-400 mb-2">Q: Sind die Exports kompatibel mit anderen Programmen?</h3>
+                    <ul class="text-gray-300 text-sm space-y-1">
+                        <li>• PDF: Öffnet in jedem PDF-Reader</li>
+                        <li>• Excel: Kompatibel mit Microsoft Excel, LibreOffice, Google Sheets</li>
+                        <li>• CSV: Universell kompatibel mit allen Tabellenprogrammen</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Practices -->
+        <div id="best-practices" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-star mr-2"></i>Best Practices
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-yellow-400 mb-3">📋 Für Kundenberichte</h3>
+                    <ol class="text-sm text-gray-300 space-y-1">
+                        <li>1. Verwenden Sie das <strong>Kundenbericht</strong>-Template</li>
+                        <li>2. Wählen Sie <strong>PDF</strong> als Format</li>
+                        <li>3. Stellen Sie sicher, dass alle Projektdaten vollständig sind</li>
+                    </ol>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-green-400 mb-3">🔧 Für technische Analysen</h3>
+                    <ol class="text-sm text-gray-300 space-y-1">
+                        <li>1. Verwenden Sie das <strong>Technische Dokumentation</strong>-Template</li>
+                        <li>2. Wählen Sie <strong>Excel</strong> für detaillierte Daten</li>
+                        <li>3. Nutzen Sie <strong>CSV</strong> für weitere Verarbeitung</li>
+                    </ol>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-purple-400 mb-3">💰 Für wirtschaftliche Bewertungen</h3>
+                    <ol class="text-sm text-gray-300 space-y-1">
+                        <li>1. Verwenden Sie das <strong>Wirtschaftlichkeitsanalyse</strong>-Template</li>
+                        <li>2. Kombinieren Sie <strong>PDF</strong> und <strong>Excel</strong></li>
+                        <li>3. Für vollständige Dokumentation</li>
+                    </ol>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-cyan-400 mb-3">📦 Für Batch-Exporte</h3>
+                    <ol class="text-sm text-gray-300 space-y-1">
+                        <li>1. Gruppieren Sie ähnliche Projekte</li>
+                        <li>2. Verwenden Sie aussagekräftige Dateinamen</li>
+                        <li>3. Wählen Sie nur die benötigten Formate</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Technische Anforderungen -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-6 text-green-400">
+                <i class="fas fa-cogs mr-2"></i>Technische Anforderungen
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-blue-400 mb-3">Minimale Systemanforderungen</h3>
+                    <ul class="text-sm text-gray-300 space-y-1">
+                        <li>• Python 3.7+</li>
+                        <li>• 100 MB freier Speicherplatz</li>
+                        <li>• Internetverbindung für Download</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h3 class="font-semibold text-green-400 mb-3">Empfohlene Pakete</h3>
+                    <ul class="text-sm text-gray-300 space-y-1">
+                        <li>• reportlab (für PDF-Export)</li>
+                        <li>• openpyxl (für Excel-Export)</li>
+                        <li>• pandas (für erweiterte Funktionen)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-900/30 border border-blue-500 rounded-lg p-4 mt-4">
+                <h3 class="font-semibold text-blue-400 mb-2">Installation prüfen</h3>
+                <p class="text-sm text-gray-300 mb-2">Führen Sie aus, um alle Abhängigkeiten zu installieren:</p>
+                <code class="bg-gray-700 px-3 py-2 rounded text-sm">python install_export_functions.py</code>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <h3 class="text-lg font-semibold mb-4 text-green-400">🎉 Viel Erfolg mit den Export-Funktionen!</h3>
+            <p class="text-gray-300 mb-4">Bei weiteren Fragen wenden Sie sich an das Support-Team oder konsultieren Sie die vollständige Hilfe-Datei.</p>
+            <a href="{{ url_for('export.export_center') }}" class="inline-block bg-green-600 hover:bg-green-700 px-6 py-2 rounded-md transition">
+                <i class="fas fa-arrow-left mr-2"></i>Zurück zum Export-Zentrum
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Smooth Scrolling für Anker-Links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
