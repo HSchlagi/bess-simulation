@@ -126,12 +126,15 @@
                                 office@instanet.at
                             </a>
                             <a href="{{ url_for('auth_local.profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                Profil bearbeiten
+                                Benutzerinfo
                             </a>
                             {% if session.get('role') == 'admin' %}
                             <div class="border-t border-gray-100"></div>
                             <a href="{{ url_for('admin.dashboard') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
-                                <i class="fas fa-cog mr-2"></i>Admin-Panel
+                                <i class="fas fa-tachometer-alt mr-2"></i>Admin-Dashboard
+                            </a>
+                            <a href="{{ url_for('admin.users') }}" class="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100">
+                                <i class="fas fa-users mr-2"></i>Benutzer-Verwaltung
                             </a>
                             {% endif %}
                             <div class="border-t border-gray-100"></div>
@@ -167,11 +170,14 @@
                             <i class="fas fa-user-circle mr-2"></i>{{ session.user.email }}
                         </div>
                         <a href="{{ url_for('auth_local.profile') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
-                            <i class="fas fa-user-cog mr-2"></i>Profil bearbeiten
+                            <i class="fas fa-user-circle mr-2"></i>Benutzerinfo
                         </a>
                         {% if session.get('role') == 'admin' %}
                         <a href="{{ url_for('admin.dashboard') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700 text-blue-200">
-                            <i class="fas fa-cog mr-2"></i>Admin-Panel
+                            <i class="fas fa-tachometer-alt mr-2"></i>Admin-Dashboard
+                        </a>
+                        <a href="{{ url_for('admin.users') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700 text-blue-200">
+                            <i class="fas fa-users mr-2"></i>Benutzer-Verwaltung
                         </a>
                         {% endif %}
                         <a href="{{ url_for('auth_local.logout') }}" class="block px-6 py-2 rounded-md hover:bg-red-700 text-red-200">
