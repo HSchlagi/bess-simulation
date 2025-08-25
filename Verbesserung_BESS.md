@@ -80,11 +80,11 @@ Dieser Plan definiert die nächsten Verbesserungsschritte für die BESS-Simulati
 **Ziel:** Daten-Export in verschiedenen Formaten
 
 **Schritte:**
-- [ ] PDF-Export für Projekte
-- [ ] Excel-Export für Simulationsdaten
-- [ ] CSV-Export für Rohdaten
-- [ ] Export-Templates erstellen
-- [ ] Batch-Export für mehrere Projekte
+- [x] PDF-Export für Projekte
+- [x] Excel-Export für Simulationsdaten
+- [x] CSV-Export für Rohdaten
+- [x] Export-Templates erstellen
+- [x] Batch-Export für mehrere Projekte
 
 **Zeitaufwand:** 6-8 Stunden
 **Risiko:** Niedrig

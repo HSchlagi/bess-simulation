@@ -29,6 +29,7 @@
                     <option value="week">Diese Woche</option>
                     <option value="month" selected>Dieser Monat</option>
                     <option value="year">Dieses Jahr</option>
+                    <option value="custom">Benutzerdefinierter Zeitraum</option>
                 </select>
             </div>
             <div>
@@ -533,6 +534,15 @@ document.getElementById('timeRange').addEventListener('change', function() {
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
     
+    // Visuelle Hervorhebung für benutzerdefinierte Zeiträume
+    if (timeRange === 'custom') {
+        startDateInput.classList.add('ring-2', 'ring-blue-500', 'border-blue-500');
+        endDateInput.classList.add('ring-2', 'ring-blue-500', 'border-blue-500');
+    } else {
+        startDateInput.classList.remove('ring-2', 'ring-blue-500', 'border-blue-500');
+        endDateInput.classList.remove('ring-2', 'ring-blue-500', 'border-blue-500');
+    }
+    
     const today = new Date();
     let startDate, endDate;
     
@@ -561,7 +571,8 @@ document.getElementById('timeRange').addEventListener('change', function() {
             endDate = '2024-12-31';
             break;
         case 'custom':
-            // Benutzerdefiniert - Datumsfelder bleiben unverändert
+            // Benutzerdefiniert - Datumsfelder aktivieren und fokussieren
+            startDateInput.focus();
             return;
     }
     
