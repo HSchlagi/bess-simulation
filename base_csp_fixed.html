@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
@@ -102,12 +102,13 @@
 </head>
 <body class="bg-gray-100">
     {% include 'header_simple.html' %}
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <main class="container mx-auto px-4 py-8">
         {% block content %}{% endblock %}
     </main>
-
+    
     {% include 'footer.html' %}
+    
+    {% block scripts %}{% endblock %}
 </body>
-</html> 
+</html>
