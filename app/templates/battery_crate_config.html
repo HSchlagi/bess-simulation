@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+{% block title %}Batterie C-Rate Konfiguration - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-battery-three-quarters mr-3 text-blue-600"></i>
+                    Batterie C-Rate Konfiguration
+                </h1>
+                <p class="text-gray-600">Konfigurieren Sie C-Rate Limits und Derating-Faktoren für Ihre Batteriespeicher</p>
+            </div>
+            <div class="flex space-x-3">
+                <button id="testConfigBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <i class="fas fa-play mr-2"></i>Testen
+                </button>
+                <button id="saveConfigBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors">
+                    <i class="fas fa-save mr-2"></i>Speichern
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projekt-Auswahl -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-project-diagram mr-2 text-blue-600"></i>Projekt auswählen
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="projectSelect" class="block text-sm font-medium text-gray-700 mb-2">Projekt</label>
+                <select id="projectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Projekt auswählen...</option>
+                </select>
+            </div>
+            <div id="projectInfo" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt-Info</label>
+                <div class="p-3 bg-gray-50 rounded-md">
+                    <div id="projectDetails" class="text-sm text-gray-600"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- C-Rate Konfiguration -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-cog mr-2 text-blue-600"></i>C-Rate Konfiguration
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+                <label for="enomKwh" class="block text-sm font-medium text-gray-700 mb-2">Nennenergie (kWh)</label>
+                <input type="number" id="enomKwh" step="0.1" min="0" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Gespeicherte Energie der Batterie</p>
+            </div>
+            <div>
+                <label for="cChgRate" class="block text-sm font-medium text-gray-700 mb-2">C-Rate Laden</label>
+                <input type="number" id="cChgRate" step="0.1" min="0" max="2" value="0.5"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Ladeleistung in C-Rate (0.5 = 50% der Nennenergie/h)</p>
+            </div>
+            <div>
+                <label for="cDisRate" class="block text-sm font-medium text-gray-700 mb-2">C-Rate Entladen</label>
+                <input type="number" id="cDisRate" step="0.1" min="0" max="2" value="1.0"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <p class="text-xs text-gray-500 mt-1">Entladeleistung in C-Rate (1.0 = 100% der Nennenergie/h)</p>
+            </div>
+        </div>
+        
+        <div class="mt-4">
+            <label class="flex items-center">
+                <input type="checkbox" id="deratingEnable" checked
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <span class="ml-2 text-sm text-gray-700">Derating-Faktoren aktivieren</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Derating-Konfiguration -->
+    <div id="deratingSection" class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-line mr-2 text-blue-600"></i>Derating-Faktoren
+        </h2>
+        
+        <!-- SoC-Derating -->
+        <div class="mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">State of Charge (SoC) Derating</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-md font-medium text-gray-700 mb-2">Laden</h4>
+                    <div id="socChargeTable" class="space-y-2">
+                        <!-- Dynamisch generierte Zeilen -->
+                    </div>
+                    <button type="button" onclick="addSocChargeRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-plus mr-1"></i>Zeile hinzufügen
+                    </button>
+                </div>
+                <div>
+                    <h4 class="text-md font-medium text-gray-700 mb-2">Entladen</h4>
+                    <div id="socDischargeTable" class="space-y-2">
+                        <!-- Dynamisch generierte Zeilen -->
+                    </div>
+                    <button type="button" onclick="addSocDischargeRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-plus mr-1"></i>Zeile hinzufügen
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temperatur-Derating -->
+        <div>
+            <h3 class="text-lg font-medium text-gray-900 mb-3">Temperatur Derating</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="text-md font-medium text-gray-700 mb-2">Laden</h4>
+                    <div id="tempChargeTable" class="space-y-2">
+                        <!-- Dynamisch generierte Zeilen -->
+                    </div>
+                    <button type="button" onclick="addTempChargeRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-plus mr-1"></i>Zeile hinzufügen
+                    </button>
+                </div>
+                <div>
+                    <h4 class="text-md font-medium text-gray-700 mb-2">Entladen</h4>
+                    <div id="tempDischargeTable" class="space-y-2">
+                        <!-- Dynamisch generierte Zeilen -->
+                    </div>
+                    <button type="button" onclick="addTempDischargeRow()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-plus mr-1"></i>Zeile hinzufügen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test-Ergebnisse -->
+    <div id="testResults" class="bg-white rounded-lg shadow-md p-6 hidden">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">
+            <i class="fas fa-flask mr-2 text-green-600"></i>Test-Ergebnisse
+        </h2>
+        <div id="testResultsContent" class="space-y-4">
+            <!-- Dynamisch gefüllt -->
+        </div>
+    </div>
+</div>
+
+<!-- Template für Derating-Zeilen -->
+<template id="deratingRowTemplate">
+    <div class="derating-row flex items-center space-x-2 p-2 bg-gray-50 rounded">
+        <input type="number" class="min-input w-20 px-2 py-1 text-sm border border-gray-300 rounded" step="0.1" placeholder="Min">
+        <span class="text-sm text-gray-500">bis</span>
+        <input type="number" class="max-input w-20 px-2 py-1 text-sm border border-gray-300 rounded" step="0.1" placeholder="Max">
+        <span class="text-sm text-gray-500">Faktor:</span>
+        <input type="number" class="factor-input w-16 px-2 py-1 text-sm border border-gray-300 rounded" step="0.01" min="0" max="1.5" placeholder="1.0">
+        <button type="button" class="remove-row text-red-600 hover:text-red-800">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+</template>
+
+<script>
+let currentProjectId = null;
+let currentConfig = null;
+
+// Initialisierung
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    setupEventListeners();
+    initializeDefaultTables();
+});
+
+function setupEventListeners() {
+    document.getElementById('projectSelect').addEventListener('change', loadProjectConfig);
+    document.getElementById('deratingEnable').addEventListener('change', toggleDeratingSection);
+    document.getElementById('saveConfigBtn').addEventListener('click', saveConfig);
+    document.getElementById('testConfigBtn').addEventListener('click', testConfig);
+}
+
+function loadProjects() {
+    console.log('🔄 Lade Projekte...');
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(data => {
+            console.log('📊 Projekte empfangen:', data);
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">Projekt auswählen...</option>';
+            
+            // API gibt direkt ein Array zurück, nicht {projects: [...]}
+            const projects = Array.isArray(data) ? data : (data.projects || []);
+            
+            if (projects && projects.length > 0) {
+                projects.forEach(project => {
+                    console.log('➕ Füge Projekt hinzu:', project.name, 'ID:', project.id);
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    select.appendChild(option);
+                });
+                console.log('✅ Projekte geladen:', projects.length);
+            } else {
+                console.log('⚠️ Keine Projekte gefunden');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Fehler beim Laden der Projekte:', error);
+        });
+}
+
+function loadProjectConfig() {
+    const projectId = document.getElementById('projectSelect').value;
+    console.log('🔄 Projekt ausgewählt:', projectId);
+    
+    if (!projectId) {
+        console.log('⚠️ Kein Projekt ausgewählt');
+        document.getElementById('projectInfo').classList.add('hidden');
+        return;
+    }
+
+    currentProjectId = projectId;
+    console.log('📋 Lade Konfiguration für Projekt:', projectId);
+    
+    fetch(`/api/battery-crate/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('📊 Konfiguration empfangen:', data);
+            if (data.success) {
+                currentConfig = data.config;
+                populateForm(data.config);
+                showProjectInfo(projectId);
+                console.log('✅ Konfiguration geladen');
+            } else {
+                console.log('⚠️ Keine Konfiguration gefunden, verwende Defaults');
+                // Default-Konfiguration verwenden
+                const defaultConfig = {
+                    E_nom_kWh: 1000,
+                    C_chg_rate: 0.5,
+                    C_dis_rate: 1.0,
+                    derating_enable: true,
+                    soc_derate_charge: [],
+                    soc_derate_discharge: [],
+                    temp_derate_charge: [],
+                    temp_derate_discharge: []
+                };
+                currentConfig = defaultConfig;
+                populateForm(defaultConfig);
+                showProjectInfo(projectId);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Fehler beim Laden der Konfiguration:', error);
+            // Fallback: Default-Konfiguration
+            const defaultConfig = {
+                E_nom_kWh: 1000,
+                C_chg_rate: 0.5,
+                C_dis_rate: 1.0,
+                derating_enable: true,
+                soc_derate_charge: [],
+                soc_derate_discharge: [],
+                temp_derate_charge: [],
+                temp_derate_discharge: []
+            };
+            currentConfig = defaultConfig;
+            populateForm(defaultConfig);
+            showProjectInfo(projectId);
+        });
+}
+
+function showProjectInfo(projectId) {
+    fetch(`/api/projects/${projectId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const project = data.project;
+                document.getElementById('projectDetails').innerHTML = `
+                    <strong>${project.name}</strong><br>
+                    BESS: ${project.bess_size || 'N/A'} kWh, ${project.bess_power || 'N/A'} kW<br>
+                    Standort: ${project.location || 'N/A'}
+                `;
+                document.getElementById('projectInfo').classList.remove('hidden');
+            }
+        });
+}
+
+function populateForm(config) {
+    document.getElementById('enomKwh').value = config.E_nom_kWh;
+    document.getElementById('cChgRate').value = config.C_chg_rate;
+    document.getElementById('cDisRate').value = config.C_dis_rate;
+    document.getElementById('deratingEnable').checked = config.derating_enable;
+    
+    toggleDeratingSection();
+    
+    populateDeratingTable('socChargeTable', config.soc_derate_charge);
+    populateDeratingTable('socDischargeTable', config.soc_derate_discharge);
+    populateDeratingTable('tempChargeTable', config.temp_derate_charge);
+    populateDeratingTable('tempDischargeTable', config.temp_derate_discharge);
+}
+
+function populateDeratingTable(tableId, data) {
+    const table = document.getElementById(tableId);
+    table.innerHTML = '';
+    
+    if (data && data.length > 0) {
+        data.forEach(row => addDeratingRow(tableId, row[0], row[1], row[2]));
+    } else {
+        // Default-Zeilen hinzufügen
+        if (tableId.includes('soc')) {
+            addDeratingRow(tableId, 0.0, 0.2, 0.2);
+            addDeratingRow(tableId, 0.2, 0.8, 1.0);
+            addDeratingRow(tableId, 0.8, 1.0, 0.5);
+        } else {
+            addDeratingRow(tableId, -20, 0, 0.2);
+            addDeratingRow(tableId, 0, 10, 0.6);
+            addDeratingRow(tableId, 10, 35, 1.0);
+            addDeratingRow(tableId, 35, 50, 0.7);
+        }
+    }
+}
+
+function toggleDeratingSection() {
+    const enabled = document.getElementById('deratingEnable').checked;
+    document.getElementById('deratingSection').style.display = enabled ? 'block' : 'none';
+}
+
+function initializeDefaultTables() {
+    // Default-Tabellen initialisieren
+    populateDeratingTable('socChargeTable', []);
+    populateDeratingTable('socDischargeTable', []);
+    populateDeratingTable('tempChargeTable', []);
+    populateDeratingTable('tempDischargeTable', []);
+}
+
+function addDeratingRow(tableId, minVal = '', maxVal = '', factor = '1.0') {
+    const table = document.getElementById(tableId);
+    const template = document.getElementById('deratingRowTemplate');
+    const clone = template.content.cloneNode(true);
+    
+    clone.querySelector('.min-input').value = minVal;
+    clone.querySelector('.max-input').value = maxVal;
+    clone.querySelector('.factor-input').value = factor;
+    
+    clone.querySelector('.remove-row').addEventListener('click', function() {
+        table.removeChild(this.closest('.derating-row'));
+    });
+    
+    table.appendChild(clone);
+}
+
+function addSocChargeRow() { addDeratingRow('socChargeTable'); }
+function addSocDischargeRow() { addDeratingRow('socDischargeTable'); }
+function addTempChargeRow() { addDeratingRow('tempChargeTable'); }
+function addTempDischargeRow() { addDeratingRow('tempDischargeTable'); }
+
+function collectDeratingData(tableId) {
+    const rows = document.getElementById(tableId).querySelectorAll('.derating-row');
+    const data = [];
+    
+    rows.forEach(row => {
+        const min = parseFloat(row.querySelector('.min-input').value);
+        const max = parseFloat(row.querySelector('.max-input').value);
+        const factor = parseFloat(row.querySelector('.factor-input').value);
+        
+        if (!isNaN(min) && !isNaN(max) && !isNaN(factor)) {
+            data.push([min, max, factor]);
+        }
+    });
+    
+    return data;
+}
+
+function collectFormData() {
+    return {
+        E_nom_kWh: parseFloat(document.getElementById('enomKwh').value),
+        C_chg_rate: parseFloat(document.getElementById('cChgRate').value),
+        C_dis_rate: parseFloat(document.getElementById('cDisRate').value),
+        derating_enable: document.getElementById('deratingEnable').checked,
+        soc_derate_charge: collectDeratingData('socChargeTable'),
+        soc_derate_discharge: collectDeratingData('socDischargeTable'),
+        temp_derate_charge: collectDeratingData('tempChargeTable'),
+        temp_derate_discharge: collectDeratingData('tempDischargeTable')
+    };
+}
+
+function saveConfig() {
+    if (!currentProjectId) {
+        alert('Bitte wählen Sie zuerst ein Projekt aus.');
+        return;
+    }
+    
+    const configData = collectFormData();
+    
+    fetch(`/api/battery-crate/${currentProjectId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(configData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Konfiguration erfolgreich gespeichert!');
+        } else {
+            alert('Fehler beim Speichern: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        alert('Fehler beim Speichern der Konfiguration');
+    });
+}
+
+function testConfig() {
+    const configData = collectFormData();
+    
+    fetch('/api/battery-crate/test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            config: configData,
+            test_soc: 0.5,
+            test_temp: 25.0
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayTestResults(data.test_result);
+        } else {
+            alert('Testfehler: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Fehler:', error);
+        alert('Fehler beim Testen der Konfiguration');
+    });
+}
+
+function displayTestResults(results) {
+    const container = document.getElementById('testResultsContent');
+    container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-blue-900 mb-2">Test-Bedingungen</h3>
+                <p class="text-sm text-blue-700">SoC: ${(results.test_conditions.SoC * 100).toFixed(1)}%</p>
+                <p class="text-sm text-blue-700">Temperatur: ${results.test_conditions.temperature_C}°C</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-green-900 mb-2">Leistungsgrenzen</h3>
+                <p class="text-sm text-green-700">Laden: ${results.power_bounds.P_chg_max_kW.toFixed(1)} kW</p>
+                <p class="text-sm text-green-700">Entladen: ${results.power_bounds.P_dis_max_kW.toFixed(1)} kW</p>
+            </div>
+            <div class="bg-yellow-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-yellow-900 mb-2">Derating-Faktoren</h3>
+                <p class="text-sm text-yellow-700">Laden: ${results.derating_factors.charge_factor.toFixed(3)}</p>
+                <p class="text-sm text-yellow-700">Entladen: ${results.derating_factors.discharge_factor.toFixed(3)}</p>
+            </div>
+            <div class="bg-purple-50 p-4 rounded-lg">
+                <h3 class="font-semibold text-purple-900 mb-2">Nennleistung</h3>
+                <p class="text-sm text-purple-700">Laden: ${results.nominal_power.P_chg_nominal_kW.toFixed(1)} kW</p>
+                <p class="text-sm text-purple-700">Entladen: ${results.nominal_power.P_dis_nominal_kW.toFixed(1)} kW</p>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('testResults').classList.remove('hidden');
+}
+</script>
+{% endblock %}

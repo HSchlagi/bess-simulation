@@ -49,22 +49,48 @@ class SupabaseMultiUser:
     def get_user_projects(self, user_id: str) -> List[Dict]:
         """Holt alle Projekte eines Benutzers"""
         if self.demo_mode:
-            # Demo-Daten zurückgeben
-            return [
-                {
-                    'id': 'demo-project-1',
-                    'name': 'Demo BESS Projekt',
-                    'description': 'Ein Beispiel-BESS-Projekt für Demonstrationszwecke',
-                    'bess_capacity_kwh': 1000.0,
-                    'bess_power_kw': 500.0,
-                    'solar_capacity_kw': 200.0,
-                    'hydro_capacity_kw': 0.0,
-                    'investment_cost_per_kwh': 0.25,
-                    'electricity_cost_per_kwh': 0.12,
-                    'created_at': '2024-01-15T10:00:00Z',
-                    'updated_at': '2024-01-15T10:00:00Z'
-                }
-            ]
+            # Im Demo-Modus alle Projekte aus der lokalen Datenbank laden
+            try:
+                from models import Project
+                from app import db
+                
+                projects = Project.query.all()
+                result = []
+                
+                for project in projects:
+                    result.append({
+                        'id': project.id,
+                        'name': project.name,
+                        'description': project.location or '',  # Verwende location als description
+                        'bess_size': project.bess_size or 0,
+                        'bess_power': project.bess_power or 0,
+                        'pv_power': project.pv_power or 0,
+                        'hydro_power': project.hydro_power or 0,
+                        'current_electricity_cost': project.current_electricity_cost or 0,
+                        'location': project.location or '',
+                        'created_at': project.created_at.isoformat() if project.created_at else '',
+                        'updated_at': project.created_at.isoformat() if project.created_at else ''  # Verwende created_at als updated_at
+                    })
+                
+                return result
+            except Exception as e:
+                print(f"Fehler beim Laden der lokalen Projekte: {e}")
+                # Fallback zu Demo-Daten
+                return [
+                    {
+                        'id': 'demo-project-1',
+                        'name': 'Demo BESS Projekt',
+                        'description': 'Ein Beispiel-BESS-Projekt für Demonstrationszwecke',
+                        'bess_size': 1000.0,
+                        'bess_power': 500.0,
+                        'pv_power': 200.0,
+                        'hydro_power': 0.0,
+                        'current_electricity_cost': 0.12,
+                        'location': 'Demo Standort',
+                        'created_at': '2024-01-15T10:00:00Z',
+                        'updated_at': '2024-01-15T10:00:00Z'
+                    }
+                ]
         
         try:
             response = self.supabase.table('projects').select('*').eq('user_id', user_id).execute()
@@ -190,7 +216,7 @@ class SupabaseMultiUser:
     def get_simulation_results(self, project_id: str, user_id: str) -> List[Dict]:
         """Holt alle Simulationsergebnisse eines Projekts"""
         if self.demo_mode:
-            # Demo-Simulationsergebnisse
+            # Im Demo-Modus verwende Demo-Simulationsergebnisse
             return [
                 {
                     'id': 'demo-sim-1',

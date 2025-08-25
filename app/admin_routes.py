@@ -78,8 +78,8 @@ def new_user():
             role_id = request.form.get('role_id')
             
             # Validierung
-            if not email or not username or not password or not role_id:
-                flash("Alle Pflichtfelder müssen ausgefüllt werden.", "error")
+            if not email or not username or not password:
+                flash("E-Mail, Benutzername und Passwort sind Pflichtfelder.", "error")
                 return redirect(url_for("admin.new_user"))
             
             # Prüfe ob Benutzer bereits existiert
@@ -99,8 +99,9 @@ def new_user():
                 last_name=last_name,
                 company=company,
                 phone=phone,
-                role_id=role_id,
-                is_verified=True
+                role_id=role_id if role_id else 1,  # Default-Rolle (ID 1) falls keine ausgewählt
+                is_active='is_active' in request.form,
+                is_verified='is_verified' in request.form
             )
             user.set_password(password)
             

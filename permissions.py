@@ -28,7 +28,7 @@ def login_required(f):
         user = get_current_user()
         if not user:
             flash("Bitte melden Sie sich an, um diese Seite zu sehen.", "warning")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for("auth_local.login"))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -40,14 +40,14 @@ def permission_required(permission):
             user = get_current_user()
             if not user:
                 flash("Bitte melden Sie sich an, um diese Seite zu sehen.", "warning")
-                return redirect(url_for("auth.login"))
+                return redirect(url_for("auth_local.login"))
             
             if not user.has_permission(permission):
                 flash("Sie haben keine Berechtigung für diese Aktion.", "error")
                 return redirect(url_for("main.dashboard"))
             
             return f(*args, **kwargs)
-        return decorated_function
+        return decorator
     return decorator
 
 def admin_required(f):
@@ -57,7 +57,7 @@ def admin_required(f):
         user = get_current_user()
         if not user:
             flash("Bitte melden Sie sich an, um diese Seite zu sehen.", "warning")
-            return redirect(url_for("auth.login"))
+            return redirect(url_for("auth_local.login"))
         
         if not user.is_admin():
             flash("Sie haben keine Administrator-Berechtigung.", "error")
@@ -74,7 +74,7 @@ def project_permission_required(permission_level='read'):
             user = get_current_user()
             if not user:
                 flash("Bitte melden Sie sich an, um diese Seite zu sehen.", "warning")
-                return redirect(url_for("auth.login"))
+                return redirect(url_for("auth_local.login"))
             
             # Admin hat immer Zugriff
             if user.is_admin():

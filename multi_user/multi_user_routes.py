@@ -16,6 +16,7 @@ def dashboard():
     user_id = session.get('user_id', str(uuid.uuid4()))
     
     try:
+        # Im Demo-Modus alle Projekte laden, nicht nur user-spezifische
         projects = supabase_multi.get_user_projects(user_id)
         project_count = len(projects)
         
@@ -29,15 +30,15 @@ def dashboard():
             simulations = supabase_multi.get_simulation_results(project['id'], user_id)
             simulation_count += len(simulations)
             
-            # Summiere Kapazitäten
-            total_bess_capacity += project.get('bess_capacity_kwh', 0)
-            total_solar_capacity += project.get('solar_capacity_kw', 0)
-            total_hydro_capacity += project.get('hydro_capacity_kw', 0)
+            # Summiere Kapazitäten - verwende die korrekten Feldnamen
+            total_bess_capacity += project.get('bess_size', 0)  # bess_size statt bess_capacity_kwh
+            total_solar_capacity += project.get('pv_power', 0)  # pv_power statt solar_capacity_kw
+            total_hydro_capacity += project.get('hydro_power', 0)  # hydro_power statt hydro_capacity_kw
         
         # Berechne durchschnittliche Stromkosten
         avg_electricity_cost = 0
         if projects:
-            total_cost = sum(project.get('electricity_cost_per_kwh', 0) for project in projects)
+            total_cost = sum(project.get('current_electricity_cost', 0) for project in projects)
             avg_electricity_cost = total_cost / len(projects)
         
         return render_template('multi_user/dashboard.html', 

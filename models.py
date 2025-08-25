@@ -365,3 +365,22 @@ class LoadShiftingValue(db.Model):
     cost_eur = db.Column(db.Float)
     revenue_eur = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class BatteryConfig(db.Model):
+    """C-Rate und Derating Konfiguration für Batterien"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='battery_configs')
+    E_nom_kWh = db.Column(db.Float, nullable=False)  # Nennenergie
+    C_chg_rate = db.Column(db.Float, default=0.5)  # C-Rate für Laden
+    C_dis_rate = db.Column(db.Float, default=1.0)  # C-Rate für Entladen
+    derating_enable = db.Column(db.Boolean, default=True)  # Derating aktiviert
+    soc_derate_charge = db.Column(db.Text)  # JSON: SoC-Derating für Laden
+    soc_derate_discharge = db.Column(db.Text)  # JSON: SoC-Derating für Entladen
+    temp_derate_charge = db.Column(db.Text)  # JSON: Temperatur-Derating für Laden
+    temp_derate_discharge = db.Column(db.Text)  # JSON: Temperatur-Derating für Entladen
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<BatteryConfig {self.project.name}: C_chg={self.C_chg_rate}, C_dis={self.C_dis_rate}>'

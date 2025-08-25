@@ -1,12 +1,90 @@
 {% extends "base.html" %}
 
-{% block title %}Multi-User Dashboard - BESS Simulation{% endblock %}
+{% block title %}BESS Simulation - Dashboard{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 mb-2">Multi-User Dashboard</h1>
-        <p class="text-gray-600">Willkommen bei der BESS-Simulation Multi-User Plattform</p>
+    <!-- Haupttitel und Beschreibung -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">BESS Simulation</h1>
+        <p class="text-xl text-gray-600">
+            Professionelle Simulation von Batterie-Energiespeichersystemen mit Lastprofilen, Wetterdaten, PV-Simulation, Wasserkraft-Integration, Intraday-Arbitrage und österreichischen Marktdaten.
+        </p>
+    </div>
+
+    <!-- Kompakte Status Overview Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-green-100 p-2 rounded-lg">
+                    <i class="fas fa-server text-green-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-600">Server</p>
+                    <p class="text-sm font-semibold text-green-600">Online</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-blue-100 p-2 rounded-lg">
+                    <i class="fas fa-database text-blue-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-600">Datenbank</p>
+                    <p class="text-sm font-semibold text-blue-600">Verbunden</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-purple-100 p-2 rounded-lg">
+                    <i class="fas fa-project-diagram text-purple-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-600">Projekte</p>
+                    <p class="text-sm font-semibold text-purple-600">{{ project_count }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-orange-100 p-2 rounded-lg">
+                    <i class="fas fa-users text-orange-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-600">Kunden</p>
+                    <p class="text-sm font-semibold text-orange-600" id="customersCount">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-100 p-2 rounded-lg">
+                    <i class="fas fa-chart-line text-indigo-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-600">Intraday</p>
+                    <p class="text-sm font-semibold text-indigo-600">Aktiv</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-red-100 p-2 rounded-lg">
+                    <i class="fas fa-flag text-red-600 text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-gray-600">AT-Märkte</p>
+                    <p class="text-sm font-semibold text-red-600">Verfügbar</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Statistik-Karten -->
@@ -97,57 +175,187 @@
         </div>
     </div>
 
-    <!-- Schnellaktionen -->
-    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-        <h2 class="text-xl font-semibold text-gray-900 mb-4">Schnellaktionen</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <a href="{{ url_for('main.new_project') }}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
+    <!-- Hauptfunktionen - Vier Spalten für bessere Verteilung -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Datenimport Center -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div class="text-center">
+                <div class="bg-blue-100 p-4 rounded-lg inline-block mb-4">
+                    <i class="fas fa-upload text-blue-600 text-3xl"></i>
                 </div>
-                <div>
-                    <p class="font-medium text-gray-900">Neues Projekt</p>
-                    <p class="text-sm text-gray-600">BESS-Projekt erstellen</p>
-                </div>
-            </a>
+                <h2 class="text-xl font-semibold text-gray-900 mb-3">Datenimport Center</h2>
+                <p class="text-gray-600 mb-6 text-sm">
+                    Importieren Sie Lastprofile, Wetterdaten, PVSol-Exporte, Wasserkraft- und Windkraftdaten
+                </p>
+                <a href="{{ url_for('main.data_import_center') }}" 
+                   class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-arrow-right mr-2"></i>
+                    Zum Import Center
+                </a>
+            </div>
+        </div>
 
-            <a href="{{ url_for('multi_user.projects') }}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="p-2 rounded-full bg-green-100 text-green-600 mr-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                    </svg>
+        <!-- Intraday-Arbitrage -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div class="text-center">
+                <div class="bg-indigo-100 p-4 rounded-lg inline-block mb-4">
+                    <i class="fas fa-chart-line text-indigo-600 text-3xl"></i>
                 </div>
-                <div>
-                    <p class="font-medium text-gray-900">Projekte</p>
-                    <p class="text-sm text-gray-600">Alle Projekte anzeigen</p>
-                </div>
-            </a>
+                <h2 class="text-xl font-semibold text-gray-900 mb-3">Intraday-Arbitrage</h2>
+                <p class="text-gray-600 mb-6 text-sm">
+                    Tageshandel mit Spread- und Schwellenwert-Modellen für optimale Erlöse
+                </p>
+                <a href="{{ url_for('main.data_import_center') }}?tab=intraday" 
+                   class="inline-flex items-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-cog mr-2"></i>
+                    Konfigurieren
+                </a>
+            </div>
+        </div>
 
-            <a href="{{ url_for('multi_user.customers') }}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="p-2 rounded-full bg-purple-100 text-purple-600 mr-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                    </svg>
+        <!-- AT-Märkte -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div class="text-center">
+                <div class="bg-red-100 p-4 rounded-lg inline-block mb-4">
+                    <i class="fas fa-flag text-red-600 text-3xl"></i>
                 </div>
-                <div>
-                    <p class="font-medium text-gray-900">Kunden</p>
-                    <p class="text-sm text-gray-600">Kunden verwalten</p>
-                </div>
-            </a>
+                <h2 class="text-xl font-semibold text-gray-900 mb-3">AT-Märkte</h2>
+                <p class="text-gray-600 mb-6 text-sm">
+                    APG Regelenergie und EPEX Intraday für österreichische Marktdaten
+                </p>
+                <a href="{{ url_for('main.data_import_center') }}?tab=austrian" 
+                   class="inline-flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-cog mr-2"></i>
+                    Konfigurieren
+                </a>
+            </div>
+        </div>
 
-            <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <div class="p-2 rounded-full bg-orange-100 text-orange-600 mr-3">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
+        <!-- Wirtschaftlichkeit -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <div class="text-center">
+                <div class="bg-emerald-100 p-4 rounded-lg inline-block mb-4">
+                    <i class="fas fa-calculator text-emerald-600 text-3xl"></i>
                 </div>
-                <div>
-                    <p class="font-medium text-gray-900">Simulation</p>
-                    <p class="text-sm text-gray-600">Neue Simulation</p>
-                </div>
-            </a>
+                <h2 class="text-xl font-semibold text-gray-900 mb-3">Wirtschaftlichkeit</h2>
+                <p class="text-gray-600 mb-6 text-sm">
+                    Erweiterte Erlösberechnung mit allen neuen Einnahmequellen
+                </p>
+                <a href="{{ url_for('main.economic_analysis') }}" 
+                   class="inline-flex items-center px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg transition-colors">
+                    <i class="fas fa-chart-bar mr-2"></i>
+                    Analysieren
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projektverwaltung und Navigation -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Projektverwaltung -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">
+                <i class="fas fa-cog mr-2"></i>Projektverwaltung
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="{{ url_for('main.projects') }}" 
+                   class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-list text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Alle Projekte</h3>
+                        <p class="text-sm text-gray-600">Übersicht aller Projekte</p>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.new_project') }}" 
+                   class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <div class="bg-green-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-plus text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Neues Projekt</h3>
+                        <p class="text-sm text-gray-600">BESS-System erstellen</p>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.customers') }}" 
+                   class="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                    <div class="bg-blue-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-users text-blue-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Kunden</h3>
+                        <p class="text-sm text-gray-600">Kundenverwaltung</p>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.use_case_manager') }}" 
+                   class="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors">
+                    <div class="bg-indigo-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-lightbulb text-indigo-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Use Cases</h3>
+                        <p class="text-sm text-gray-600">Use Case Manager</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Schnellaktionen -->
+        <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-6">
+                <i class="fas fa-bolt mr-2"></i>Schnellaktionen
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="{{ url_for('main.bess_simulation_enhanced') }}" 
+                   class="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                    <div class="bg-green-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-play text-green-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Simulation</h3>
+                        <p class="text-sm text-gray-600">Neue Simulation starten</p>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.data_import_center') }}" 
+                   class="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+                    <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-upload text-purple-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Datenimport</h3>
+                        <p class="text-sm text-gray-600">Daten hochladen</p>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.economic_analysis') }}" 
+                   class="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors">
+                    <div class="bg-orange-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-chart-bar text-orange-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Wirtschaftlichkeit</h3>
+                        <p class="text-sm text-gray-600">Analyse durchführen</p>
+                    </div>
+                </a>
+
+                <a href="{{ url_for('main.battery_crate_config') }}" 
+                   class="flex items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition-colors">
+                    <div class="bg-yellow-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-battery-three-quarters text-yellow-600"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">C-Rate Config</h3>
+                        <p class="text-sm text-gray-600">Batterie-Limits</p>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -214,4 +422,22 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+// Kundenanzahl laden
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/customers')
+        .then(response => response.json())
+        .then(data => {
+            if (data && Array.isArray(data)) {
+                document.getElementById('customersCount').textContent = data.length;
+            }
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Kundenanzahl:', error);
+            document.getElementById('customersCount').textContent = '-';
+        });
+});
+</script>
+
 {% endblock %}

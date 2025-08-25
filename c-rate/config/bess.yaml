@@ -1,0 +1,18 @@
+battery:
+  E_nom_kWh: 8000        # 8 MWh
+  eta_chg: 0.97
+  eta_dis: 0.97
+  SoC_min: 0.05
+  SoC_max: 0.95
+  SoC_init: 0.50
+  C_rate:
+    charge: 0.5
+    discharge: 1.0
+    derating:
+      enable: true
+      soc:
+        charge:    [[0.0,0.2,0.2],[0.2,0.8,1.0],[0.8,1.0,0.5]]
+        discharge: [[0.0,0.2,0.7],[0.2,0.8,1.0],[0.8,1.0,0.8]]
+      temperature:
+        charge:    [[-20,0,0.2],[0,10,0.6],[10,35,1.0],[35,50,0.7]]
+        discharge: [[-20,0,0.6],[0,10,0.9],[10,35,1.0],[35,50,0.9]]

@@ -6,7 +6,7 @@ import sqlite3
 import pandas as pd
 import time
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue
+from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue, BatteryConfig
 from datetime import datetime, timedelta
 import random
 import math
@@ -73,6 +73,7 @@ def index():
     # Wenn Auth verfügbar und Benutzer nicht angemeldet, zum Login weiterleiten
     if bess_auth.available and not bess_auth.is_authenticated():
         return redirect(url_for('auth_local.login'))
+    # Für angemeldete Benutzer die ursprüngliche Startseite anzeigen
     return render_template('index.html')
 
 @main_bp.route('/dashboard')
@@ -5953,4 +5954,121 @@ def api_get_austrian_markets_config():
         
     except Exception as e:
         print(f"❌ Fehler bei BESS-Simulation: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# C-Rate Integration Routen
+@main_bp.route('/battery-crate-config')
+@login_required
+def battery_crate_config():
+    """Batterie C-Rate Konfiguration Seite"""
+    return render_template('battery_crate_config.html')
+
+@main_bp.route('/api/battery-crate/<int:project_id>')
+@login_required
+def api_get_battery_crate(project_id):
+    """C-Rate Konfiguration für ein Projekt abrufen"""
+    try:
+        from app.bess_crate import get_battery_config
+        
+        # Projekt prüfen
+        project = Project.query.get_or_404(project_id)
+        
+        # C-Rate Konfiguration laden
+        config = get_battery_config(project_id)
+        
+        if config:
+            return jsonify({
+                'success': True,
+                'config': {
+                    'E_nom_kWh': config.E_nom_kWh,
+                    'C_chg_rate': config.C_chg_rate,
+                    'C_dis_rate': config.C_dis_rate,
+                    'derating_enable': config.derating_enable,
+                    'soc_derate_charge': config.soc_derate_charge or [],
+                    'soc_derate_discharge': config.soc_derate_discharge or [],
+                    'temp_derate_charge': config.temp_derate_charge or [],
+                    'temp_derate_discharge': config.temp_derate_discharge or []
+                }
+            })
+        else:
+            # Default-Konfiguration zurückgeben
+            return jsonify({
+                'success': True,
+                'config': {
+                    'E_nom_kWh': project.bess_size or 1000,
+                    'C_chg_rate': 0.5,
+                    'C_dis_rate': 1.0,
+                    'derating_enable': True,
+                    'soc_derate_charge': [[0.0, 0.2, 0.2], [0.2, 0.8, 1.0], [0.8, 1.0, 0.5]],
+                    'soc_derate_discharge': [[0.0, 0.2, 0.7], [0.2, 0.8, 1.0], [0.8, 1.0, 0.8]],
+                    'temp_derate_charge': [[-20, 0, 0.2], [0, 10, 0.6], [10, 35, 1.0], [35, 50, 0.7]],
+                    'temp_derate_discharge': [[-20, 0, 0.6], [0, 10, 0.9], [10, 35, 1.0], [35, 50, 0.9]]
+                }
+            })
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/battery-crate/<int:project_id>', methods=['POST'])
+@login_required
+def api_save_battery_crate(project_id):
+    """C-Rate Konfiguration für ein Projekt speichern"""
+    try:
+        from app.bess_crate import save_battery_config, validate_config
+        
+        # Projekt prüfen
+        project = Project.query.get_or_404(project_id)
+        
+        # JSON-Daten parsen
+        config_data = request.get_json()
+        if not config_data:
+            return jsonify({'success': False, 'error': 'Keine Daten empfangen'}), 400
+        
+        # Validierung
+        is_valid, error_message = validate_config(config_data)
+        if not is_valid:
+            return jsonify({'success': False, 'error': error_message}), 400
+        
+        # Speichern
+        if save_battery_config(project_id, config_data):
+            return jsonify({'success': True, 'message': 'C-Rate Konfiguration erfolgreich gespeichert'})
+        else:
+            return jsonify({'success': False, 'error': 'Fehler beim Speichern'}), 500
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/battery-crate/test', methods=['POST'])
+@login_required
+def api_test_battery_crate():
+    """C-Rate Konfiguration mit Beispielwerten testen"""
+    try:
+        from app.bess_crate import test_config, validate_config
+        
+        # JSON-Daten parsen
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Keine Daten empfangen'}), 400
+        
+        config_data = data.get('config', {})
+        test_soc = data.get('test_soc', 0.5)
+        test_temp = data.get('test_temp', 25.0)
+        
+        # Validierung
+        is_valid, error_message = validate_config(config_data)
+        if not is_valid:
+            return jsonify({'success': False, 'error': error_message}), 400
+        
+        # Test durchführen
+        test_result = test_config(config_data, test_soc, test_temp)
+        
+        if 'error' in test_result:
+            return jsonify({'success': False, 'error': test_result['error']}), 500
+        
+        return jsonify({
+            'success': True,
+            'test_result': test_result
+        })
+        
+    except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
