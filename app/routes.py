@@ -327,6 +327,7 @@ def api_get_project(project_id):
         'hydro_power': project.hydro_power,
         'other_power': project.other_power,
         'current_electricity_cost': project.current_electricity_cost,
+        'daily_cycles': getattr(project, 'daily_cycles', 1.2),
         'customer_id': project.customer_id,
         'customer': {
             'id': project.customer.id,
@@ -4339,12 +4340,12 @@ def calculate_bess_intraday_revenue(project):
     # BESS-Parameter
     bess_power_kw = project.bess_power
     bess_capacity_kwh = project.bess_size
-    daily_cycles = 2.5  # 2,5 Zyklen/Tag (erhöht von 1.5)
+    daily_cycles = getattr(project, 'daily_cycles', 1.2)  # Projektspezifische Zyklen oder Standard
     
-    # Preise (€/kWh) - OPTIMIERT
-    spot_arbitrage_price = 0.15  # Spot-Markt-Arbitrage (erhöht von 0.08)
-    intraday_trading_price = 0.22  # Intraday-Handel (erhöht von 0.12)
-    balancing_energy_price = 0.40  # Regelenergie (erhöht von 0.25)
+    # Realistische Preise (€/kWh) - KORRIGIERT
+    spot_arbitrage_price = 0.08  # Spot-Markt-Arbitrage (reduziert von 0.15)
+    intraday_trading_price = 0.12  # Intraday-Handel (reduziert von 0.22)
+    balancing_energy_price = 0.25  # Regelenergie (reduziert von 0.40)
     
     # Berechnungen
     spot_arbitrage_revenue = bess_capacity_kwh * daily_cycles * 365 * spot_arbitrage_price
@@ -4368,10 +4369,10 @@ def calculate_bess_secondary_market_revenue(project):
     # BESS-Parameter
     bess_power_kw = project.bess_power
     
-    # Preise (€/kWh) - OPTIMIERT
-    frequency_regulation_price = 0.45  # Frequenzregelung (erhöht von 0.30)
-    capacity_market_price = 0.28  # Kapazitätsmärkte (erhöht von 0.18)
-    flexibility_market_price = 0.35  # Flexibilitätsmärkte (erhöht von 0.22)
+    # Realistische Preise (€/kWh) - KORRIGIERT
+    frequency_regulation_price = 0.30  # Frequenzregelung (reduziert von 0.45)
+    capacity_market_price = 0.18  # Kapazitätsmärkte (reduziert von 0.28)
+    flexibility_market_price = 0.22  # Flexibilitätsmärkte (reduziert von 0.35)
     
     # Berechnungen
     frequency_regulation_revenue = bess_power_kw * 8760 * frequency_regulation_price / 1000

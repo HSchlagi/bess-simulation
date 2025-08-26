@@ -189,16 +189,36 @@ class KPICalculator:
     @staticmethod
     def calculate_annual_balance(simulation_results: List[SimulationResult]) -> Dict[str, float]:
         """Berechnet Jahresbilanz über mehrere Jahre"""
-        total_revenue = sum(r.market_revenue.total_revenue() for r in simulation_results)
-        total_costs = sum(r.cost_structure.annual_operating_costs() for r in simulation_results)
+        if not simulation_results:
+            return {
+                'total_revenue': 0,
+                'total_costs': 0,
+                'total_investment': 0,
+                'net_cashflow': 0,
+                'cumulative_roi': 0
+            }
+        
+        # Jährliche Erlöse (nur für ein Jahr, nicht summiert)
+        annual_revenue = simulation_results[0].market_revenue.total_revenue() / 10 if simulation_results else 0
+        
+        # Jährliche Betriebskosten
+        annual_costs = simulation_results[0].cost_structure.annual_operating_costs() if simulation_results else 0
+        
+        # Investitionskosten (einmalig)
         total_investment = simulation_results[0].cost_structure.investment_costs if simulation_results else 0
         
+        # Jährlicher Netto-Cashflow (ohne Investitionskosten)
+        annual_net_cashflow = annual_revenue - annual_costs
+        
+        # ROI basierend auf jährlichem Netto-Cashflow
+        annual_roi = (annual_net_cashflow / total_investment * 100) if total_investment > 0 else 0
+        
         return {
-            'total_revenue': total_revenue,
-            'total_costs': total_costs,
+            'total_revenue': annual_revenue,
+            'total_costs': annual_costs,
             'total_investment': total_investment,
-            'net_cashflow': total_revenue - total_costs,
-            'cumulative_roi': ((total_revenue - total_costs) / total_investment * 100) if total_investment > 0 else 0
+            'net_cashflow': annual_net_cashflow,
+            'cumulative_roi': annual_roi
         }
     
     @staticmethod

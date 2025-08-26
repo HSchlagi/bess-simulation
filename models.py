@@ -99,6 +99,7 @@ class Project(db.Model):
     hydro_power = db.Column(db.Float)  # kW
     other_power = db.Column(db.Float)  # kW - Sonstiges
     current_electricity_cost = db.Column(db.Float, default=12.5)  # Ct/kWh - Aktuelle Stromkosten
+    daily_cycles = db.Column(db.Float, default=1.2)  # Tägliche BESS-Zyklen
     customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'))
     customer = db.relationship('Customer', backref='projects')
     # Neue Felder für Use Case Management (entfernt - Use Cases sind jetzt projektabhängig)
