@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, session
 from app import db, get_db
 import sys
 import os
@@ -234,6 +234,7 @@ def api_create_project():
             hp_power=data.get('hp_power'),
             wind_power=data.get('wind_power'),
             hydro_power=data.get('hydro_power'),
+            daily_cycles=data.get('daily_cycles', 1.2),
             current_electricity_cost=data.get('current_electricity_cost')
         )
         db.session.add(project)
@@ -305,6 +306,7 @@ def api_get_project(project_id):
     print(f"BESS Power: {project.bess_power}")
     print(f"PV Power: {project.pv_power}")
     print(f"Current Electricity Cost: {project.current_electricity_cost}")
+    print(f"Daily Cycles: {getattr(project, 'daily_cycles', 'NICHT GESETZT')}")
     print(f"Customer ID: {project.customer_id}")
     
     # Lade Investitionskosten aus der InvestmentCost Tabelle
@@ -402,6 +404,8 @@ def api_update_project(project_id):
             project.wind_power = float(data['wind_power']) if data.get('wind_power') and str(data['wind_power']).strip() else None
             project.hydro_power = float(data['hydro_power']) if data.get('hydro_power') and str(data['hydro_power']).strip() else None
             project.other_power = float(data['other_power']) if data.get('other_power') and str(data['other_power']).strip() else None
+            project.daily_cycles = float(data['daily_cycles']) if data.get('daily_cycles') and str(data['daily_cycles']).strip() else 1.2
+            print(f"  Daily Cycles: {project.daily_cycles}")
             project.current_electricity_cost = float(data['current_electricity_cost']) if data.get('current_electricity_cost') and str(data['current_electricity_cost']).strip() else 12.5
             
             print(f"Verarbeitete Daten:")
@@ -413,6 +417,7 @@ def api_update_project(project_id):
             print(f"  BESS Power: {project.bess_power}")
             print(f"  PV Power: {project.pv_power}")
             print(f"  Other Power: {project.other_power}")
+            print(f"  Daily Cycles: {project.daily_cycles}")
             
             # Investitionskosten verarbeiten
             cost_fields = ['bess_cost', 'pv_cost', 'hp_cost', 'wind_cost', 'hydro_cost', 'other_cost']
@@ -766,7 +771,7 @@ def api_dashboard_stats():
             'recent_activities': [{
                 'name': activity[0],
                 'location': activity[1],
-                'created_at': activity[2].strftime('%d.%m.%Y') if activity[2] else None,
+                'created_at': activity[2] if activity[2] else None,
                 'customer_name': activity[3]
             } for activity in recent_activities]
         }
@@ -795,6 +800,148 @@ def api_dashboard_stats():
             'avg_electricity_cost': 0,
             'recent_activities': []
         })
+
+# Auto-Save API Routes
+@main_bp.route('/api/projects/auto-save', methods=['POST'])
+def api_auto_save_project():
+    """Auto-Save für neue Projekte"""
+    try:
+        data = request.get_json()
+        
+        # Validierung
+        if not data.get('name'):
+            return jsonify({'success': False, 'error': 'Projektname ist erforderlich'})
+        
+        # Temporäres Projekt erstellen (nicht in DB speichern)
+        # Nur für Auto-Save Validierung
+        project_data = {
+            'name': data.get('name'),
+            'location': data.get('location'),
+            'customer_id': data.get('customer_id'),
+            'date': data.get('date'),
+            'bess_size': data.get('bess_size'),
+            'bess_power': data.get('bess_power'),
+            'pv_power': data.get('pv_power'),
+            'hp_power': data.get('hp_power'),
+            'wind_power': data.get('wind_power'),
+            'hydro_power': data.get('hydro_power'),
+            'daily_cycles': data.get('daily_cycles'),
+            'current_electricity_cost': data.get('current_electricity_cost'),
+            'bess_cost': data.get('bess_cost'),
+            'pv_cost': data.get('pv_cost'),
+            'hp_cost': data.get('hp_cost'),
+            'wind_cost': data.get('wind_cost'),
+            'hydro_cost': data.get('hydro_cost'),
+            'other_cost': data.get('other_cost')
+        }
+        
+        # Auto-Save Session speichern (in Memory oder temporärer DB)
+        session['auto_save_data'] = project_data
+        session['auto_save_timestamp'] = datetime.now().isoformat()
+        
+        print(f"💾 Auto-Save für neues Projekt: {project_data['name']}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Auto-Save erfolgreich',
+            'timestamp': session['auto_save_timestamp']
+        })
+        
+    except Exception as e:
+        print(f"❌ Auto-Save Fehler: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/projects/<int:project_id>/auto-save', methods=['PUT'])
+def api_auto_save_edit_project(project_id):
+    """Auto-Save für bestehende Projekte"""
+    try:
+        data = request.get_json()
+        
+        # Projekt laden
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({'success': False, 'error': 'Projekt nicht gefunden'})
+        
+        # Validierung
+        if not data.get('name'):
+            return jsonify({'success': False, 'error': 'Projektname ist erforderlich'})
+        
+        # Projekt-Daten aktualisieren (nur temporär für Auto-Save)
+        project.name = data.get('name', project.name)
+        project.location = data.get('location', project.location)
+        project.customer_id = data.get('customer_id', project.customer_id)
+        project.date = data.get('date', project.date)
+        project.bess_size = data.get('bess_size', project.bess_size)
+        project.bess_power = data.get('bess_power', project.bess_power)
+        project.pv_power = data.get('pv_power', project.pv_power)
+        project.hp_power = data.get('hp_power', project.hp_power)
+        project.wind_power = data.get('wind_power', project.wind_power)
+        project.hydro_power = data.get('hydro_power', project.hydro_power)
+        project.daily_cycles = data.get('daily_cycles', project.daily_cycles)
+        project.current_electricity_cost = data.get('current_electricity_cost', project.current_electricity_cost)
+        
+        # Auto-Save Session speichern
+        session[f'auto_save_project_{project_id}'] = {
+            'name': project.name,
+            'location': project.location,
+            'customer_id': project.customer_id,
+            'date': project.date,
+            'bess_size': project.bess_size,
+            'bess_power': project.bess_power,
+            'pv_power': project.pv_power,
+            'hp_power': project.hp_power,
+            'wind_power': project.wind_power,
+            'hydro_power': project.hydro_power,
+            'daily_cycles': project.daily_cycles,
+            'current_electricity_cost': project.current_electricity_cost
+        }
+        session[f'auto_save_timestamp_{project_id}'] = datetime.now().isoformat()
+        
+        print(f"💾 Auto-Save für Projekt {project_id}: {project.name}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Auto-Save erfolgreich',
+            'timestamp': session[f'auto_save_timestamp_{project_id}']
+        })
+        
+    except Exception as e:
+        print(f"❌ Auto-Save Fehler für Projekt {project_id}: {e}")
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/projects/auto-save/restore', methods=['GET'])
+def api_restore_auto_save():
+    """Auto-Save Daten wiederherstellen"""
+    try:
+        auto_save_data = session.get('auto_save_data')
+        if not auto_save_data:
+            return jsonify({'success': False, 'error': 'Keine Auto-Save Daten verfügbar'})
+        
+        return jsonify({
+            'success': True,
+            'data': auto_save_data,
+            'timestamp': session.get('auto_save_timestamp')
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@main_bp.route('/api/projects/<int:project_id>/auto-save/restore', methods=['GET'])
+def api_restore_auto_save_project(project_id):
+    """Auto-Save Daten für spezifisches Projekt wiederherstellen"""
+    try:
+        auto_save_data = session.get(f'auto_save_project_{project_id}')
+        if not auto_save_data:
+            return jsonify({'success': False, 'error': 'Keine Auto-Save Daten verfügbar'})
+        
+        return jsonify({
+            'success': True,
+            'data': auto_save_data,
+            'timestamp': session.get(f'auto_save_timestamp_{project_id}')
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
 
 # API Routes für Investitionskosten
 @main_bp.route('/api/investment-costs')

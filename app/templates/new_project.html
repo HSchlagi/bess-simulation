@@ -2,6 +2,11 @@
 
 {% block title %}Neues Projekt erstellen{% endblock %}
 
+{% block head %}
+<script src="{{ url_for('static', filename='js/auto-save.js') }}"></script>
+<script src="{{ url_for('static', filename='js/form-validation.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
@@ -158,13 +163,33 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-Save System initialisieren
+    const autoSave = initAutoSave('newProjectForm', {
+        autoSaveInterval: 30000, // 30 Sekunden
+        maxUndoSteps: 10
+    });
+    
+    // Formular-Templates initialisieren
+    const templates = initFormTemplates('newProjectForm');
+    
+    // Erweiterte Formular-Validierung initialisieren
+    const validator = initFormValidator('newProjectForm', {
+        showProgress: true,
+        realTimeValidation: true,
+        validateOnBlur: true
+    });
+    
     // Kunden laden
     loadCustomers();
     
     // Formular-Handler
     document.getElementById('newProjectForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        createProject();
+        
+        // Validierung vor dem Submit
+        if (validator.validateForSubmit()) {
+            createProject();
+        }
     });
     
     // Investitionskosten-Berechnung
@@ -178,6 +203,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initiale Berechnung
     calculateTotalInvestment();
+    
+    // Keyboard-Shortcuts Info anzeigen
+    showKeyboardShortcuts();
 });
 
 function loadCustomers() {
@@ -254,6 +282,25 @@ function calculateTotalInvestment() {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }) + ' €';
+}
+
+function showKeyboardShortcuts() {
+    const shortcutsDiv = document.createElement('div');
+    shortcutsDiv.className = 'fixed bottom-4 left-4 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs z-40';
+    shortcutsDiv.innerHTML = `
+        <div class="font-medium text-gray-900 mb-2">Keyboard-Shortcuts:</div>
+        <div class="space-y-1 text-gray-600">
+            <div>Ctrl+S: Speichern</div>
+            <div>Ctrl+Z: Rückgängig</div>
+            <div>Ctrl+Y: Wiederholen</div>
+        </div>
+    `;
+    document.body.appendChild(shortcutsDiv);
+    
+    // Nach 10 Sekunden ausblenden
+    setTimeout(() => {
+        shortcutsDiv.style.opacity = '0.5';
+    }, 5000);
 }
 </script>
 {% endblock %} 

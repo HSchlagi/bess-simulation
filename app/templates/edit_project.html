@@ -2,6 +2,11 @@
 
 {% block title %}Projekt bearbeiten{% endblock %}
 
+{% block head %}
+<script src="{{ url_for('static', filename='js/auto-save.js') }}"></script>
+<script src="{{ url_for('static', filename='js/form-validation.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-8">
@@ -181,23 +186,88 @@
 <script>
 let currentProjectId = null;
 
+
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM geladen - Starte Projekt-Laden...');
+    
     // Projekt-ID aus URL extrahieren
     const urlParams = new URLSearchParams(window.location.search);
     currentProjectId = urlParams.get('id');
     
+    // Debug: URL-Parameter anzeigen
+    console.log('🔍 URL-Parameter:', Object.fromEntries(urlParams.entries()));
+    console.log('🔍 Projekt-ID aus URL:', currentProjectId);
+    
+    // SOFORTIGE LÖSUNG: Projekt laden
     if (currentProjectId) {
+        console.log('📥 Lade Projekt mit ID:', currentProjectId);
         loadProjectData(currentProjectId);
-        loadCustomers();
     } else {
-        alert('Keine Projekt-ID angegeben');
-        window.location.href = '/projects';
+        console.log('❌ Keine Projekt-ID gefunden');
     }
+    if (!currentProjectId || currentProjectId === 'null' || currentProjectId === 'undefined' || currentProjectId === '') {
+        console.log('❌ Ungültige Projekt-ID - leite zur Projekt-Übersicht weiter');
+        window.location.replace('/projects');
+        return;
+    }
+    
+    // EINFACHE LÖSUNG: Prüfe URL-Parameter für daily_cycles
+    const urlDailyCycles = urlParams.get('daily_cycles');
+    
+    if (urlDailyCycles && urlDailyCycles !== '' && urlDailyCycles !== 'null') {
+        console.log('🔍 URL-Parameter daily_cycles gefunden:', urlDailyCycles);
+        // EINFACHE LÖSUNG: Setze den Wert direkt im Formular
+        const dailyCyclesInput = document.getElementById('dailyCycles');
+        if (dailyCyclesInput) {
+            const urlValue = parseFloat(urlDailyCycles);
+            if (!isNaN(urlValue) && urlValue > 0) {
+                console.log('✅ Setze daily_cycles direkt auf URL-Wert:', urlValue);
+                dailyCyclesInput.value = urlValue;
+            }
+        }
+    }
+    
+    // Projekt laden (nur wenn wir hier ankommen, ist die ID gültig)
+    loadProjectData(currentProjectId);
+    loadCustomers();
+    
+    // Auto-Save System initialisieren (vereinfacht)
+    console.log('🚀 Initialisiere Auto-Save System...');
+    
+    // Prüfe ob Auto-Save verfügbar ist
+    if (typeof initAutoSave === 'function') {
+        setTimeout(() => {
+            const autoSave = initAutoSave('editProjectForm', {
+                autoSaveInterval: 30000, // 30 Sekunden
+                maxUndoSteps: 10
+            });
+            
+            if (autoSave) {
+                console.log('✅ Auto-Save System erfolgreich initialisiert');
+            } else {
+                console.log('❌ Auto-Save System konnte nicht initialisiert werden');
+            }
+        }, 1000);
+    } else {
+        console.log('⚠️ Auto-Save System nicht verfügbar - initAutoSave Funktion nicht gefunden');
+    }
+    
+    // Erweiterte Formular-Validierung initialisieren
+    const validator = initFormValidator('editProjectForm', {
+        showProgress: true,
+        realTimeValidation: true,
+        validateOnBlur: true
+    });
     
     // Formular-Handler
     document.getElementById('editProjectForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        updateProject();
+        
+        // Validierung vor dem Submit
+        if (validator.validateForSubmit()) {
+            updateProject();
+        }
     });
     
     // Event Listeners für die Kostenfelder
@@ -208,55 +278,104 @@ document.addEventListener('DOMContentLoaded', function() {
             field.addEventListener('input', calculateTotalCost);
         }
     });
+    
+    // Keyboard-Shortcuts Info anzeigen
+    showKeyboardShortcuts();
 });
 
 function loadProjectData(projectId) {
-    console.log(`=== DEBUG: Lade Projektdaten für ID ${projectId} ===`);
+    console.log(`🚀 Lade Projektdaten für ID ${projectId}`);
+    
+    // Prüfe ob projectId gültig ist
+    if (!projectId || projectId === 'null' || projectId === 'undefined') {
+        console.error('❌ Ungültige Projekt-ID:', projectId);
+        alert('Ungültige Projekt-ID. Sie werden zur Projekt-Übersicht weitergeleitet.');
+        window.location.href = '/projects';
+        return;
+    }
     
     fetch(`/api/projects/${projectId}`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(project => {
-            console.log('Empfangene Projektdaten:', project);
+            console.log('✅ Projektdaten geladen:', project);
             
-            // Formular mit Projektdaten füllen
-            document.getElementById('projectName').value = project.name || '';
-            document.getElementById('projectLocation').value = project.location || '';
-            document.getElementById('customerSelect').value = project.customer_id || '';
-            document.getElementById('projectDate').value = project.date || '';
-            document.getElementById('bessSize').value = project.bess_size || '';
-            document.getElementById('bessPower').value = project.bess_power || '';
-            document.getElementById('pvPower').value = project.pv_power || '';
-            document.getElementById('hpPower').value = project.hp_power || '';
-            document.getElementById('windPower').value = project.wind_power || '';
-            document.getElementById('hydroPower').value = project.hydro_power || '';
-            document.getElementById('otherPower').value = project.other_power || '';
-            document.getElementById('currentElectricityCost').value = project.current_electricity_cost || 12.5;
-            
-            console.log('Formularfelder gesetzt:');
-            console.log('  BESS Size:', document.getElementById('bessSize').value);
-            console.log('  BESS Power:', document.getElementById('bessPower').value);
-            console.log('  PV Power:', document.getElementById('pvPower').value);
-            console.log('  Current Electricity Cost:', document.getElementById('currentElectricityCost').value);
-            
-            // Kostenfelder laden (falls vorhanden)
-            document.getElementById('bessCost').value = project.bess_cost || '';
-            document.getElementById('pvCost').value = project.pv_cost || '';
-            document.getElementById('hpCost').value = project.hp_cost || '';
-            document.getElementById('windCost').value = project.wind_cost || '';
-            document.getElementById('hydroCost').value = project.hydro_cost || '';
-            document.getElementById('otherCost').value = project.other_cost || '';
-            
-            console.log('Kostenfelder gesetzt:');
-            console.log('  BESS Cost:', document.getElementById('bessCost').value);
-            console.log('  PV Cost:', document.getElementById('pvCost').value);
-            
-            // Gesamtkosten berechnen
-            calculateTotalCost();
+            // EINFACHE UND SICHERE LÖSUNG: Formular direkt füllen
+            fillFormWithProjectData(project);
         })
         .catch(error => {
-            console.error('Fehler beim Laden der Projektdaten:', error);
-            alert('Fehler beim Laden der Projektdaten');
+            console.error('❌ Fehler beim Laden der Projektdaten:', error);
+            alert('Fehler beim Laden der Projektdaten. Bitte versuchen Sie es erneut.');
         });
+}
+
+function fillFormWithProjectData(project) {
+    console.log('🔧 Fülle Formular mit Projektdaten...');
+    
+    // Alle Formularfelder direkt setzen
+    const fields = {
+        'projectName': project.name,
+        'projectLocation': project.location,
+        'customerSelect': project.customer_id,
+        'projectDate': project.date,
+        'bessSize': project.bess_size,
+        'bessPower': project.bess_power,
+        'pvPower': project.pv_power,
+        'hpPower': project.hp_power,
+        'windPower': project.wind_power,
+        'hydroPower': project.hydro_power,
+        'otherPower': project.other_power,
+        'currentElectricityCost': project.current_electricity_cost || 12.5,
+        'dailyCycles': project.daily_cycles || 1.2,
+        'bessCost': project.bess_cost,
+        'pvCost': project.pv_cost,
+        'hpCost': project.hp_cost,
+        'windCost': project.wind_cost,
+        'hydroCost': project.hydro_cost,
+        'otherCost': project.other_cost
+    };
+    
+    // Jedes Feld setzen
+    Object.keys(fields).forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            // Spezielle Behandlung für daily_cycles
+            if (fieldId === 'dailyCycles') {
+                const dailyCyclesValue = fields[fieldId];
+                console.log(`🔍 dailyCycles Wert aus API:`, dailyCyclesValue);
+                console.log(`🔍 dailyCycles Typ:`, typeof dailyCyclesValue);
+                
+                if (dailyCyclesValue !== null && dailyCyclesValue !== undefined && dailyCyclesValue !== '') {
+                    // EINFACHE LÖSUNG: Stelle sicher, dass der Wert als Punkt-Dezimaltrennzeichen gesetzt wird
+                    const numericValue = parseFloat(dailyCyclesValue);
+                    if (!isNaN(numericValue)) {
+                        element.value = numericValue.toString().replace(',', '.'); // Komma durch Punkt ersetzen
+                        console.log(`✅ dailyCycles explizit gesetzt auf:`, element.value);
+                    } else {
+                        element.value = 1.2; // Standardwert
+                        console.log(`⚠️ dailyCycles Standardwert gesetzt (ungültiger Wert):`, element.value);
+                    }
+                } else {
+                    element.value = 1.2; // Standardwert
+                    console.log(`⚠️ dailyCycles Standardwert gesetzt (leerer Wert):`, element.value);
+                }
+            } else {
+                element.value = fields[fieldId] || '';
+            }
+            console.log(`✅ ${fieldId} gesetzt:`, element.value);
+        } else {
+            console.log(`❌ Element ${fieldId} nicht gefunden`);
+        }
+    });
+    
+    console.log('✅ Formular erfolgreich gefüllt');
+    
+    // Gesamtkosten berechnen
+    calculateTotalCost();
 }
 
 function loadCustomers() {
@@ -309,6 +428,31 @@ function updateProject() {
         wind_power: formData.get('wind_power') ? parseFloat(formData.get('wind_power')) : null,
         hydro_power: formData.get('hydro_power') ? parseFloat(formData.get('hydro_power')) : null,
         other_power: formData.get('other_power') ? parseFloat(formData.get('other_power')) : null,
+                        daily_cycles: (() => {
+                    const dailyCycles = formData.get('daily_cycles');
+                    console.log('DEBUG: daily_cycles raw:', dailyCycles);
+                    console.log('DEBUG: daily_cycles type:', typeof dailyCycles);
+                    
+                    // EINFACHE LÖSUNG: Stelle sicher, dass der Wert korrekt verarbeitet wird
+                    if (dailyCycles && dailyCycles !== '' && dailyCycles !== 'null' && dailyCycles !== 'undefined') {
+                        // EINFACHE LÖSUNG: Komma durch Punkt ersetzen für korrekte Parsing
+                        const normalizedValue = dailyCycles.toString().replace(',', '.');
+                        const parsed = parseFloat(normalizedValue);
+                        console.log('DEBUG: daily_cycles normalized:', normalizedValue);
+                        console.log('DEBUG: daily_cycles parsed:', parsed);
+                        console.log('DEBUG: daily_cycles parsed type:', typeof parsed);
+                        
+                        // EINFACHE LÖSUNG: Stelle sicher, dass der Wert gültig ist
+                        if (!isNaN(parsed) && parsed > 0) {
+                            console.log('DEBUG: daily_cycles final:', parsed);
+                            return parsed;
+                        } else {
+                            console.log('DEBUG: daily_cycles invalid parsed value, using default');
+                        }
+                    }
+                    console.log('DEBUG: daily_cycles using default: 1.2');
+                    return 1.2;
+                })(),
         current_electricity_cost: formData.get('current_electricity_cost') ? parseFloat(formData.get('current_electricity_cost')) : 12.5,
         bess_cost: formData.get('bess_cost') ? parseFloat(formData.get('bess_cost')) : null,
         pv_cost: formData.get('pv_cost') ? parseFloat(formData.get('pv_cost')) : null,
@@ -343,7 +487,9 @@ function updateProject() {
     .then(data => {
         if (data.success) {
             alert('Projekt erfolgreich aktualisiert!');
-            window.location.href = `/view_project?id=${currentProjectId}`;
+            // EINFACHE LÖSUNG: Lade das Formular neu mit den aktualisierten Daten
+            console.log('✅ Projekt erfolgreich aktualisiert - lade Formular neu');
+            loadProjectData(currentProjectId);
         } else {
             throw new Error(data.error || 'Unbekannter Fehler');
         }
@@ -399,5 +545,24 @@ document.getElementById('hpCost').addEventListener('input', calculateTotalCost);
 document.getElementById('windCost').addEventListener('input', calculateTotalCost);
 document.getElementById('hydroCost').addEventListener('input', calculateTotalCost);
 document.getElementById('otherCost').addEventListener('input', calculateTotalCost);
+
+function showKeyboardShortcuts() {
+    const shortcutsDiv = document.createElement('div');
+    shortcutsDiv.className = 'fixed bottom-4 left-4 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs z-40';
+    shortcutsDiv.innerHTML = `
+        <div class="font-medium text-gray-900 mb-2">Keyboard-Shortcuts:</div>
+        <div class="space-y-1 text-gray-600">
+            <div>Ctrl+S: Speichern</div>
+            <div>Ctrl+Z: Rückgängig</div>
+            <div>Ctrl+Y: Wiederholen</div>
+        </div>
+    `;
+    document.body.appendChild(shortcutsDiv);
+    
+    // Nach 10 Sekunden ausblenden
+    setTimeout(() => {
+        shortcutsDiv.style.opacity = '0.5';
+    }, 5000);
+}
 </script>
 {% endblock %} 
