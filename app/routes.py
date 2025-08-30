@@ -801,6 +801,227 @@ def api_dashboard_stats():
             'recent_activities': []
         })
 
+# Neue API für Chart-Daten
+@main_bp.route('/api/dashboard/charts')
+def api_dashboard_charts():
+    """API für Dashboard-Chart-Daten"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Projekt-Wachstum (letzte 12 Monate)
+        cursor.execute("""
+            SELECT 
+                strftime('%Y-%m', created_at) as month,
+                COUNT(*) as count
+            FROM project 
+            WHERE created_at >= date('now', '-12 months')
+            GROUP BY strftime('%Y-%m', created_at)
+            ORDER BY month
+        """)
+        project_growth = cursor.fetchall()
+        
+        # Regionale Verteilung
+        cursor.execute("""
+            SELECT 
+                CASE 
+                    WHEN location LIKE '%Oberösterreich%' OR location LIKE '%OÖ%' THEN 'Oberösterreich'
+                    WHEN location LIKE '%Niederösterreich%' OR location LIKE '%NÖ%' THEN 'Niederösterreich'
+                    WHEN location LIKE '%Wien%' OR location LIKE '%W%' THEN 'Wien'
+                    WHEN location LIKE '%Steiermark%' OR location LIKE '%S%' THEN 'Steiermark'
+                    WHEN location LIKE '%Tirol%' OR location LIKE '%T%' THEN 'Tirol'
+                    WHEN location LIKE '%Vorarlberg%' OR location LIKE '%V%' THEN 'Vorarlberg'
+                    WHEN location LIKE '%Kärnten%' OR location LIKE '%K%' THEN 'Kärnten'
+                    WHEN location LIKE '%Salzburg%' OR location LIKE '%S%' THEN 'Salzburg'
+                    WHEN location LIKE '%Burgenland%' OR location LIKE '%B%' THEN 'Burgenland'
+                    ELSE 'Sonstige'
+                END as region,
+                COUNT(*) as count
+            FROM project 
+            WHERE location IS NOT NULL
+            GROUP BY region
+            ORDER BY count DESC
+        """)
+        regional_distribution = cursor.fetchall()
+        
+        # Kapazitäts-Verteilung
+        cursor.execute("""
+            SELECT 
+                SUM(bess_size) as total_bess,
+                SUM(pv_power) as total_pv
+            FROM project 
+            WHERE bess_size IS NOT NULL OR pv_power IS NOT NULL
+        """)
+        capacity_data = cursor.fetchone()
+        
+        # Stromkosten-Trend (letzte 4 Quartale)
+        cursor.execute("""
+            SELECT 
+                strftime('%Y-Q%m/3', created_at) as quarter,
+                AVG(current_electricity_cost) as avg_cost
+            FROM project 
+            WHERE current_electricity_cost IS NOT NULL 
+            AND created_at >= date('now', '-12 months')
+            GROUP BY strftime('%Y-Q%m/3', created_at)
+            ORDER BY quarter
+        """)
+        electricity_cost_trend = cursor.fetchall()
+        
+        return jsonify({
+            'success': True,
+            'project_growth': [{'month': row[0], 'count': row[1]} for row in project_growth],
+            'regional_distribution': [{'region': row[0], 'count': row[1]} for row in regional_distribution],
+            'capacity_distribution': {
+                'bess': capacity_data[0] or 0,
+                'pv': capacity_data[1] or 0
+            },
+            'electricity_cost_trend': [{'quarter': row[0], 'avg_cost': row[1]} for row in electricity_cost_trend]
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Chart-Daten: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API für Performance-Metriken
+@main_bp.route('/api/dashboard/performance')
+def api_dashboard_performance():
+    """API für System-Performance-Metriken"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Verfügbarkeit (Projekte mit vollständigen Daten)
+        cursor.execute("""
+            SELECT 
+                COUNT(*) as total_projects,
+                COUNT(CASE WHEN bess_size IS NOT NULL AND pv_power IS NOT NULL AND current_electricity_cost IS NOT NULL THEN 1 END) as complete_projects
+            FROM project
+        """)
+        availability_data = cursor.fetchone()
+        availability = (availability_data[1] / availability_data[0] * 100) if availability_data[0] > 0 else 0
+        
+        # Performance (Durchschnittliche Projekt-Größe)
+        cursor.execute("""
+            SELECT AVG(bess_size) as avg_bess_size
+            FROM project 
+            WHERE bess_size IS NOT NULL
+        """)
+        avg_bess_size = cursor.fetchone()[0] or 0
+        
+        # Sicherheit (Projekte mit Backup-Daten)
+        cursor.execute("""
+            SELECT COUNT(*) as projects_with_backup
+            FROM project p
+            WHERE EXISTS (SELECT 1 FROM load_profile lp WHERE lp.project_id = p.id)
+        """)
+        projects_with_backup = cursor.fetchone()[0]
+        
+        # Skalierbarkeit (Anzahl aktiver Benutzer)
+        cursor.execute("SELECT COUNT(*) FROM user WHERE is_active = 1")
+        active_users = cursor.fetchone()[0]
+        
+        # Benutzerfreundlichkeit (Projekte pro Benutzer)
+        cursor.execute("SELECT COUNT(*) FROM project")
+        total_projects = cursor.fetchone()[0]
+        user_friendliness = (total_projects / active_users * 10) if active_users > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'performance_metrics': {
+                'availability': round(availability, 1),
+                'performance': min(100, (avg_bess_size / 1000) * 100),  # Normalisiert auf 100%
+                'security': min(100, (projects_with_backup / max(total_projects, 1)) * 100),
+                'scalability': min(100, (active_users / 10) * 100),  # Normalisiert auf 10 Benutzer
+                'user_friendliness': min(100, user_friendliness)
+            }
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Performance-Metriken: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API für Real-time Updates
+@main_bp.route('/api/dashboard/realtime')
+def api_dashboard_realtime():
+    """API für Real-time Dashboard-Updates"""
+    try:
+        cursor = get_db().cursor()
+        
+        # Aktuelle Statistiken
+        cursor.execute("SELECT COUNT(*) FROM project")
+        current_projects = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM user WHERE is_active = 1")
+        current_users = cursor.fetchone()[0]
+        
+        # Letzte Aktivität
+        cursor.execute("""
+            SELECT p.name, p.created_at
+            FROM project p
+            ORDER BY p.created_at DESC
+            LIMIT 1
+        """)
+        last_activity = cursor.fetchone()
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now().isoformat(),
+            'current_projects': current_projects,
+            'current_users': current_users,
+            'last_activity': {
+                'project_name': last_activity[0] if last_activity else None,
+                'created_at': last_activity[1] if last_activity else None
+            }
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Real-time-Daten: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# API für Projekt-Standorte (für interaktive Karte)
+@main_bp.route('/api/dashboard/locations')
+def api_dashboard_locations():
+    """API für Projekt-Standorte für die interaktive Karte"""
+    try:
+        cursor = get_db().cursor()
+        
+        cursor.execute("""
+            SELECT 
+                p.id,
+                p.name,
+                p.location,
+                p.bess_size,
+                p.pv_power,
+                p.created_at,
+                CASE WHEN lp.id IS NOT NULL THEN 1 ELSE 0 END as has_load_profile
+            FROM project p
+            LEFT JOIN load_profile lp ON p.id = lp.project_id
+            WHERE p.location IS NOT NULL
+            ORDER BY p.created_at DESC
+        """)
+        
+        projects = cursor.fetchall()
+        
+        locations = []
+        for project in projects:
+            locations.append({
+                'id': project[0],
+                'name': project[1],
+                'location': project[2],
+                'bess_size': project[3],
+                'pv_power': project[4],
+                'created_at': project[5],
+                'has_load_profile': bool(project[6])
+            })
+        
+        return jsonify({
+            'success': True,
+            'locations': locations,
+            'total_count': len(locations)
+        })
+        
+    except Exception as e:
+        print(f"Fehler beim Laden der Projekt-Standorte: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # Auto-Save API Routes
 @main_bp.route('/api/projects/auto-save', methods=['POST'])
 def api_auto_save_project():

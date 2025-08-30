@@ -17,6 +17,38 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Mobile Optimierungen -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="BESS Simulation">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="msapplication-TileColor" content="#3B82F6">
+    
+    <!-- Touch Icons -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='apple-touch-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='apple-touch-icon-180x180.png') }}">
+    <link rel="apple-touch-icon" sizes="167x167" href="{{ url_for('static', filename='apple-touch-icon-167x167.png') }}">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    <!-- Service Worker Registrierung -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registriert:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker Registrierung fehlgeschlagen:', error);
+                    });
+            });
+        }
+    </script>
+    
     <!-- Font Awesome - Intelligente Fallback-Lösung -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css">
@@ -25,8 +57,142 @@
     <!-- XLSX Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <!-- Elegante Fallback-Lösung -->
+    <!-- Chart.js für Advanced Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- Zusätzliche Head-Inhalte -->
+    {% block head %}{% endblock %}
+    
+    <!-- Mobile & Responsive Styles -->
     <style>
+        /* Mobile Optimierungen */
+        @media (max-width: 768px) {
+            /* Touch-Targets vergrößern */
+            button, a, input, select, textarea {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* Mobile Navigation */
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                border-top: 1px solid #e5e7eb;
+                z-index: 50;
+                padding: 0.5rem;
+            }
+            
+            /* Mobile Menu Toggle */
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .desktop-nav {
+                display: none;
+            }
+            
+            /* Mobile Charts */
+            .chart-container {
+                height: 300px !important;
+                overflow-x: auto;
+            }
+            
+            /* Mobile Tables */
+            .mobile-table {
+                font-size: 0.875rem;
+            }
+            
+            .mobile-table th,
+            .mobile-table td {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            /* Mobile Forms */
+            .mobile-form input,
+            .mobile-form select,
+            .mobile-form textarea {
+                font-size: 16px; /* Verhindert Zoom auf iOS */
+                padding: 0.75rem;
+            }
+            
+            /* Mobile Cards */
+            .mobile-card {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+            }
+            
+            /* Mobile Buttons */
+            .mobile-btn {
+                width: 100%;
+                padding: 0.75rem 1rem;
+                font-size: 1rem;
+                border-radius: 0.5rem;
+            }
+            
+            /* Mobile Grid */
+            .mobile-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            /* Mobile Sidebar */
+            .mobile-sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 80%;
+                height: 100vh;
+                background: white;
+                z-index: 100;
+                transition: left 0.3s ease;
+                overflow-y: auto;
+            }
+            
+            .mobile-sidebar.active {
+                left: 0;
+            }
+            
+            /* Mobile Overlay */
+            .mobile-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 99;
+                display: none;
+            }
+            
+            .mobile-overlay.active {
+                display: block;
+            }
+        }
+        
+        /* Tablet Optimierungen */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .tablet-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .tablet-chart {
+                height: 400px;
+            }
+        }
+        
+        /* Touch-Gesten */
+        .touch-swipe {
+            touch-action: pan-y pinch-zoom;
+        }
+        
+        .touch-scroll {
+            -webkit-overflow-scrolling: touch;
+        }
+        
         /* Schlichte Fallback-Icons für kritische Elemente */
         .fa-user::before { content: "👤"; }
         .fa-sign-out-alt::before { content: "🚪"; }
