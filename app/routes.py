@@ -1088,7 +1088,7 @@ def api_auto_save_edit_project(project_id):
         if not data.get('name'):
             return jsonify({'success': False, 'error': 'Projektname ist erforderlich'})
         
-        # Projekt-Daten aktualisieren (nur temporär für Auto-Save)
+        # Projekt-Daten aktualisieren (tatsächlich in der Datenbank speichern)
         project.name = data.get('name', project.name)
         project.location = data.get('location', project.location)
         project.customer_id = data.get('customer_id', project.customer_id)
@@ -1102,7 +1102,10 @@ def api_auto_save_edit_project(project_id):
         project.daily_cycles = data.get('daily_cycles', project.daily_cycles)
         project.current_electricity_cost = data.get('current_electricity_cost', project.current_electricity_cost)
         
-        # Auto-Save Session speichern
+        # Änderungen in der Datenbank speichern
+        db.session.commit()
+        
+        # Auto-Save Session als Backup speichern
         session[f'auto_save_project_{project_id}'] = {
             'name': project.name,
             'location': project.location,
@@ -5961,16 +5964,85 @@ def api_bess_simulation_with_solar():
     """BESS-Simulation mit Solar-Daten durchführen"""
     try:
         data = request.get_json()
-        # TODO: Implementierung der BESS-Simulation mit Solar-Daten
+        location_key = data.get('location_key')
+        year = data.get('year', 2020)
+        pv_capacity = data.get('pv_capacity', 1950)  # kWp
+        bess_size = data.get('bess_size', 1000)      # kWh
+        bess_power = data.get('bess_power', 500)     # kW
+        
+        print(f"🔄 BESS-Simulation mit Solar-Daten: {location_key}, {pv_capacity} kWp, {bess_size} kWh")
+        
+        # Solar-Daten abrufen
+        conn = get_db()
+        df = pd.read_sql_query('''
+            SELECT datetime, global_irradiance, temperature_2m
+            FROM solar_data 
+            WHERE location_key = ? AND year = ?
+            ORDER BY datetime
+        ''', conn, params=(location_key, year))
+        
+        if df.empty:
+            return jsonify({'success': False, 'error': 'Keine Solar-Daten verfügbar'}), 404
+        
+        # PV-Erzeugung berechnen (vereinfacht)
+        df['pv_generation'] = df['global_irradiance'] * pv_capacity * 0.75 / 1000  # kW
+        
+        # BESS-Simulation (vereinfacht)
+        bess_soc = 0.5  # Start-SOC 50%
+        bess_energy = []
+        grid_import = []
+        grid_export = []
+        
+        for _, row in df.iterrows():
+            pv_gen = row['pv_generation']
+            
+            # BESS-Logik (vereinfacht)
+            if pv_gen > 0:  # Tagsüber
+                # Überschüssige Energie in BESS laden
+                excess = max(0, pv_gen - bess_power)
+                bess_charge = min(bess_power, excess)
+                bess_soc = min(1.0, bess_soc + bess_charge / bess_size)
+                grid_export.append(excess)
+                grid_import.append(0)
+            else:  # Nachts
+                # BESS entladen
+                bess_discharge = min(bess_power, bess_size * bess_soc)
+                bess_soc = max(0.0, bess_soc - bess_discharge / bess_size)
+                grid_import.append(bess_discharge)
+                grid_export.append(0)
+            
+            bess_energy.append(bess_soc * bess_size)
+        
+        # Ergebnisse berechnen
+        total_pv_energy = df['pv_generation'].sum() / 1000  # MWh
+        total_grid_import = sum(grid_import) / 1000  # MWh
+        total_grid_export = sum(grid_export) / 1000  # MWh
+        self_consumption_rate = (total_pv_energy - total_grid_export) / total_pv_energy * 100
+        
+        results = {
+            'total_pv_energy_mwh': round(total_pv_energy, 2),
+            'total_grid_import_mwh': round(total_grid_import, 2),
+            'total_grid_export_mwh': round(total_grid_export, 2),
+            'self_consumption_rate_percent': round(self_consumption_rate, 1),
+            'bess_utilization_hours': round(total_grid_import / bess_power * 1000, 0),
+            'data_points': len(df)
+        }
+        
         return jsonify({
             'success': True,
-            'message': 'BESS-Simulation mit Solar-Daten - Implementierung in Arbeit'
+            'simulation_results': results,
+            'parameters': {
+                'location_key': location_key,
+                'year': year,
+                'pv_capacity_kwp': pv_capacity,
+                'bess_size_kwh': bess_size,
+                'bess_power_kw': bess_power
+            }
         })
+        
     except Exception as e:
-        return jsonify({
-            'error': f'Fehler bei BESS-Simulation: {str(e)}',
-            'success': False
-        }), 500
+        print(f"❌ Fehler bei BESS-Simulation: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================================
 # NEUE API-ENDPUNKTE FÜR INTRADAY-ARBITRAGE UND ÖSTERREICHISCHE MÄRKTE
@@ -6243,88 +6315,6 @@ def api_get_austrian_markets_config():
             'error': f'Fehler beim Laden der Konfiguration: {str(e)}',
             'success': False
         }), 500
-    """BESS-Simulation mit Solar-Daten durchführen"""
-    try:
-        data = request.get_json()
-        location_key = data.get('location_key')
-        year = data.get('year', 2020)
-        pv_capacity = data.get('pv_capacity', 1950)  # kWp
-        bess_size = data.get('bess_size', 1000)      # kWh
-        bess_power = data.get('bess_power', 500)     # kW
-        
-        print(f"🔄 BESS-Simulation mit Solar-Daten: {location_key}, {pv_capacity} kWp, {bess_size} kWh")
-        
-        # Solar-Daten abrufen
-        conn = get_db()
-        df = pd.read_sql_query('''
-            SELECT datetime, global_irradiance, temperature_2m
-            FROM solar_data 
-            WHERE location_key = ? AND year = ?
-            ORDER BY datetime
-        ''', conn, params=(location_key, year))
-        
-        if df.empty:
-            return jsonify({'success': False, 'error': 'Keine Solar-Daten verfügbar'}), 404
-        
-        # PV-Erzeugung berechnen (vereinfacht)
-        df['pv_generation'] = df['global_irradiance'] * pv_capacity * 0.75 / 1000  # kW
-        
-        # BESS-Simulation (vereinfacht)
-        bess_soc = 0.5  # Start-SOC 50%
-        bess_energy = []
-        grid_import = []
-        grid_export = []
-        
-        for _, row in df.iterrows():
-            pv_gen = row['pv_generation']
-            
-            # BESS-Logik (vereinfacht)
-            if pv_gen > 0:  # Tagsüber
-                # Überschüssige Energie in BESS laden
-                excess = max(0, pv_gen - bess_power)
-                bess_charge = min(bess_power, excess)
-                bess_soc = min(1.0, bess_soc + bess_charge / bess_size)
-                grid_export.append(excess)
-                grid_import.append(0)
-            else:  # Nachts
-                # BESS entladen
-                bess_discharge = min(bess_power, bess_size * bess_soc)
-                bess_soc = max(0.0, bess_soc - bess_discharge / bess_size)
-                grid_import.append(bess_discharge)
-                grid_export.append(0)
-            
-            bess_energy.append(bess_soc * bess_size)
-        
-        # Ergebnisse berechnen
-        total_pv_energy = df['pv_generation'].sum() / 1000  # MWh
-        total_grid_import = sum(grid_import) / 1000  # MWh
-        total_grid_export = sum(grid_export) / 1000  # MWh
-        self_consumption_rate = (total_pv_energy - total_grid_export) / total_pv_energy * 100
-        
-        results = {
-            'total_pv_energy_mwh': round(total_pv_energy, 2),
-            'total_grid_import_mwh': round(total_grid_import, 2),
-            'total_grid_export_mwh': round(total_grid_export, 2),
-            'self_consumption_rate_percent': round(self_consumption_rate, 1),
-            'bess_utilization_hours': round(total_grid_import / bess_power * 1000, 0),
-            'data_points': len(df)
-        }
-        
-        return jsonify({
-            'success': True,
-            'simulation_results': results,
-            'parameters': {
-                'location_key': location_key,
-                'year': year,
-                'pv_capacity_kwp': pv_capacity,
-                'bess_size_kwh': bess_size,
-                'bess_power_kw': bess_power
-            }
-        })
-        
-    except Exception as e:
-        print(f"❌ Fehler bei BESS-Simulation: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 # C-Rate Integration Routen
 @main_bp.route('/battery-crate-config')
@@ -6442,3 +6432,60 @@ def api_test_battery_crate():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# Performance-Monitoring API
+@main_bp.route('/api/performance/metrics')
+def api_performance_metrics():
+    """API für Performance-Metriken"""
+    try:
+        metrics = performance_monitor.get_metrics()
+        return jsonify({
+            'success': True,
+            'metrics': metrics,
+            'timestamp': time.time()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/performance/health')
+def api_performance_health():
+    """Health-Check für Performance-Monitoring"""
+    try:
+        # Einfache Performance-Tests
+        start_time = time.time()
+        
+        # Datenbank-Performance testen
+        cursor = get_db().cursor()
+        cursor.execute("SELECT COUNT(*) FROM project")
+        db_result = cursor.fetchone()
+        db_time = time.time() - start_time
+        
+        # Cache-Performance testen
+        cache_start = time.time()
+        test_key = "health_check_test"
+        cache.set(test_key, "test_value", timeout=10)
+        cache.get(test_key)
+        cache_time = time.time() - cache_start
+        
+        health_status = {
+            'status': 'healthy',
+            'database': {
+                'status': 'ok',
+                'response_time': f"{db_time:.3f}s",
+                'result': db_result[0] if db_result else 0
+            },
+            'cache': {
+                'status': 'ok',
+                'response_time': f"{cache_time:.3f}s"
+            },
+            'timestamp': time.time()
+        }
+        
+        return jsonify(health_status)
+        
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500

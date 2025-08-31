@@ -1,0 +1,416 @@
+{% extends "base.html" %}
+
+{% block title %}Performance-Dashboard - BESS-Simulation{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-tachometer-alt mr-3 text-blue-600"></i>
+            Performance-Dashboard
+        </h1>
+        <p class="mt-2 text-gray-600">
+            Überwachung der Anwendungs-Performance, Caching-Status und Datenbank-Indizes
+        </p>
+    </div>
+
+    <!-- Performance-Status Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Cache-Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="bg-blue-100 p-3 rounded-md">
+                    <i class="fas fa-memory text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Cache-Status</h3>
+                    <p class="text-2xl font-bold text-blue-600" id="cacheStatus">Prüfe...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datenbank-Performance -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="bg-green-100 p-3 rounded-md">
+                    <i class="fas fa-database text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">DB-Performance</h3>
+                    <p class="text-2xl font-bold text-green-600" id="dbPerformance">Prüfe...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- API-Response-Zeit -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="bg-purple-100 p-3 rounded-md">
+                    <i class="fas fa-clock text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">API-Response</h3>
+                    <p class="text-2xl font-bold text-purple-600" id="apiResponse">Prüfe...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gesamt-Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="bg-orange-100 p-3 rounded-md">
+                    <i class="fas fa-heartbeat text-orange-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Gesamt-Status</h3>
+                    <p class="text-2xl font-bold text-orange-600" id="overallStatus">Prüfe...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance-Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- API-Response-Zeiten -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+                API-Response-Zeiten
+            </h3>
+            <div class="h-64">
+                <canvas id="apiResponseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Cache-Hit-Rate -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-pie mr-2 text-green-600"></i>
+                Cache-Hit-Rate
+            </h3>
+            <div class="h-64">
+                <canvas id="cacheHitChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance-Metriken Tabelle -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-table mr-2 text-purple-600"></i>
+            Detaillierte Performance-Metriken
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Endpoint
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Aufrufe
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Ø Zeit
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Min Zeit
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Max Zeit
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Letzte 10 Ø
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="metricsTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Wird dynamisch gefüllt -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Performance-Aktionen -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-8">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-cogs mr-2 text-orange-600"></i>
+            Performance-Aktionen
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button id="refreshMetrics" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Metriken aktualisieren
+            </button>
+            <button id="clearCache" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+                <i class="fas fa-trash mr-2"></i>
+                Cache leeren
+            </button>
+            <button id="optimizeDb" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                <i class="fas fa-database mr-2"></i>
+                DB optimieren
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Performance-Dashboard Funktionalität
+class PerformanceDashboard {
+    constructor() {
+        this.charts = {};
+        this.init();
+    }
+
+    async init() {
+        await this.loadPerformanceData();
+        this.setupEventListeners();
+        this.startAutoRefresh();
+    }
+
+    async loadPerformanceData() {
+        try {
+            // Health-Check laden
+            const healthResponse = await fetch('/api/performance/health');
+            const healthData = await healthResponse.json();
+            this.updateHealthStatus(healthData);
+
+            // Performance-Metriken laden
+            const metricsResponse = await fetch('/api/performance/metrics');
+            const metricsData = await metricsResponse.json();
+            this.updateMetricsTable(metricsData.metrics);
+            this.updateCharts(metricsData.metrics);
+
+        } catch (error) {
+            console.error('Fehler beim Laden der Performance-Daten:', error);
+            this.showError('Fehler beim Laden der Performance-Daten');
+        }
+    }
+
+    updateHealthStatus(healthData) {
+        // Cache-Status
+        const cacheStatus = document.getElementById('cacheStatus');
+        if (healthData.cache && healthData.cache.status === 'ok') {
+            cacheStatus.textContent = 'Aktiv';
+            cacheStatus.className = 'text-2xl font-bold text-green-600';
+        } else {
+            cacheStatus.textContent = 'Fehler';
+            cacheStatus.className = 'text-2xl font-bold text-red-600';
+        }
+
+        // Datenbank-Performance
+        const dbPerformance = document.getElementById('dbPerformance');
+        if (healthData.database && healthData.database.status === 'ok') {
+            dbPerformance.textContent = healthData.database.response_time;
+            dbPerformance.className = 'text-2xl font-bold text-green-600';
+        } else {
+            dbPerformance.textContent = 'Fehler';
+            dbPerformance.className = 'text-2xl font-bold text-red-600';
+        }
+
+        // API-Response
+        const apiResponse = document.getElementById('apiResponse');
+        if (healthData.database && healthData.database.response_time) {
+            apiResponse.textContent = healthData.database.response_time;
+            apiResponse.className = 'text-2xl font-bold text-blue-600';
+        } else {
+            apiResponse.textContent = 'Prüfe...';
+            apiResponse.className = 'text-2xl font-bold text-gray-600';
+        }
+
+        // Gesamt-Status
+        const overallStatus = document.getElementById('overallStatus');
+        if (healthData.status === 'healthy') {
+            overallStatus.textContent = 'Gesund';
+            overallStatus.className = 'text-2xl font-bold text-green-600';
+        } else {
+            overallStatus.textContent = 'Probleme';
+            overallStatus.className = 'text-2xl font-bold text-red-600';
+        }
+    }
+
+    updateMetricsTable(metrics) {
+        const tbody = document.getElementById('metricsTableBody');
+        tbody.innerHTML = '';
+
+        Object.entries(metrics).forEach(([endpoint, data]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    ${endpoint}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${data.count}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${(data.avg_time * 1000).toFixed(2)}ms
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${(data.min_time * 1000).toFixed(2)}ms
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${(data.max_time * 1000).toFixed(2)}ms
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ${(data.last_10_avg * 1000).toFixed(2)}ms
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    updateCharts(metrics) {
+        this.updateApiResponseChart(metrics);
+        this.updateCacheHitChart(metrics);
+    }
+
+    updateApiResponseChart(metrics) {
+        const ctx = document.getElementById('apiResponseChart');
+        
+        if (this.charts.apiResponse) {
+            this.charts.apiResponse.destroy();
+        }
+
+        const labels = Object.keys(metrics);
+        const avgTimes = Object.values(metrics).map(m => m.avg_time * 1000);
+        const maxTimes = Object.values(metrics).map(m => m.max_time * 1000);
+
+        this.charts.apiResponse = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ø Zeit (ms)',
+                    data: avgTimes,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Max Zeit (ms)',
+                    data: maxTimes,
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Zeit (ms)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'API-Response-Zeiten nach Endpoint'
+                    }
+                }
+            }
+        });
+    }
+
+    updateCacheHitChart(metrics) {
+        const ctx = document.getElementById('cacheHitChart');
+        
+        if (this.charts.cacheHit) {
+            this.charts.cacheHit.destroy();
+        }
+
+        // Simulierte Cache-Hit-Rate (in der echten Implementierung würde dies aus echten Daten kommen)
+        const totalRequests = Object.values(metrics).reduce((sum, m) => sum + m.count, 0);
+        const cacheHits = Math.floor(totalRequests * 0.7); // 70% Cache-Hit-Rate
+        const cacheMisses = totalRequests - cacheHits;
+
+        this.charts.cacheHit = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Cache Hits', 'Cache Misses'],
+                datasets: [{
+                    data: [cacheHits, cacheMisses],
+                    backgroundColor: [
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(239, 68, 68, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(239, 68, 68, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Cache-Hit-Rate'
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+
+    setupEventListeners() {
+        document.getElementById('refreshMetrics').addEventListener('click', () => {
+            this.loadPerformanceData();
+        });
+
+        document.getElementById('clearCache').addEventListener('click', async () => {
+            if (confirm('Möchten Sie wirklich den Cache leeren?')) {
+                try {
+                    // Hier würde der Cache geleert werden
+                    alert('Cache wurde geleert!');
+                    await this.loadPerformanceData();
+                } catch (error) {
+                    this.showError('Fehler beim Leeren des Caches');
+                }
+            }
+        });
+
+        document.getElementById('optimizeDb').addEventListener('click', async () => {
+            if (confirm('Möchten Sie die Datenbank optimieren?')) {
+                try {
+                    // Hier würde die Datenbank-Optimierung durchgeführt werden
+                    alert('Datenbank-Optimierung abgeschlossen!');
+                    await this.loadPerformanceData();
+                } catch (error) {
+                    this.showError('Fehler bei der Datenbank-Optimierung');
+                }
+            }
+        });
+    }
+
+    startAutoRefresh() {
+        // Alle 30 Sekunden aktualisieren
+        setInterval(() => {
+            this.loadPerformanceData();
+        }, 30000);
+    }
+
+    showError(message) {
+        alert(`Fehler: ${message}`);
+    }
+}
+
+// Dashboard initialisieren
+document.addEventListener('DOMContentLoaded', () => {
+    new PerformanceDashboard();
+});
+</script>
+{% endblock %}

@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from config import Config
 import sqlite3
+import os
 
 db = SQLAlchemy()
 csrf = CSRFProtect()
@@ -16,6 +17,20 @@ def get_db():
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # Performance-Optimierung: Redis-Caching konfigurieren
+    try:
+        from .performance_config import cache_config, cache
+        app.config.update(cache_config)
+        cache.init_app(app)
+        print("✅ Redis-Caching erfolgreich initialisiert")
+    except Exception as e:
+        print(f"⚠️  Redis-Caching nicht verfügbar: {e}")
+        # Fallback: Einfaches Memory-Caching
+        app.config['CACHE_TYPE'] = 'simple'
+        from flask_caching import Cache
+        cache = Cache()
+        cache.init_app(app)
 
     db.init_app(app)
     csrf.init_app(app)
@@ -60,5 +75,21 @@ def create_app():
         except Exception as e:
             print(f"⚠️  Tabellen bereits vorhanden oder Fehler beim Erstellen: {e}")
             pass
+        
+        # Performance-Optimierung: Datenbank-Indizes erstellen
+        try:
+            from .performance_config import create_database_indices
+            db_path = os.path.join(app.instance_path, 'bess.db')
+            if os.path.exists(db_path):
+                create_database_indices(db_path)
+        except Exception as e:
+            print(f"⚠️  Datenbank-Indizes konnten nicht erstellt werden: {e}")
+        
+        # Performance-Middleware registrieren
+        try:
+            from .performance_config import performance_middleware
+            app.after_request(performance_middleware())
+        except Exception as e:
+            print(f"⚠️  Performance-Middleware konnte nicht registriert werden: {e}")
 
     return app

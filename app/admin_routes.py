@@ -467,3 +467,13 @@ def api_stats():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@admin_bp.route('/performance')
+@admin_required
+def performance():
+    """Performance-Dashboard"""
+    try:
+        return render_template('admin/performance.html')
+    except Exception as e:
+        flash(f"Fehler beim Laden des Performance-Dashboards: {e}", "error")
+        return redirect(url_for("multi_user.dashboard"))

@@ -43,9 +43,9 @@ class FormValidator {
             costs: {
                 bess_cost: { min: 0, max: 10000000 },
                 pv_cost: { min: 0, max: 10000000 },
-                hp_cost: { min: 0, max: 1000000 },
-                wind_cost: { min: 0, max: 1000000 },
-                hydro_cost: { min: 0, max: 1000000 },
+                hp_cost: { min: 0, max: 5000000 },
+                wind_cost: { min: 0, max: 5000000 },
+                hydro_cost: { min: 0, max: 10000000 },
                 other_cost: { min: 0, max: 10000000 }
             }
         };
@@ -70,8 +70,10 @@ class FormValidator {
         // Event-Listener registrieren
         this.attachEventListeners();
         
-        // Initiale Validierung
-        this.validateAll();
+        // Initiale Validierung mit Verzögerung (damit Werte geladen werden)
+        setTimeout(() => {
+            this.validateAll();
+        }, 1500);
         
         console.log(`🔍 Formular-Validator für "${this.formId}" initialisiert`);
     }
