@@ -45,7 +45,7 @@ def dashboard():
                              
     except Exception as e:
         flash(f"Fehler beim Laden des Admin-Dashboards: {e}", "error")
-        return redirect(url_for("main.dashboard"))
+        return redirect(url_for("multi_user.dashboard"))
 
 @admin_bp.route('/users')
 @admin_required
@@ -59,7 +59,7 @@ def users():
         
     except Exception as e:
         flash(f"Fehler beim Laden der Benutzer: {e}", "error")
-        return redirect(url_for("admin.dashboard"))
+        return redirect(url_for("multi_user.dashboard"))
 
 @admin_bp.route('/users/new', methods=['GET', 'POST'])
 @admin_required
@@ -192,7 +192,7 @@ def roles():
         
     except Exception as e:
         flash(f"Fehler beim Laden der Rollen: {e}", "error")
-        return redirect(url_for("admin.dashboard"))
+        return redirect(url_for("multi_user.dashboard"))
 
 @admin_bp.route('/roles/<int:role_id>/edit', methods=['GET', 'POST'])
 @admin_required

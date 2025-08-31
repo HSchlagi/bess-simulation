@@ -9,7 +9,7 @@ from app import create_app
 if __name__ == '__main__':
     app = create_app()
     print("🚀 BESS-Simulation Server wird gestartet...")
-    print("📊 Dashboard: http://127.0.0.1:5000/multi-user/dashboard")
+    print("📊 Dashboard: http://127.0.0.1:5000/dashboard")
     print("🔧 Admin-Panel: http://127.0.0.1:5000/admin/dashboard")
     print("📤 Export-Zentrum: http://127.0.0.1:5000/export/")
     print("=" * 50)

@@ -79,7 +79,8 @@ def index():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('dashboard.html')
+    """Einheitliches Dashboard - Weiterleitung zum Advanced Dashboard"""
+    return redirect(url_for('multi_user.dashboard'))
 
 @main_bp.route('/projects')
 def projects():

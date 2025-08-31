@@ -45,7 +45,7 @@ def login():
                 db.session.commit()
                 
                 flash(f"Willkommen zurück, {user.first_name or user.username}!", "success")
-                return redirect(url_for("main.dashboard"))
+                return redirect(url_for("multi_user.dashboard"))
             else:
                 flash("Ungültige E-Mail oder Passwort.", "error")
                 
