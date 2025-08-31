@@ -390,7 +390,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Chart.js wird bereits in base.html geladen -->
 <script>
 // Währungsformatierung
 function formatCurrency(value) {
@@ -820,6 +820,14 @@ function switchTab(tabName) {
             if (typeof Chart !== 'undefined') {
                 console.log('🔄 Initialisiere Dashboard-Charts...');
                 initializeDashboardCharts();
+                
+                // Test-Daten laden wenn Dashboard aktiv wird
+                setTimeout(() => {
+                    console.log('📊 Lade Test-Daten für Dashboard-Charts');
+                    loadTestChartData();
+                }, 500);
+            } else {
+                console.error('❌ Chart.js nicht verfügbar beim Tab-Wechsel!');
             }
         }, 500);
     }
@@ -875,6 +883,14 @@ function initializeDashboard() {
 function loadTestChartData() {
     console.log('📊 Lade Test-Daten für Charts...');
     
+    // Prüfe ob Charts initialisiert sind
+    if (!dashboardCharts.monthly || !dashboardCharts.co2 || !dashboardCharts.seasonal || !dashboardCharts.soc || !dashboardCharts.revenue) {
+        console.log('⚠️ Charts noch nicht initialisiert - initialisiere sie zuerst');
+        initializeDashboardCharts();
+        setTimeout(() => loadTestChartData(), 500);
+        return;
+    }
+    
     const testData = {
         monthly_data: {
             labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
@@ -891,39 +907,99 @@ function loadTestChartData() {
     };
     
     // Charts mit Test-Daten aktualisieren
-    updateMonthlyChart(testData.monthly_data);
-    updateCo2Chart([testData.co2_savings, 400]);
-    updateSeasonalChart([0.8, 1.0, 1.2, 0.9]);
-    updateSocChart(testData.soc_profile);
-    updateRevenueChart([28000, 8500, 5000, -12000, -8000]);
-    
-    console.log('✅ Test-Daten für Charts geladen');
+    try {
+        console.log('🔄 Aktualisiere Monthly Chart...');
+        updateMonthlyChart(testData.monthly_data);
+        
+        console.log('🔄 Aktualisiere CO2 Chart...');
+        updateCo2Chart([testData.co2_savings, 400]);
+        
+        console.log('🔄 Aktualisiere Seasonal Chart...');
+        updateSeasonalChart([0.8, 1.0, 1.2, 0.9]);
+        
+        console.log('🔄 Aktualisiere SOC Chart...');
+        updateSocChart(testData.soc_profile);
+        
+        console.log('🔄 Aktualisiere Revenue Chart...');
+        updateRevenueChart([28000, 8500, 5000, -12000, -8000]);
+        
+        console.log('✅ Test-Daten für Charts erfolgreich geladen');
+        
+        // Debug: Zeige Chart-Status
+        console.log('📊 Chart-Status:', {
+            monthly: !!dashboardCharts.monthly,
+            co2: !!dashboardCharts.co2,
+            seasonal: !!dashboardCharts.seasonal,
+            soc: !!dashboardCharts.soc,
+            revenue: !!dashboardCharts.revenue
+        });
+        
+    } catch (error) {
+        console.error('❌ Fehler beim Laden der Test-Daten:', error);
+        // Fallback: Charts neu initialisieren
+        setTimeout(() => {
+            if (typeof Chart !== 'undefined') {
+                console.log('🔄 Fallback: Charts neu initialisieren');
+                initializeDashboardCharts();
+                setTimeout(() => loadTestChartData(), 500);
+            }
+        }, 1000);
+    }
 }
 
 // Dashboard-Charts initialisieren
 function initializeDashboardCharts() {
-    // Chart.js Konfiguration
-    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    Chart.defaults.color = '#7f8c8d';
+    console.log('🔄 Initialisiere Dashboard-Charts...');
     
-    // Farbpalette
-    const colors = {
-        primary: '#667eea',
-        secondary: '#764ba2',
-        success: '#27ae60',
-        warning: '#f39c12',
-        danger: '#e74c3c',
-        info: '#3498db',
-        light: '#ecf0f1',
-        dark: '#2c3e50'
-    };
-    
-    // Charts initialisieren
-    initializeMonthlyChart(colors);
-    initializeCo2Chart(colors);
-    initializeSeasonalChart(colors);
-    initializeSocChart(colors);
-    initializeRevenueChart(colors);
+    try {
+        // Chart.js Konfiguration
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#7f8c8d';
+        
+        // Farbpalette
+        const colors = {
+            primary: '#667eea',
+            secondary: '#764ba2',
+            success: '#27ae60',
+            warning: '#f39c12',
+            danger: '#e74c3c',
+            info: '#3498db',
+            light: '#ecf0f1',
+            dark: '#2c3e50'
+        };
+        
+        // Charts initialisieren
+        console.log('🔄 Initialisiere Monthly Chart...');
+        initializeMonthlyChart(colors);
+        
+        console.log('🔄 Initialisiere CO2 Chart...');
+        initializeCo2Chart(colors);
+        
+        console.log('🔄 Initialisiere Seasonal Chart...');
+        initializeSeasonalChart(colors);
+        
+        console.log('🔄 Initialisiere SOC Chart...');
+        initializeSocChart(colors);
+        
+        console.log('🔄 Initialisiere Revenue Chart...');
+        initializeRevenueChart(colors);
+        
+        console.log('✅ Dashboard-Charts erfolgreich initialisiert');
+        
+        // Debug: Zeige Chart-Status
+        setTimeout(() => {
+            console.log('📊 Chart-Status nach Initialisierung:', {
+                monthly: !!dashboardCharts.monthly,
+                co2: !!dashboardCharts.co2,
+                seasonal: !!dashboardCharts.seasonal,
+                soc: !!dashboardCharts.soc,
+                revenue: !!dashboardCharts.revenue
+            });
+        }, 100);
+        
+    } catch (error) {
+        console.error('❌ Fehler bei der Chart-Initialisierung:', error);
+    }
 }
 
 // Monatliche Auswertung Chart
@@ -1591,8 +1667,34 @@ function updateRevenueChart(data) {
 // Dashboard-Charts Objekt
 const dashboardCharts = {};
 
+// Test-Funktion für Charts (kann manuell aufgerufen werden)
+function testCharts() {
+    console.log('🧪 Teste Charts manuell...');
+    console.log('Chart.js verfügbar:', typeof Chart !== 'undefined');
+    console.log('Dashboard Charts Status:', dashboardCharts);
+    
+    if (typeof Chart !== 'undefined') {
+        console.log('🔄 Initialisiere Charts neu...');
+        initializeDashboardCharts();
+        
+        setTimeout(() => {
+            console.log('📊 Lade Test-Daten...');
+            loadTestChartData();
+        }, 500);
+    } else {
+        console.error('❌ Chart.js nicht verfügbar!');
+        console.log('🔄 Lade Chart.js neu...');
+        loadChartJSAndInitialize();
+    }
+}
+
+// Globale Funktion für Browser-Console
+window.testCharts = testCharts;
+
 // Event Listener für Use Case Änderung im Dashboard
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 BESS-Simulation Enhanced geladen');
+    
     // Use Case Event Listener für Dashboard
     const dashboardUseCaseSelect = document.getElementById('dashboardUseCase');
     if (dashboardUseCaseSelect) {
@@ -1604,12 +1706,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // Standardmäßig Simulation-Tab aktivieren
     switchTab('simulation');
     
-    // Charts beim ersten Laden initialisieren
-    setTimeout(() => {
-        if (typeof Chart !== 'undefined') {
-            initializeDashboardCharts();
-        }
-    }, 1000);
+    // Chart.js laden und initialisieren
+    loadChartJSAndInitialize();
 });
+
+// Chart.js laden und initialisieren
+function loadChartJSAndInitialize() {
+    // Prüfe ob Chart.js bereits geladen ist
+    if (typeof Chart !== 'undefined') {
+        console.log('✅ Chart.js bereits verfügbar - initialisiere Charts');
+        initializeChartsAndData();
+        return;
+    }
+    
+    console.log('🔄 Chart.js wird geladen...');
+    
+    // Chart.js dynamisch laden
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    script.onload = function() {
+        console.log('✅ Chart.js erfolgreich geladen');
+        // Warte kurz und initialisiere dann
+        setTimeout(() => {
+            if (typeof Chart !== 'undefined') {
+                console.log('🔄 Initialisiere Charts nach Chart.js Laden...');
+                initializeChartsAndData();
+            } else {
+                console.error('❌ Chart.js immer noch nicht verfügbar nach Laden!');
+            }
+        }, 500);
+    };
+    script.onerror = function() {
+        console.error('❌ Fehler beim Laden von Chart.js');
+        // Fallback: Versuche es mit alternativer CDN
+        const fallbackScript = document.createElement('script');
+        fallbackScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
+        fallbackScript.onload = function() {
+            console.log('✅ Chart.js von Fallback-CDN geladen');
+            setTimeout(() => initializeChartsAndData(), 500);
+        };
+        fallbackScript.onerror = function() {
+            console.error('❌ Beide CDNs fehlgeschlagen!');
+        };
+        document.head.appendChild(fallbackScript);
+    };
+    document.head.appendChild(script);
+}
+
+// Charts und Daten initialisieren
+function initializeChartsAndData() {
+    try {
+        console.log('🔄 Initialisiere Dashboard-Charts...');
+        initializeDashboardCharts();
+        
+        // Test-Daten laden
+        setTimeout(() => {
+            console.log('📊 Lade Test-Daten für Dashboard-Charts...');
+            loadTestChartData();
+        }, 500);
+        
+    } catch (error) {
+        console.error('❌ Fehler bei der Chart-Initialisierung:', error);
+    }
+}
 </script>
 {% endblock %} 
