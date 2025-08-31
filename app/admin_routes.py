@@ -477,3 +477,13 @@ def performance():
     except Exception as e:
         flash(f"Fehler beim Laden des Performance-Dashboards: {e}", "error")
         return redirect(url_for("multi_user.dashboard"))
+
+@admin_bp.route('/monitoring')
+@admin_required
+def monitoring():
+    """Monitoring & Logging Dashboard"""
+    try:
+        return render_template('admin/monitoring.html')
+    except Exception as e:
+        flash(f"Fehler beim Laden des Monitoring-Dashboards: {e}", "error")
+        return redirect(url_for("multi_user.dashboard"))

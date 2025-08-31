@@ -333,12 +333,21 @@ class FormValidator {
     updateProgress() {
         if (!this.progressBar) return;
         
-        const totalFields = Object.keys(this.validationRules.required).length;
+        // Alle Felder zählen (required + optional + costs)
+        const allFields = {
+            ...this.validationRules.required,
+            ...this.validationRules.optional,
+            ...this.validationRules.costs
+        };
+        
+        const totalFields = Object.keys(allFields).length;
         const completedFields = Object.values(this.validationStates)
             .filter(state => state && state.isValid)
             .length;
         
-        const percentage = Math.round((completedFields / totalFields) * 100);
+        // Prozentsatz auf maximal 100% begrenzen
+        let percentage = Math.round((completedFields / totalFields) * 100);
+        percentage = Math.min(percentage, 100); // Maximal 100%
         
         const progressBarElement = this.progressBar.querySelector('#progress-bar');
         const percentageElement = this.progressBar.querySelector('#progress-percentage');

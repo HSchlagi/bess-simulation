@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoring & Logging - BESS-Simulation{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<style>
+    .status-card {
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+    
+    .status-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .status-healthy { background: linear-gradient(135deg, #10b981, #059669); }
+    .status-warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .status-error { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .status-unknown { background: linear-gradient(135deg, #6b7280, #4b5563); }
+    
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #1f2937;
+    }
+    
+    .metric-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
+    }
+    
+    .log-viewer {
+        background: #1f2937;
+        color: #f9fafb;
+        border-radius: 8px;
+        padding: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .log-entry {
+        margin-bottom: 0.5rem;
+        padding: 0.25rem 0;
+        border-bottom: 1px solid #374151;
+    }
+    
+    .log-level-INFO { color: #60a5fa; }
+    .log-level-WARNING { color: #fbbf24; }
+    .log-level-ERROR { color: #f87171; }
+    .log-level-CRITICAL { color: #ef4444; }
+    
+    .refresh-button {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .refresh-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .tab-container {
+        margin-bottom: 2rem;
+    }
+    
+    .tab-button {
+        background: #f3f4f6;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        margin-right: 0.5rem;
+        border-radius: 8px 8px 0 0;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    
+    .tab-button.active {
+        background: #3b82f6;
+        color: white;
+    }
+    
+    .tab-content {
+        display: none;
+        background: white;
+        border-radius: 0 8px 8px 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">🔍 Monitoring & Logging</h1>
+        <p class="text-gray-600">Überwachung aller Systemkomponenten und Logs</p>
+    </div>
+
+    <!-- Status-Übersicht -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="status-card status-healthy text-white">
+            <h3 class="text-lg font-semibold mb-2">Datenbank</h3>
+            <p class="text-sm opacity-90" id="db-status">Lädt...</p>
+        </div>
+        
+        <div class="status-card status-healthy text-white">
+            <h3 class="text-lg font-semibold mb-2">Redis Cache</h3>
+            <p class="text-sm opacity-90" id="redis-status">Lädt...</p>
+        </div>
+        
+        <div class="status-card status-healthy text-white">
+            <h3 class="text-lg font-semibold mb-2">System</h3>
+            <p class="text-sm opacity-90" id="system-status">Lädt...</p>
+        </div>
+        
+        <div class="status-card status-healthy text-white">
+            <h3 class="text-lg font-semibold mb-2">Netzwerk</h3>
+            <p class="text-sm opacity-90" id="network-status">Lädt...</p>
+        </div>
+    </div>
+
+    <!-- Metriken -->
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-value" id="total-requests">-</div>
+            <div class="metric-label">Gesamt Requests</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value" id="active-requests">-</div>
+            <div class="metric-label">Aktive Requests</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value" id="error-rate">-</div>
+            <div class="metric-label">Fehlerrate (%)</div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-value" id="uptime">-</div>
+            <div class="metric-label">Uptime</div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-container">
+        <button class="tab-button active" onclick="showTab('overview')">Übersicht</button>
+        <button class="tab-button" onclick="showTab('logs')">Logs</button>
+        <button class="tab-button" onclick="showTab('performance')">Performance</button>
+        <button class="tab-button" onclick="showTab('health')">Health Checks</button>
+    </div>
+
+    <!-- Tab-Inhalte -->
+    <div id="overview-tab" class="tab-content active">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Response-Zeiten Chart -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-4">API Response-Zeiten</h3>
+                <canvas id="responseTimeChart" width="400" height="200"></canvas>
+            </div>
+            
+            <!-- System-Ressourcen Chart -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-4">System-Ressourcen</h3>
+                <canvas id="systemResourcesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="logs-tab" class="tab-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Live Logs</h3>
+            <div class="flex space-x-2">
+                <select id="log-level-filter" class="border rounded px-3 py-2">
+                    <option value="all">Alle Levels</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                </select>
+                <button class="refresh-button" onclick="refreshLogs()">Logs aktualisieren</button>
+            </div>
+        </div>
+        <div class="log-viewer" id="log-viewer">
+            <div class="text-center text-gray-400">Logs werden geladen...</div>
+        </div>
+    </div>
+
+    <div id="performance-tab" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Cache-Performance -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-4">Cache-Performance</h3>
+                <canvas id="cachePerformanceChart" width="400" height="200"></canvas>
+            </div>
+            
+            <!-- Datenbank-Performance -->
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-semibold mb-4">Datenbank-Performance</h3>
+                <canvas id="databasePerformanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div id="health-tab" class="tab-content">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Health Check Details</h3>
+            <button class="refresh-button" onclick="runHealthChecks()">Health Checks ausführen</button>
+        </div>
+        <div id="health-details" class="space-y-4">
+            <!-- Health Check Details werden hier dynamisch eingefügt -->
+        </div>
+    </div>
+
+    <!-- Aktualisieren-Button -->
+    <div class="text-center mt-8">
+        <button class="refresh-button" onclick="refreshAllData()">
+            🔄 Alle Daten aktualisieren
+        </button>
+    </div>
+</div>
+
+<script>
+class MonitoringDashboard {
+    constructor() {
+        this.charts = {};
+        this.updateInterval = null;
+        this.init();
+    }
+    
+    init() {
+        this.setupCharts();
+        this.loadInitialData();
+        this.startAutoRefresh();
+        this.setupEventListeners();
+    }
+    
+    setupCharts() {
+        // Response-Zeiten Chart
+        const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
+        this.charts.responseTime = new Chart(responseTimeCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Response-Zeit (ms)',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Millisekunden' }
+                    }
+                }
+            }
+        });
+        
+        // System-Ressourcen Chart
+        const systemCtx = document.getElementById('systemResourcesChart').getContext('2d');
+        this.charts.systemResources = new Chart(systemCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['CPU', 'Memory', 'Disk'],
+                datasets: [{
+                    data: [0, 0, 0],
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+        
+        // Cache-Performance Chart
+        const cacheCtx = document.getElementById('cachePerformanceChart').getContext('2d');
+        this.charts.cachePerformance = new Chart(cacheCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Hit Rate', 'Miss Rate'],
+                datasets: [{
+                    label: 'Cache-Performance',
+                    data: [0, 0],
+                    backgroundColor: ['#10b981', '#ef4444']
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        title: { display: true, text: 'Prozent' }
+                    }
+                }
+            }
+        });
+        
+        // Datenbank-Performance Chart
+        const dbCtx = document.getElementById('databasePerformanceChart').getContext('2d');
+        this.charts.databasePerformance = new Chart(dbCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Query-Zeit (ms)',
+                    data: [],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Millisekunden' }
+                    }
+                }
+            }
+        });
+    }
+    
+    async loadInitialData() {
+        await Promise.all([
+            this.loadHealthStatus(),
+            this.loadMonitoringStats(),
+            this.loadLogs()
+        ]);
+    }
+    
+    async loadHealthStatus() {
+        try {
+            const response = await fetch('/api/health/status');
+            const data = await response.json();
+            
+            this.updateHealthStatus(data);
+        } catch (error) {
+            console.error('Fehler beim Laden der Health-Status:', error);
+        }
+    }
+    
+    async loadMonitoringStats() {
+        try {
+            const response = await fetch('/api/monitoring/stats');
+            const data = await response.json();
+            
+            this.updateMonitoringStats(data);
+        } catch (error) {
+            console.error('Fehler beim Laden der Monitoring-Statistiken:', error);
+        }
+    }
+    
+    async loadLogs() {
+        try {
+            const response = await fetch('/api/logs/recent');
+            const data = await response.json();
+            
+            this.updateLogs(data.logs);
+        } catch (error) {
+            console.error('Fehler beim Laden der Logs:', error);
+        }
+    }
+    
+    updateHealthStatus(data) {
+        // Status-Cards aktualisieren
+        const statusElements = {
+            'database': document.getElementById('db-status'),
+            'redis': document.getElementById('redis-status'),
+            'system': document.getElementById('system-status'),
+            'network': document.getElementById('network-status')
+        };
+        
+        Object.entries(data.checks).forEach(([checkName, checkData]) => {
+            const element = statusElements[checkName];
+            if (element) {
+                element.textContent = checkData.message;
+                
+                // Status-Card-Farbe aktualisieren
+                const card = element.closest('.status-card');
+                card.className = `status-card status-${checkData.status} text-white`;
+            }
+        });
+        
+        // Health Check Details aktualisieren
+        this.updateHealthDetails(data);
+    }
+    
+    updateMonitoringStats(data) {
+        // Metriken aktualisieren
+        document.getElementById('total-requests').textContent = data.total_requests || '-';
+        document.getElementById('active-requests').textContent = data.active_requests || '-';
+        document.getElementById('error-rate').textContent = data.error_rate ? `${(data.error_rate * 100).toFixed(2)}%` : '-';
+        document.getElementById('uptime').textContent = data.uptime ? this.formatUptime(data.uptime) : '-';
+    }
+    
+    updateLogs(logs) {
+        const logViewer = document.getElementById('log-viewer');
+        const levelFilter = document.getElementById('log-level-filter').value;
+        
+        let filteredLogs = logs;
+        if (levelFilter !== 'all') {
+            filteredLogs = logs.filter(log => log.level === levelFilter);
+        }
+        
+        if (filteredLogs.length === 0) {
+            logViewer.innerHTML = '<div class="text-center text-gray-400">Keine Logs verfügbar</div>';
+            return;
+        }
+        
+        logViewer.innerHTML = filteredLogs.map(log => `
+            <div class="log-entry">
+                <span class="log-level-${log.level}">[${log.level}]</span>
+                <span class="text-gray-300">${log.timestamp}</span>
+                <span class="text-white">${log.message}</span>
+            </div>
+        `).join('');
+        
+        logViewer.scrollTop = logViewer.scrollHeight;
+    }
+    
+    updateHealthDetails(data) {
+        const healthDetails = document.getElementById('health-details');
+        
+        healthDetails.innerHTML = Object.entries(data.checks).map(([checkName, checkData]) => `
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex justify-between items-center mb-2">
+                    <h4 class="font-semibold text-lg capitalize">${checkName}</h4>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${
+                        checkData.status === 'healthy' ? 'bg-green-100 text-green-800' :
+                        checkData.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                        checkData.status === 'error' ? 'bg-red-100 text-red-800' :
+                        'bg-gray-100 text-gray-800'
+                    }">
+                        ${checkData.status}
+                    </span>
+                </div>
+                <p class="text-gray-600 mb-2">${checkData.message}</p>
+                ${checkData.details ? `
+                    <div class="bg-gray-50 p-3 rounded text-sm">
+                        <pre class="text-gray-700">${JSON.stringify(checkData.details, null, 2)}</pre>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+    }
+    
+    formatUptime(seconds) {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours}h ${minutes}m`;
+    }
+    
+    startAutoRefresh() {
+        this.updateInterval = setInterval(() => {
+            this.loadHealthStatus();
+            this.loadMonitoringStats();
+        }, 30000); // Alle 30 Sekunden
+    }
+    
+    setupEventListeners() {
+        // Log-Level-Filter
+        document.getElementById('log-level-filter').addEventListener('change', () => {
+            this.loadLogs();
+        });
+    }
+    
+    destroy() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+        
+        Object.values(this.charts).forEach(chart => {
+            if (chart && chart.destroy) {
+                chart.destroy();
+            }
+        });
+    }
+}
+
+// Dashboard initialisieren
+let dashboard;
+
+document.addEventListener('DOMContentLoaded', () => {
+    dashboard = new MonitoringDashboard();
+});
+
+// Tab-Funktionalität
+function showTab(tabName) {
+    // Alle Tabs verstecken
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Alle Tab-Buttons deaktivieren
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+    
+    // Gewählten Tab-Button aktivieren
+    event.target.classList.add('active');
+}
+
+// Funktionen für Buttons
+async function refreshAllData() {
+    if (dashboard) {
+        await dashboard.loadInitialData();
+    }
+}
+
+async function refreshLogs() {
+    if (dashboard) {
+        await dashboard.loadLogs();
+    }
+}
+
+async function runHealthChecks() {
+    if (dashboard) {
+        await dashboard.loadHealthStatus();
+    }
+}
+</script>
+{% endblock %}

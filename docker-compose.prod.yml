@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # BESS-Simulation Produktionsanwendung
+  bess-simulation:
+    build: .
+    ports:
+      - "80:5000"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=sqlite:///instance/bess.db
+    volumes:
+      - ./instance:/app/instance
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - bess-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Redis für Produktions-Caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: always
+    networks:
+      - bess-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  # Nginx Reverse Proxy (optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx_bess_config.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - bess-simulation
+    restart: always
+    networks:
+      - bess-network
+
+volumes:
+  redis-data:
+
+networks:
+  bess-network:
+    driver: bridge

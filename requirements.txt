@@ -43,3 +43,8 @@ gunicorn==21.2.0
 
 # Authentication
 supabase==2.0.2
+
+# Performance & Monitoring
+flask-caching==2.1.0
+redis==5.0.1
+psutil==5.9.6

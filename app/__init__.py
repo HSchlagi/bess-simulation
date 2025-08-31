@@ -5,6 +5,11 @@ from config import Config
 import sqlite3
 import os
 
+# Monitoring & Logging Imports
+from .logging_config import setup_logging
+from .monitoring_middleware import init_monitoring
+from .monitoring_routes import monitoring_bp
+
 db = SQLAlchemy()
 csrf = CSRFProtect()
 
@@ -58,6 +63,9 @@ def create_app():
     from .export_routes import export_bp
     app.register_blueprint(export_bp)
     
+    # Monitoring & Logging Blueprint registrieren
+    app.register_blueprint(monitoring_bp)
+    
     # CSRF für API-Routen deaktivieren (NACH der Blueprint-Registrierung)
     csrf.exempt(app.blueprints.get('main'))
     csrf.exempt(app.blueprints.get('config'))
@@ -65,6 +73,7 @@ def create_app():
     csrf.exempt(app.blueprints.get('multi_user'))
     csrf.exempt(app.blueprints.get('admin'))
     csrf.exempt(app.blueprints.get('export'))
+    csrf.exempt(app.blueprints.get('monitoring'))
 
     with app.app_context():
         # Import models to ensure they are registered
@@ -91,5 +100,19 @@ def create_app():
             app.after_request(performance_middleware())
         except Exception as e:
             print(f"⚠️  Performance-Middleware konnte nicht registriert werden: {e}")
+        
+        # Logging-System initialisieren
+        try:
+            setup_logging()
+            print("✅ Logging-System erfolgreich initialisiert")
+        except Exception as e:
+            print(f"⚠️  Logging-System konnte nicht initialisiert werden: {e}")
+        
+        # Monitoring-System initialisieren
+        try:
+            init_monitoring(app)
+            print("✅ Monitoring-System erfolgreich initialisiert")
+        except Exception as e:
+            print(f"⚠️  Monitoring-System konnte nicht initialisiert werden: {e}")
 
     return app
