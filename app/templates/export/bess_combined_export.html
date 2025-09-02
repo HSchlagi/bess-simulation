@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BESS Kombinierter Export – BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-green-400">
+                <i class="fas fa-layer-group mr-3"></i>BESS Kombinierter Export
+            </h1>
+            <div class="flex space-x-4">
+                <a href="{{ url_for('export.export_center') }}" class="text-green-400 hover:underline">
+                    <i class="fas fa-arrow-left mr-2"></i>Export-Zentrum
+                </a>
+                <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="text-blue-400 hover:underline">
+                    <i class="fas fa-calculator mr-2"></i>BESS-Simulation
+                </a>
+            </div>
+        </div>
+
+        <!-- Projektauswahl -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-indigo-400">
+                <i class="fas fa-project-diagram mr-2"></i>Projekt für kombinierten Export auswählen
+            </h2>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-2">Projekt auswählen:</label>
+                <select id="projectSelect" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Projekt auswählen...</option>
+                </select>
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="loadProjectData()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-2 rounded-md transition">
+                    <i class="fas fa-search mr-2"></i>Projektdaten laden
+                </button>
+                <button onclick="generateCombinedReport()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-md transition" disabled id="generateBtn">
+                    <i class="fas fa-file-alt mr-2"></i>Kombinierten Bericht generieren
+                </button>
+            </div>
+        </div>
+
+        <!-- Export-Optionen -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Simulation Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-calculator text-indigo-400 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold">Simulation & Use Cases</h3>
+                </div>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Use Case Analysen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        10-Jahres-Prognose
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Wirtschaftlichkeitsmetriken
+                    </div>
+                </div>
+                <button onclick="exportSimulation()" class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md transition" disabled id="simulationBtn">
+                    <i class="fas fa-download mr-2"></i>Simulation exportieren
+                </button>
+            </div>
+
+            <!-- Dashboard Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-tachometer-alt text-emerald-400 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold">Enhanced Dashboard</h3>
+                </div>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Real-Time Kennzahlen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        BESS-Modus Analysen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Interaktive Charts
+                    </div>
+                </div>
+                <button onclick="exportDashboard()" class="w-full bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-md transition" disabled id="dashboardBtn">
+                    <i class="fas fa-download mr-2"></i>Dashboard exportieren
+                </button>
+            </div>
+
+            <!-- Kombinierter Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-layer-group text-rose-400 text-2xl mr-3"></i>
+                    <h3 class="text-lg font-semibold">Kombinierter Export</h3>
+                </div>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Alle Analysen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Vollständiger Bericht
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Kundenpräsentation
+                    </div>
+                </div>
+                <button onclick="exportCombined()" class="w-full bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-md transition" disabled id="combinedBtn">
+                    <i class="fas fa-file-alt mr-2"></i>Alles exportieren
+                </button>
+            </div>
+        </div>
+
+        <!-- Projektdetails -->
+        <div id="projectDetails" class="hidden bg-gray-800 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold mb-4 text-green-400">
+                <i class="fas fa-info-circle mr-2"></i>Projektdetails
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <span class="text-sm text-gray-400">Projektname:</span>
+                    <div class="font-medium text-white" id="projectName">-</div>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-400">Standort:</span>
+                    <div class="font-medium text-white" id="projectLocation">-</div>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-400">BESS-Größe:</span>
+                    <div class="font-medium text-white" id="projectBessSize">-</div>
+                </div>
+                <div>
+                    <span class="text-sm text-gray-400">BESS-Leistung:</span>
+                    <div class="font-medium text-white" id="projectBessPower">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export-Status -->
+        <div id="exportStatus" class="hidden bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4 text-yellow-400">
+                <i class="fas fa-spinner fa-spin mr-2"></i>Export läuft...
+            </h3>
+            <div class="space-y-2">
+                <div class="flex items-center">
+                    <i class="fas fa-check text-green-400 mr-2" id="simulationStatus"></i>
+                    <span>Simulation & Use Cases</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-check text-green-400 mr-2" id="dashboardStatus"></i>
+                    <span>Enhanced Dashboard</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-check text-green-400 mr-2" id="combinedStatus"></i>
+                    <span>Kombinierter Bericht</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download-Bereich -->
+        <div id="downloadArea" class="hidden bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4 text-green-400">
+                <i class="fas fa-download mr-2"></i>Downloads verfügbar
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-file-pdf text-red-400 text-3xl mb-2"></i>
+                    <div class="font-semibold mb-2">Simulation PDF</div>
+                    <button onclick="downloadSimulationPDF()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-md transition">
+                        <i class="fas fa-download mr-2"></i>Herunterladen
+                    </button>
+                </div>
+                <div class="bg-gray-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-file-excel text-green-400 text-3xl mb-2"></i>
+                    <div class="font-semibold mb-2">Dashboard Excel</div>
+                    <button onclick="downloadDashboardExcel()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md transition">
+                        <i class="fas fa-download mr-2"></i>Herunterladen
+                    </button>
+                </div>
+                <div class="bg-gray-700 rounded-lg p-4 text-center">
+                    <i class="fas fa-file-archive text-purple-400 text-3xl mb-2"></i>
+                    <div class="font-semibold mb-2">Kombinierter Export</div>
+                    <button onclick="downloadCombined()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md transition">
+                        <i class="fas fa-download mr-2"></i>Herunterladen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedProject = null;
+
+        // Lade Projekte beim Seitenstart
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProjects();
+        });
+
+        // Lade alle verfügbaren Projekte
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                const projects = await response.json();
+                
+                const projectSelect = document.getElementById('projectSelect');
+                projectSelect.innerHTML = '<option value="">Projekt auswählen...</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    projectSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Fehler beim Laden der Projekte:', error);
+            }
+        }
+
+        // Projektdaten laden
+        async function loadProjectData() {
+            const projectId = document.getElementById('projectSelect').value;
+            
+            if (!projectId) {
+                alert('Bitte wählen Sie ein Projekt aus.');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/projects/${projectId}`);
+                const project = await response.json();
+                
+                selectedProject = project;
+                
+                // Projektdetails anzeigen
+                document.getElementById('projectName').textContent = project.name;
+                document.getElementById('projectLocation').textContent = project.location || '-';
+                document.getElementById('projectBessSize').textContent = project.bess_size ? `${project.bess_size} MWh` : '-';
+                document.getElementById('projectBessPower').textContent = project.bess_power ? `${project.bess_power} MW` : '-';
+                
+                // Projektdetails anzeigen
+                document.getElementById('projectDetails').classList.remove('hidden');
+                
+                // Buttons aktivieren
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('simulationBtn').disabled = false;
+                document.getElementById('dashboardBtn').disabled = false;
+                document.getElementById('combinedBtn').disabled = false;
+                
+            } catch (error) {
+                console.error('Fehler beim Laden der Projektdetails:', error);
+                alert('Fehler beim Laden der Projektdetails. Bitte versuchen Sie es erneut.');
+            }
+        }
+
+        // Simulation exportieren
+        function exportSimulation() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('📊 Exportiere Simulation für Projekt:', selectedProject.id);
+            
+            // Status aktualisieren
+            document.getElementById('simulationStatus').className = 'fas fa-check text-green-400 mr-2';
+            document.getElementById('exportStatus').classList.remove('hidden');
+            
+            // Echten Export aufrufen
+            downloadSimulationPDF();
+        }
+
+        // Dashboard exportieren
+        function exportDashboard() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('📈 Exportiere Dashboard für Projekt:', selectedProject.id);
+            
+            // Status aktualisieren
+            document.getElementById('dashboardStatus').className = 'fas fa-check text-green-400 mr-2';
+            document.getElementById('exportStatus').classList.remove('hidden');
+            
+            // Echten Export aufrufen
+            downloadDashboardExcel();
+        }
+
+        // Kombinierten Export starten
+        function exportCombined() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('🚀 Starte kombinierten Export für Projekt:', selectedProject.id);
+            
+            // Status aktualisieren
+            document.getElementById('combinedStatus').className = 'fas fa-check text-green-400 mr-2';
+            document.getElementById('exportStatus').classList.remove('hidden');
+            
+            // Echten kombinierten Export aufrufen
+            downloadCombined();
+            
+            // Download-Bereich nach kurzer Verzögerung anzeigen
+            setTimeout(() => {
+                document.getElementById('exportStatus').classList.add('hidden');
+                document.getElementById('downloadArea').classList.remove('hidden');
+            }, 1000);
+        }
+
+        // Kombinierten Bericht generieren
+        function generateCombinedReport() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('Generiere kombinierten Bericht für Projekt:', selectedProject.id);
+            
+            // Export-Status anzeigen
+            document.getElementById('exportStatus').classList.remove('hidden');
+            
+            // Alle Exports durchführen
+            setTimeout(() => {
+                exportSimulation();
+                setTimeout(() => {
+                    exportDashboard();
+                    setTimeout(() => {
+                        exportCombined();
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        }
+
+        // Download-Funktionen
+        function downloadSimulationPDF() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('🚀 downloadSimulationPDF aufgerufen für Projekt:', selectedProject.id);
+            
+            // Lade-Animation anzeigen
+            showLoadingMessage('Simulation PDF wird heruntergeladen....');
+            
+            // Erstelle Demo-Simulationsdaten für Export-Center
+            const simulationData = {
+                use_cases: {
+                    'UC1': {
+                        name: 'Verbrauch ohne Eigenerzeugung',
+                        annual_consumption: 8760,
+                        annual_costs: 350000,
+                        bess_savings: 45000,
+                        roi_percent: 12.8
+                    },
+                    'UC2': {
+                        name: 'Verbrauch + PV (1,95 MWp)',
+                        annual_consumption: 8760,
+                        annual_generation: 2100,
+                        annual_costs: 280000,
+                        bess_savings: 62000,
+                        roi_percent: 17.6
+                    },
+                    'UC3': {
+                        name: 'Verbrauch + PV + Wasserkraft',
+                        annual_consumption: 8760,
+                        annual_generation: 7800,
+                        annual_costs: 180000,
+                        bess_savings: 85000,
+                        roi_percent: 24.2
+                    }
+                },
+                ten_year_analysis: {
+                    year_1: { revenue: 85000, costs: 15000, net_cashflow: 70000 },
+                    year_5: { revenue: 92000, costs: 18000, net_cashflow: 74000 },
+                    year_10: { revenue: 98000, costs: 22000, net_cashflow: 76000 }
+                },
+                economic_metrics: {
+                    total_investment: selectedProject.investment_costs || 1200000,
+                    npv: 850000,
+                    payback_years: 6.8,
+                    irr_percent: 18.5
+                },
+                project_info: {
+                    id: selectedProject.id,
+                    name: selectedProject.name
+                },
+                simulation_parameters: {
+                    bess_size: selectedProject.bess_size || 0,
+                    bess_power: selectedProject.bess_power || 0
+                }
+            };
+            
+            // Sende Request an Backend
+            fetch('/api/export/pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: selectedProject.id,
+                    simulation_data: simulationData,
+                    export_type: 'simulation'
+                })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.blob();
+                }
+                throw new Error('PDF-Generierung fehlgeschlagen');
+            })
+            .then(blob => {
+                // PDF herunterladen
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `BESS_Simulation_${selectedProject.id}_${new Date().toISOString().slice(0,10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                hideLoadingMessage();
+                showSuccessMessage('Simulation PDF erfolgreich heruntergeladen!');
+            })
+            .catch(error => {
+                console.error('Fehler beim PDF-Download:', error);
+                hideLoadingMessage();
+                alert(`Fehler beim PDF-Download: ${error.message}`);
+            });
+        }
+
+        function downloadDashboardExcel() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('📊 downloadDashboardExcel aufgerufen für Projekt:', selectedProject.id);
+            
+            // Erstelle Demo-Dashboard-Daten für Export-Center
+            const dashboardData = {
+                project: selectedProject.name,
+                useCase: 'UC3 - Verbrauch + PV + Wasserkraft',
+                bessMode: 'Automatisch',
+                optimizationTarget: 'Kosten',
+                spotPriceScenario: 'Mittel',
+                eigenverbrauchsquote: '85.5',
+                co2Savings: '1.234',
+                nettoErloes: '85.000',
+                bessEfficiency: '92.3',
+                spotRevenue: '45.000',
+                regelreserveRevenue: '25.000',
+                timestamp: new Date().toISOString()
+            };
+            
+            // Excel-Export (vereinfacht)
+            const csvData = convertToCSV(dashboardData);
+            downloadFile(csvData, `BESS_Dashboard_${selectedProject.id}_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv');
+            
+            showSuccessMessage('Dashboard Excel erfolgreich heruntergeladen!');
+        }
+
+        function downloadCombined() {
+            if (!selectedProject) {
+                alert('Bitte laden Sie zuerst Projektdaten.');
+                return;
+            }
+            
+            console.log('🚀 downloadCombined aufgerufen für Projekt:', selectedProject.id);
+            
+            // Lade-Animation anzeigen
+            showLoadingMessage('Kombinierter Export wird heruntergeladen....');
+            
+            // Erstelle Demo-Simulationsdaten für Export-Center
+            const simulationData = {
+                use_cases: {
+                    'UC1': {
+                        name: 'Verbrauch ohne Eigenerzeugung',
+                        annual_consumption: 8760,
+                        annual_costs: 350000,
+                        bess_savings: 45000,
+                        roi_percent: 12.8
+                    },
+                    'UC2': {
+                        name: 'Verbrauch + PV (1,95 MWp)',
+                        annual_consumption: 8760,
+                        annual_generation: 2100,
+                        annual_costs: 280000,
+                        bess_savings: 62000,
+                        roi_percent: 17.6
+                    },
+                    'UC3': {
+                        name: 'Verbrauch + PV + Wasserkraft',
+                        annual_consumption: 8760,
+                        annual_generation: 7800,
+                        annual_costs: 180000,
+                        bess_savings: 85000,
+                        roi_percent: 24.2
+                    }
+                },
+                ten_year_analysis: {
+                    year_1: { revenue: 85000, costs: 15000, net_cashflow: 70000 },
+                    year_5: { revenue: 92000, costs: 18000, net_cashflow: 74000 },
+                    year_10: { revenue: 98000, costs: 22000, net_cashflow: 76000 }
+                },
+                economic_metrics: {
+                    total_investment: selectedProject.investment_costs || 1200000,
+                    npv: 850000,
+                    payback_years: 6.8,
+                    irr_percent: 18.5
+                },
+                project_info: {
+                    id: selectedProject.id,
+                    name: selectedProject.name
+                },
+                simulation_parameters: {
+                    bess_size: selectedProject.bess_size || 0,
+                    bess_power: selectedProject.bess_power || 0
+                }
+            };
+            
+            // Erstelle Demo-Dashboard-Daten für Export-Center
+            const dashboardData = {
+                project: selectedProject.name,
+                useCase: 'UC3 - Verbrauch + PV + Wasserkraft',
+                bessMode: 'Automatisch',
+                optimizationTarget: 'Kosten',
+                spotPriceScenario: 'Mittel',
+                eigenverbrauchsquote: '85.5',
+                co2Savings: '1.234',
+                nettoErloes: '85.000',
+                bessEfficiency: '92.3',
+                spotRevenue: '45.000',
+                regelreserveRevenue: '25.000',
+                timestamp: new Date().toISOString()
+            };
+            
+            // Sende kombinierten Export-Request an Backend
+            fetch('/api/export/pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: selectedProject.id,
+                    simulation_data: simulationData,
+                    dashboard_data: dashboardData,
+                    export_type: 'combined'
+                })
+            })
+            .then(response => {
+                console.log('📡 Backend-Response erhalten:', response.status, response.statusText);
+                
+                if (response.ok) {
+                    return response.blob();
+                }
+                
+                return response.json().then(errorData => {
+                    throw new Error(errorData.error || 'PDF-Generierung fehlgeschlagen');
+                });
+            })
+            .then(blob => {
+                console.log('📄 PDF-Blob erhalten:', blob.size, 'Bytes');
+                
+                // PDF herunterladen
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `BESS_Kombiniert_${selectedProject.id}_${new Date().toISOString().slice(0,10)}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                hideLoadingMessage();
+                showSuccessMessage('Kombinierter Export erfolgreich heruntergeladen!');
+                console.log('✅ Kombinierter Export erfolgreich heruntergeladen!');
+            })
+            .catch(error => {
+                console.error('❌ Fehler beim kombinierten Export:', error);
+                hideLoadingMessage();
+                alert(`Fehler beim kombinierten Export: ${error.message}`);
+            });
+        }
+        
+        // Hilfsfunktionen für CSV-Konvertierung und Download
+        function convertToCSV(data) {
+            const headers = Object.keys(data);
+            const values = Object.values(data);
+            
+            return headers.join(',') + '\n' + values.join(',');
+        }
+        
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+        
+        // Lade-Animation Funktionen
+        function showLoadingMessage(message) {
+            // Erstelle Loading-Overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            overlay.innerHTML = `
+                <div class="bg-white rounded-lg p-6 text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-700">${message}</p>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        function hideLoadingMessage() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+        
+        function showSuccessMessage(message) {
+            // Erstelle Success-Message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            messageDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    ${message}
+                </div>
+            `;
+            document.body.appendChild(messageDiv);
+            
+            // Nach 5 Sekunden entfernen
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

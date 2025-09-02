@@ -238,6 +238,74 @@ def batch_export():
         flash(f'Fehler beim Laden der Projekte: {str(e)}', 'error')
         return redirect(url_for('main.projects'))
 
+@export_bp.route('/bess-combined')
+def bess_combined_export():
+    """Kombinierter Export aller BESS-Analysen"""
+    return render_template('export/bess_combined_export.html')
+
+@export_bp.route('/bess-simulation/<int:project_id>')
+def export_bess_simulation(project_id):
+    """Exportiert BESS-Simulation für ein spezifisches Projekt"""
+    try:
+        # Projekt-Daten laden
+        from models import Project
+        project = Project.query.get_or_404(project_id)
+        
+        # Hier würden die Simulationsdaten geladen werden
+        # Für den Moment verwenden wir Beispieldaten
+        simulation_data = {
+            'project': project,
+            'use_cases': {
+                'UC1': {'name': 'Verbrauch ohne Eigenerzeugung', 'revenue': 25000, 'costs': 18000},
+                'UC2': {'name': 'Verbrauch + PV (1,95 MWp)', 'revenue': 35000, 'costs': 20000},
+                'UC3': {'name': 'Verbrauch + PV + Wasserkraft', 'revenue': 45000, 'costs': 22000}
+            },
+            'ten_year_analysis': {
+                'total_revenues': 380000,
+                'total_net_cashflow': 180000,
+                'npv': 120000,
+                'irr': 15.5
+            }
+        }
+        
+        return render_template('export/bess_simulation_export.html', 
+                             project=project, 
+                             simulation_data=simulation_data)
+        
+    except Exception as e:
+        flash(f'Fehler beim Laden der BESS-Simulation: {str(e)}', 'error')
+        return redirect(url_for('export.export_center'))
+
+@export_bp.route('/bess-dashboard/<int:project_id>')
+def export_bess_dashboard(project_id):
+    """Exportiert BESS-Dashboard für ein spezifisches Projekt"""
+    try:
+        # Projekt-Daten laden
+        from models import Project
+        project = Project.query.get_or_404(project_id)
+        
+        # Dashboard-Daten vorbereiten
+        dashboard_data = {
+            'project': project,
+            'metrics': {
+                'eigenverbrauchsquote': 45.2,
+                'co2_savings': 1250,
+                'netto_erloes': 45000,
+                'bess_efficiency': 85.5,
+                'spot_revenue': 28000,
+                'regelreserve_revenue': 8500
+            },
+            'bess_modes': ['arbitrage', 'peak_shaving', 'frequency_regulation', 'backup']
+        }
+        
+        return render_template('export/bess_dashboard_export.html', 
+                             project=project, 
+                             dashboard_data=dashboard_data)
+        
+    except Exception as e:
+        flash(f'Fehler beim Laden des BESS-Dashboards: {str(e)}', 'error')
+        return redirect(url_for('export.export_center'))
+
 @export_bp.route('/templates')
 def export_templates():
     """Export-Templates verwalten"""

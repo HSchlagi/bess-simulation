@@ -102,21 +102,47 @@ class SupabaseMultiUser:
     def get_project_by_id(self, project_id: str, user_id: str) -> Optional[Dict]:
         """Holt ein spezifisches Projekt eines Benutzers"""
         if self.demo_mode:
-            if project_id == 'demo-project-1':
-                return {
-                    'id': 'demo-project-1',
-                    'name': 'Demo BESS Projekt',
-                    'description': 'Ein Beispiel-BESS-Projekt für Demonstrationszwecke',
-                    'bess_capacity_kwh': 1000.0,
-                    'bess_power_kw': 500.0,
-                    'solar_capacity_kw': 200.0,
-                    'hydro_capacity_kw': 0.0,
-                    'investment_cost_per_kwh': 0.25,
-                    'electricity_cost_per_kwh': 0.12,
-                    'created_at': '2024-01-15T10:00:00Z',
-                    'updated_at': '2024-01-15T10:00:00Z'
-                }
-            return None
+            # Im Demo-Modus alle Projekte aus der lokalen Datenbank laden
+            try:
+                from models import Project
+                from app import db
+                
+                # Versuche das Projekt aus der lokalen Datenbank zu laden
+                project = Project.query.get(project_id)
+                if project:
+                    return {
+                        'id': project.id,
+                        'name': project.name,
+                        'description': project.location or '',
+                        'bess_size': project.bess_size or 0,
+                        'bess_power': project.bess_power or 0,
+                        'pv_power': project.pv_power or 0,
+                        'hydro_power': project.hydro_power or 0,
+                        'current_electricity_cost': project.current_electricity_cost or 0,
+                        'location': project.location or '',
+                        'created_at': project.created_at.isoformat() if project.created_at else '',
+                        'updated_at': project.created_at.isoformat() if project.created_at else ''
+                    }
+                
+                # Fallback auf Demo-Projekt
+                if project_id == 'demo-project-1':
+                    return {
+                        'id': 'demo-project-1',
+                        'name': 'Demo BESS Projekt',
+                        'description': 'Ein Beispiel-BESS-Projekt für Demonstrationszwecke',
+                        'bess_size': 1000.0,
+                        'bess_power': 500.0,
+                        'pv_power': 200.0,
+                        'hydro_power': 0.0,
+                        'current_electricity_cost': 0.12,
+                        'location': 'Demo Standort',
+                        'created_at': '2024-01-15T10:00:00Z',
+                        'updated_at': '2024-01-15T10:00:00Z'
+                    }
+                return None
+            except Exception as e:
+                print(f"Fehler beim Laden des Projekts aus lokaler DB: {e}")
+                return None
         
         try:
             response = self.supabase.table('projects').select('*').eq('id', project_id).eq('user_id', user_id).execute()
@@ -149,8 +175,39 @@ class SupabaseMultiUser:
     def update_project(self, project_id: str, user_id: str, project_data: Dict) -> Tuple[bool, str]:
         """Aktualisiert ein bestehendes Projekt"""
         if self.demo_mode:
-            print(f"Demo: Projekt {project_id} aktualisiert")
-            return True, "Projekt erfolgreich aktualisiert (Demo-Modus)"
+            # Im Demo-Modus lokale Datenbank aktualisieren
+            try:
+                from models import Project
+                from app import db
+                
+                project = Project.query.get(project_id)
+                if project:
+                    # Aktualisiere die Projektfelder
+                    if 'name' in project_data:
+                        project.name = project_data['name']
+                    if 'bess_size' in project_data:
+                        project.bess_size = project_data['bess_size']
+                    if 'bess_power' in project_data:
+                        project.bess_power = project_data['bess_power']
+                    if 'pv_power' in project_data:
+                        project.pv_power = project_data['pv_power']
+                    if 'hydro_power' in project_data:
+                        project.hydro_power = project_data['hydro_power']
+                    if 'current_electricity_cost' in project_data:
+                        project.current_electricity_cost = project_data['current_electricity_cost']
+                    
+                    # Location aus description setzen
+                    if 'description' in project_data:
+                        project.location = project_data['description']
+                    
+                    db.session.commit()
+                    print(f"Demo: Projekt {project_id} in lokaler DB aktualisiert")
+                    return True, "Projekt erfolgreich aktualisiert"
+                else:
+                    return False, "Projekt nicht gefunden"
+            except Exception as e:
+                print(f"Fehler beim Aktualisieren des Projekts in lokaler DB: {e}")
+                return False, f"Fehler beim Aktualisieren des Projekts: {e}"
         
         try:
             project_data['updated_at'] = datetime.now().isoformat()

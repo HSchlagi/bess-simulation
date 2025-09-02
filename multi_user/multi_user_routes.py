@@ -113,12 +113,12 @@ def edit_project(project_id):
             project_data = {
                 'name': request.form.get('name', ''),
                 'description': request.form.get('description', ''),
-                'bess_capacity_kwh': float(request.form.get('bess_capacity_kwh', 0)),
-                'bess_power_kw': float(request.form.get('bess_power_kw', 0)),
-                'solar_capacity_kw': float(request.form.get('solar_capacity_kw', 0)),
-                'hydro_capacity_kw': float(request.form.get('hydro_capacity_kw', 0)),
+                'bess_size': float(request.form.get('bess_capacity_kwh', 0)),
+                'bess_power': float(request.form.get('bess_power_kw', 0)),
+                'pv_power': float(request.form.get('solar_capacity_kw', 0)),
+                'hydro_power': float(request.form.get('hydro_capacity_kw', 0)),
                 'investment_cost_per_kwh': float(request.form.get('investment_cost_per_kwh', 0)),
-                'electricity_cost_per_kwh': float(request.form.get('electricity_cost_per_kwh', 0))
+                'current_electricity_cost': float(request.form.get('electricity_cost_per_kwh', 0))
             }
             
             success, message = supabase_multi.update_project(project_id, user_id, project_data)

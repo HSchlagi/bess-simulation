@@ -372,9 +372,9 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BESS Kapazität</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Solar</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hydro</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BESS KAPAZITÄT</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SOLAR</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HYDRO</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
                         </tr>
                     </thead>
@@ -386,13 +386,13 @@
                                 <div class="text-sm text-gray-500">{{ project.description[:50] }}{% if project.description|length > 50 %}...{% endif %}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ project.bess_capacity_kwh|default(0, true) }} kWh
+                                {{ project.bess_size|default(0, true) }} kWh
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ project.solar_capacity_kw|default(0, true) }} kW
+                                {{ project.pv_power|default(0, true) }} kW
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ project.hydro_capacity_kw|default(0, true) }} kW
+                                {{ project.hydro_power|default(0, true) }} kW
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <a href="{{ url_for('multi_user.view_project', project_id=project.id) }}" class="text-blue-600 hover:text-blue-900 mr-3">Anzeigen</a>

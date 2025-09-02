@@ -186,9 +186,102 @@
                         Support
                     </div>
                 </div>
-                                            <a href="{{ url_for('export.export_help') }}" class="inline-block bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-md transition">
-                                <i class="fas fa-book mr-2"></i>Hilfe öffnen
-                            </a>
+                <a href="{{ url_for('export.export_help') }}" class="inline-block bg-cyan-600 hover:bg-cyan-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-book mr-2"></i>Hilfe öffnen
+                </a>
+            </div>
+        </div>
+
+        <!-- BESS-Erweiterte Analysen Export -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- BESS Simulation & Use Cases Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-calculator text-indigo-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">BESS Simulation</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Erweiterte Simulationsergebnisse mit Use Cases und 10-Jahres-Analyse exportieren.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Use Case Analysen (UC1, UC2, UC3)
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        10-Jahres-Prognose
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Batterie-Degradation
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Wirtschaftlichkeitsmetriken
+                    </div>
+                </div>
+                <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-rocket mr-2"></i>Simulation starten
+                </a>
+            </div>
+
+            <!-- BESS Enhanced Dashboard Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-tachometer-alt text-emerald-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Enhanced Dashboard</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Dashboard-Kennzahlen und Charts für verschiedene BESS-Modi exportieren.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Real-Time Kennzahlen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        BESS-Modus Analysen
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        CO₂-Bilanz & Effizienz
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Interaktive Charts
+                    </div>
+                </div>
+                <a href="{{ url_for('main.bess_simulation_enhanced') }}#dashboard" class="inline-block bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-chart-line mr-2"></i>Dashboard öffnen
+                </a>
+            </div>
+
+            <!-- BESS Kombinierter Export -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-layer-group text-rose-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Kombinierter Export</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Alle BESS-Analysen in einem umfassenden Bericht zusammenfassen.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Simulation + Dashboard
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Alle Use Cases
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Vollständige Dokumentation
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Kundenpräsentation
+                    </div>
+                </div>
+                <a href="{{ url_for('export.bess_combined_export') }}" class="inline-block bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-file-alt mr-2"></i>Bericht generieren
+                </a>
             </div>
         </div>
 
@@ -215,6 +308,27 @@
                     <span>Batch Export: <span class="text-green-400">Verfügbar</span></span>
                 </div>
             </div>
+            
+            <!-- BESS Export Status -->
+            <div class="mt-6 pt-6 border-t border-gray-700">
+                <h4 class="text-md font-semibold mb-3 text-indigo-400">
+                    <i class="fas fa-battery-three-quarters mr-2"></i>BESS-Export Status
+                </h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-calculator text-indigo-400 mr-2"></i>
+                        <span>BESS Simulation: <span class="text-green-400">Verfügbar</span></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-tachometer-alt text-emerald-400 mr-2"></i>
+                        <span>Enhanced Dashboard: <span class="text-green-400">Verfügbar</span></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-layer-group text-rose-400 mr-2"></i>
+                        <span>Kombinierter Export: <span class="text-green-400">Verfügbar</span></span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Schnellzugriff -->
@@ -222,7 +336,7 @@
             <h3 class="text-lg font-semibold mb-4 text-green-400">
                 <i class="fas fa-bolt mr-2"></i>Schnellzugriff
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <a href="{{ url_for('main.projects') }}" class="bg-green-600 hover:bg-green-700 p-4 rounded-lg text-center transition">
                     <div class="text-2xl mb-2">📊</div>
                     <div class="font-semibold">Projekte</div>
@@ -237,6 +351,11 @@
                     <div class="text-2xl mb-2">💰</div>
                     <div class="font-semibold">Wirtschaftlichkeit</div>
                     <div class="text-sm text-gray-300">Analysen exportieren</div>
+                </a>
+                <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="bg-indigo-600 hover:bg-indigo-700 p-4 rounded-lg text-center transition">
+                    <div class="text-2xl mb-2">🔋</div>
+                    <div class="font-semibold">BESS-Analysen</div>
+                    <div class="text-sm text-gray-300">Simulation & Dashboard</div>
                 </a>
             </div>
         </div>

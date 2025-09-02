@@ -195,6 +195,29 @@
                     <canvas id="revenueComponentsChart" width="400" height="300"></canvas>
                 </div>
             </div>
+            
+            <!-- Export-Buttons für Simulation -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Export & Druck</h3>
+                <div class="flex flex-wrap gap-4 justify-center">
+                    <button onclick="printSimulationResults()" 
+                            class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-print mr-2"></i>Simulation drucken
+                    </button>
+                    <button onclick="exportSimulationToPDF()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <i class="fas fa-file-pdf mr-2"></i>Als PDF exportieren
+                    </button>
+                    <button onclick="exportSimulationToExcel()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <i class="fas fa-file-excel mr-2"></i>Als Excel exportieren
+                    </button>
+                    <button onclick="exportSimulationToWord()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-file-word mr-2"></i>Als Word exportieren
+                    </button>
+                </div>
+            </div>
 
             <!-- 10-Jahres-Analyse -->
             <div id="tenYearAnalysis" class="hidden">
@@ -376,6 +399,29 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Erlösaufschlüsselung</h3>
                 <canvas id="dashboardRevenueChart" width="800" height="300"></canvas>
             </div>
+            
+            <!-- Export-Buttons für Dashboard -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-8">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Export & Druck</h3>
+                <div class="flex flex-wrap gap-4 justify-center">
+                    <button onclick="printDashboard()" 
+                            class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-print mr-2"></i>Dashboard drucken
+                    </button>
+                    <button onclick="exportDashboardToPDF()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <i class="fas fa-file-pdf mr-2"></i>Als PDF exportieren
+                    </button>
+                    <button onclick="exportDashboardToExcel()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        <i class="fas fa-file-excel mr-2"></i>Als Excel exportieren
+                    </button>
+                    <button onclick="exportDashboardToWord()" 
+                            class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <i class="fas fa-file-word mr-2"></i>Als Word exportieren
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -545,6 +591,25 @@ async function runSimulation() {
         });
         
         const results = await response.json();
+        
+        // Speichere Ergebnisse für Export
+        window.currentSimulationResults = {
+            use_cases: {
+                [selectedUseCase]: results
+            },
+            ten_year_analysis: {},
+            economic_metrics: {
+                annual_consumption: results.annual_consumption,
+                annual_generation: results.annual_generation,
+                annual_revenues: results.annual_revenues,
+                annual_costs: results.annual_costs,
+                roi_percent: results.roi_percent,
+                payback_years: results.payback_years,
+                total_investment: results.total_investment,
+                net_cashflow: results.net_cashflow
+            }
+        };
+        
         displayResults(results);
         
     } catch (error) {
@@ -593,6 +658,18 @@ async function run10YearAnalysis() {
         }
         
         console.log('10-Jahres-Analyse Ergebnisse:', results);
+        
+        // Speichere 10-Jahres-Analyse für Export
+        if (window.currentSimulationResults) {
+            window.currentSimulationResults.ten_year_analysis = results;
+        } else {
+            window.currentSimulationResults = {
+                use_cases: {},
+                ten_year_analysis: results,
+                economic_metrics: {}
+            };
+        }
+        
         display10YearAnalysis(results);
         
     } catch (error) {
@@ -1254,6 +1331,25 @@ async function runDashboardSimulation() {
             spot_price_scenario: spotPriceScenario
         };
         
+        // Speichere Dashboard-Ergebnisse für Export
+        window.currentDashboardResults = {
+            project_id: projectId,
+            use_case: useCase,
+            bess_mode: bessMode,
+            optimization_target: optimizationTarget,
+            spot_price_scenario: spotPriceScenario,
+            simulation_results: simulationResults,
+            ten_year_analysis: analysisResults,
+            dashboard_metrics: {
+                eigenverbrauchsquote: combinedResults.eigenverbrauchsquote,
+                co2_savings: combinedResults.co2_savings,
+                netto_erloes: combinedResults.netto_erloes,
+                bess_efficiency: combinedResults.bess_efficiency,
+                spot_revenue: combinedResults.spot_revenue,
+                regelreserve_revenue: combinedResults.regelreserve_revenue
+            }
+        };
+        
         updateEnhancedDashboard(combinedResults, project);
         
         // Animation für bessere UX
@@ -1768,6 +1864,634 @@ function initializeChartsAndData() {
     } catch (error) {
         console.error('❌ Fehler bei der Chart-Initialisierung:', error);
     }
+}
+
+// ========================================
+// EXPORT & DRUCK FUNKTIONEN
+// ========================================
+
+// Simulation & Use Cases Export-Funktionen
+function printSimulationResults() {
+    const content = generateSimulationPrintContent();
+    printContent(content);
+}
+
+function exportSimulationToPDF() {
+    const content = generateSimulationPDFContent();
+    exportToPDF(content, 'BESS-Simulation-Use-Cases.pdf');
+}
+
+function exportSimulationToExcel() {
+    const data = collectSimulationData();
+    exportToExcel(data, 'BESS-Simulation-Use-Cases.xlsx');
+}
+
+function exportSimulationToWord() {
+    const content = generateSimulationWordContent();
+    exportToWord(content, 'BESS-Simulation-Use-Cases.docx');
+}
+
+// Enhanced Dashboard Export-Funktionen
+function printDashboard() {
+    const printContent = generateDashboardPrintContent();
+    printContent(printContent);
+}
+
+function exportDashboardToPDF() {
+    const content = generateDashboardPDFContent();
+    exportToPDF(content, 'BESS-Enhanced-Dashboard.pdf');
+}
+
+function exportDashboardToExcel() {
+    const data = collectDashboardData();
+    exportToExcel(data, 'BESS-Enhanced-Dashboard.xlsx');
+}
+
+function exportDashboardToWord() {
+    const content = generateDashboardWordContent();
+    exportToWord(content, 'BESS-Enhanced-Dashboard.docx');
+}
+
+// ========================================
+// INHALT GENERIEREN
+// ========================================
+
+function generateSimulationPrintContent() {
+    const projectName = document.getElementById('projectSelect')?.value || 'Ausgewähltes Projekt';
+    const useCase = document.getElementById('useCaseSelect')?.value || 'Ausgewählter Use Case';
+    
+    let content = `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1f2937; text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+                BESS-Simulation: ${projectName}
+            </h1>
+            <h2 style="color: #374151; margin-top: 30px;">Use Case: ${useCase}</h2>
+            
+            <div style="margin-top: 20px;">
+                <h3 style="color: #4b5563;">Jahresbilanz</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <tr style="background-color: #f3f4f6;">
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Metrik</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">Wert</th>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Verbrauch (MWh/a)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('annualConsumption')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Erzeugung (MWh/a)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('annualGeneration')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Erlöse (EUR/a)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('annualRevenues')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Kosten (EUR/a)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('annualCosts')?.textContent || '-'}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3 style="color: #4b5563;">Wirtschaftlichkeitsmetriken</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <tr style="background-color: #f3f4f6;">
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Metrik</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">Wert</th>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">ROI (%)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('roiPercent')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Amortisation (Jahre)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('paybackYears')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Investition (EUR)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('totalInvestment')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Net Cashflow (EUR/a)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('netCashflow')?.textContent || '-'}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+                <p>Generiert am ${new Date().toLocaleDateString('de-DE')} um ${new Date().toLocaleTimeString('de-DE')}</p>
+                <p>BESS-Simulation Erweitert - Projektbasierte Analyse mit Use Cases</p>
+            </div>
+        </div>
+    `;
+    
+    return content;
+}
+
+function generateDashboardPrintContent() {
+    const projectName = document.getElementById('dashboardProjectSelect')?.value || 'Ausgewähltes Projekt';
+    const useCase = document.getElementById('dashboardUseCase')?.value || 'Ausgewählter Use Case';
+    const bessMode = document.getElementById('dashboardBessMode')?.value || 'Ausgewählter BESS-Modus';
+    
+    let content = `
+        <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1f2937; text-align: center; border-bottom: 2px solid #3b82f6; padding-bottom: 10px;">
+                BESS Enhanced Dashboard: ${projectName}
+            </h1>
+            <h2 style="color: #374151; margin-top: 30px;">Konfiguration</h2>
+            <p><strong>Use Case:</strong> ${useCase}</p>
+            <p><strong>BESS-Modus:</strong> ${bessMode}</p>
+            
+            <div style="margin-top: 20px;">
+                <h3 style="color: #4b5563;">Kennzahlen</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <tr style="background-color: #f3f4f6;">
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: left;">Metrik</th>
+                        <th style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">Wert</th>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Eigenverbrauchsquote (%)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('dashboardEigenverbrauchsquote')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">CO₂-Einsparung (kg/Jahr)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('dashboardCo2Savings')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Netto-Erlös (EUR/Jahr)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('dashboardNettoErloes')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">BESS-Effizienz (%)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('dashboardBessEfficiency')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Spot-Revenue (EUR/Jahr)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('dashboardSpotRevenue')?.textContent || '-'}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid #d1d5db; padding: 8px;">Regelreserve (EUR/Jahr)</td>
+                        <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${document.getElementById('dashboardRegelreserveRevenue')?.textContent || '-'}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center; color: #6b7280; font-size: 12px;">
+                <p>Generiert am ${new Date().toLocaleDateString('de-DE')} um ${new Date().toLocaleTimeString('de-DE')}</p>
+                <p>BESS Enhanced Dashboard - Projektbasierte Analyse</p>
+            </div>
+        </div>
+    `;
+    
+    return content;
+}
+
+function generateSimulationPDFContent() {
+    return generateSimulationPrintContent();
+}
+
+function generateDashboardPDFContent() {
+    return generateDashboardPrintContent();
+}
+
+function generateSimulationWordContent() {
+    return generateSimulationPrintContent();
+}
+
+function generateDashboardWordContent() {
+    return generateDashboardPrintContent();
+}
+
+// ========================================
+// DATEN SAMMELN
+// ========================================
+
+// Diese Funktion wurde durch eine erweiterte Version ersetzt (siehe unten)
+
+function collectDashboardData() {
+    console.log('🔍 collectDashboardData aufgerufen');
+    console.log('🔍 window.currentDashboardResults:', window.currentDashboardResults);
+    
+    // Verwende gespeicherte Dashboard-Ergebnisse falls verfügbar
+    if (window.currentDashboardResults) {
+        console.log('✅ Verwende gespeicherte Dashboard-Ergebnisse');
+        const data = {
+            project: window.currentDashboardResults.project_id || 'Ausgewähltes Projekt',
+            useCase: window.currentDashboardResults.use_case || 'Ausgewählter Use Case',
+            bessMode: window.currentDashboardResults.bess_mode || 'Ausgewählter BESS-Modus',
+            optimizationTarget: window.currentDashboardResults.optimization_target || 'Ausgewähltes Ziel',
+            spotPriceScenario: window.currentDashboardResults.spot_price_scenario || 'Ausgewähltes Szenario',
+            eigenverbrauchsquote: window.currentDashboardResults.dashboard_metrics?.eigenverbrauchsquote?.toFixed(1) || '-',
+            co2Savings: window.currentDashboardResults.dashboard_metrics?.co2_savings?.toLocaleString() || '-',
+            nettoErloes: window.currentDashboardResults.dashboard_metrics?.netto_erloes?.toLocaleString() || '-',
+            bessEfficiency: window.currentDashboardResults.dashboard_metrics?.bess_efficiency?.toFixed(1) || '-',
+            spotRevenue: window.currentDashboardResults.dashboard_metrics?.spot_revenue?.toLocaleString() || '-',
+            regelreserveRevenue: window.currentDashboardResults.dashboard_metrics?.regelreserve_revenue?.toLocaleString() || '-',
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log('📊 Gesammelte Dashboard-Daten:', data);
+        
+        // Überprüfe ob Dashboard-Daten verfügbar sind
+        const hasDashboardData = data.eigenverbrauchsquote !== '-' || data.co2Savings !== '-' || data.nettoErloes !== '-';
+        console.log('🔍 Dashboard-Daten verfügbar:', hasDashboardData);
+        
+        if (hasDashboardData) {
+            console.log('✅ Dashboard-Daten erfolgreich gesammelt');
+            return data;
+        }
+    } else {
+        console.log('⚠️ Keine gespeicherten Dashboard-Ergebnisse gefunden');
+    }
+    
+    // Fallback auf DOM-Elemente
+    console.log('🔄 Verwende Fallback auf DOM-Elemente');
+    const fallbackData = {
+        project: document.getElementById('dashboardProjectSelect')?.value || 'Ausgewähltes Projekt',
+        useCase: document.getElementById('dashboardProjectSelect')?.value || 'Ausgewählter Use Case',
+        bessMode: document.getElementById('dashboardBessMode')?.value || 'Ausgewählter BESS-Modus',
+        optimizationTarget: document.getElementById('dashboardOptimizationTarget')?.value || 'Ausgewähltes Ziel',
+        spotPriceScenario: document.getElementById('dashboardSpotPriceScenario')?.value || 'Ausgewähltes Szenario',
+        eigenverbrauchsquote: document.getElementById('dashboardEigenverbrauchsquote')?.textContent || '-',
+        co2Savings: document.getElementById('dashboardCo2Savings')?.textContent || '-',
+        nettoErloes: document.getElementById('dashboardNettoErloes')?.textContent || '-',
+        bessEfficiency: document.getElementById('dashboardBessEfficiency')?.textContent || '-',
+        spotRevenue: document.getElementById('dashboardSpotRevenue')?.textContent || '-',
+        regelreserveRevenue: document.getElementById('dashboardRegelreserveRevenue')?.textContent || '-',
+        timestamp: new Date().toISOString()
+    };
+    
+    console.log('📊 Fallback-Daten:', fallbackData);
+    
+    // Überprüfe ob Fallback-Daten verfügbar sind
+    const hasFallbackData = fallbackData.eigenverbrauchsquote !== '-' || fallbackData.co2Savings !== '-' || fallbackData.nettoErloes !== '-';
+    console.log('🔍 Fallback-Daten verfügbar:', hasFallbackData);
+    
+    if (!hasFallbackData) {
+        console.warn('❌ Keine Dashboard-Daten verfügbar (weder gespeichert noch im DOM)');
+        return null;
+    }
+    
+    console.log('✅ Dashboard-Daten erfolgreich gesammelt (Fallback)');
+    return fallbackData;
+}
+
+// ========================================
+// EXPORT FUNKTIONEN
+// ========================================
+
+function printContent(content) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>BESS-Simulation - Druck</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    h1, h2, h3 { color: #333; }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.print();
+}
+
+function exportToPDF(content, filename) {
+    try {
+        // Lade aktuelle Projektdaten
+        const projectId = getCurrentProjectId();
+        if (!projectId) {
+            alert('Bitte wählen Sie zuerst ein Projekt aus.');
+            return;
+        }
+        
+        // Zeige Lade-Animation
+        showLoadingMessage('PDF wird generiert...');
+        
+        // PDF über API generieren
+        generatePDF(projectId);
+        
+    } catch (error) {
+        console.error('Fehler beim PDF-Export:', error);
+        alert('Fehler beim PDF-Export. Bitte versuchen Sie es erneut.');
+    }
+}
+
+function exportToExcel(data, filename) {
+    // Für echte Excel-Export würde man eine Bibliothek wie SheetJS verwenden
+    // Hier verwenden wir einen einfachen CSV-Export
+    const csvContent = convertToCSV(data);
+    downloadFile(csvContent, filename.replace('.xlsx', '.csv'), 'text/csv');
+}
+
+function exportToWord(data, filename) {
+    // Für echte Word-Export würde man eine Bibliothek wie docx verwenden
+    // Hier verwenden wir einen einfachen HTML-Export
+    const htmlContent = convertToHTML(data);
+    downloadFile(htmlContent, filename.replace('.docx', '.html'), 'text/html');
+}
+
+function convertToCSV(data) {
+    if (typeof data === 'object') {
+        const rows = [];
+        const headers = Object.keys(data);
+        rows.push(headers.join(','));
+        
+        const values = Object.values(data);
+        rows.push(values.join(','));
+        
+        return rows.join('\n');
+    }
+    return data;
+}
+
+function convertToHTML(data) {
+    if (typeof data === 'object') {
+        let html = '<html><head><title>BESS-Simulation Export</title></head><body>';
+        html += '<h1>BESS-Simulation Export</h1>';
+        html += '<table border="1" style="border-collapse: collapse; width: 100%;">';
+        html += '<tr><th>Feld</th><th>Wert</th></tr>';
+        
+        for (const [key, value] of Object.entries(data)) {
+            html += `<tr><td>${key}</td><td>${value}</td></tr>`;
+        }
+        
+        html += '</table></body></html>';
+        return html;
+    }
+    return data;
+}
+
+function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// PDF-Export Hilfsfunktionen
+function generatePDF(projectId) {
+    console.log('🚀 generatePDF aufgerufen mit Projekt-ID:', projectId);
+    
+    // Lade-Animation anzeigen
+    showLoadingMessage('Simulation PDF wird heruntergeladen....');
+    
+    try {
+        // Sammle alle Simulationsdaten
+        console.log('📊 Sammle Simulationsdaten...');
+        const simulationData = collectSimulationData();
+        console.log('📊 Simulationsdaten gesammelt:', simulationData);
+        
+        console.log('📊 Sammle Dashboard-Daten...');
+        const dashboardData = collectDashboardData();
+        console.log('📊 Dashboard-Daten gesammelt:', dashboardData);
+        
+        console.log('🔍 Simulationsdaten verfügbar:', !!simulationData);
+        console.log('🔍 Dashboard-Daten verfügbar:', !!dashboardData);
+        
+        // Überprüfe ob Daten verfügbar sind
+        if (!simulationData) {
+            hideLoadingMessage();
+            alert('Keine Simulationsdaten für den Export verfügbar. Bitte führen Sie zuerst eine Simulation durch.');
+            return;
+        }
+        
+        if (!dashboardData) {
+            hideLoadingMessage();
+            alert('Keine Dashboard-Daten für den Export verfügbar. Bitte führen Sie zuerst eine Dashboard-Simulation durch.');
+            return;
+        }
+        
+        // Überprüfe ob Server erreichbar ist
+        console.log('🌐 Sende PDF-Export-Request an Backend...');
+        
+        const requestData = {
+            project_id: projectId,
+            simulation_data: simulationData,
+            dashboard_data: dashboardData,
+            export_type: 'combined'
+        };
+        
+        console.log('📤 Sende Daten:', JSON.stringify(requestData, null, 2));
+        
+        // Sende Daten an Backend für PDF-Generierung
+        fetch('/api/export/pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData)
+        })
+        .then(response => {
+            console.log('📡 Backend-Response erhalten:', response.status, response.statusText);
+            console.log('📡 Response Headers:', Object.fromEntries(response.headers.entries()));
+            
+            if (response.ok) {
+                console.log('✅ PDF erfolgreich generiert, lade herunter...');
+                return response.blob();
+            }
+            
+            console.error('❌ Backend-Fehler:', response.status, response.statusText);
+            // Versuche JSON-Fehler zu lesen
+            return response.json().then(errorData => {
+                throw new Error(errorData.error || 'PDF-Generierung fehlgeschlagen');
+            });
+        })
+        .then(blob => {
+            console.log('📄 PDF-Blob erhalten:', blob.size, 'Bytes, Typ:', blob.type);
+            
+            if (!blob || blob.size === 0) {
+                throw new Error('PDF ist leer oder fehlerhaft');
+            }
+            
+            // PDF herunterladen
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `BESS_Simulation_${projectId}_${new Date().toISOString().slice(0,10)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            hideLoadingMessage();
+            showSuccessMessage('PDF erfolgreich heruntergeladen!');
+            console.log('✅ PDF erfolgreich heruntergeladen!');
+        })
+        .catch(error => {
+            console.error('❌ Fehler beim PDF-Download:', error);
+            hideLoadingMessage();
+            alert(`Fehler beim PDF-Download: ${error.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es erneut.`);
+        });
+        
+    } catch (error) {
+        console.error('❌ Fehler in generatePDF:', error);
+        hideLoadingMessage();
+        alert(`Fehler beim PDF-Export: ${error.message || 'Unbekannter Fehler'}. Bitte versuchen Sie es erneut.`);
+    }
+}
+
+function collectSimulationData() {
+    console.log('🔍 collectSimulationData aufgerufen');
+    console.log('🔍 window.currentSimulationResults:', window.currentSimulationResults);
+    
+    // Sammle alle verfügbaren Simulationsdaten
+    const data = {
+        use_cases: {},
+        ten_year_analysis: {},
+        economic_metrics: {},
+        project_info: {}
+    };
+    
+    // Use Cases sammeln (falls verfügbar)
+    if (window.currentSimulationResults) {
+        console.log('✅ Verwende gespeicherte Simulationsergebnisse');
+        data.use_cases = window.currentSimulationResults.use_cases || {};
+        data.ten_year_analysis = window.currentSimulationResults.ten_year_analysis || {};
+        data.economic_metrics = window.currentSimulationResults.economic_metrics || {};
+        
+        console.log('📊 Gesammelte Daten:', {
+            use_cases: Object.keys(data.use_cases),
+            ten_year_analysis: Object.keys(data.ten_year_analysis),
+            economic_metrics: Object.keys(data.economic_metrics)
+        });
+    } else {
+        console.log('⚠️ Keine gespeicherten Simulationsergebnisse gefunden');
+    }
+    
+    // Überprüfe ob mindestens ein Use Case oder 10-Jahres-Analyse verfügbar ist
+    const hasSimulationData = Object.keys(data.use_cases).length > 0 || 
+                              Object.keys(data.ten_year_analysis).length > 0 ||
+                              Object.keys(data.economic_metrics).length > 0;
+    
+    console.log('🔍 Simulationsdaten verfügbar:', hasSimulationData);
+    
+    if (!hasSimulationData) {
+        console.warn('❌ Keine Simulationsdaten verfügbar');
+        return null;
+    }
+    
+    // Projekt-Informationen sammeln
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect && projectSelect.value) {
+        data.project_info = {
+            id: projectSelect.value,
+            name: projectSelect.options[projectSelect.selectedIndex]?.text || 'Unbekanntes Projekt'
+        };
+        console.log('📋 Projekt-Info gesammelt:', data.project_info);
+    } else {
+        console.log('⚠️ Kein Projekt ausgewählt');
+    }
+    
+    // Aktuelle Simulationsparameter sammeln
+    data.simulation_parameters = {
+        bess_size: parseFloat(document.getElementById('bessSize')?.value) || 0,
+        bess_power: parseFloat(document.getElementById('bessPower')?.value) || 0,
+        simulation_year: document.getElementById('simulationYear')?.value || new Date().getFullYear()
+    };
+    
+    console.log('⚙️ Simulationsparameter gesammelt:', data.simulation_parameters);
+    console.log('✅ Simulationsdaten erfolgreich gesammelt:', data);
+    
+    return data;
+}
+
+function getCurrentProjectId() {
+    console.log('🔍 getCurrentProjectId aufgerufen');
+    
+    // Versuche Projekt-ID aus verschiedenen Quellen zu bekommen
+    if (window.currentProjectId) {
+        console.log('✅ Projekt-ID aus window.currentProjectId:', window.currentProjectId);
+        return window.currentProjectId;
+    }
+    
+    // Aus Projekt-Select
+    const projectSelect = document.getElementById('projectSelect');
+    if (projectSelect && projectSelect.value) {
+        console.log('✅ Projekt-ID aus projectSelect:', projectSelect.value);
+        return projectSelect.value;
+    }
+    
+    // Aus Dashboard-Projekt-Select
+    const dashboardProjectSelect = document.getElementById('dashboardProjectSelect');
+    if (dashboardProjectSelect && dashboardProjectSelect.value) {
+        console.log('✅ Projekt-ID aus dashboardProjectSelect:', dashboardProjectSelect.value);
+        return dashboardProjectSelect.value;
+    }
+    
+    // Aus gespeicherten Ergebnissen
+    if (window.currentSimulationResults && window.currentSimulationResults.project_info) {
+        console.log('✅ Projekt-ID aus currentSimulationResults:', window.currentSimulationResults.project_info.id);
+        return window.currentSimulationResults.project_info.id;
+    }
+    
+    if (window.currentDashboardResults && window.currentDashboardResults.project_id) {
+        console.log('✅ Projekt-ID aus currentDashboardResults:', window.currentDashboardResults.project_id);
+        return window.currentDashboardResults.project_id;
+    }
+    
+    // Aus URL extrahieren
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlProjectId = urlParams.get('project_id');
+    if (urlProjectId) {
+        console.log('✅ Projekt-ID aus URL:', urlProjectId);
+        return urlProjectId;
+    }
+    
+    // Fallback auf Projekt 1
+    console.log('⚠️ Keine Projekt-ID gefunden, verwende Fallback: 1');
+    return '1';
+}
+
+function showLoadingMessage(message) {
+    // Lade-Animation anzeigen
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loadingOverlay';
+    loadingDiv.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+            <div style="background: white; padding: 20px; border-radius: 10px; text-align: center;">
+                <div class="fas fa-spinner fa-spin" style="font-size: 24px; color: #3b82f6; margin-bottom: 10px;"></div>
+                <div style="color: #374151;">${message}</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(loadingDiv);
+}
+
+function hideLoadingMessage() {
+    const loadingDiv = document.getElementById('loadingOverlay');
+    if (loadingDiv) {
+        loadingDiv.remove();
+    }
+}
+
+function showSuccessMessage(message) {
+    // Erfolgsmeldung anzeigen
+    const successDiv = document.createElement('div');
+    successDiv.innerHTML = `
+        <div style="position: fixed; top: 20px; right: 20px; background: #10b981; color: white; padding: 15px; border-radius: 8px; z-index: 10000; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <i class="fas fa-check mr-2"></i>${message}
+        </div>
+    `;
+    document.body.appendChild(successDiv);
+    
+    // Nach 3 Sekunden ausblenden
+    setTimeout(() => {
+        successDiv.remove();
+    }, 3000);
 }
 </script>
 {% endblock %} 

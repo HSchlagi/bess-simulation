@@ -43,9 +43,9 @@
                                         <p>{{ project.description or 'Keine Beschreibung' }}</p>
                                     </div>
                                     <div class="mt-2 flex items-center text-xs text-gray-500 space-x-4">
-                                        <span>BESS: {{ project.bess_capacity_kwh|default(0, true) }} kWh</span>
-                                        <span>Solar: {{ project.solar_capacity_kw|default(0, true) }} kW</span>
-                                        <span>Hydro: {{ project.hydro_capacity_kw|default(0, true) }} kW</span>
+                                        <span>BESS: {{ project.bess_size|default(0, true) }} kWh</span>
+                                        <span>Solar: {{ project.pv_power|default(0, true) }} kW</span>
+                                        <span>Hydro: {{ project.hydro_power|default(0, true) }} kW</span>
                                     </div>
                                 </div>
                             </div>
