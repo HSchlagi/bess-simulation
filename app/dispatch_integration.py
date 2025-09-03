@@ -293,12 +293,40 @@ class BESSDispatchIntegration:
         """Einfache Simulation falls Dispatch-Tool nicht verfügbar"""
         print("⚠️  Verwende einfache Simulation (Dispatch-Tool nicht verfügbar)")
         
-        hours = 8760 if time_resolution_minutes == 60 else 8760 * 4
+        # Generiere realistische Demo-Daten für 24 Stunden
+        hours = 24
+        
+        # Generiere realistische SoC-Daten (Start bei 50%, schwankt zwischen 20-80%)
+        soc_data = []
+        for i in range(hours):
+            # Realistische SoC-Kurve mit Tagesrhythmus
+            base_soc = 50 + 15 * np.sin(2 * np.pi * i / 24) + 5 * np.sin(2 * np.pi * i / 6)
+            soc_data.append({
+                'hour': i,
+                'soc': max(20, min(80, base_soc)),
+                'dispatch': np.random.choice([-1, 0, 1]) * np.random.random() * 0.5
+            })
+        
+        # Generiere realistische Cashflow-Daten
+        settlement_data = []
+        for i in range(hours):
+            # Höhere Preise tagsüber (6-18 Uhr)
+            time_multiplier = 1.5 if 6 <= i <= 18 else 0.8
+            base_price = 50 + 30 * time_multiplier
+            
+            revenue = base_price * np.random.random() * 2
+            cost = base_price * np.random.random() * 0.8
+            
+            settlement_data.append({
+                'hour': i,
+                'revenue': round(revenue, 2),
+                'cost': round(cost, 2)
+            })
         
         results = {
             'baseline': {
-                'simulation': [{'hour': i, 'soc': 50 + 10 * np.sin(i/24), 'dispatch': 0} for i in range(min(hours, 100))],
-                'settlement': [{'hour': i, 'revenue': 100 * np.random.random(), 'cost': 50 * np.random.random()} for i in range(min(hours, 100))],
+                'simulation': soc_data,
+                'settlement': settlement_data,
                 'parameters': self.get_project_parameters(project_id)
             },
             'metadata': {
@@ -322,9 +350,32 @@ class BESSDispatchIntegration:
         
         base_results = self._run_simple_simulation(project_id, time_resolution_minutes, year)
         
+        # Generiere leicht modifizierte Redispatch-Daten
+        redispatch_simulation = []
+        redispatch_settlement = []
+        
+        for i, item in enumerate(base_results['baseline']['simulation']):
+            # Redispatch beeinflusst den SoC
+            redispatch_soc = item['soc'] + np.random.choice([-5, 0, 5]) * np.random.random()
+            redispatch_soc = max(20, min(80, redispatch_soc))
+            
+            redispatch_simulation.append({
+                'hour': i,
+                'soc': redispatch_soc,
+                'dispatch': item['dispatch'] + np.random.random() * 0.3
+            })
+        
+        for i, item in enumerate(base_results['baseline']['settlement']):
+            # Redispatch erhöht die Kosten leicht
+            redispatch_settlement.append({
+                'hour': i,
+                'revenue': item['revenue'] * 1.1,  # 10% mehr Einnahmen
+                'cost': item['cost'] * 1.2   # 20% mehr Kosten
+            })
+        
         base_results['redispatch'] = {
-            'simulation': base_results['baseline']['simulation'],
-            'settlement': base_results['baseline']['settlement'],
+            'simulation': redispatch_simulation,
+            'settlement': redispatch_settlement,
             'redispatch_calls': redispatch_data
         }
         
