@@ -1,0 +1,681 @@
+{% extends "base.html" %}
+
+{% block title %}BESS Dispatch & Redispatch - BESS Simulation{% endblock %}
+
+{% block head %}
+<style>
+    .dispatch-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .redispatch-card {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .chart-container {
+        position: relative;
+        height: 400px;
+        width: 100%;
+    }
+</style>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Alpine.js -->
+<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen">
+    <!-- Page Header -->
+    <div class="bg-white shadow-sm border-b mb-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">🚀 BESS Dispatch & Redispatch</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="text-blue-600 hover:text-blue-800">← Zurück zum Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Status-Bar -->
+            <div class="mb-6">
+                <div id="dispatchStatus" class="bg-white rounded-lg shadow-sm p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div id="statusIndicator" class="w-3 h-3 rounded-full bg-gray-300"></div>
+                            <span id="statusText" class="text-sm font-medium text-gray-700">Prüfe Dispatch-Status...</span>
+                        </div>
+                        <button onclick="checkDispatchStatus()" class="text-blue-600 hover:text-blue-800 text-sm">
+                            Status aktualisieren
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispatch-Simulation -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- Dispatch-Parameter -->
+                <div class="dispatch-card rounded-lg shadow-lg p-6 text-white">
+                    <h2 class="text-xl font-semibold mb-4">📊 Dispatch-Parameter</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Projekt auswählen</label>
+                            <select id="projectSelect" class="w-full px-3 py-2 rounded-md text-gray-900">
+                                <option value="">Projekt wählen...</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Dispatch-Modus</label>
+                            <select id="dispatchMode" class="w-full px-3 py-2 rounded-md text-gray-900">
+                                <option value="arbitrage">Arbitrage</option>
+                                <option value="peak_shaving">Peak Shaving</option>
+                                <option value="frequency_regulation">Frequenzregelung</option>
+                                <option value="backup">Backup</option>
+                            </select>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Zeitauflösung</label>
+                                <select id="timeResolution" class="w-full px-3 py-2 rounded-md text-gray-900">
+                                    <option value="60">1 Stunde</option>
+                                    <option value="15" selected>15 Minuten</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Land</label>
+                                <select id="country" class="w-full px-3 py-2 rounded-md text-gray-900">
+                                    <option value="DE">Deutschland</option>
+                                    <option value="AT" selected>Österreich</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Simulationsjahr</label>
+                            <select id="simulationYear" class="w-full px-3 py-2 rounded-md text-gray-900">
+                                <option value="2024" selected>2024</option>
+                                <option value="2023">2023</option>
+                                <option value="2025">2025</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button onclick="runDispatchSimulation()" 
+                            class="w-full mt-6 bg-white text-blue-600 font-medium py-3 px-4 rounded-md hover:bg-gray-100 transition-colors">
+                        🚀 Dispatch-Simulation starten
+                    </button>
+                </div>
+
+                <!-- Redispatch-Parameter -->
+                <div class="redispatch-card rounded-lg shadow-lg p-6 text-white">
+                    <h2 class="text-xl font-semibold mb-4">🔄 Redispatch-Parameter</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Redispatch-CSV hochladen</label>
+                            <input type="file" id="redispatchCsv" accept=".csv" 
+                                   class="w-full px-3 py-2 rounded-md text-gray-900 bg-white">
+                            <p class="text-xs mt-1 opacity-80">Format: start, duration_slots, power_mw, mode, compensation_eur_mwh, reason</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Oder manuell eingeben:</label>
+                            <div id="manualRedispatchInputs" class="space-y-2">
+                                <div class="flex space-x-2">
+                                    <input type="datetime-local" id="startTime1" class="flex-1 px-2 py-1 rounded text-gray-900 text-sm">
+                                    <input type="number" id="duration1" placeholder="Slots" class="w-20 px-2 py-1 rounded text-gray-900 text-sm">
+                                    <input type="number" id="power1" placeholder="MW" class="w-20 px-2 py-1 rounded text-gray-900 text-sm">
+                                    <select id="mode1" class="w-24 px-2 py-1 rounded text-gray-900 text-sm">
+                                        <option value="delta">Delta</option>
+                                        <option value="absolute">Absolut</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button onclick="addRedispatchInput()" class="text-sm text-white underline mt-1">
+                                + Weitere Zeile hinzufügen
+                            </button>
+                        </div>
+                        
+                        <button onclick="runRedispatchSimulation()" 
+                                class="w-full mt-6 bg-white text-pink-600 font-medium py-3 px-4 rounded-md hover:bg-gray-100 transition-colors">
+                            🔄 Redispatch-Simulation starten
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ergebnisse -->
+            <div id="dispatchResults" class="hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">📈 Dispatch-Ergebnisse</h3>
+                    
+                    <!-- KPIs -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-blue-600" id="totalRevenue">-</div>
+                            <div class="text-sm text-blue-800">Gesamt-Erlös (EUR)</div>
+                        </div>
+                        <div class="bg-red-50 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-red-600" id="totalCost">-</div>
+                            <div class="text-sm text-red-800">Gesamt-Kosten (EUR)</div>
+                        </div>
+                        <div class="bg-green-50 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-green-600" id="netCashflow">-</div>
+                            <div class="text-sm text-green-800">Netto-Cashflow (EUR)</div>
+                        </div>
+                        <div class="bg-purple-50 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-purple-600" id="totalHours">-</div>
+                            <div class="text-sm text-purple-800">Simulierte Stunden</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Charts -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-lg font-medium text-gray-800 mb-3">SoC-Verlauf</h4>
+                            <div class="chart-container">
+                                <canvas id="socChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 class="text-lg font-medium text-gray-800 mb-3">Kumulierter Cashflow</h4>
+                            <div class="chart-container">
+                                <canvas id="cashflowChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Redispatch-Ergebnisse (falls vorhanden) -->
+                    <div id="redispatchResults" class="hidden mt-6">
+                        <h4 class="text-lg font-medium text-gray-800 mb-3">🔄 Redispatch-Ergebnisse</h4>
+                        <div class="bg-pink-50 rounded-lg p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <div class="text-lg font-semibold text-pink-600" id="redispatchRevenue">-</div>
+                                    <div class="text-sm text-pink-800">Redispatch-Erlös</div>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-semibold text-pink-600" id="redispatchCompensation">-</div>
+                                    <div class="text-sm text-pink-800">Kompensation</div>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-semibold text-pink-600" id="redispatchCalls">-</div>
+                                    <div class="text-sm text-pink-800">Anzahl Calls</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispatch-Historie -->
+            <div id="dispatchHistory" class="hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">📚 Dispatch-Historie</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Datum</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modus</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Auflösung</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Erlös</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kosten</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cashflow</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Wird dynamisch gefüllt -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Globale Variablen
+        let currentProjectId = null;
+        let dispatchCharts = {};
+        
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            checkDispatchStatus();
+            loadProjects();
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            // Projekt-Auswahl
+            document.getElementById('projectSelect').addEventListener('change', function() {
+                currentProjectId = this.value;
+                if (currentProjectId) {
+                    loadDispatchHistory(currentProjectId);
+                }
+            });
+        }
+        
+        function checkDispatchStatus() {
+            fetch('/api/dispatch/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusIndicator = document.getElementById('statusIndicator');
+                    const statusText = document.getElementById('statusText');
+                    
+                    if (data.dispatch_available) {
+                        statusIndicator.className = 'w-3 h-3 rounded-full bg-green-500';
+                        statusText.textContent = 'Dispatch-Integration verfügbar';
+                    } else {
+                        statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                        statusText.textContent = 'Dispatch-Integration nicht verfügbar';
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Prüfen des Dispatch-Status:', error);
+                    const statusIndicator = document.getElementById('statusIndicator');
+                    const statusText = document.getElementById('statusText');
+                    statusIndicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                    statusText.textContent = 'Fehler beim Prüfen des Status';
+                });
+        }
+        
+        function loadProjects() {
+            fetch('/api/projects')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.projects) {
+                        const select = document.getElementById('projectSelect');
+                        select.innerHTML = '<option value="">Projekt wählen...</option>';
+                        
+                        data.projects.forEach(project => {
+                            const option = document.createElement('option');
+                            option.value = project.id;
+                            option.textContent = project.name;
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Projekte:', error);
+                });
+        }
+        
+        function runDispatchSimulation() {
+            if (!currentProjectId) {
+                alert('Bitte wählen Sie zuerst ein Projekt aus.');
+                return;
+            }
+            
+            const dispatchMode = document.getElementById('dispatchMode').value;
+            const timeResolution = document.getElementById('timeResolution').value;
+            const country = document.getElementById('country').value;
+            const year = document.getElementById('simulationYear').value;
+            
+            const simulationData = {
+                project_id: currentProjectId,
+                dispatch_mode: dispatchMode,
+                time_resolution_minutes: parseInt(timeResolution),
+                country: country,
+                year: parseInt(year)
+            };
+            
+            // Loading-Zustand
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '🔄 Simulation läuft...';
+            button.disabled = true;
+            
+            fetch('/api/dispatch/run', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(simulationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayDispatchResults(data.dispatch_results);
+                    loadDispatchHistory(currentProjectId);
+                } else {
+                    alert('Fehler bei der Dispatch-Simulation: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Dispatch-Simulation');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+        
+        function runRedispatchSimulation() {
+            if (!currentProjectId) {
+                alert('Bitte wählen Sie zuerst ein Projekt aus.');
+                return;
+            }
+            
+            const timeResolution = document.getElementById('timeResolution').value;
+            const country = document.getElementById('country').value;
+            const year = document.getElementById('simulationYear').value;
+            
+            // Redispatch-Calls sammeln
+            const redispatchCalls = collectRedispatchCalls();
+            
+            if (redispatchCalls.length === 0) {
+                alert('Bitte geben Sie Redispatch-Calls ein oder laden Sie eine CSV-Datei hoch.');
+                return;
+            }
+            
+            const simulationData = {
+                project_id: currentProjectId,
+                time_resolution_minutes: parseInt(timeResolution),
+                country: country,
+                year: parseInt(year),
+                redispatch_calls: redispatchCalls
+            };
+            
+            // Loading-Zustand
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '🔄 Redispatch läuft...';
+            button.disabled = true;
+            
+            fetch('/api/dispatch/redispatch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(simulationData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayDispatchResults(data.redispatch_results, true);
+                    loadDispatchHistory(currentProjectId);
+                } else {
+                    alert('Fehler bei der Redispatch-Simulation: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler:', error);
+                alert('Fehler bei der Redispatch-Simulation');
+            })
+            .finally(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+            });
+        }
+        
+        function collectRedispatchCalls() {
+            const calls = [];
+            const inputs = document.querySelectorAll('#manualRedispatchInputs > div');
+            
+            inputs.forEach(input => {
+                const startTime = input.querySelector('input[type="datetime-local"]').value;
+                const duration = input.querySelector('input[placeholder="Slots"]').value;
+                const power = input.querySelector('input[placeholder="MW"]').value;
+                const mode = input.querySelector('select').value;
+                
+                if (startTime && duration && power) {
+                    calls.push({
+                        start: startTime,
+                        duration_slots: parseInt(duration),
+                        power_mw: parseFloat(power),
+                        mode: mode,
+                        compensation_eur_mwh: 0,
+                        reason: 'Manueller Eintrag'
+                    });
+                }
+            });
+            
+            return calls;
+        }
+        
+        function addRedispatchInput() {
+            const container = document.getElementById('manualRedispatchInputs');
+            const newInput = document.createElement('div');
+            newInput.className = 'flex space-x-2';
+            newInput.innerHTML = `
+                <input type="datetime-local" class="flex-1 px-2 py-1 rounded text-gray-900 text-sm">
+                <input type="number" placeholder="Slots" class="w-20 px-2 py-1 rounded text-gray-900 text-sm">
+                <input type="number" placeholder="MW" class="w-20 px-2 py-1 rounded text-gray-900 text-sm">
+                <select class="w-24 px-2 py-1 rounded text-gray-900 text-sm">
+                    <option value="delta">Delta</option>
+                    <option value="absolute">Absolut</option>
+                </select>
+                <button onclick="removeRedispatchInput(this)" class="text-red-500 hover:text-red-700">×</button>
+            `;
+            container.appendChild(newInput);
+        }
+        
+        function removeRedispatchInput(button) {
+            button.parentElement.remove();
+        }
+        
+        function displayDispatchResults(results, isRedispatch = false) {
+            // Ergebnisse anzeigen
+            document.getElementById('dispatchResults').classList.remove('hidden');
+            
+            // KPIs aktualisieren
+            if (results.baseline && results.baseline.settlement) {
+                const settlement = results.baseline.settlement;
+                let totalRevenue = 0;
+                let totalCost = 0;
+                
+                settlement.forEach(row => {
+                    totalRevenue += row.Einnahmen_[EUR] || row.revenue_eur || 0;
+                    totalCost += row.Kosten_[EUR] || row.cost_eur || 0;
+                });
+                
+                const netCashflow = totalRevenue - totalCost;
+                
+                document.getElementById('totalRevenue').textContent = totalRevenue.toFixed(2);
+                document.getElementById('totalCost').textContent = totalCost.toFixed(2);
+                document.getElementById('netCashflow').textContent = netCashflow.toFixed(2);
+                document.getElementById('totalHours').textContent = settlement.length;
+            }
+            
+            // Charts erstellen
+            createCharts(results);
+            
+            // Redispatch-Ergebnisse anzeigen falls vorhanden
+            if (isRedispatch && results.redispatch) {
+                document.getElementById('redispatchResults').classList.remove('hidden');
+                
+                // Redispatch-KPIs berechnen
+                const redispatchData = results.redispatch;
+                if (redispatchData.report) {
+                    let redispatchRevenue = 0;
+                    let redispatchCompensation = 0;
+                    
+                    redispatchData.report.forEach(row => {
+                        redispatchRevenue += row.Einnahmen_[EUR] || 0;
+                        redispatchCompensation += row.Compensation_[EUR] || 0;
+                    });
+                    
+                    document.getElementById('redispatchRevenue').textContent = redispatchRevenue.toFixed(2);
+                    document.getElementById('redispatchCompensation').textContent = redispatchCompensation.toFixed(2);
+                    document.getElementById('redispatchCalls').textContent = redispatchData.calls ? redispatchData.calls.length : 0;
+                }
+            } else {
+                document.getElementById('redispatchResults').classList.add('hidden');
+            }
+        }
+        
+        function createCharts(results) {
+            // SoC-Chart
+            if (results.baseline && results.baseline.simulation) {
+                const socData = results.baseline.simulation;
+                const labels = socData.map((_, index) => `Stunde ${index + 1}`);
+                const socValues = socData.map(row => row.SoC_[%] || row.soc_percent || 0);
+                
+                createChart('socChart', 'SoC-Verlauf [%]', labels, socValues, 'line', 'rgba(59, 130, 246, 0.8)');
+            }
+            
+            // Cashflow-Chart
+            if (results.baseline && results.baseline.settlement) {
+                const settlementData = results.baseline.settlement;
+                const labels = settlementData.map((_, index) => `Stunde ${index + 1}`);
+                const cashflowValues = settlementData.map(row => row.Cashflow_[EUR] || row.cashflow_eur || 0);
+                
+                // Kumulierten Cashflow berechnen
+                let cumulative = 0;
+                const cumulativeValues = cashflowValues.map(value => {
+                    cumulative += value;
+                    return cumulative;
+                });
+                
+                createChart('cashflowChart', 'Kumulierter Cashflow [EUR]', labels, cumulativeValues, 'line', 'rgba(34, 197, 94, 0.8)');
+            }
+        }
+        
+        function createChart(canvasId, label, labels, data, type, color) {
+            const ctx = document.getElementById(canvasId);
+            
+            // Bestehenden Chart zerstören falls vorhanden
+            if (dispatchCharts[canvasId]) {
+                dispatchCharts[canvasId].destroy();
+            }
+            
+            dispatchCharts[canvasId] = new Chart(ctx, {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color.replace('0.8', '0.1'),
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function loadDispatchHistory(projectId) {
+            fetch(`/api/dispatch/history/${projectId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.dispatch_history) {
+                        displayDispatchHistory(data.dispatch_history);
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Dispatch-Historie:', error);
+                });
+        }
+        
+        function displayDispatchHistory(history) {
+            if (history.length === 0) {
+                document.getElementById('dispatchHistory').classList.add('hidden');
+                return;
+            }
+            
+            document.getElementById('dispatchHistory').classList.remove('hidden');
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '';
+            
+            history.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(item.created_at)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.dispatch_mode}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.time_resolution_minutes} min</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.total_revenue.toFixed(2)} EUR</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.total_cost.toFixed(2)} EUR</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${item.net_cashflow >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${item.net_cashflow.toFixed(2)} EUR
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('de-DE', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // CSV-Upload verarbeiten
+        document.getElementById('redispatchCsv').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const csv = e.target.result;
+                    const lines = csv.split('\n');
+                    const headers = lines[0].split(',');
+                    
+                    // CSV-Daten in manuelle Eingabefelder übertragen
+                    const container = document.getElementById('manualRedispatchInputs');
+                    container.innerHTML = '';
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        if (lines[i].trim()) {
+                            const values = lines[i].split(',');
+                            const newInput = document.createElement('div');
+                            newInput.className = 'flex space-x-2';
+                            newInput.innerHTML = `
+                                <input type="text" value="${values[0] || ''}" class="flex-1 px-2 py-1 rounded text-gray-900 text-sm" placeholder="Start-Zeit">
+                                <input type="number" value="${values[1] || ''}" placeholder="Slots" class="w-20 px-2 py-1 rounded text-gray-900 text-sm">
+                                <input type="number" value="${values[2] || ''}" placeholder="MW" class="w-20 px-2 py-1 rounded text-gray-900 text-sm">
+                                <select class="w-24 px-2 py-1 rounded text-gray-900 text-sm">
+                                    <option value="delta" ${values[3] === 'delta' ? 'selected' : ''}>Delta</option>
+                                    <option value="absolute" ${values[3] === 'absolute' ? 'selected' : ''}>Absolut</option>
+                                </select>
+                                <button onclick="removeRedispatchInput(this)" class="text-red-500 hover:text-red-700">×</button>
+                            `;
+                            container.appendChild(newInput);
+                        }
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+    </script>
+</div>
+{% endblock %}

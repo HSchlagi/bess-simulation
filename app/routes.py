@@ -52,6 +52,14 @@ from pvgis_data_fetcher import PVGISDataFetcher
 from auth_module import bess_auth, auth_optional
 from permissions import login_required
 
+# Dispatch-Integration importieren
+try:
+    from app.dispatch_integration import dispatch_integration
+    DISPATCH_AVAILABLE = True
+except ImportError:
+    DISPATCH_AVAILABLE = False
+    print("Warnung: Dispatch-Integration nicht verfügbar")
+
 # Intraday-Arbitrage und österreichische Marktdaten Integration
 try:
     from src.intraday import (
@@ -6489,3 +6497,194 @@ def api_performance_health():
             'error': str(e),
             'timestamp': time.time()
         }), 500
+
+# ============================================================================
+# BESS DISPATCH & REDISPATCH API
+# ============================================================================
+
+@main_bp.route('/api/dispatch/run', methods=['POST'])
+@login_required
+def api_run_dispatch():
+    """BESS Dispatch-Simulation mit Redispatch"""
+    try:
+        if not DISPATCH_AVAILABLE:
+            return jsonify({
+                'success': False, 
+                'error': 'Dispatch-Integration nicht verfügbar'
+            }), 503
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Keine Daten empfangen'}), 400
+        
+        project_id = data.get('project_id')
+        if not project_id:
+            return jsonify({'success': False, 'error': 'project_id erforderlich'}), 400
+        
+        # Dispatch-Parameter
+        time_resolution = data.get('time_resolution_minutes', 60)
+        dispatch_mode = data.get('dispatch_mode', 'arbitrage')
+        country = data.get('country', 'AT')
+        year = data.get('year', 2024)
+        
+        # Grundlegende Dispatch-Simulation
+        results = dispatch_integration.run_basic_dispatch_simulation(
+            project_id=int(project_id),
+            time_resolution_minutes=int(time_resolution),
+            year=int(year)
+        )
+        
+        if 'error' in results:
+            return jsonify({'success': False, 'error': results['error']}), 500
+        
+        return jsonify({
+            'success': True,
+            'dispatch_results': results,
+            'metadata': {
+                'project_id': project_id,
+                'dispatch_mode': dispatch_mode,
+                'time_resolution_minutes': time_resolution,
+                'country': country,
+                'year': year,
+                'timestamp': datetime.now().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/dispatch/redispatch', methods=['POST'])
+@login_required
+def api_run_redispatch():
+    """BESS Dispatch-Simulation mit Redispatch-Calls"""
+    try:
+        if not DISPATCH_AVAILABLE:
+            return jsonify({
+                'success': False, 
+                'error': 'Dispatch-Integration nicht verfügbar'
+            }), 503
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Keine Daten empfangen'}), 400
+        
+        project_id = data.get('project_id')
+        if not project_id:
+            return jsonify({'success': False, 'error': 'project_id erforderlich'}), 400
+        
+        # Redispatch-Parameter
+        time_resolution = data.get('time_resolution_minutes', 60)
+        country = data.get('country', 'AT')
+        year = data.get('year', 2024)
+        
+        # Redispatch-CSV-Daten (als JSON)
+        redispatch_calls = data.get('redispatch_calls', [])
+        if not redispatch_calls:
+            return jsonify({'success': False, 'error': 'redispatch_calls erforderlich'}), 400
+        
+        # Temporäre CSV-Datei erstellen
+        import tempfile
+        import csv
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False, newline='') as temp_file:
+            writer = csv.writer(temp_file)
+            # Header schreiben
+            if redispatch_calls:
+                writer.writerow(redispatch_calls[0].keys())
+                # Daten schreiben
+                for call in redispatch_calls:
+                    writer.writerow(call.values())
+            
+            temp_csv_path = temp_file.name
+        
+        try:
+            # Redispatch-Simulation ausführen
+            results = dispatch_integration.run_redispatch_simulation(
+                project_id=int(project_id),
+                redispatch_csv_path=temp_csv_path,
+                time_resolution_minutes=int(time_resolution),
+                year=int(year)
+            )
+            
+            if 'error' in results:
+                return jsonify({'success': False, 'error': results['error']}), 500
+            
+            return jsonify({
+                'success': True,
+                'redispatch_results': results,
+                'metadata': {
+                    'project_id': project_id,
+                    'time_resolution_minutes': time_resolution,
+                    'country': country,
+                    'year': year,
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+            
+        finally:
+            # Temporäre Datei löschen
+            if os.path.exists(temp_csv_path):
+                os.unlink(temp_csv_path)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/dispatch/history/<int:project_id>')
+@login_required
+def api_get_dispatch_history(project_id):
+    """Dispatch-Simulationsverlauf für ein Projekt abrufen"""
+    try:
+        if not DISPATCH_AVAILABLE:
+            return jsonify({
+                'success': False, 
+                'error': 'Dispatch-Integration nicht verfügbar'
+            }), 503
+        
+        history = dispatch_integration.get_dispatch_history(project_id)
+        
+        return jsonify({
+            'success': True,
+            'project_id': project_id,
+            'dispatch_history': history
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/dispatch/parameters/<int:project_id>')
+@login_required
+def api_get_dispatch_parameters(project_id):
+    """Dispatch-Parameter für ein Projekt abrufen"""
+    try:
+        if not DISPATCH_AVAILABLE:
+            return jsonify({
+                'success': False, 
+                'error': 'Dispatch-Integration nicht verfügbar'
+            }), 503
+        
+        params = dispatch_integration.get_project_parameters(project_id)
+        
+        return jsonify({
+            'success': True,
+            'project_id': project_id,
+            'parameters': params
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@main_bp.route('/api/dispatch/status')
+def api_dispatch_status():
+    """Status der Dispatch-Integration abrufen"""
+    return jsonify({
+        'success': True,
+        'dispatch_available': DISPATCH_AVAILABLE,
+        'status': 'active' if DISPATCH_AVAILABLE else 'unavailable',
+        'timestamp': datetime.now().isoformat()
+    })
+
+@main_bp.route('/dispatch')
+@login_required
+def dispatch_interface():
+    """Dispatch-Interface Seite"""
+    return render_template('dispatch_interface.html')
