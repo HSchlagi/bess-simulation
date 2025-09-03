@@ -45,8 +45,7 @@ class BESSDispatchIntegration:
             cursor = conn.cursor()
             
             cursor.execute("""
-                SELECT bess_size, bess_power, daily_cycles, 
-                       efficiency_charge, efficiency_discharge
+                SELECT bess_size, bess_power, daily_cycles
                 FROM project WHERE id = ?
             """, (project_id,))
             
@@ -54,7 +53,7 @@ class BESSDispatchIntegration:
             if not result:
                 raise ValueError(f"Projekt {project_id} nicht gefunden")
             
-            bess_size, bess_power, daily_cycles, eff_charge, eff_discharge = result
+            bess_size, bess_power, daily_cycles = result
             
             params = {
                 "Kapazität [MWh]": float(bess_size or 8.0),
@@ -63,8 +62,8 @@ class BESSDispatchIntegration:
                 "SoC_init [%]": 50.0,
                 "SoC_min [%]": 5.0,
                 "SoC_max [%]": 95.0,
-                "Wirkungsgrad Entladen": float(eff_discharge or 0.92),
-                "Wirkungsgrad Laden": float(eff_charge or 0.92),
+                "Wirkungsgrad Entladen": 0.92,  # Standard-Wirkungsgrad
+                "Wirkungsgrad Laden": 0.92,      # Standard-Wirkungsgrad
                 "Zeitschrittdauer [h]": 1.0,
                 "Tägliche Zyklen": float(daily_cycles or 1.2)
             }
@@ -385,6 +384,43 @@ class BESSDispatchIntegration:
             
         except Exception as e:
             print(f"❌ Fehler beim Speichern der Dispatch-Ergebnisse: {e}")
+    
+    def get_dispatch_history(self, project_id: int) -> List[Dict]:
+        """Dispatch-Historie für ein Projekt abrufen"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT id, simulation_date, dispatch_mode, time_resolution_minutes,
+                       total_revenue, total_cost, net_cashflow, created_at
+                FROM dispatch_simulation 
+                WHERE project_id = ? 
+                ORDER BY simulation_date DESC
+                LIMIT 10
+            """, (project_id,))
+            
+            results = cursor.fetchall()
+            conn.close()
+            
+            history = []
+            for row in results:
+                history.append({
+                    'id': row[0],
+                    'simulation_date': row[1],
+                    'dispatch_mode': row[2],
+                    'time_resolution_minutes': row[3],
+                    'total_revenue': row[4],
+                    'total_cost': row[5],
+                    'net_cashflow': row[6],
+                    'created_at': row[7]
+                })
+            
+            return history
+            
+        except Exception as e:
+            print(f"❌ Fehler beim Laden der Dispatch-Historie: {e}")
+            return []
 
 # Globale Instanz
 dispatch_integration = BESSDispatchIntegration()
