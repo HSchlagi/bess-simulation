@@ -162,7 +162,7 @@
 
             <!-- Mobile menu button -->
             <div class="md:hidden">
-                <button id="mobile-menu-button" class="text-white hover:text-gray-300 focus:outline-none focus:text-gray-300 p-2">
+                <button id="mobile-menu-button" class="text-white hover:text-gray-300 focus:outline-none focus:text-gray-300 p-2 touch-manipulation" style="min-width: 44px; min-height: 44px;">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
@@ -300,23 +300,47 @@
 <!-- Mobile Menu JavaScript -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Mobile Menu Script geladen');
+    
     const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
     
+    console.log('Mobile Menu Button:', mobileMenuButton);
+    console.log('Mobile Menu:', mobileMenu);
+    
     if (mobileMenuButton && mobileMenu) {
-        // Mobile Menu Toggle
-        mobileMenuButton.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        // Funktion zum Umschalten des Menüs
+        function toggleMobileMenu() {
+            console.log('Mobile Menu Toggle aufgerufen');
             mobileMenu.classList.toggle('hidden');
             
             // Icon ändern
             const icon = mobileMenuButton.querySelector('i');
             if (mobileMenu.classList.contains('hidden')) {
                 icon.className = 'fas fa-bars text-xl';
+                console.log('Menü geschlossen');
             } else {
                 icon.className = 'fas fa-times text-xl';
+                console.log('Menü geöffnet');
             }
+        }
+        
+        // Mehrere Event-Typen für maximale Kompatibilität
+        mobileMenuButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileMenu();
+        });
+        
+        mobileMenuButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleMobileMenu();
+        });
+        
+        mobileMenuButton.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
         });
         
         // Mobile Menu schließen beim Klicken außerhalb
@@ -334,6 +358,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const icon = mobileMenuButton.querySelector('i');
             icon.className = 'fas fa-bars text-xl';
         });
+        
+        console.log('Mobile Menu Event Listener registriert');
+    } else {
+        console.error('Mobile Menu Elemente nicht gefunden!');
     }
 });
 
