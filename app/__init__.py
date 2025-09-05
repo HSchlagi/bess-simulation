@@ -67,6 +67,10 @@ def create_app():
     from .api_routes import api_bp
     app.register_blueprint(api_bp)
     
+    # ML-API-Blueprint registrieren
+    from .ml_api import ml_bp
+    app.register_blueprint(ml_bp)
+    
     # Monitoring & Logging Blueprint registrieren
     app.register_blueprint(monitoring_bp)
     
@@ -78,6 +82,7 @@ def create_app():
     csrf.exempt(app.blueprints.get('admin'))
     csrf.exempt(app.blueprints.get('export'))
     csrf.exempt(app.blueprints.get('api'))
+    csrf.exempt(app.blueprints.get('ml'))
     csrf.exempt(app.blueprints.get('monitoring'))
 
     with app.app_context():

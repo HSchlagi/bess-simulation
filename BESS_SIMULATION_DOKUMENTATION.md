@@ -1688,6 +1688,1947 @@ refactor: Code-Struktur optimiert
 
 ---
 
+## 📖 BENUTZERHANDBUCH
+
+### 🎯 Übersicht der Hauptfunktionen
+
+Das BESS-Simulationsprogramm bietet eine umfassende Plattform für die Planung, Simulation und Analyse von Batteriespeicher-Systemen. Alle Funktionen sind über ein intuitives Web-Interface zugänglich.
+
+#### 🏠 Dashboard
+- **Übersicht:** Alle Projekte auf einen Blick
+- **KPI-Dashboard:** Wichtige Kennzahlen und Trends
+- **Schnellzugriff:** Direkte Navigation zu allen Funktionen
+- **Status-Anzeige:** Aktuelle System- und Projekt-Status
+
+#### 📊 Projekt-Management
+- **Neue Projekte:** Schritt-für-Schritt Projekt-Erstellung
+- **Projekt-Bearbeitung:** Vollständige Parametrisierung
+- **Projekt-Klonen:** Bestehende Projekte als Vorlage nutzen
+- **Projekt-Archivierung:** Alte Projekte verwalten
+
+#### 🔋 BESS-Simulation
+- **Wirtschaftlichkeitsanalyse:** 10-Jahres-Berechnungen
+- **Use Cases:** UC1-UC4 mit spezifischen Szenarien
+- **Parameter-Variation:** Sensitivitätsanalysen
+- **Echtzeit-Simulation:** Sofortige Ergebnisse
+
+#### 📈 Dispatch & Redispatch
+- **Intraday-Trading:** Spot-Preis-Optimierung
+- **Redispatch-Simulation:** Netzstabilisierung
+- **Historische Analysen:** Vergangene Simulationen
+- **Performance-Tracking:** Erfolgsmessung
+
+#### 📥 Datenimport
+- **Spot-Preise:** APG/ENTSOE Integration
+- **Lastprofile:** CSV/Excel Import
+- **Wetterdaten:** PVGIS Integration
+- **Wasserkraft:** eHyd API
+
+#### 📤 Export & Berichte
+- **PDF-Reports:** Professionelle Dokumentation
+- **Excel-Export:** Datenanalyse
+- **Chart-Export:** Grafische Darstellungen
+- **API-Export:** System-Integration
+
+### 🚀 Erste Schritte
+
+#### 1. Anmeldung & Navigation
+```
+1. Öffnen Sie die BESS-Simulation in Ihrem Browser
+2. Melden Sie sich mit Ihren Zugangsdaten an
+3. Das Dashboard zeigt alle verfügbaren Funktionen
+4. Nutzen Sie die Navigation für schnellen Zugriff
+```
+
+#### 2. Neues Projekt erstellen
+```
+1. Klicken Sie auf "Neues Projekt" im Dashboard
+2. Geben Sie Projektname und Beschreibung ein
+3. Wählen Sie den Standort (für Wetterdaten)
+4. Definieren Sie die BESS-Parameter:
+   - Batteriekapazität (kWh)
+   - Lade-/Entladeleistung (kW)
+   - Wirkungsgrade
+   - Zyklenanzahl
+5. Speichern Sie das Projekt
+```
+
+#### 3. Erste Simulation durchführen
+```
+1. Öffnen Sie Ihr Projekt
+2. Klicken Sie auf "Simulation starten"
+3. Wählen Sie den Use Case (UC1-UC4)
+4. Starten Sie die Berechnung
+5. Analysieren Sie die Ergebnisse
+```
+
+### 📋 Detaillierte Funktionsbeschreibungen
+
+#### 🏗️ Projekt-Erstellung
+
+**Schritt 1: Grunddaten**
+- **Projektname:** Eindeutiger Name für das Projekt
+- **Beschreibung:** Detaillierte Projektbeschreibung
+- **Standort:** Geografische Position (für Wetterdaten)
+- **Projekttyp:** BESS, PV+BESS, Wind+BESS, etc.
+
+**Schritt 2: BESS-Parameter**
+- **Nennkapazität:** Gesamte Batteriekapazität in kWh
+- **Ladeleistung:** Maximale Ladeleistung in kW
+- **Entladeleistung:** Maximale Entladeleistung in kW
+- **Wirkungsgrad Lade:** Verluste beim Laden (0-1)
+- **Wirkungsgrad Entlade:** Verluste beim Entladen (0-1)
+- **Zyklenanzahl:** Erwartete Lebensdauer in Zyklen
+- **Selbstentladung:** Tägliche Verluste in %
+
+**Schritt 3: Wirtschaftliche Parameter**
+- **Investitionskosten:** Gesamtkosten in €
+- **Wartungskosten:** Jährliche Kosten in €
+- **Zinssatz:** Kapitalkosten in %
+- **Inflationsrate:** Preissteigerung in %
+- **Strompreis:** Bezugspreis in €/kWh
+- **Einspeisevergütung:** Verkaufspreis in €/kWh
+
+**Schritt 4: Lastprofil & Erzeugung**
+- **Lastprofil:** Verbrauchsprofil (CSV/Excel)
+- **PV-Anlage:** Solarerzeugung (optional)
+- **Windanlage:** Windenergie (optional)
+- **Wasserkraft:** Hydroenergie (optional)
+
+#### 🔋 BESS-Simulation
+
+**Use Case 1: Eigenverbrauchsoptimierung**
+- **Ziel:** Maximierung des Eigenverbrauchs
+- **Strategie:** Laden bei Überschuss, Entladen bei Bedarf
+- **Anwendung:** Private Haushalte, Gewerbe
+
+**Use Case 2: Spot-Preis-Arbitrage**
+- **Ziel:** Gewinn durch Preisunterschiede
+- **Strategie:** Kauf bei niedrigen, Verkauf bei hohen Preisen
+- **Anwendung:** Gewerbliche Anlagen, Energiehändler
+
+**Use Case 3: Redispatch**
+- **Ziel:** Netzstabilisierung
+- **Strategie:** Reaktion auf Netzengpässe
+- **Anwendung:** Netzbetreiber, Systemdienstleistungen
+
+**Use Case 4: Kombinierte Optimierung**
+- **Ziel:** Mehrfachnutzung
+- **Strategie:** Eigenverbrauch + Arbitrage + Redispatch
+- **Anwendung:** Großanlagen, Energieversorger
+
+#### 📊 Ergebnis-Analyse
+
+**Wirtschaftliche Kennzahlen:**
+- **NPV:** Net Present Value (Kapitalwert)
+- **IRR:** Internal Rate of Return (interner Zinsfuß)
+- **Payback:** Amortisationszeit
+- **LCOE:** Levelized Cost of Energy
+- **ROI:** Return on Investment
+
+**Technische Kennzahlen:**
+- **Zyklenauslastung:** Tatsächliche vs. geplante Zyklen
+- **Energieeffizienz:** Wirkungsgrad über Zeit
+- **Ladezustand:** SoC-Verlauf
+- **Leistungsauslastung:** P-Verlauf
+
+**Umweltkennzahlen:**
+- **CO2-Einsparung:** Reduzierte Emissionen
+- **Erneuerbare Integration:** Anteil erneuerbarer Energien
+- **Netzentlastung:** Reduzierte Netzbelastung
+
+#### 📈 Dispatch & Redispatch
+
+**Intraday-Trading:**
+1. **Spot-Preis-Analyse:** Historische und aktuelle Preise
+2. **Prognose:** Preisvorhersage für nächste 24h
+3. **Optimierung:** Beste Lade-/Entladezeiten
+4. **Ausführung:** Automatische oder manuelle Umsetzung
+
+**Redispatch-Simulation:**
+1. **Netzengpass-Erkennung:** Identifikation von Problemen
+2. **Lösungsstrategien:** Verschiedene Redispatch-Optionen
+3. **Kosten-Nutzen:** Wirtschaftlichkeit der Maßnahmen
+4. **Implementierung:** Praktische Umsetzung
+
+#### 📥 Datenimport
+
+**Spot-Preise (APG/ENTSOE):**
+```
+1. API-Zugang einrichten
+2. Automatischen Import aktivieren
+3. Datenqualität prüfen
+4. Historische Daten nachladen
+```
+
+**Lastprofile:**
+```
+1. CSV/Excel-Datei vorbereiten
+2. Format: Zeitstempel, Verbrauch (kW)
+3. Upload über Web-Interface
+4. Datenvalidierung und -korrektur
+```
+
+**Wetterdaten (PVGIS):**
+```
+1. Standort eingeben
+2. Automatischer Download
+3. Solarstrahlung und Temperatur
+4. Integration in Simulation
+```
+
+**Wasserkraft (eHyd):**
+```
+1. API-Schlüssel konfigurieren
+2. Pegelstand-Messstellen wählen
+3. Automatischer Import
+4. Leistungskurve definieren
+```
+
+#### 📤 Export & Berichte
+
+**PDF-Reports:**
+- **Projektübersicht:** Alle wichtigen Parameter
+- **Simulationsergebnisse:** Grafiken und Tabellen
+- **Wirtschaftlichkeitsanalyse:** Detaillierte Berechnungen
+- **Empfehlungen:** Handlungsempfehlungen
+
+**Excel-Export:**
+- **Rohdaten:** Alle Simulationsdaten
+- **Kennzahlen:** Berechnete Metriken
+- **Zeitreihen:** Detaillierte Verläufe
+- **Vergleiche:** Mehrere Szenarien
+
+**Chart-Export:**
+- **PNG/JPG:** Hochauflösende Grafiken
+- **SVG:** Vektorgrafiken für Präsentationen
+- **PDF:** Druckbare Charts
+- **CSV:** Daten für externe Tools
+
+### 🎯 Best Practices
+
+#### Projekt-Planung
+- **Realistische Parameter:** Verwenden Sie realistische Werte
+- **Sensitivitätsanalysen:** Testen Sie verschiedene Szenarien
+- **Dokumentation:** Dokumentieren Sie alle Annahmen
+- **Regelmäßige Updates:** Aktualisieren Sie Daten regelmäßig
+
+#### Simulation
+- **Use Case wählen:** Wählen Sie den passenden Use Case
+- **Parameter validieren:** Prüfen Sie alle Eingaben
+- **Ergebnisse interpretieren:** Verstehen Sie die Kennzahlen
+- **Vergleiche anstellen:** Vergleichen Sie verschiedene Optionen
+
+#### Datenmanagement
+- **Backup:** Regelmäßige Datensicherung
+- **Qualität:** Prüfen Sie Datenqualität
+- **Aktualität:** Verwenden Sie aktuelle Daten
+- **Konsistenz:** Stellen Sie Datenkonsistenz sicher
+
+### ⚠️ Häufige Fehler vermeiden
+
+#### Parameter-Eingabe
+- **Einheiten beachten:** kW vs. kWh, € vs. €/kWh
+- **Realistische Werte:** Keine unrealistischen Annahmen
+- **Konsistenz:** Alle Parameter müssen zusammenpassen
+- **Dokumentation:** Notieren Sie alle Annahmen
+
+#### Datenimport
+- **Format prüfen:** CSV/Excel-Format korrekt
+- **Zeitstempel:** Korrekte Zeitstempel-Formatierung
+- **Einheiten:** Konsistente Einheiten verwenden
+- **Validierung:** Daten nach Import prüfen
+
+#### Simulation
+- **Use Case:** Richtigen Use Case wählen
+- **Zeitraum:** Ausreichend lange Simulationsdauer
+- **Parameter:** Alle Parameter vollständig
+- **Ergebnisse:** Ergebnisse kritisch prüfen
+
+---
+
+## 🔧 TECHNISCHE DOKUMENTATION
+
+### 🏗️ Systemarchitektur
+
+#### Backend (Flask)
+- **Framework:** Flask 2.3+ mit Jinja2 Templates
+- **Datenbank:** SQLite mit SQLAlchemy ORM
+- **API:** RESTful API mit JSON-Responses
+- **Authentifizierung:** Session-basiert mit Flask-Login
+- **Sicherheit:** CSRF-Protection, Input-Validierung
+
+#### Frontend (Web-Interface)
+- **Styling:** Tailwind CSS 3.0+
+- **Charts:** Chart.js für Datenvisualisierung
+- **JavaScript:** Vanilla JS mit Fetch API
+- **Responsive:** Mobile-first Design
+- **Accessibility:** WCAG 2.1 konform
+
+#### Datenbank-Schema
+```sql
+-- Haupttabellen
+projects (id, name, description, location, created_at)
+battery_configs (id, project_id, capacity, power, efficiency)
+economic_parameters (id, project_id, investment_cost, interest_rate)
+simulation_results (id, project_id, use_case, results_json)
+dispatch_history (id, project_id, simulation_date, results)
+
+-- Datenimport-Tabellen
+spot_prices (id, datetime, price, source)
+load_profiles (id, project_id, datetime, consumption)
+weather_data (id, location, datetime, irradiation, temperature)
+water_levels (id, station_id, datetime, level, flow)
+```
+
+### 📁 Projektstruktur
+
+```
+bess-simulation/
+├── app/                          # Flask-Anwendung
+│   ├── __init__.py              # App-Initialisierung
+│   ├── routes.py                # URL-Routen
+│   ├── models.py                # Datenbank-Modelle
+│   ├── forms.py                 # WTForms-Formulare
+│   ├── dispatch_integration.py  # Dispatch-Logik
+│   └── templates/               # Jinja2-Templates
+│       ├── base.html           # Basis-Template
+│       ├── dashboard.html      # Dashboard
+│       ├── dispatch_interface.html # Dispatch-UI
+│       └── help.html           # Hilfe-Seite
+├── instance/                    # Instanz-spezifische Daten
+│   └── bess.db                 # SQLite-Datenbank
+├── data/                       # Importierte Daten
+├── backups/                    # Datenbank-Backups
+├── logs/                       # Log-Dateien
+├── requirements.txt            # Python-Abhängigkeiten
+├── run.py                      # Entwicklungsserver
+└── wsgi.py                     # Production-Server
+```
+
+### 🔌 API-Endpunkte
+
+#### Projekt-Management
+```
+GET  /api/projects              # Alle Projekte
+POST /api/projects              # Neues Projekt
+GET  /api/projects/<id>         # Projekt-Details
+PUT  /api/projects/<id>         # Projekt aktualisieren
+DELETE /api/projects/<id>       # Projekt löschen
+```
+
+#### Simulation
+```
+POST /api/simulate              # Simulation starten
+GET  /api/simulation/<id>       # Simulationsergebnisse
+GET  /api/simulation/history    # Simulationshistorie
+```
+
+#### Dispatch & Redispatch
+```
+POST /api/dispatch/simulate     # Dispatch-Simulation
+GET  /api/dispatch/history/<project_id> # Dispatch-Historie
+POST /api/redispatch/simulate   # Redispatch-Simulation
+```
+
+#### Datenimport
+```
+POST /api/import/spot-prices    # Spot-Preise importieren
+POST /api/import/load-profile   # Lastprofil importieren
+POST /api/import/weather        # Wetterdaten importieren
+GET  /api/import/status         # Import-Status
+```
+
+#### Export
+```
+GET  /api/export/pdf/<project_id>    # PDF-Export
+GET  /api/export/excel/<project_id>  # Excel-Export
+GET  /api/export/chart/<type>        # Chart-Export
+```
+
+### 🗄️ Datenbank-Modelle
+
+#### Project Model
+```python
+class Project(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    location = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Beziehungen
+    battery_config = db.relationship('BatteryConfig', backref='project', uselist=False)
+    economic_params = db.relationship('EconomicParameters', backref='project', uselist=False)
+    simulations = db.relationship('SimulationResult', backref='project')
+```
+
+#### BatteryConfig Model
+```python
+class BatteryConfig(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    capacity_kwh = db.Column(db.Float, nullable=False)  # kWh
+    power_charge_kw = db.Column(db.Float, nullable=False)  # kW
+    power_discharge_kw = db.Column(db.Float, nullable=False)  # kW
+    efficiency_charge = db.Column(db.Float, default=0.95)  # 0-1
+    efficiency_discharge = db.Column(db.Float, default=0.95)  # 0-1
+    cycles_lifetime = db.Column(db.Integer, default=6000)  # Zyklen
+    self_discharge_rate = db.Column(db.Float, default=0.001)  # pro Tag
+```
+
+#### EconomicParameters Model
+```python
+class EconomicParameters(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    investment_cost = db.Column(db.Float, nullable=False)  # €
+    maintenance_cost = db.Column(db.Float, default=0)  # €/Jahr
+    interest_rate = db.Column(db.Float, default=0.05)  # 0-1
+    inflation_rate = db.Column(db.Float, default=0.02)  # 0-1
+    electricity_price = db.Column(db.Float, default=0.25)  # €/kWh
+    feed_in_tariff = db.Column(db.Float, default=0.08)  # €/kWh
+```
+
+### ⚙️ Konfiguration
+
+#### Umgebungsvariablen
+```bash
+# Datenbank
+DATABASE_URL=sqlite:///instance/bess.db
+
+# API-Keys
+APG_API_KEY=your_apg_key
+ENTSOE_API_KEY=your_entsoe_key
+EHYD_API_KEY=your_ehyd_key
+
+# Server
+FLASK_ENV=production
+FLASK_DEBUG=False
+SECRET_KEY=your_secret_key
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FILE=logs/bess.log
+```
+
+#### config.py
+```python
+import os
+
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///instance/bess.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # API-Konfiguration
+    APG_API_KEY = os.environ.get('APG_API_KEY')
+    ENTSOE_API_KEY = os.environ.get('ENTSOE_API_KEY')
+    EHYD_API_KEY = os.environ.get('EHYD_API_KEY')
+    
+    # Logging
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    LOG_FILE = os.environ.get('LOG_FILE', 'logs/bess.log')
+```
+
+### 🔄 Datenfluss
+
+#### Simulation-Workflow
+```
+1. Benutzer startet Simulation
+   ↓
+2. Frontend sendet POST /api/simulate
+   ↓
+3. Backend lädt Projekt-Parameter
+   ↓
+4. Simulation-Engine berechnet Ergebnisse
+   ↓
+5. Ergebnisse werden in DB gespeichert
+   ↓
+6. JSON-Response an Frontend
+   ↓
+7. Frontend zeigt Charts und KPIs
+```
+
+#### Dispatch-Workflow
+```
+1. Benutzer wählt Projekt und Zeitraum
+   ↓
+2. Backend lädt Spot-Preise
+   ↓
+3. Dispatch-Algorithmus optimiert
+   ↓
+4. Ergebnisse werden visualisiert
+   ↓
+5. Historische Daten werden gespeichert
+```
+
+### 🚀 Performance-Optimierung
+
+#### Datenbank-Indizes
+```sql
+-- Performance-kritische Indizes
+CREATE INDEX idx_projects_created_at ON projects(created_at);
+CREATE INDEX idx_spot_prices_datetime ON spot_prices(datetime);
+CREATE INDEX idx_load_profiles_project_datetime ON load_profiles(project_id, datetime);
+CREATE INDEX idx_simulation_results_project ON simulation_results(project_id);
+```
+
+#### Caching-Strategie
+```python
+# Redis-Caching für häufige Abfragen
+from flask_caching import Cache
+
+cache = Cache(app, config={'CACHE_TYPE': 'redis'})
+
+@cache.memoize(timeout=300)  # 5 Minuten
+def get_spot_prices(date_range):
+    # Spot-Preise aus DB laden
+    pass
+
+@cache.memoize(timeout=600)  # 10 Minuten
+def get_project_summary(project_id):
+    # Projekt-Zusammenfassung berechnen
+    pass
+```
+
+#### Frontend-Optimierung
+```javascript
+// Lazy Loading für Charts
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            loadChart(entry.target);
+        }
+    });
+});
+
+// Debouncing für Suchfunktionen
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+```
+
+### 🔒 Sicherheit
+
+#### Authentifizierung
+```python
+from flask_login import LoginManager, UserMixin, login_required
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+```
+
+#### CSRF-Protection
+```python
+from flask_wtf.csrf import CSRFProtect
+
+csrf = CSRFProtect(app)
+
+# In Templates
+<form method="POST">
+    {{ csrf_token() }}
+    <!-- Formular-Felder -->
+</form>
+```
+
+#### Input-Validierung
+```python
+from wtforms import Form, StringField, FloatField, validators
+
+class ProjectForm(Form):
+    name = StringField('Projektname', [
+        validators.Length(min=1, max=100),
+        validators.DataRequired()
+    ])
+    capacity = FloatField('Kapazität (kWh)', [
+        validators.NumberRange(min=0.1, max=10000),
+        validators.DataRequired()
+    ])
+```
+
+### 📊 Monitoring & Logging
+
+#### Logging-Konfiguration
+```python
+import logging
+from logging.handlers import RotatingFileHandler
+
+if not app.debug:
+    file_handler = RotatingFileHandler('logs/bess.log', maxBytes=10240, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('BESS Simulation startup')
+```
+
+#### Health-Check Endpoint
+```python
+@app.route('/health')
+def health_check():
+    try:
+        # Datenbank-Verbindung testen
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.utcnow().isoformat()
+        }), 500
+```
+
+### 🧪 Testing
+
+#### Unit-Tests
+```python
+import unittest
+from app import create_app, db
+
+class TestSimulation(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+    
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+    
+    def test_simulation_calculation(self):
+        # Test der Simulations-Berechnungen
+        pass
+```
+
+#### Integration-Tests
+```python
+class TestAPI(unittest.TestCase):
+    def setUp(self):
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
+    
+    def test_project_creation(self):
+        response = self.client.post('/api/projects', json={
+            'name': 'Test Project',
+            'capacity': 100
+        })
+        self.assertEqual(response.status_code, 201)
+```
+
+---
+
+## 🔌 API-REFERENZ
+
+### 📋 Übersicht
+
+Die BESS-Simulation API bietet RESTful Endpunkte für alle Hauptfunktionen. Alle API-Antworten sind im JSON-Format.
+
+#### Base URL
+```
+Lokal: http://localhost:5000/api
+Produktion: https://bess.instanet.at/api
+```
+
+#### Authentifizierung
+```http
+Cookie: session=<session_id>
+X-CSRFToken: <csrf_token>
+```
+
+#### Standard-Response-Format
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Operation successful",
+  "timestamp": "2025-09-05T10:30:00Z"
+}
+```
+
+#### Fehler-Response-Format
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "code": "ERROR_CODE",
+  "timestamp": "2025-09-05T10:30:00Z"
+}
+```
+
+### 🏗️ Projekt-Management API
+
+#### GET /api/projects
+**Beschreibung:** Alle Projekte abrufen
+
+**Parameter:**
+- `limit` (optional): Anzahl der Projekte (default: 50)
+- `offset` (optional): Offset für Pagination (default: 0)
+- `search` (optional): Suchbegriff für Projektname
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "BESS Projekt 1",
+      "description": "Testprojekt für BESS-Simulation",
+      "location": "Wien, Österreich",
+      "created_at": "2025-09-01T10:00:00Z",
+      "battery_config": {
+        "capacity_kwh": 100,
+        "power_charge_kw": 50,
+        "power_discharge_kw": 50
+      }
+    }
+  ],
+  "pagination": {
+    "total": 1,
+    "limit": 50,
+    "offset": 0
+  }
+}
+```
+
+#### POST /api/projects
+**Beschreibung:** Neues Projekt erstellen
+
+**Request Body:**
+```json
+{
+  "name": "Neues BESS Projekt",
+  "description": "Projektbeschreibung",
+  "location": "Graz, Österreich",
+  "battery_config": {
+    "capacity_kwh": 200,
+    "power_charge_kw": 100,
+    "power_discharge_kw": 100,
+    "efficiency_charge": 0.95,
+    "efficiency_discharge": 0.95,
+    "cycles_lifetime": 6000
+  },
+  "economic_parameters": {
+    "investment_cost": 100000,
+    "maintenance_cost": 2000,
+    "interest_rate": 0.05,
+    "electricity_price": 0.25
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 2,
+    "name": "Neues BESS Projekt",
+    "created_at": "2025-09-05T10:30:00Z"
+  },
+  "message": "Projekt erfolgreich erstellt"
+}
+```
+
+#### GET /api/projects/{id}
+**Beschreibung:** Projekt-Details abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "name": "BESS Projekt 1",
+    "description": "Testprojekt",
+    "location": "Wien, Österreich",
+    "created_at": "2025-09-01T10:00:00Z",
+    "battery_config": {
+      "capacity_kwh": 100,
+      "power_charge_kw": 50,
+      "power_discharge_kw": 50,
+      "efficiency_charge": 0.95,
+      "efficiency_discharge": 0.95,
+      "cycles_lifetime": 6000,
+      "self_discharge_rate": 0.001
+    },
+    "economic_parameters": {
+      "investment_cost": 50000,
+      "maintenance_cost": 1000,
+      "interest_rate": 0.05,
+      "inflation_rate": 0.02,
+      "electricity_price": 0.25,
+      "feed_in_tariff": 0.08
+    }
+  }
+}
+```
+
+#### PUT /api/projects/{id}
+**Beschreibung:** Projekt aktualisieren
+
+**Request Body:** (gleiche Struktur wie POST)
+
+#### DELETE /api/projects/{id}
+**Beschreibung:** Projekt löschen
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Projekt erfolgreich gelöscht"
+}
+```
+
+### 🔋 Simulation API
+
+#### POST /api/simulate
+**Beschreibung:** BESS-Simulation starten
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "use_case": "UC1",
+  "simulation_years": 10,
+  "parameters": {
+    "custom_electricity_price": 0.30,
+    "custom_feed_in_tariff": 0.10
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "simulation_id": 123,
+    "project_id": 1,
+    "use_case": "UC1",
+    "status": "completed",
+    "results": {
+      "npv": 15000,
+      "irr": 0.08,
+      "payback_years": 7.5,
+      "lcoe": 0.12,
+      "roi": 0.15,
+      "total_cycles": 2500,
+      "energy_efficiency": 0.92
+    },
+    "charts": {
+      "soc_chart": {
+        "labels": ["00:00", "01:00", "02:00", ...],
+        "data": [0.5, 0.6, 0.7, ...]
+      },
+      "cashflow_chart": {
+        "labels": ["2025", "2026", "2027", ...],
+        "data": [-50000, 5000, 8000, ...]
+      }
+    },
+    "created_at": "2025-09-05T10:30:00Z"
+  }
+}
+```
+
+#### GET /api/simulation/{id}
+**Beschreibung:** Simulationsergebnisse abrufen
+
+**Response:** (gleiche Struktur wie POST /api/simulate)
+
+#### GET /api/simulation/history
+**Beschreibung:** Simulationshistorie abrufen
+
+**Parameter:**
+- `project_id` (optional): Filter nach Projekt
+- `limit` (optional): Anzahl der Einträge
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 123,
+      "project_id": 1,
+      "project_name": "BESS Projekt 1",
+      "use_case": "UC1",
+      "status": "completed",
+      "npv": 15000,
+      "created_at": "2025-09-05T10:30:00Z"
+    }
+  ]
+}
+```
+
+### 📈 Dispatch & Redispatch API
+
+#### POST /api/dispatch/simulate
+**Beschreibung:** Dispatch-Simulation starten
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "start_date": "2025-09-01",
+  "end_date": "2025-09-02",
+  "simulation_type": "intraday_trading",
+  "parameters": {
+    "max_cycles_per_day": 2.5,
+    "min_soc": 0.2,
+    "max_soc": 0.9
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "dispatch_id": 456,
+    "project_id": 1,
+    "simulation_type": "intraday_trading",
+    "start_date": "2025-09-01",
+    "end_date": "2025-09-02",
+    "status": "completed",
+    "results": {
+      "total_revenue": 1250.50,
+      "total_cost": 800.25,
+      "net_profit": 450.25,
+      "cycles_used": 2.3,
+      "energy_traded": 150.5
+    },
+    "hourly_data": [
+      {
+        "datetime": "2025-09-01T00:00:00Z",
+        "spot_price": 45.50,
+        "action": "charge",
+        "power": 50,
+        "soc": 0.5,
+        "revenue": -22.75
+      }
+    ],
+    "created_at": "2025-09-05T10:30:00Z"
+  }
+}
+```
+
+#### GET /api/dispatch/history/{project_id}
+**Beschreibung:** Dispatch-Historie abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 456,
+      "simulation_type": "intraday_trading",
+      "start_date": "2025-09-01",
+      "end_date": "2025-09-02",
+      "net_profit": 450.25,
+      "created_at": "2025-09-05T10:30:00Z"
+    }
+  ]
+}
+```
+
+#### POST /api/redispatch/simulate
+**Beschreibung:** Redispatch-Simulation starten
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "redispatch_scenario": "network_congestion",
+  "parameters": {
+    "congestion_duration": 4,
+    "required_power_reduction": 30,
+    "compensation_rate": 0.15
+  }
+}
+```
+
+### 📥 Datenimport API
+
+#### POST /api/import/spot-prices
+**Beschreibung:** Spot-Preise importieren
+
+**Request Body:**
+```json
+{
+  "source": "APG",
+  "start_date": "2025-09-01",
+  "end_date": "2025-09-02",
+  "force_update": false
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "import_id": 789,
+    "source": "APG",
+    "records_imported": 48,
+    "start_date": "2025-09-01",
+    "end_date": "2025-09-02",
+    "status": "completed"
+  }
+}
+```
+
+#### POST /api/import/load-profile
+**Beschreibung:** Lastprofil importieren
+
+**Request Body:** (multipart/form-data)
+```
+project_id: 1
+file: <CSV/Excel file>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "import_id": 790,
+    "project_id": 1,
+    "records_imported": 8760,
+    "file_name": "load_profile_2024.csv",
+    "status": "completed"
+  }
+}
+```
+
+#### POST /api/import/weather
+**Beschreibung:** Wetterdaten importieren
+
+**Request Body:**
+```json
+{
+  "location": "Wien, Österreich",
+  "start_date": "2025-01-01",
+  "end_date": "2025-12-31",
+  "source": "PVGIS"
+}
+```
+
+#### GET /api/import/status
+**Beschreibung:** Import-Status abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "spot_prices": {
+      "last_update": "2025-09-05T08:00:00Z",
+      "records_count": 8760,
+      "date_range": "2025-01-01 to 2025-12-31"
+    },
+    "weather_data": {
+      "last_update": "2025-09-05T09:00:00Z",
+      "locations": ["Wien", "Graz", "Salzburg"]
+    }
+  }
+}
+```
+
+### 📤 Export API
+
+#### GET /api/export/pdf/{project_id}
+**Beschreibung:** PDF-Report generieren
+
+**Parameter:**
+- `include_charts` (optional): Charts einbeziehen (default: true)
+- `language` (optional): Sprache (de/en, default: de)
+
+**Response:** PDF-Datei (Content-Type: application/pdf)
+
+#### GET /api/export/excel/{project_id}
+**Beschreibung:** Excel-Export generieren
+
+**Parameter:**
+- `data_type` (optional): simulation/dispatch/all (default: all)
+- `include_raw_data` (optional): Rohdaten einbeziehen (default: false)
+
+**Response:** Excel-Datei (Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)
+
+#### GET /api/export/chart/{type}
+**Beschreibung:** Chart als Bild exportieren
+
+**Parameter:**
+- `type`: soc/cashflow/dispatch/redispatch
+- `project_id`: Projekt-ID
+- `simulation_id` (optional): Spezifische Simulation
+- `format`: png/jpg/svg (default: png)
+- `width` (optional): Breite in Pixel (default: 800)
+- `height` (optional): Höhe in Pixel (default: 600)
+
+**Response:** Bild-Datei (Content-Type: image/png, image/jpeg, image/svg+xml)
+
+### 🔍 Utility API
+
+#### GET /api/health
+**Beschreibung:** System-Health-Check
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "healthy",
+    "database": "connected",
+    "version": "2.0.0",
+    "uptime": "2d 5h 30m",
+    "timestamp": "2025-09-05T10:30:00Z"
+  }
+}
+```
+
+#### GET /api/version
+**Beschreibung:** API-Version abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "version": "2.0.0",
+    "build_date": "2025-09-01T12:00:00Z",
+    "git_commit": "abc123def456"
+  }
+}
+```
+
+### ⚠️ Fehler-Codes
+
+#### HTTP Status Codes
+- `200 OK`: Erfolgreiche Anfrage
+- `201 Created`: Ressource erfolgreich erstellt
+- `400 Bad Request`: Ungültige Anfrage
+- `401 Unauthorized`: Nicht authentifiziert
+- `403 Forbidden`: Keine Berechtigung
+- `404 Not Found`: Ressource nicht gefunden
+- `422 Unprocessable Entity`: Validierungsfehler
+- `500 Internal Server Error`: Server-Fehler
+
+#### Custom Error Codes
+- `PROJECT_NOT_FOUND`: Projekt nicht gefunden
+- `INVALID_PARAMETERS`: Ungültige Parameter
+- `SIMULATION_FAILED`: Simulation fehlgeschlagen
+- `IMPORT_FAILED`: Datenimport fehlgeschlagen
+- `EXPORT_FAILED`: Export fehlgeschlagen
+- `DATABASE_ERROR`: Datenbank-Fehler
+- `API_LIMIT_EXCEEDED`: API-Limit überschritten
+
+### 📝 Beispiel-Requests
+
+#### cURL Beispiele
+
+**Projekt erstellen:**
+```bash
+curl -X POST http://localhost:5000/api/projects \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: <token>" \
+  -d '{
+    "name": "Test Projekt",
+    "description": "Testbeschreibung",
+    "location": "Wien",
+    "battery_config": {
+      "capacity_kwh": 100,
+      "power_charge_kw": 50,
+      "power_discharge_kw": 50
+    }
+  }'
+```
+
+**Simulation starten:**
+```bash
+curl -X POST http://localhost:5000/api/simulate \
+  -H "Content-Type: application/json" \
+  -H "X-CSRFToken: <token>" \
+  -d '{
+    "project_id": 1,
+    "use_case": "UC1",
+    "simulation_years": 10
+  }'
+```
+
+**PDF-Export:**
+```bash
+curl -X GET http://localhost:5000/api/export/pdf/1 \
+  -H "X-CSRFToken: <token>" \
+  --output report.pdf
+```
+
+#### JavaScript Beispiele
+
+**Projekt laden:**
+```javascript
+async function loadProjects() {
+  try {
+    const response = await fetch('/api/projects', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken()
+      }
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      console.log('Projekte:', data.data);
+    }
+  } catch (error) {
+    console.error('Fehler:', error);
+  }
+}
+```
+
+**Simulation starten:**
+```javascript
+async function startSimulation(projectId, useCase) {
+  try {
+    const response = await fetch('/api/simulate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken()
+      },
+      body: JSON.stringify({
+        project_id: projectId,
+        use_case: useCase,
+        simulation_years: 10
+      })
+    });
+    
+    const data = await response.json();
+    if (data.success) {
+      console.log('Simulation gestartet:', data.data);
+    }
+  } catch (error) {
+    console.error('Fehler:', error);
+  }
+}
+```
+
+---
+
+## 🔧 TROUBLESHOOTING
+
+### 🚨 Häufige Probleme & Lösungen
+
+#### Installation & Setup
+
+**Problem: `ModuleNotFoundError: No module named 'flask'`**
+```bash
+# Lösung: Virtual Environment aktivieren
+source venv/bin/activate  # Linux/Mac
+# oder
+venv\Scripts\activate     # Windows
+
+# Dependencies installieren
+pip install -r requirements.txt
+```
+
+**Problem: `sqlite3.OperationalError: no such table: projects`**
+```bash
+# Lösung: Datenbank initialisieren
+python init_db.py
+
+# Oder manuell
+python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()"
+```
+
+**Problem: `Permission denied` bei Datenbank-Zugriff**
+```bash
+# Lösung: Berechtigungen korrigieren
+chmod 664 instance/bess.db
+chown www-data:www-data instance/bess.db  # Linux
+```
+
+#### Server-Probleme
+
+**Problem: Server startet nicht - Port bereits belegt**
+```bash
+# Lösung: Port prüfen und freigeben
+netstat -tulpn | grep :5000
+kill -9 <PID>
+
+# Oder anderen Port verwenden
+export FLASK_RUN_PORT=5001
+python run.py
+```
+
+**Problem: `Address already in use`**
+```bash
+# Lösung: Prozess beenden
+pkill -f "python run.py"
+# oder
+lsof -ti:5000 | xargs kill -9
+```
+
+**Problem: Server läuft, aber keine Verbindung möglich**
+```bash
+# Lösung: Firewall prüfen
+sudo ufw allow 5000  # Ubuntu
+# oder
+firewall-cmd --add-port=5000/tcp --permanent  # CentOS
+```
+
+#### Datenbank-Probleme
+
+**Problem: `database is locked`**
+```bash
+# Lösung: Datenbank-Verbindungen prüfen
+sqlite3 instance/bess.db ".timeout 10000"
+# oder
+fuser instance/bess.db
+kill -9 <PID>
+```
+
+**Problem: `no such column: efficiency_charge`**
+```bash
+# Lösung: Datenbank-Schema aktualisieren
+python -c "
+from app import create_app, db
+app = create_app()
+with app.app_context():
+    db.engine.execute('ALTER TABLE battery_configs ADD COLUMN efficiency_charge FLOAT DEFAULT 0.95')
+    db.engine.execute('ALTER TABLE battery_configs ADD COLUMN efficiency_discharge FLOAT DEFAULT 0.95')
+"
+```
+
+**Problem: Datenbank-Datei beschädigt**
+```bash
+# Lösung: Backup wiederherstellen
+cp backups/bess_backup_2025-09-05.db instance/bess.db
+
+# Oder Datenbank reparieren
+sqlite3 instance/bess.db ".recover" | sqlite3 instance/bess_recovered.db
+mv instance/bess_recovered.db instance/bess.db
+```
+
+#### Frontend-Probleme
+
+**Problem: Charts werden nicht angezeigt**
+```javascript
+// Lösung: Chart.js CDN prüfen
+console.log(typeof Chart);  // Sollte "function" ausgeben
+
+// Fallback: Chart.js manuell laden
+if (typeof Chart === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+    document.head.appendChild(script);
+}
+```
+
+**Problem: Mobile Menü funktioniert nicht**
+```javascript
+// Lösung: Touch-Events prüfen
+document.addEventListener('DOMContentLoaded', function() {
+    const menuButton = document.getElementById('mobile-menu-button');
+    if (menuButton) {
+        menuButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            toggleMobileMenu();
+        });
+    }
+});
+```
+
+**Problem: Formulare werden nicht abgesendet**
+```html
+<!-- Lösung: CSRF-Token prüfen -->
+<form method="POST">
+    {{ csrf_token() }}
+    <!-- Formular-Felder -->
+</form>
+```
+
+#### API-Probleme
+
+**Problem: `401 Unauthorized`**
+```bash
+# Lösung: Session prüfen
+curl -c cookies.txt -b cookies.txt http://localhost:5000/api/projects
+
+# Oder Login durchführen
+curl -X POST http://localhost:5000/login \
+  -d "username=admin&password=password" \
+  -c cookies.txt
+```
+
+**Problem: `422 Unprocessable Entity`**
+```json
+// Lösung: Request-Body validieren
+{
+  "name": "Test Projekt",
+  "battery_config": {
+    "capacity_kwh": 100,  // Muss > 0 sein
+    "power_charge_kw": 50,  // Muss > 0 sein
+    "power_discharge_kw": 50  // Muss > 0 sein
+  }
+}
+```
+
+**Problem: `500 Internal Server Error`**
+```bash
+# Lösung: Logs prüfen
+tail -f logs/bess.log
+
+# Oder Debug-Modus aktivieren
+export FLASK_DEBUG=1
+python run.py
+```
+
+#### Performance-Probleme
+
+**Problem: Simulation läuft sehr langsam**
+```python
+# Lösung: Datenbank-Indizes prüfen
+sqlite3 instance/bess.db ".indices"
+
+# Fehlende Indizes hinzufügen
+sqlite3 instance/bess.db "
+CREATE INDEX IF NOT EXISTS idx_spot_prices_datetime ON spot_prices(datetime);
+CREATE INDEX IF NOT EXISTS idx_simulation_results_project ON simulation_results(project_id);
+"
+```
+
+**Problem: Hohe CPU-Last**
+```bash
+# Lösung: Prozesse überwachen
+top -p $(pgrep -f "python run.py")
+
+# Oder mit htop
+htop -p $(pgrep -f "python run.py")
+```
+
+**Problem: Hoher Speicherverbrauch**
+```python
+# Lösung: Garbage Collection aktivieren
+import gc
+gc.collect()
+
+# Oder Memory-Profiling
+pip install memory-profiler
+python -m memory_profiler run.py
+```
+
+#### Import-Probleme
+
+**Problem: Spot-Preise werden nicht importiert**
+```bash
+# Lösung: API-Schlüssel prüfen
+echo $APG_API_KEY
+echo $ENTSOE_API_KEY
+
+# Manueller Test
+curl "https://api.apg.at/api/spot-prices?date=2025-09-05"
+```
+
+**Problem: Excel-Dateien können nicht gelesen werden**
+```python
+# Lösung: Dependencies prüfen
+pip install openpyxl xlrd
+
+# Oder Datei-Format prüfen
+file data/import.xlsx
+```
+
+**Problem: CSV-Import schlägt fehl**
+```python
+# Lösung: Encoding prüfen
+import chardet
+with open('data.csv', 'rb') as f:
+    result = chardet.detect(f.read())
+    print(result['encoding'])
+```
+
+#### Export-Probleme
+
+**Problem: PDF-Export funktioniert nicht**
+```bash
+# Lösung: Dependencies prüfen
+pip install reportlab weasyprint
+
+# Oder System-Packages installieren
+sudo apt-get install libcairo2-dev libpango1.0-dev  # Ubuntu
+```
+
+**Problem: Excel-Export ist leer**
+```python
+# Lösung: Daten prüfen
+from app import create_app, db
+app = create_app()
+with app.app_context():
+    projects = db.session.query(Project).all()
+    print(f"Anzahl Projekte: {len(projects)}")
+```
+
+**Problem: Chart-Export funktioniert nicht**
+```bash
+# Lösung: Canvas-Dependencies prüfen
+pip install pillow
+
+# Oder Node.js für Chart-Export
+npm install canvas
+```
+
+### 🔍 Debugging-Tools
+
+#### Log-Analyse
+```bash
+# Logs in Echtzeit verfolgen
+tail -f logs/bess.log
+
+# Fehler filtern
+grep "ERROR" logs/bess.log
+
+# Spezifische Zeiträume
+grep "2025-09-05" logs/bess.log
+```
+
+#### Datenbank-Debugging
+```sql
+-- Tabellen auflisten
+.tables
+
+-- Schema einer Tabelle
+.schema projects
+
+-- Daten prüfen
+SELECT COUNT(*) FROM projects;
+SELECT * FROM projects LIMIT 5;
+
+-- Performance-Analyse
+EXPLAIN QUERY PLAN SELECT * FROM projects WHERE name LIKE '%Test%';
+```
+
+#### API-Debugging
+```bash
+# API-Endpunkte testen
+curl -v http://localhost:5000/api/health
+
+# Mit Authentication
+curl -H "Authorization: Bearer <token>" http://localhost:5000/api/projects
+
+# Request/Response loggen
+curl -v -X POST http://localhost:5000/api/simulate \
+  -H "Content-Type: application/json" \
+  -d '{"project_id": 1, "use_case": "UC1"}'
+```
+
+#### Frontend-Debugging
+```javascript
+// Browser-Konsole
+console.log('Debug-Info:', data);
+
+// Network-Tab prüfen
+// F12 -> Network -> XHR/Fetch
+
+// Local Storage prüfen
+console.log(localStorage.getItem('session'));
+
+// Session Storage prüfen
+console.log(sessionStorage.getItem('csrf_token'));
+```
+
+### 🛠️ Wartung & Monitoring
+
+#### Regelmäßige Wartung
+```bash
+# Tägliche Backups
+./backup_database.py
+
+# Log-Rotation
+logrotate /etc/logrotate.d/bess
+
+# Datenbank-Optimierung
+sqlite3 instance/bess.db "VACUUM;"
+sqlite3 instance/bess.db "ANALYZE;"
+```
+
+#### System-Monitoring
+```bash
+# Disk-Space prüfen
+df -h
+
+# Memory-Usage
+free -h
+
+# CPU-Load
+uptime
+
+# Process-Status
+ps aux | grep python
+```
+
+#### Health-Checks
+```bash
+# Automatischer Health-Check
+curl -f http://localhost:5000/health || echo "Service down"
+
+# Datenbank-Connectivity
+sqlite3 instance/bess.db "SELECT 1;"
+
+# API-Response-Time
+time curl -s http://localhost:5000/api/health
+```
+
+### 📞 Support-Kontakte
+
+#### Technischer Support
+- **GitHub Issues:** https://github.com/HSchlagi/bess-simulation/issues
+- **E-Mail:** office@instanet.at
+- **Dokumentation:** Diese Datei
+
+#### Community-Hilfe
+- **GitHub Discussions:** Für Fragen und Diskussionen
+- **Wiki:** Erweiterte Dokumentation
+- **Stack Overflow:** Tag: `bess-simulation`
+
+#### Notfall-Kontakte
+- **Kritische Bugs:** office@instanet.at (Betreff: URGENT)
+- **Sicherheitslücken:** security@instanet.at
+- **Datenverlust:** backup@instanet.at
+
+---
+
+## 📚 GLOSSAR
+
+### 🔋 BESS & Batterietechnik
+
+**BESS (Battery Energy Storage System)**
+- Batteriespeicher-System für elektrische Energie
+- Kombination aus Batteriezellen, Batteriemanagement-System (BMS) und Wechselrichter
+- Ermöglicht Speicherung und bedarfsgerechte Abgabe von Strom
+
+**Batteriekapazität (Capacity)**
+- Gesamtenergie, die eine Batterie speichern kann
+- Gemessen in kWh (Kilowattstunden)
+- Beeinflusst die Speicherdauer und Anwendungsmöglichkeiten
+
+**C-Rate**
+- Entlade-/Laderate der Batterie
+- 1C = vollständige Entladung in 1 Stunde
+- 0.5C = vollständige Entladung in 2 Stunden
+- Höhere C-Raten ermöglichen schnellere Lade-/Entladevorgänge
+
+**SoC (State of Charge)**
+- Aktueller Ladezustand der Batterie
+- Angabe in Prozent (0% = leer, 100% = voll)
+- Wichtig für Batterieschutz und Optimierung
+
+**DoD (Depth of Discharge)**
+- Entladetiefe der Batterie
+- Angabe in Prozent des maximalen Ladezustands
+- Beeinflusst die Lebensdauer der Batterie
+
+**Zyklenlebensdauer (Cycle Life)**
+- Anzahl der vollständigen Lade-/Entladezyklen
+- Bis die Batterie 80% ihrer ursprünglichen Kapazität erreicht
+- Wichtig für Wirtschaftlichkeitsberechnungen
+
+**Wirkungsgrad (Efficiency)**
+- Verhältnis von abgegebener zu aufgenommener Energie
+- Lade-Wirkungsgrad: Verluste beim Laden
+- Entlade-Wirkungsgrad: Verluste beim Entladen
+- Typisch: 90-95% für Lithium-Ionen-Batterien
+
+**Selbstentladung (Self-Discharge)**
+- Verlust der gespeicherten Energie ohne Nutzung
+- Angabe in % pro Tag oder Monat
+- Beeinflusst die Langzeitspeicherung
+
+### ⚡ Energiewirtschaft
+
+**Spot-Preis (Spot Price)**
+- Aktueller Marktpreis für Strom
+- Wird stündlich an der Strombörse festgelegt
+- Basis für Intraday-Trading und Arbitrage
+
+**Intraday-Trading**
+- Handel mit Strom für den gleichen Tag
+- Nutzung von Preisunterschieden zwischen Stunden
+- Wichtig für BESS-Wirtschaftlichkeit
+
+**Redispatch**
+- Eingriffe des Netzbetreibers zur Netzstabilisierung
+- Reduzierung der Einspeisung bei Netzengpässen
+- BESS kann als Redispatch-Maßnahme eingesetzt werden
+
+**Eigenverbrauch (Self-Consumption)**
+- Direkte Nutzung des selbst erzeugten Stroms
+- Vermeidung von Netzbezug und -einspeisung
+- Erhöht die Wirtschaftlichkeit von PV-Anlagen
+
+**Netzparität (Grid Parity)**
+- Punkt, an dem erneuerbare Energien kostengünstiger sind als Netzstrom
+- Wichtiger Meilenstein für die Energiewende
+- BESS beschleunigt die Erreichung der Netzparität
+
+**Peak-Shaving**
+- Reduzierung der Spitzenlast
+- BESS entlädt sich bei hohem Stromverbrauch
+- Reduziert Netzbelastung und Kosten
+
+**Load-Shifting**
+- Verschiebung des Stromverbrauchs
+- Laden bei niedrigen Preisen, Entladen bei hohen Preisen
+- Optimierung der Energiekosten
+
+### 📊 Wirtschaftlichkeit
+
+**NPV (Net Present Value)**
+- Kapitalwert einer Investition
+- Summe aller zukünftigen Cashflows, abgezinst auf heute
+- Positive Werte bedeuten profitable Investitionen
+
+**IRR (Internal Rate of Return)**
+- Interner Zinsfuß einer Investition
+- Zinssatz, bei dem NPV = 0
+- Vergleichsmöglichkeit mit anderen Investitionen
+
+**Payback-Periode**
+- Zeit bis zur Amortisation der Investition
+- Wann die kumulierten Erträge die Investitionskosten decken
+- Wichtig für Liquiditätsplanung
+
+**LCOE (Levelized Cost of Energy)**
+- Stromgestehungskosten über die Lebensdauer
+- Gesamtkosten dividiert durch erzeugte Energie
+- Vergleichsmöglichkeit verschiedener Technologien
+
+**ROI (Return on Investment)**
+- Rendite einer Investition
+- Verhältnis von Gewinn zu Investition
+- Angabe in Prozent pro Jahr
+
+**CAPEX (Capital Expenditure)**
+- Investitionsausgaben
+- Einmalige Kosten für Anschaffung und Installation
+- Hauptkostenfaktor bei BESS
+
+**OPEX (Operational Expenditure)**
+- Betriebsausgaben
+- Laufende Kosten für Wartung, Versicherung, etc.
+- Wichtig für langfristige Wirtschaftlichkeit
+
+### 🔧 Technische Begriffe
+
+**Wechselrichter (Inverter)**
+- Wandelt Gleichstrom (DC) in Wechselstrom (AC) um
+- Wichtig für Netzanschluss und Verbraucher
+- Hat eigenen Wirkungsgrad und Kosten
+
+**BMS (Battery Management System)**
+- Überwacht und steuert die Batterie
+- Schutz vor Überladung, Tiefentladung, Überhitzung
+- Kommuniziert mit dem Wechselrichter
+
+**Grid-Tie**
+- Netzgekoppelte Anlage
+- BESS ist mit dem öffentlichen Netz verbunden
+- Ermöglicht Einspeisung und Bezug
+
+**Off-Grid**
+- Inselanlage ohne Netzanschluss
+- BESS als einzige Stromquelle
+- Höhere Anforderungen an Kapazität und Zuverlässigkeit
+
+**Hybrid-System**
+- Kombination verschiedener Energiequellen
+- PV + BESS + Wind + Generator
+- Optimierte Energieversorgung
+
+**Smart Grid**
+- Intelligentes Stromnetz
+- Bidirektionale Kommunikation zwischen Verbrauchern und Netz
+- BESS als wichtiger Bestandteil
+
+### 📈 Simulation & Modellierung
+
+**Use Case**
+- Anwendungsfall für BESS
+- UC1: Eigenverbrauchsoptimierung
+- UC2: Spot-Preis-Arbitrage
+- UC3: Redispatch
+- UC4: Kombinierte Optimierung
+
+**Zeitreihen-Simulation**
+- Berechnung über einen bestimmten Zeitraum
+- Stündliche oder viertelstündliche Auflösung
+- Berücksichtigung von Lastprofilen und Erzeugung
+
+**Monte-Carlo-Simulation**
+- Zufallsbasierte Simulation
+- Berücksichtigung von Unsicherheiten
+- Mehrere Durchläufe für statistische Aussagen
+
+**Sensitivitätsanalyse**
+- Untersuchung der Auswirkungen von Parameteränderungen
+- Identifikation kritischer Einflussfaktoren
+- Risikobewertung der Investition
+
+**Benchmarking**
+- Vergleich mit Referenzsystemen
+- Bewertung der Performance
+- Identifikation von Verbesserungspotenzialen
+
+### 🌐 Daten & APIs
+
+**APG (Austrian Power Grid)**
+- Österreichischer Übertragungsnetzbetreiber
+- Stellt Spot-Preise und Netzinformationen bereit
+- Wichtig für österreichische BESS-Projekte
+
+**ENTSOE (European Network of Transmission System Operators)**
+- Europäischer Verband der Übertragungsnetzbetreiber
+- Harmonisierte Daten und Regeln
+- Wichtig für grenzüberschreitende Projekte
+
+**PVGIS (Photovoltaic Geographical Information System)**
+- EU-Tool für Solarstrahlungsdaten
+- Kostenlose Wetterdaten für Europa
+- Wichtig für PV-Simulationen
+
+**eHyd**
+- Österreichisches Gewässerinformationssystem
+- Pegelstände und Abflüsse
+- Wichtig für Wasserkraft-Simulationen
+
+**CSV (Comma-Separated Values)**
+- Textformat für tabellarische Daten
+- Einfacher Import/Export von Zeitreihen
+- Standardformat für Lastprofile
+
+**JSON (JavaScript Object Notation)**
+- Datenformat für API-Kommunikation
+- Strukturierte Datenübertragung
+- Standard für moderne Web-APIs
+
+### 🔒 Sicherheit & Compliance
+
+**CSRF (Cross-Site Request Forgery)**
+- Sicherheitslücke in Webanwendungen
+- Schutz durch CSRF-Token
+- Wichtig für Formular-Sicherheit
+
+**SQL-Injection**
+- Angriff auf Datenbanken
+- Schutz durch Parameterisierte Queries
+- Wichtig für Datensicherheit
+
+**XSS (Cross-Site Scripting)**
+- Angriff durch schädliche Skripte
+- Schutz durch Input-Validierung
+- Wichtig für Benutzer-Sicherheit
+
+**GDPR (General Data Protection Regulation)**
+- EU-Datenschutzverordnung
+- Schutz personenbezogener Daten
+- Wichtig für Compliance
+
+**ISO 27001**
+- Standard für Informationssicherheit
+- Zertifizierung von Sicherheitsmanagementsystemen
+- Wichtig für Unternehmenssicherheit
+
+### 📱 Software & Technologie
+
+**Flask**
+- Python Web-Framework
+- Einfach und flexibel
+- Basis für BESS-Simulation
+
+**SQLite**
+- Leichte Datenbank
+- Dateibasiert, keine Server erforderlich
+- Ideal für Entwicklung und kleine Anwendungen
+
+**Chart.js**
+- JavaScript-Bibliothek für Charts
+- Interaktive Grafiken
+- Wichtig für Datenvisualisierung
+
+**Tailwind CSS**
+- Utility-first CSS-Framework
+- Schnelle UI-Entwicklung
+- Responsive Design
+
+**Docker**
+- Containerisierung von Anwendungen
+- Einheitliche Deployment-Umgebung
+- Wichtig für Produktions-Deployment
+
+**Git**
+- Versionskontrollsystem
+- Zusammenarbeit und Backup
+- Wichtig für Software-Entwicklung
+
+### 📊 Messungen & Einheiten
+
+**kW (Kilowatt)**
+- Einheit für Leistung
+- 1 kW = 1000 Watt
+- Wichtig für Lade-/Entladeleistung
+
+**kWh (Kilowattstunde)**
+- Einheit für Energie
+- 1 kWh = 1000 Wh
+- Wichtig für Batteriekapazität
+
+**MWh (Megawattstunde)**
+- Einheit für große Energiemengen
+- 1 MWh = 1000 kWh
+- Wichtig für Großanlagen
+
+**€/kWh**
+- Einheit für Strompreise
+- Kosten pro Kilowattstunde
+- Wichtig für Wirtschaftlichkeitsberechnungen
+
+**€/kW**
+- Einheit für Leistungspreise
+- Kosten pro Kilowatt
+- Wichtig für Investitionskosten
+
+**% (Prozent)**
+- Relative Angaben
+- Wirkungsgrade, SoC, DoD
+- Wichtig für Effizienz-Bewertungen
+
+---
+
 ## 📝 Changelog
 
 ### Version 2.0 (September 2025)

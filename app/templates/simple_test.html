@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einfacher Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Einfacher JavaScript Test</h1>
+    
+    <button onclick="test1()">Test 1 - Einfacher Alert</button>
+    <button onclick="test2()">Test 2 - DOM Manipulation</button>
+    <button onclick="test3()">Test 3 - API Call</button>
+    
+    <div id="result" class="result">Hier erscheinen die Ergebnisse...</div>
+
+    <script>
+        function test1() {
+            alert('Test 1 funktioniert!');
+            document.getElementById('result').innerHTML = '<div class="success">✅ Test 1 erfolgreich - Alert funktioniert</div>';
+        }
+        
+        function test2() {
+            document.getElementById('result').innerHTML = '<div class="success">✅ Test 2 erfolgreich - DOM Manipulation funktioniert</div>';
+        }
+        
+        function test3() {
+            document.getElementById('result').innerHTML = '<div class="success">✅ Test 3 erfolgreich - JavaScript funktioniert</div>';
+            
+            // Einfacher API Test
+            fetch('/api/ml/price-forecast', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: 1
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('result').innerHTML = '<div class="success">✅ Test 3 erfolgreich - API funktioniert!<br>Daten: ' + data.data.forecast.length + ' Einträge</div>';
+            })
+            .catch(error => {
+                document.getElementById('result').innerHTML = '<div class="error">❌ Test 3 fehlgeschlagen - API Fehler: ' + error.message + '</div>';
+            });
+        }
+        
+        // Debug Info
+        console.log('Einfacher Test geladen');
+        console.log('Funktionen verfügbar:', {
+            test1: typeof test1,
+            test2: typeof test2,
+            test3: typeof test3
+        });
+    </script>
+</body>
+</html>

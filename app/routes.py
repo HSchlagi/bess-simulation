@@ -104,6 +104,22 @@ def help():
     """Hilfe-Seite mit Anleitungen und Vorgehensweisen"""
     return render_template('help.html')
 
+@main_bp.route('/ml-dashboard')
+@login_required
+def ml_dashboard():
+    """ML & KI Dashboard für intelligente BESS-Optimierung"""
+    return render_template('ml_dashboard.html')
+
+@main_bp.route('/test-ml')
+def test_ml():
+    """Test-Seite für ML-Dashboard"""
+    return render_template('test_ml_dashboard.html')
+
+@main_bp.route('/simple-test')
+def simple_test():
+    """Einfacher JavaScript Test"""
+    return render_template('simple_test.html')
+
 @main_bp.route('/use-case-manager')
 def use_case_manager():
     """Use Case Manager Seite"""
