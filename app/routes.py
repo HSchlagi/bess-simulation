@@ -98,6 +98,12 @@ def projects():
 def customers():
     return render_template('customers.html')
 
+@main_bp.route('/help')
+@login_required
+def help():
+    """Hilfe-Seite mit Anleitungen und Vorgehensweisen"""
+    return render_template('help.html')
+
 @main_bp.route('/use-case-manager')
 def use_case_manager():
     """Use Case Manager Seite"""

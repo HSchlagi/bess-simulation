@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+{% block title %}BESS Simulation - Hilfe & Anleitungen{% endblock %}
+
+{% block extra_css %}
+<!-- Nur Tailwind CSS - keine benutzerdefinierten Styles -->
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
+        <div class="container mx-auto px-4 text-center">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-5xl font-bold mb-4">🆘 BESS Simulation</h1>
+                <h2 class="text-2xl font-light mb-6">Hilfe & Anleitungen</h2>
+                <p class="text-xl text-blue-100 mb-8">Schnelle Hilfe für alle wichtigen Funktionen und Vorgehensweisen</p>
+                <div class="w-full bg-blue-700 rounded-full h-2 mb-4">
+                    <div class="bg-white h-2 rounded-full w-full transition-all duration-1000"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mx-auto px-4 py-12">
+        <!-- Feature-Übersicht -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">✨</span>
+                Hauptfunktionen im Überblick
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-project-diagram text-3xl text-blue-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-blue-800 mb-2">Projekt-Management</h4>
+                    <p class="text-blue-600 text-sm">Vollständige BESS-Projektverwaltung mit Kunden- und Standortdaten</p>
+                </div>
+                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-chart-line text-3xl text-green-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-green-800 mb-2">Simulation & Analyse</h4>
+                    <p class="text-green-600 text-sm">10-Jahres-Wirtschaftlichkeitsanalysen mit verschiedenen Use Cases</p>
+                </div>
+                <div class="bg-purple-50 border-2 border-purple-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-rocket text-3xl text-purple-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-purple-800 mb-2">Dispatch-Optimierung</h4>
+                    <p class="text-purple-600 text-sm">Intelligente Betriebsstrategien für maximale Erträge</p>
+                </div>
+                <div class="bg-orange-50 border-2 border-orange-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-database text-3xl text-orange-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-orange-800 mb-2">Datenimport</h4>
+                    <p class="text-orange-600 text-sm">Spot-Preise, Lastprofile und Wetterdaten einfach importieren</p>
+                </div>
+                <div class="bg-red-50 border-2 border-red-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-download text-3xl text-red-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-red-800 mb-2">Export & Reports</h4>
+                    <p class="text-red-600 text-sm">Professionelle PDF- und Excel-Berichte generieren</p>
+                </div>
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-users text-3xl text-indigo-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-indigo-800 mb-2">Multi-User-System</h4>
+                    <p class="text-indigo-600 text-sm">Rollenbasierte Zugriffskontrolle für Teams</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schnellzugriff -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <span class="text-3xl mr-3">🚀</span>
+                Schnellzugriff
+            </h3>
+            <p class="text-gray-600 mb-6">Klicken Sie auf einen Link, um direkt zum gewünschten Bereich zu springen:</p>
+            <div class="flex flex-wrap gap-3">
+                <a href="#projekt-erstellen" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    📋 Projekt erstellen
+                </a>
+                <a href="#simulation-starten" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    ⚡ Simulation starten
+                </a>
+                <a href="#dispatch-verwenden" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    🎯 Dispatch verwenden
+                </a>
+                <a href="#daten-importieren" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    📊 Daten importieren
+                </a>
+                <a href="#export-funktionen" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    📤 Export-Funktionen
+                </a>
+                <a href="#troubleshooting" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    🔧 Problemlösung
+                </a>
+            </div>
+        </div>
+
+        <!-- 1. Projekt erstellen -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="projekt-erstellen">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📋</span>
+                1. Neues Projekt erstellen
+            </h3>
+            
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Schritt-für-Schritt Anleitung:</h4>
+            <div class="space-y-4">
+                <div class="bg-gray-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">1</span>
+                        <div>
+                            <strong class="text-gray-800">Navigation:</strong> Klicken Sie auf "Projekte" → "Neues Projekt"
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">2</span>
+                        <div>
+                            <strong class="text-gray-800">Grunddaten eingeben:</strong>
+                            <ul class="mt-2 ml-4 space-y-1 text-gray-600">
+                                <li>• Projektname (z.B. "BESS Wien 2025")</li>
+                                <li>• Standort (PLZ und Bundesland)</li>
+                                <li>• Kunde zuordnen oder neuen Kunden erstellen</li>
+                                <li>• Beschreibung (optional)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">3</span>
+                        <div>
+                            <strong class="text-gray-800">BESS-Parameter konfigurieren:</strong>
+                            <ul class="mt-2 ml-4 space-y-1 text-gray-600">
+                                <li>• <strong>Kapazität:</strong> BESS-Größe in MWh (z.B. 8.0)</li>
+                                <li>• <strong>Leistung:</strong> Max. Lade-/Entladeleistung in MW (z.B. 2.0)</li>
+                                <li>• <strong>Wirkungsgrad:</strong> Lade-/Entladeeffizienz (Standard: 92%)</li>
+                                <li>• <strong>Tägliche Zyklen:</strong> Erwartete Nutzung (z.B. 1.5)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">4</span>
+                        <div>
+                            <strong class="text-gray-800">Speichern:</strong> Auto-Save ist aktiviert (alle 30 Sekunden)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <span class="text-2xl mr-3">💡</span>
+                    <div>
+                        <strong class="text-blue-800">Tipp:</strong> 
+                        <span class="text-blue-700">Verwenden Sie aussagekräftige Projektnamen, um später schnell das richtige Projekt zu finden.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Simulation starten -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="simulation-starten">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">⚡</span>
+                2. BESS-Simulation durchführen
+            </h3>
+            
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Navigation:</h4>
+            <p class="text-gray-600 mb-6">BESS-Analysen → BESS-Simulation</p>
+
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Vorgehensweise:</h4>
+            <div class="space-y-4">
+                <div class="bg-gray-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">1</span>
+                        <div>
+                            <strong class="text-gray-800">Projekt auswählen:</strong> Wählen Sie aus dem Dropdown-Menü
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">2</span>
+                        <div>
+                            <strong class="text-gray-800">Use Case wählen:</strong>
+                            <ul class="mt-2 ml-4 space-y-1 text-gray-600">
+                                <li>• <strong>UC1:</strong> Eigenverbrauch (Haushalte/Kleinbetriebe)</li>
+                                <li>• <strong>UC2:</strong> Peak Shaving (Industrie/Gewerbe)</li>
+                                <li>• <strong>UC3:</strong> Intraday-Arbitrage (Handel)</li>
+                                <li>• <strong>UC4:</strong> Regelreserve (Netzstabilität)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">3</span>
+                        <div>
+                            <strong class="text-gray-800">Parameter anpassen:</strong>
+                            <ul class="mt-2 ml-4 space-y-1 text-gray-600">
+                                <li>• Investitionskosten (€/kWh)</li>
+                                <li>• Betriebskosten (€/Jahr)</li>
+                                <li>• Strompreise (€/kWh)</li>
+                                <li>• Degradation (%/Jahr)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">4</span>
+                        <div>
+                            <strong class="text-gray-800">Simulation starten:</strong> Klicken Sie auf "Simulation starten"
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">5</span>
+                        <div>
+                            <strong class="text-gray-800">Ergebnisse analysieren:</strong> Warten Sie auf die Berechnung (ca. 30-60 Sekunden)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2 mt-8">Wichtige KPIs verstehen:</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <strong class="text-blue-800">NPV:</strong> Net Present Value - Barwert des Projekts
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <strong class="text-green-800">IRR:</strong> Internal Rate of Return - Rendite
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <strong class="text-purple-800">Payback:</strong> Amortisationszeit in Jahren
+                </div>
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                    <strong class="text-orange-800">LCOE:</strong> Levelized Cost of Energy - Stromgestehungskosten
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Dispatch verwenden -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="dispatch-verwenden">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">🎯</span>
+                3. Dispatch & Redispatch verwenden
+            </h3>
+            
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Navigation:</h4>
+            <p class="text-gray-600 mb-6">BESS-Analysen → Dispatch & Redispatch</p>
+
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Funktionen:</h4>
+            <div class="space-y-4">
+                <div class="bg-gray-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">1</span>
+                        <div>
+                            <strong class="text-gray-800">Projekt auswählen:</strong> Wählen Sie ein BESS-Projekt aus
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">2</span>
+                        <div>
+                            <strong class="text-gray-800">Zeitraum festlegen:</strong> Start- und Enddatum für die Simulation
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">3</span>
+                        <div>
+                            <strong class="text-gray-800">Auflösung wählen:</strong> 15min, 30min oder 60min
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">4</span>
+                        <div>
+                            <strong class="text-gray-800">Modus auswählen:</strong>
+                            <ul class="mt-2 ml-4 space-y-1 text-gray-600">
+                                <li>• <strong>Baseline:</strong> Standard-Betriebsstrategie</li>
+                                <li>• <strong>Redispatch:</strong> Optimierte Betriebsstrategie</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">5</span>
+                        <div>
+                            <strong class="text-gray-800">Simulation starten:</strong> Klicken Sie auf "Dispatch starten"
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <span class="text-2xl mr-3">⚠️</span>
+                    <div>
+                        <strong class="text-yellow-800">Hinweis:</strong> 
+                        <span class="text-yellow-700">Dispatch-Simulationen benötigen aktuelle Spot-Preise und Lastprofile. Stellen Sie sicher, dass diese Daten importiert sind.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Daten importieren -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="daten-importieren">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📊</span>
+                4. Daten importieren
+            </h3>
+            
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Navigation:</h4>
+            <p class="text-gray-600 mb-6">Daten → Datenimport-Center</p>
+
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Spot-Preise importieren:</h4>
+            <div class="space-y-4">
+                <div class="bg-gray-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">1</span>
+                        <div>
+                            <strong class="text-gray-800">Datei auswählen:</strong> CSV oder Excel-Datei mit Spot-Preisen
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">2</span>
+                        <div>
+                            <strong class="text-gray-800">Spalten zuordnen:</strong>
+                            <ul class="mt-2 ml-4 space-y-1 text-gray-600">
+                                <li>• Datum/Zeit (Format: YYYY-MM-DD HH:MM:SS)</li>
+                                <li>• Preis (€/MWh)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">3</span>
+                        <div>
+                            <strong class="text-gray-800">Datenvorschau prüfen:</strong> Kontrollieren Sie die ersten Zeilen
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 border-l-4 border-orange-500 p-4 rounded-r-lg">
+                    <div class="flex items-start">
+                        <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1">4</span>
+                        <div>
+                            <strong class="text-gray-800">Import starten:</strong> Klicken Sie auf "Importieren"
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2 mt-8">Unterstützte Dateiformate:</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                    <strong class="text-blue-800">CSV</strong><br>
+                    <span class="text-blue-600 text-sm">Komma-getrennt, UTF-8 Encoding</span>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <strong class="text-green-800">Excel</strong><br>
+                    <span class="text-green-600 text-sm">.xlsx-Dateien</span>
+                </div>
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+                    <strong class="text-purple-800">Max. Größe</strong><br>
+                    <span class="text-purple-600 text-sm">100MB pro Datei</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Export-Funktionen -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="export-funktionen">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📤</span>
+                5. Export-Funktionen nutzen
+            </h3>
+            
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Navigation:</h4>
+            <p class="text-gray-600 mb-6">Daten → Export-Zentrum</p>
+
+            <h4 class="text-xl font-semibold text-gray-700 mb-4 border-b-2 border-gray-200 pb-2">Verfügbare Export-Formate:</h4>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-red-50 border-2 border-red-200 rounded-lg p-6">
+                    <h5 class="text-lg font-semibold text-red-800 mb-3 flex items-center">
+                        <i class="fas fa-file-pdf text-2xl mr-2"></i>
+                        PDF-Export
+                    </h5>
+                    <ul class="text-red-600 text-sm space-y-1">
+                        <li>• Vollständige Berichte</li>
+                        <li>• Charts und Grafiken</li>
+                        <li>• Zusammenfassungen</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                    <h5 class="text-lg font-semibold text-green-800 mb-3 flex items-center">
+                        <i class="fas fa-file-excel text-2xl mr-2"></i>
+                        Excel-Export
+                    </h5>
+                    <ul class="text-green-600 text-sm space-y-1">
+                        <li>• Rohdaten</li>
+                        <li>• Berechnungen</li>
+                        <li>• Pivot-Tabellen</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <h5 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+                        <i class="fas fa-file-csv text-2xl mr-2"></i>
+                        CSV-Export
+                    </h5>
+                    <ul class="text-blue-600 text-sm space-y-1">
+                        <li>• Zeitreihen-Daten</li>
+                        <li>• Spot-Preise</li>
+                        <li>• Lastprofile</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Troubleshooting -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="troubleshooting">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">🔧</span>
+                6. Häufige Probleme & Lösungen
+            </h3>
+            
+            <div class="space-y-6">
+                <div class="bg-gray-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Projekt wird nicht gespeichert:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Alle Pflichtfelder ausfüllen (Name, Standort, BESS-Parameter)</li>
+                        <li>• <strong>Prüfen:</strong> Internetverbindung und Browser-Konsole</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Simulation lädt nicht:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Seite neu laden (F5)</li>
+                        <li>• <strong>Prüfen:</strong> Projekt-Parameter sind vollständig</li>
+                        <li>• <strong>Warten:</strong> Simulation kann 1-2 Minuten dauern</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Charts werden nicht angezeigt:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> JavaScript im Browser aktivieren</li>
+                        <li>• <strong>Prüfen:</strong> Browser-Konsole auf Fehlermeldungen</li>
+                        <li>• <strong>Alternative:</strong> Anderen Browser verwenden</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Import-Fehler bei CSV-Dateien:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> UTF-8 Encoding verwenden</li>
+                        <li>• <strong>Prüfen:</strong> Datumsformat (YYYY-MM-DD HH:MM:SS)</li>
+                        <li>• <strong>Kontrollieren:</strong> Keine leeren Zeilen oder Sonderzeichen</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Mobile Menü funktioniert nicht:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Browser-Cache leeren</li>
+                        <li>• <strong>Prüfen:</strong> Touch-Events sind aktiviert</li>
+                        <li>• <strong>Alternative:</strong> Desktop-Version verwenden</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <span class="text-2xl mr-3">💡</span>
+                    <div>
+                        <strong class="text-blue-800">Tipp:</strong> 
+                        <span class="text-blue-700">Bei anhaltenden Problemen verwenden Sie die Browser-Entwicklertools (F12) und prüfen Sie die Konsole auf Fehlermeldungen.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Tastenkürzel -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">⌨️</span>
+                7. Tastenkürzel & Shortcuts
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Allgemeine Shortcuts:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Strg + S:</strong> Projekt speichern</li>
+                        <li>• <strong>F5:</strong> Seite neu laden</li>
+                        <li>• <strong>F12:</strong> Entwicklertools öffnen</li>
+                        <li>• <strong>Esc:</strong> Dialoge schließen</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Navigation:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Alt + 1:</strong> Dashboard</li>
+                        <li>• <strong>Alt + 2:</strong> Projekte</li>
+                        <li>• <strong>Alt + 3:</strong> BESS-Analysen</li>
+                        <li>• <strong>Alt + 4:</strong> Daten</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Support & Kontakt -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📞</span>
+                8. Support & Kontakt
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-6">
+                    <h4 class="text-lg font-semibold text-blue-800 mb-3">Technischer Support:</h4>
+                    <ul class="text-blue-600 space-y-2">
+                        <li>• <strong>E-Mail:</strong> office@instanet.at</li>
+                        <li>• <strong>GitHub:</strong> https://github.com/HSchlagi/bess-simulation</li>
+                        <li>• <strong>Dokumentation:</strong> BESS_SIMULATION_DOKUMENTATION.md</li>
+                    </ul>
+                </div>
+                
+                <div class="bg-green-50 border-2 border-green-200 rounded-lg p-6">
+                    <h4 class="text-lg font-semibold text-green-800 mb-3">Hilfreiche Links:</h4>
+                    <ul class="text-green-600 space-y-2">
+                        <li>• <strong>Vollständige Dokumentation:</strong> Umfassende technische Details</li>
+                        <li>• <strong>API-Referenz:</strong> Für Entwickler und Integrationen</li>
+                        <li>• <strong>Changelog:</strong> Neueste Updates und Features</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mt-6">
+                <div class="flex items-start">
+                    <span class="text-2xl mr-3">💡</span>
+                    <div>
+                        <strong class="text-blue-800">Tipp:</strong> 
+                        <span class="text-blue-700">Bei Fragen oder Problemen können Sie auch die GitHub Issues verwenden oder eine E-Mail an den Support senden.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="bg-gradient-to-r from-gray-100 to-gray-200 py-8">
+        <div class="container mx-auto px-4 text-center">
+            <div class="flex justify-center items-center mb-4">
+                <i class="fas fa-battery-three-quarters text-3xl text-blue-600 mr-3"></i>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">BESS Simulation v2.0</h3>
+                    <p class="text-gray-600">Professionelle Batteriespeicher-Simulation</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500">
+                Letzte Aktualisierung: September 2025 | 
+                <a href="https://github.com/HSchlagi/bess-simulation" class="text-blue-600 hover:underline">GitHub</a> | 
+                <a href="mailto:office@instanet.at" class="text-blue-600 hover:underline">Support</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Einfaches JavaScript für Smooth Scrolling -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth Scrolling für Quick-Links
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
