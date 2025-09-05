@@ -9,14 +9,73 @@
 
 ## 📋 Inhaltsverzeichnis
 
+### **Teil I: Einführung und Grundlagen**
 1. [Überblick](#überblick)
+   - 1.1 Was ist BESS Simulation?
+   - 1.2 Kernfunktionalitäten im Detail
+   - 1.3 Hauptfunktionen
+   - 1.4 Zielgruppe und Anwendungsbereiche
+   - 1.5 Marktposition und Wettbewerbsvorteile
+
 2. [Installation & Setup](#installation--setup)
+   - 2.1 Systemanforderungen
+   - 2.2 Lokale Installation
+   - 2.3 Docker-Installation
+   - 2.4 Produktions-Deployment (Hetzner)
+   - 2.5 Konfiguration und Anpassung
+   - 2.6 Erste Schritte nach der Installation
+
+### **Teil II: Benutzerhandbuch**
 3. [Benutzerhandbuch](#benutzerhandbuch)
+   - 3.1 Erste Schritte und Anmeldung
+   - 3.2 Dashboard und Navigation
+   - 3.3 Projekt-Management im Detail
+   - 3.4 Simulation durchführen
+   - 3.5 Dispatch & Redispatch verwenden
+   - 3.6 Datenimport und -verwaltung
+   - 3.7 Export & Reporting
+   - 3.8 Multi-User-System und Berechtigungen
+
+### **Teil III: Technische Dokumentation**
 4. [Technische Dokumentation](#technische-dokumentation)
+   - 4.1 Architektur und Systemdesign
+   - 4.2 Datenmodell und Datenbankstruktur
+   - 4.3 Performance-Optimierung
+   - 4.4 Sicherheit und Datenschutz
+   - 4.5 Monitoring und Logging
+   - 4.6 Backup und Wiederherstellung
+
 5. [API-Referenz](#api-referenz)
+   - 5.1 Authentifizierung und Autorisierung
+   - 5.2 Projekt-API
+   - 5.3 Simulation-API
+   - 5.4 Dispatch-API
+   - 5.5 Datenimport-API
+   - 5.6 Export-API
+   - 5.7 Fehlerbehandlung und Statuscodes
+
+### **Teil IV: Erweiterte Themen**
 6. [Troubleshooting](#troubleshooting)
+   - 6.1 Häufige Probleme und Lösungen
+   - 6.2 Log-Analyse und Debugging
+   - 6.3 Performance-Probleme
+   - 6.4 Datenbank-Probleme
+   - 6.5 Netzwerk- und Verbindungsprobleme
+   - 6.6 Support und Kontakt
+
 7. [Entwickler-Guide](#entwickler-guide)
+   - 7.1 Entwicklungsumgebung einrichten
+   - 7.2 Code-Struktur und Standards
+   - 7.3 Testing und Qualitätssicherung
+   - 7.4 Deployment und CI/CD
+   - 7.5 Contributing und Pull Requests
+   - 7.6 Erweiterte Konfiguration
+
+### **Teil V: Anhänge**
 8. [Changelog](#changelog)
+9. [Glossar](#glossar)
+10. [Index](#index)
+11. [Lizenz und Impressum](#lizenz-und-impressum)
 
 ---
 
@@ -24,60 +83,360 @@
 
 ### Was ist BESS Simulation?
 
-Die **BESS Simulation** ist eine professionelle Web-Anwendung zur Simulation von **Batterie-Energiespeichersystemen (BESS)** mit Fokus auf:
+Die **BESS Simulation** ist eine professionelle, webbasierte Anwendung zur umfassenden Simulation und Wirtschaftlichkeitsanalyse von **Batterie-Energiespeichersystemen (BESS)**. Das System wurde speziell für den österreichischen Energiemarkt entwickelt und bietet eine vollständige Lösung für die Planung, Optimierung und Bewertung von Energiespeicherprojekten.
 
-- **Wirtschaftlichkeitsanalysen** für BESS-Projekte
-- **Dispatch-Optimierung** für verschiedene Betriebsmodi
-- **Integration erneuerbarer Energien** (PV, Wasserkraft)
-- **Intraday-Arbitrage** und Marktoptimierung
-- **Österreichische Marktdaten** und Regularien
+#### **Kernfunktionalitäten im Detail:**
+
+**Wirtschaftlichkeitsanalysen für BESS-Projekte:**
+- Durchführung von 10-Jahres-Wirtschaftlichkeitsanalysen mit detaillierten Cashflow-Berechnungen
+- Berechnung aller relevanten KPIs (NPV, IRR, Payback-Zeit, LCOE)
+- Berücksichtigung von Investitionskosten, Betriebskosten, Degradation und Marktentwicklungen
+- Vergleich verschiedener Use Cases (Eigenverbrauch, Peak Shaving, Intraday-Arbitrage, Regelreserve)
+- Sensitivitätsanalysen für kritische Parameter
+
+**Dispatch-Optimierung für verschiedene Betriebsmodi:**
+- Intelligente Betriebsstrategien für maximale Erträge
+- 15-Minuten-Auflösung für präzise Marktteilnahme
+- Integration von Spot-Preisen, Intraday-Märkten und Regelreserve
+- Baseline- und Redispatch-Simulationen
+- Automatische Optimierung der Lade-/Entladezyklen
+
+**Integration erneuerbarer Energien (PV, Wasserkraft):**
+- Vollständige Integration von Photovoltaik-Anlagen mit realistischen Ertragsprognosen
+- Wasserkraft-Integration mit EHYD-Daten für österreichische Flüsse
+- Wetterdaten-Integration über PVGIS-API
+- Kombinierte Simulation von BESS + erneuerbare Energien
+- Optimierung der Eigenverbrauchsquote
+
+**Intraday-Arbitrage und Marktoptimierung:**
+- Automatische Erkennung von Arbitrage-Möglichkeiten
+- Integration österreichischer Spot-Preise (APG)
+- Intraday-Handelssimulation mit realistischen Spreads
+- Regelreserve-Marktteilnahme mit Frequenzhaltung
+- Optimierung der Marktteilnahme-Strategien
+
+**Österreichische Marktdaten und Regularien:**
+- Vollständige Integration der österreichischen Strommarktstruktur
+- APG-Spot-Preise mit historischen und aktuellen Daten
+- ENTSO-E-Integration für grenzüberschreitende Märkte
+- Berücksichtigung österreichischer Netzentgelte und Abgaben
+- Compliance mit österreichischen Energieregularien
 
 ### Hauptfunktionen
 
-✅ **Projekt-Management** - Vollständige BESS-Projektverwaltung  
-✅ **Simulation-Engine** - 10-Jahres-Wirtschaftlichkeitsanalysen  
-✅ **Dispatch-Integration** - Optimierte Betriebsstrategien  
-✅ **Datenimport** - Spot-Preise, Lastprofile, Wetterdaten  
-✅ **Export-Funktionen** - PDF, Excel, CSV-Reports  
-✅ **Multi-User-System** - Rollenbasierte Zugriffskontrolle  
-✅ **Mobile-Optimiert** - Responsive Design für alle Geräte  
+#### ✅ **Projekt-Management - Vollständige BESS-Projektverwaltung**
+Das umfassende Projekt-Management-System ermöglicht die vollständige Verwaltung von BESS-Projekten von der ersten Idee bis zur finalen Implementierung:
+
+- **Projekt-Erstellung:** Intuitive Benutzeroberfläche für die Eingabe aller relevanten Projektparameter
+- **Kundenverwaltung:** Vollständige Kundenstammdaten mit Kontaktinformationen und Projektzuordnung
+- **Standort-Management:** Geografische Zuordnung mit PLZ, Bundesland und spezifischen Standortdaten
+- **BESS-Parameter:** Detaillierte Konfiguration von Kapazität, Leistung, Wirkungsgrad und Zyklen
+- **Projekt-Tracking:** Verfolgung des Projektstatus von der Planung bis zur Umsetzung
+- **Auto-Save:** Automatisches Speichern alle 30 Sekunden zur Datensicherheit
+- **Projekt-Archivierung:** Langzeitarchivierung abgeschlossener Projekte
+
+#### ✅ **Simulation-Engine - 10-Jahres-Wirtschaftlichkeitsanalysen**
+Die leistungsstarke Simulation-Engine führt umfassende Wirtschaftlichkeitsanalysen über einen Zeitraum von 10 Jahren durch:
+
+- **Use Case-Simulationen:** Spezifische Simulationen für Eigenverbrauch, Peak Shaving, Intraday-Arbitrage und Regelreserve
+- **KPI-Berechnungen:** Automatische Berechnung von NPV, IRR, Payback-Zeit, LCOE und weiteren Kennzahlen
+- **Cashflow-Analysen:** Detaillierte monatliche und jährliche Cashflow-Berechnungen
+- **Sensitivitätsanalysen:** Untersuchung der Auswirkungen von Parameteränderungen
+- **Szenario-Vergleiche:** Vergleich verschiedener Betriebsstrategien und Marktbedingungen
+- **Degradation-Modellierung:** Realistische Modellierung der Batteriealterung über die Zeit
+- **Marktentwicklungen:** Berücksichtigung von Strompreisentwicklungen und Marktveränderungen
+
+#### ✅ **Dispatch-Integration - Optimierte Betriebsstrategien**
+Die Dispatch-Integration bietet intelligente Betriebsstrategien für maximale Erträge:
+
+- **15-Minuten-Auflösung:** Hochauflösende Simulation für präzise Marktteilnahme
+- **Spot-Preis-Integration:** Automatische Integration aktueller APG-Spot-Preise
+- **Intraday-Handel:** Simulation des Intraday-Handels mit realistischen Spreads
+- **Regelreserve:** Integration der österreichischen Regelreserve-Märkte
+- **Baseline-Simulation:** Standard-Betriebsstrategie als Referenz
+- **Redispatch-Optimierung:** Optimierte Betriebsstrategie für maximale Erträge
+- **Echtzeit-Anpassungen:** Dynamische Anpassung der Strategien basierend auf Marktbedingungen
+
+#### ✅ **Datenimport - Spot-Preise, Lastprofile, Wetterdaten**
+Umfassendes Datenimport-System für alle relevanten Markt- und Wetterdaten:
+
+- **Spot-Preis-Import:** Automatischer und manueller Import von APG-Spot-Preisen
+- **Lastprofil-Integration:** Import von Haushalts-, Gewerbe- und Industrieprofilen
+- **Wetterdaten:** Integration von PVGIS-Wetterdaten für PV-Simulationen
+- **EHYD-Integration:** Automatischer Import von Wasserkraftdaten für österreichische Flüsse
+- **CSV/Excel-Support:** Unterstützung verschiedener Dateiformate
+- **Datenvalidierung:** Automatische Validierung und Bereinigung importierter Daten
+- **API-Integrationen:** Direkte Anbindung an externe Datenquellen
+
+#### ✅ **Export-Funktionen - PDF, Excel, CSV-Reports**
+Professionelle Export-Funktionen für alle Analyseergebnisse:
+
+- **PDF-Reports:** Professionelle Berichte mit Charts, Tabellen und Zusammenfassungen
+- **Excel-Export:** Vollständige Rohdaten und Berechnungen für weitere Analysen
+- **CSV-Export:** Zeitreihen-Daten für externe Analysetools
+- **Chart-Export:** Hochauflösende Grafiken für Präsentationen
+- **Zusammenfassungs-Reports:** Executive Summary für Entscheidungsträger
+- **Vergleichs-Reports:** Vergleich verschiedener Projekte und Szenarien
+- **Anpassbare Templates:** Individuell anpassbare Report-Templates
+
+#### ✅ **Multi-User-System - Rollenbasierte Zugriffskontrolle**
+Sicheres Multi-User-System mit differenzierten Zugriffsrechten:
+
+- **Benutzerverwaltung:** Vollständige Verwaltung von Benutzern und Rollen
+- **Rollenbasierte Rechte:** Admin, User und Viewer mit unterschiedlichen Berechtigungen
+- **Projekt-Zugriffe:** Benutzer-spezifische Zugriffe auf Projekte
+- **Session-Management:** Sichere Session-Verwaltung mit automatischer Abmeldung
+- **Audit-Log:** Vollständige Protokollierung aller Benutzeraktivitäten
+- **Passwort-Sicherheit:** Bcrypt-Verschlüsselung für maximale Sicherheit
+- **CSRF-Protection:** Schutz vor Cross-Site-Request-Forgery-Angriffen
+
+#### ✅ **Mobile-Optimiert - Responsive Design für alle Geräte**
+Vollständig responsive Anwendung für optimale Nutzung auf allen Geräten:
+
+- **Responsive Design:** Optimierte Darstellung für Desktop, Tablet und Mobile
+- **Touch-Optimierung:** Speziell optimierte Touch-Events für mobile Geräte
+- **Mobile-Menü:** Intuitive Navigation für kleine Bildschirme
+- **Cross-Browser-Kompatibilität:** Unterstützung aller modernen Browser
+- **Progressive Web App:** PWA-Features für bessere mobile Erfahrung
+- **Offline-Funktionalität:** Grundlegende Funktionen auch ohne Internetverbindung
+- **Performance-Optimierung:** Optimierte Ladezeiten für mobile Geräte  
 
 ### Zielgruppe
 
-- **Energieberater** und Ingenieurbüros
-- **BESS-Hersteller** und Systemintegratoren
-- **Investoren** und Projektentwickler
-- **Forschungseinrichtungen** und Universitäten
-- **Energieversorger** und Stadtwerke
+#### **Energieberater und Ingenieurbüros**
+Professionelle Beratungsunternehmen, die ihre Kunden bei der Planung und Umsetzung von Energiespeicherprojekten unterstützen:
+
+- **Projektplanung:** Umfassende Wirtschaftlichkeitsanalysen für Kundenprojekte
+- **Technische Beratung:** Detaillierte technische Auslegung von BESS-Systemen
+- **Marktanalysen:** Bewertung verschiedener Geschäftsmodelle und Use Cases
+- **Kundenpräsentationen:** Professionelle Reports und Präsentationen
+- **Projektvergleich:** Vergleich verschiedener Technologien und Anbieter
+- **Regulatorische Beratung:** Unterstützung bei der Einhaltung österreichischer Vorschriften
+
+#### **BESS-Hersteller und Systemintegratoren**
+Unternehmen, die Batteriespeichersysteme entwickeln, herstellen oder integrieren:
+
+- **Produktentwicklung:** Simulation verschiedener Systemkonfigurationen
+- **Marktanalyse:** Bewertung der Marktchancen für verschiedene Produkte
+- **Kundenberatung:** Technische und wirtschaftliche Beratung für Endkunden
+- **Systemoptimierung:** Optimierung der Systemparameter für maximale Erträge
+- **Verkaufsunterstützung:** Professionelle Tools für das Verkaufsteam
+- **Wettbewerbsanalyse:** Vergleich mit konkurrierenden Lösungen
+
+#### **Investoren und Projektentwickler**
+Finanzinvestoren und Projektentwickler, die in Energiespeicherprojekte investieren:
+
+- **Due Diligence:** Umfassende Wirtschaftlichkeitsprüfung vor Investitionsentscheidungen
+- **Risikobewertung:** Analyse verschiedener Risikofaktoren und Szenarien
+- **Portfolio-Management:** Verwaltung mehrerer Energiespeicherprojekte
+- **Renditeoptimierung:** Optimierung der Investitionsrendite durch verschiedene Strategien
+- **Marktentwicklung:** Bewertung der langfristigen Marktentwicklung
+- **Exit-Strategien:** Bewertung verschiedener Exit-Optionen
+
+#### **Forschungseinrichtungen und Universitäten**
+Akademische Institutionen, die im Bereich der Energiespeicherung forschen:
+
+- **Forschungsprojekte:** Simulation verschiedener Forschungsansätze
+- **Technologiebewertung:** Bewertung neuer Technologien und Konzepte
+- **Marktstudien:** Analyse der Marktentwicklung und -trends
+- **Lehre:** Einsatz in der Ausbildung von Studierenden
+- **Publikationen:** Unterstützung bei der Erstellung wissenschaftlicher Publikationen
+- **Kooperationen:** Zusammenarbeit mit Industrie und anderen Forschungseinrichtungen
+
+#### **Energieversorger und Stadtwerke**
+Traditionelle Energieversorger, die in den Energiespeichermarkt expandieren:
+
+- **Portfolio-Erweiterung:** Integration von Energiespeichern in das bestehende Portfolio
+- **Netzstabilität:** Verbesserung der Netzstabilität durch Energiespeicher
+- **Kundenservice:** Erweiterte Dienstleistungen für Endkunden
+- **Regelenergie:** Teilnahme an Regelenergiemärkten
+- **Eigenverbrauch:** Optimierung des Eigenverbrauchs erneuerbarer Energien
+- **Innovation:** Entwicklung neuer Geschäftsmodelle im Energiesektor
+
+### Marktposition und Wettbewerbsvorteile
+
+#### **Einzigartige Marktposition**
+Die BESS Simulation positioniert sich als führende Lösung für die österreichische Energiespeicherbranche durch ihre spezialisierte Ausrichtung auf den österreichischen Markt und ihre umfassende Funktionalität:
+
+**Österreichische Marktspezialisierung:**
+- **APG-Integration:** Vollständige Integration der Austrian Power Grid (APG) Spot-Preise
+- **EHYD-Daten:** Automatischer Import von Wasserkraftdaten für österreichische Flüsse
+- **Regulatorische Compliance:** Einhaltung aller österreichischen Energieregularien
+- **Netzentgelte:** Berücksichtigung österreichischer Netzentgelte und Abgaben
+- **Marktstruktur:** Anpassung an die spezifische österreichische Strommarktstruktur
+
+**Technische Überlegenheit:**
+- **15-Minuten-Auflösung:** Höchste verfügbare Auflösung für präzise Marktteilnahme
+- **Multi-Use-Case-Simulation:** Gleichzeitige Simulation verschiedener Geschäftsmodelle
+- **Echtzeit-Integration:** Live-Daten von APG, ENTSO-E und anderen Quellen
+- **Erweiterte Degradation:** Realistische Modellierung der Batteriealterung
+- **Sensitivitätsanalysen:** Umfassende Risikobewertung verschiedener Szenarien
+
+#### **Wettbewerbsvorteile gegenüber anderen Lösungen**
+
+**Vollständige Integration vs. Einzellösungen:**
+- **All-in-One-Ansatz:** Eine Lösung für alle Aspekte der BESS-Simulation
+- **Nahtlose Workflows:** Von der Projektplanung bis zum finalen Report
+- **Konsistente Datenbasis:** Alle Berechnungen basieren auf derselben Datenquelle
+- **Reduzierte Komplexität:** Keine Integration verschiedener Tools erforderlich
+
+**Österreichische Marktkenntnis:**
+- **Lokale Expertise:** Entwickelt von Experten mit österreichischer Marktkenntnis
+- **Regulatorisches Know-how:** Vollständige Berücksichtigung österreichischer Vorschriften
+- **Marktdaten-Integration:** Direkte Anbindung an österreichische Datenquellen
+- **Sprachunterstützung:** Vollständige deutsche Benutzeroberfläche
+
+**Benutzerfreundlichkeit:**
+- **Intuitive Bedienung:** Selbst für Nicht-Techniker verständlich
+- **Umfassende Hilfe:** Vollständige Dokumentation und Hilfesystem
+- **Mobile Optimierung:** Vollständig responsive für alle Geräte
+- **Multi-User-System:** Rollenbasierte Zugriffskontrolle für Teams
+
+**Technische Robustheit:**
+- **Skalierbarkeit:** Von kleinen Projekten bis zu großen Portfolios
+- **Performance:** Optimiert für schnelle Berechnungen auch bei großen Datenmengen
+- **Zuverlässigkeit:** Umfassendes Backup- und Wiederherstellungssystem
+- **Sicherheit:** Enterprise-Grade Sicherheitsfeatures
+
+#### **Zielgruppen-spezifische Vorteile**
+
+**Für Energieberater:**
+- **Professionelle Reports:** Hochwertige PDF- und Excel-Reports für Kunden
+- **Schnelle Analysen:** Reduzierung der Analysezeit von Tagen auf Stunden
+- **Kundenpräsentationen:** Interaktive Charts und Grafiken für Präsentationen
+- **Projektvergleich:** Einfacher Vergleich verschiedener Technologien und Anbieter
+
+**Für BESS-Hersteller:**
+- **Produktentwicklung:** Simulation verschiedener Systemkonfigurationen
+- **Verkaufsunterstützung:** Professionelle Tools für das Verkaufsteam
+- **Kundenberatung:** Technische und wirtschaftliche Beratung für Endkunden
+- **Wettbewerbsanalyse:** Vergleich mit konkurrierenden Lösungen
+
+**Für Investoren:**
+- **Due Diligence:** Umfassende Wirtschaftlichkeitsprüfung vor Investitionsentscheidungen
+- **Risikobewertung:** Analyse verschiedener Risikofaktoren und Szenarien
+- **Portfolio-Management:** Verwaltung mehrerer Energiespeicherprojekte
+- **Renditeoptimierung:** Optimierung der Investitionsrendite durch verschiedene Strategien
+
+**Für Forschungseinrichtungen:**
+- **Forschungsprojekte:** Simulation verschiedener Forschungsansätze
+- **Technologiebewertung:** Bewertung neuer Technologien und Konzepte
+- **Marktstudien:** Analyse der Marktentwicklung und -trends
+- **Lehre:** Einsatz in der Ausbildung von Studierenden
+
+**Für Energieversorger:**
+- **Portfolio-Erweiterung:** Integration von Energiespeichern in das bestehende Portfolio
+- **Netzstabilität:** Verbesserung der Netzstabilität durch Energiespeicher
+- **Kundenservice:** Erweiterte Dienstleistungen für Endkunden
+- **Innovation:** Entwicklung neuer Geschäftsmodelle im Energiesektor
 
 ---
 
 ## 🚀 Installation & Setup
 
-### Systemanforderungen
+### 2.1 Systemanforderungen
 
-**Server:**
-- **OS:** Ubuntu 20.04+ / Windows 10+ / macOS 10.15+
-- **Python:** 3.9 oder höher
-- **RAM:** Mindestens 4GB (8GB empfohlen)
-- **Speicher:** 10GB freier Speicherplatz
-- **Internet:** Für API-Integrationen und Updates
+#### **Server-Anforderungen**
 
-**Browser:**
-- **Chrome/Edge:** Version 90+
-- **Firefox:** Version 88+
-- **Safari:** Version 14+
-- **Mobile:** iOS 14+ / Android 8+
+**Betriebssystem:**
+- **Ubuntu 20.04 LTS oder höher** (empfohlen für Produktionsumgebung)
+- **Windows 10/11** (für Entwicklung und lokale Tests)
+- **macOS 10.15+** (für Entwicklung und lokale Tests)
+- **CentOS/RHEL 8+** (für Enterprise-Umgebungen)
 
-### Lokale Installation
+**Python-Umgebung:**
+- **Python 3.9 oder höher** (empfohlen: Python 3.11)
+- **pip 21.0+** für Paketverwaltung
+- **virtualenv** oder **venv** für isolierte Umgebungen
+- **Git 2.20+** für Versionskontrolle
 
-#### 1. Repository klonen
+**Hardware-Anforderungen:**
+- **RAM:** Mindestens 4GB (8GB empfohlen für Produktion)
+- **CPU:** 2 Kerne (4 Kerne empfohlen für Produktion)
+- **Speicher:** 10GB freier Speicherplatz (20GB empfohlen)
+- **Netzwerk:** Stabile Internetverbindung für API-Integrationen
+
+**Produktions-Server (Hetzner/Cloud):**
+- **RAM:** 8GB oder mehr
+- **CPU:** 4 Kerne oder mehr
+- **SSD:** 50GB oder mehr
+- **Bandbreite:** 100 Mbps oder mehr
+- **Uptime:** 99.9% Verfügbarkeit
+
+#### **Browser-Anforderungen**
+
+**Desktop-Browser:**
+- **Google Chrome 90+** (empfohlen)
+- **Microsoft Edge 90+**
+- **Mozilla Firefox 88+**
+- **Safari 14+** (macOS)
+
+**Mobile-Browser:**
+- **iOS Safari 14+** (iPhone/iPad)
+- **Chrome Mobile 90+** (Android)
+- **Samsung Internet 13+** (Android)
+- **Firefox Mobile 88+** (Android)
+
+**Browser-Features:**
+- **JavaScript:** Muss aktiviert sein
+- **Cookies:** Für Session-Management erforderlich
+- **Local Storage:** Für Benutzereinstellungen
+- **WebGL:** Für erweiterte Charts (optional)
+
+#### **Netzwerk-Anforderungen**
+
+**API-Integrationen:**
+- **APG (Austrian Power Grid):** HTTPS-Zugriff auf Spot-Preise
+- **ENTSO-E:** Zugriff auf europäische Marktdaten
+- **PVGIS:** Wetterdaten für PV-Simulationen
+- **EHYD:** Wasserkraftdaten für österreichische Flüsse
+
+**Ports und Firewall:**
+- **HTTP:** Port 80 (für lokale Entwicklung)
+- **HTTPS:** Port 443 (für Produktion)
+- **SSH:** Port 22 (für Server-Zugriff)
+- **Database:** Port 5432 (PostgreSQL) oder 3306 (MySQL)
+
+**SSL/TLS:**
+- **Let's Encrypt:** Für kostenlose SSL-Zertifikate
+- **Wildcard-Zertifikate:** Für Subdomains
+- **HSTS:** HTTP Strict Transport Security
+
+### 2.2 Lokale Installation
+
+#### **Schritt 1: Repository klonen**
+
+**Git-Repository herunterladen:**
 ```bash
+# Repository klonen
 git clone https://github.com/HSchlagi/bess-simulation.git
+
+# In das Projektverzeichnis wechseln
 cd bess-simulation
+
+# Aktuelle Version überprüfen
+git status
 ```
 
-#### 2. Python-Umgebung einrichten
+**Verzeichnisstruktur nach dem Klonen:**
+```
+bess-simulation/
+├── app/                    # Hauptanwendung
+│   ├── __init__.py        # Flask-App Initialisierung
+│   ├── models.py          # Datenbank-Modelle
+│   ├── routes.py          # Route-Handler
+│   ├── templates/         # HTML-Templates
+│   └── static/            # Statische Dateien
+├── instance/              # Instanz-spezifische Dateien
+├── logs/                  # Log-Dateien
+├── requirements.txt       # Python-Abhängigkeiten
+├── run.py                # Server-Start
+└── README.md             # Projekt-Dokumentation
+```
+
+#### **Schritt 2: Python-Umgebung einrichten**
+
+**Virtual Environment erstellen:**
 ```bash
 # Virtual Environment erstellen
 python -m venv venv
@@ -87,36 +446,395 @@ venv\Scripts\activate
 
 # Aktivieren (Linux/macOS)
 source venv/bin/activate
+
+# Python-Version überprüfen
+python --version
 ```
 
-#### 3. Abhängigkeiten installieren
+**Virtual Environment verwalten:**
 ```bash
+# Virtual Environment deaktivieren
+deactivate
+
+# Virtual Environment erneut aktivieren
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+```
+
+#### **Schritt 3: Abhängigkeiten installieren**
+
+**Grundlegende Installation:**
+```bash
+# pip aktualisieren
+pip install --upgrade pip
+
+# Abhängigkeiten installieren
 pip install -r requirements.txt
+
+# Installation überprüfen
+pip list
 ```
 
-#### 4. Datenbank initialisieren
+**Wichtige Python-Pakete:**
+- **Flask 2.3+** - Web-Framework
+- **SQLAlchemy 2.0+** - ORM für Datenbankzugriff
+- **Pandas 2.0+** - Datenanalyse
+- **NumPy 1.24+** - Numerische Berechnungen
+- **Matplotlib 3.7+** - Charts und Grafiken
+- **Requests 2.31+** - HTTP-Client für APIs
+- **Gunicorn 21.2+** - WSGI-Server für Produktion
+
+**Mögliche Probleme und Lösungen:**
 ```bash
+# Falls Installation fehlschlägt
+pip install --upgrade setuptools wheel
+
+# Spezifische Version installieren
+pip install flask==2.3.3
+
+# Abhängigkeiten neu installieren
+pip install -r requirements.txt --force-reinstall
+```
+
+#### **Schritt 4: Datenbank initialisieren**
+
+**SQLite-Datenbank erstellen:**
+```bash
+# Datenbank initialisieren
 python init_db.py
+
+# Datenbank-Struktur überprüfen
+python check_database_structure.py
+
+# Demo-Daten importieren (optional)
+python import_demo_pv_hydro_data.py
 ```
 
-#### 5. Server starten
+**Datenbank-Verzeichnis:**
+```
+instance/
+└── bess.db              # SQLite-Datenbank
+```
+
+**Wichtige Tabellen:**
+- **projects** - BESS-Projekte
+- **customers** - Kundenstammdaten
+- **spot_prices** - APG-Spot-Preise
+- **load_profiles** - Lastprofile
+- **simulation_results** - Simulationsergebnisse
+- **users** - Benutzerverwaltung
+
+#### **Schritt 5: Server starten**
+
+**Entwicklungsserver starten:**
 ```bash
+# Server starten
+python run.py
+
+# Alternative mit Debug-Modus
+export FLASK_ENV=development
+export FLASK_DEBUG=1
 python run.py
 ```
 
-**Anwendung öffnen:** http://localhost:5000
-
-### Docker-Installation
-
-#### 1. Docker Compose verwenden
+**Server-Status überprüfen:**
 ```bash
-docker-compose up -d
+# In neuem Terminal
+curl http://localhost:5000
+
+# Oder Browser öffnen
+# http://localhost:5000
 ```
 
-#### 2. Oder Dockerfile verwenden
+**Erwartete Ausgabe:**
+```
+✅ Redis-Caching erfolgreich initialisiert
+✅ Logging-System erfolgreich initialisiert
+✅ Monitoring-System erfolgreich initialisiert
+🚀 BESS-Simulation Server wird gestartet...
+📊 Dashboard: http://127.0.0.1:5000/dashboard
+🔧 Admin-Panel: http://127.0.0.1:5000/admin/dashboard
+==================================================
+ * Running on http://127.0.0.1:5000
+ * Debugger is active!
+```
+
+#### **Schritt 6: Erste Schritte nach der Installation**
+
+**1. Anmeldung:**
+- **URL:** http://localhost:5000
+- **Standard-Login:** office@instanet.at
+- **Passwort:** [Wird bei Installation gesetzt]
+
+**2. Dashboard erkunden:**
+- Projekt-Statistiken anzeigen
+- System-Status überprüfen
+- Schnellzugriff auf Funktionen
+
+**3. Erstes Projekt erstellen:**
+- Navigation: Projekte → Neues Projekt
+- Grunddaten eingeben
+- BESS-Parameter konfigurieren
+- Projekt speichern
+
+**4. Erste Simulation durchführen:**
+- Navigation: BESS-Analysen → BESS-Simulation
+- Projekt auswählen
+- Use Case wählen (z.B. UC1: Eigenverbrauch)
+- Simulation starten
+
+**5. Hilfe-System nutzen:**
+- Navigation: Benutzer-Dropdown → Hilfe & Anleitungen
+- Schnellzugriff auf alle Funktionen
+- Detaillierte Anleitungen durchgehen
+
+### 2.3 Docker-Installation
+
+#### **Docker-Voraussetzungen**
+
+**Docker installieren:**
 ```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
+
+# Windows
+# Docker Desktop von https://docker.com herunterladen
+
+# macOS
+# Docker Desktop von https://docker.com herunterladen
+
+# Docker-Version überprüfen
+docker --version
+docker-compose --version
+```
+
+**Docker-Service starten:**
+```bash
+# Linux
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Docker ohne sudo verwenden
+sudo usermod -aG docker $USER
+# Nach Anmeldung neu einloggen
+```
+
+#### **Docker Compose Installation**
+
+**docker-compose.yml verwenden:**
+```bash
+# In das Projektverzeichnis wechseln
+cd bess-simulation
+
+# Container starten
+docker-compose up -d
+
+# Logs anzeigen
+docker-compose logs -f
+
+# Container stoppen
+docker-compose down
+```
+
+**Docker Compose Konfiguration:**
+```yaml
+version: '3.8'
+services:
+  bess-simulation:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./instance:/app/instance
+      - ./logs:/app/logs
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+    restart: unless-stopped
+    depends_on:
+      - redis
+      
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+```
+
+#### **Dockerfile Installation**
+
+**Docker Image erstellen:**
+```bash
+# Docker Image bauen
 docker build -t bess-simulation .
-docker run -p 5000:5000 bess-simulation
+
+# Image überprüfen
+docker images
+
+# Container starten
+docker run -d \
+  --name bess-simulation \
+  -p 5000:5000 \
+  -v $(pwd)/instance:/app/instance \
+  -v $(pwd)/logs:/app/logs \
+  bess-simulation
+
+# Container-Status überprüfen
+docker ps
+
+# Logs anzeigen
+docker logs bess-simulation
+```
+
+**Dockerfile Inhalt:**
+```dockerfile
+FROM python:3.11-slim
+
+# Arbeitsverzeichnis setzen
+WORKDIR /app
+
+# System-Abhängigkeiten installieren
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python-Abhängigkeiten kopieren und installieren
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Anwendung kopieren
+COPY . .
+
+# Port freigeben
+EXPOSE 5000
+
+# Anwendung starten
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:application"]
+```
+
+#### **Docker-Container verwalten**
+
+**Container-Befehle:**
+```bash
+# Container starten
+docker start bess-simulation
+
+# Container stoppen
+docker stop bess-simulation
+
+# Container neu starten
+docker restart bess-simulation
+
+# Container entfernen
+docker rm bess-simulation
+
+# In Container einloggen
+docker exec -it bess-simulation bash
+
+# Container-Status überprüfen
+docker stats bess-simulation
+```
+
+**Daten-Persistierung:**
+```bash
+# Volumes erstellen
+docker volume create bess-data
+docker volume create bess-logs
+
+# Container mit Volumes starten
+docker run -d \
+  --name bess-simulation \
+  -p 5000:5000 \
+  -v bess-data:/app/instance \
+  -v bess-logs:/app/logs \
+  bess-simulation
+```
+
+#### **Docker-Produktions-Deployment**
+
+**Produktions-Docker Compose:**
+```yaml
+version: '3.8'
+services:
+  bess-simulation:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - bess-data:/app/instance
+      - bess-logs:/app/logs
+    environment:
+      - FLASK_ENV=production
+      - FLASK_DEBUG=0
+      - REDIS_URL=redis://redis:6379
+    restart: unless-stopped
+    depends_on:
+      - redis
+    networks:
+      - bess-network
+      
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - bess-network
+      
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - bess-simulation
+    networks:
+      - bess-network
+
+volumes:
+  bess-data:
+  bess-logs:
+
+networks:
+  bess-network:
+    driver: bridge
+```
+
+**Nginx-Konfiguration:**
+```nginx
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream bess-simulation {
+        server bess-simulation:5000;
+    }
+    
+    server {
+        listen 80;
+        server_name bess.instanet.at;
+        
+        location / {
+            proxy_pass http://bess-simulation;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+        
+        location /static {
+            alias /app/static;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+}
 ```
 
 ### Produktions-Deployment (Hetzner)

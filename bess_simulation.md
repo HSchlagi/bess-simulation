@@ -3,6 +3,59 @@
 ## 🎯 Projektübersicht
 **BESS Simulation** ist eine intelligente Web-Anwendung zur Simulation und Wirtschaftlichkeitsanalyse von Battery Energy Storage Systems (BESS) mit integrierten erneuerbaren Energien.
 
+## 📅 **CHANGELOG - Letzte Updates**
+
+### **Version 2.1 - September 2025**
+
+#### ✅ **Neue Features (05.09.2025)**
+- **🆘 Hilfe-System:** Vollständige interaktive Hilfe-Seite implementiert
+  - **URL:** `/help` - Zugriff über Benutzer-Dropdown-Menü
+  - **Design:** Sauberes Tailwind CSS ohne benutzerdefinierte Animationen
+  - **Inhalt:** 8 Hauptbereiche mit Schritt-für-Schritt Anleitungen
+  - **Features:** Schnellzugriff-Links, Suchfunktion, Smooth Scrolling
+  - **Mobile:** Vollständig responsive für alle Geräte
+
+- **📚 Vollständige Dokumentation:** Umfassende technische Dokumentation erstellt
+  - **Datei:** `BESS_SIMULATION_DOKUMENTATION.md`
+  - **Inhalt:** Installation, Benutzerhandbuch, API-Referenz, Troubleshooting
+  - **Zielgruppe:** Entwickler, Benutzer, Administratoren
+  - **Umfang:** 1000+ Zeilen mit detaillierten Anleitungen
+
+- **🚀 Deployment-Automatisierung:** Scripts für Hetzner-Deployment
+  - **Datei:** `deploy_hetzner_update.sh`
+  - **Funktion:** Automatisiertes Update auf Produktionsserver
+  - **Features:** Backup, Git-Pull, Service-Restart, Logging
+
+#### 🔧 **Verbesserungen (05.09.2025)**
+- **Navigation:** Hilfe-Link im Benutzer-Dropdown-Menü integriert
+- **Mobile-Menü:** Hilfe-Link auch im Mobile-Menü verfügbar
+- **Roadmap:** Erweiterte Verbesserungsvorschläge in `Verbesserung_BESS.md`
+- **Code-Qualität:** Saubere Trennung von CSS und JavaScript
+
+#### 🐛 **Bug-Fixes (05.09.2025)**
+- **Mobile-Menü:** Touch-Events für Safari/iPhone optimiert
+- **Browser-Kompatibilität:** Mouse-Events für Desktop-Browser korrigiert
+- **Template-Struktur:** Konsistente Verwendung von `base.html`
+
+#### 📊 **Technische Details**
+- **Frontend:** Reines Tailwind CSS Design
+- **Backend:** Flask-Route `/help` mit `@login_required`
+- **Templates:** `help.html` mit responsivem Grid-Layout
+- **JavaScript:** Minimales JS nur für Smooth Scrolling
+- **Git:** Commit `f26f696` mit allen Änderungen
+
+#### 🎯 **Benutzerfreundlichkeit**
+- **Farbkodierung:** Verschiedene Farben für verschiedene Funktionsbereiche
+- **Schritt-Anleitungen:** Nummerierte Boxen mit farbigen Akzenten
+- **Quick-Links:** Direkte Navigation zu gewünschten Bereichen
+- **Info-Boxen:** Tipps und Warnungen visuell hervorgehoben
+- **Responsive:** Optimiert für Desktop, Tablet und Mobile
+
+#### 🔄 **Deployment-Status**
+- **Lokal:** ✅ Alle Features implementiert und getestet
+- **GitHub:** ✅ Alle Änderungen committed und gepusht
+- **Hetzner:** ⏳ Update für morgen geplant
+
 ## 🔄 **BACKUP-SYSTEM - Automatisierte Datenbank-Sicherung**
 
 ### 📋 **Übersicht**
