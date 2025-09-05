@@ -252,11 +252,20 @@
 
                 <div class="space-y-1">
                     <div class="text-xs font-semibold text-blue-200 px-3 py-1">BESS ANALYSEN</div>
+                    <a href="/dispatch" class="block px-6 py-2 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-rocket mr-2"></i>Dispatch & Redispatch
+                    </a>
+                    <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-play mr-2"></i>BESS-Simulation
+                    </a>
+                    <a href="{{ url_for('main.battery_crate_config') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-battery-three-quarters mr-2"></i>C-Rate Config
+                    </a>
                     <a href="{{ url_for('main.bess_peak_shaving_analysis') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
                         <i class="fas fa-chart-bar mr-2"></i>Peak Shaving Analyse
                     </a>
                     <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
-                        <i class="fas fa-rocket mr-2"></i>Erweiterte Simulation
+                        <i class="fas fa-rocket mr-2"></i>Erweiterte Simulation & Dashboard
                     </a>
                 </div>
             </div>
@@ -295,7 +304,7 @@ document.getElementById('mobile-menu-button').addEventListener('click', function
     mobileMenu.classList.toggle('hidden');
 });
 
-// Dropdown-Menüs für Desktop
+// Dropdown-Menüs für Desktop und Mobile
 document.addEventListener('DOMContentLoaded', function() {
     const dropdownGroups = document.querySelectorAll('.group');
     dropdownGroups.forEach(group => {
@@ -312,6 +321,45 @@ document.addEventListener('DOMContentLoaded', function() {
             group.addEventListener('mouseleave', function() {
                 dropdown.classList.add('opacity-0', 'invisible');
                 dropdown.classList.remove('opacity-100', 'visible');
+            });
+            
+            // Touch-Events für Mobile (Safari, etc.)
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Alle anderen Dropdowns schließen
+                dropdownGroups.forEach(otherGroup => {
+                    if (otherGroup !== group) {
+                        const otherDropdown = otherGroup.querySelector('div[class*="absolute"]');
+                        if (otherDropdown) {
+                            otherDropdown.classList.add('opacity-0', 'invisible');
+                            otherDropdown.classList.remove('opacity-100', 'visible');
+                        }
+                    }
+                });
+                
+                // Aktuelles Dropdown umschalten
+                if (dropdown.classList.contains('opacity-0')) {
+                    dropdown.classList.remove('opacity-0', 'invisible');
+                    dropdown.classList.add('opacity-100', 'visible');
+                } else {
+                    dropdown.classList.add('opacity-0', 'invisible');
+                    dropdown.classList.remove('opacity-100', 'visible');
+                }
+            });
+        }
+    });
+    
+    // Dropdowns schließen beim Klicken außerhalb
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.group')) {
+            dropdownGroups.forEach(group => {
+                const dropdown = group.querySelector('div[class*="absolute"]');
+                if (dropdown) {
+                    dropdown.classList.add('opacity-0', 'invisible');
+                    dropdown.classList.remove('opacity-100', 'visible');
+                }
             });
         }
     });
