@@ -162,15 +162,15 @@
 
             <!-- Mobile menu button -->
             <div class="md:hidden">
-                <button id="mobile-menu-button" class="text-white hover:text-gray-300 focus:outline-none focus:text-gray-300">
+                <button id="mobile-menu-button" class="text-white hover:text-gray-300 focus:outline-none focus:text-gray-300 p-2">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
         </div>
 
         <!-- Mobile Navigation - Mit Dropdown-Gruppen -->
-        <div id="mobile-menu" class="md:hidden hidden">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <div id="mobile-menu" class="md:hidden hidden bg-blue-600 border-t border-blue-500">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 max-h-screen overflow-y-auto">
                 <!-- Multi-User Dashboard (Hauptdashboard) -->
                 <a href="{{ url_for('multi_user.dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 bg-green-600">
                     <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
@@ -299,9 +299,42 @@
 
 <!-- Mobile Menu JavaScript -->
 <script>
-document.getElementById('mobile-menu-button').addEventListener('click', function() {
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
-    mobileMenu.classList.toggle('hidden');
+    
+    if (mobileMenuButton && mobileMenu) {
+        // Mobile Menu Toggle
+        mobileMenuButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            mobileMenu.classList.toggle('hidden');
+            
+            // Icon ändern
+            const icon = mobileMenuButton.querySelector('i');
+            if (mobileMenu.classList.contains('hidden')) {
+                icon.className = 'fas fa-bars text-xl';
+            } else {
+                icon.className = 'fas fa-times text-xl';
+            }
+        });
+        
+        // Mobile Menu schließen beim Klicken außerhalb
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#mobile-menu') && !e.target.closest('#mobile-menu-button')) {
+                mobileMenu.classList.add('hidden');
+                const icon = mobileMenuButton.querySelector('i');
+                icon.className = 'fas fa-bars text-xl';
+            }
+        });
+        
+        // Mobile Menu schließen beim Scrollen
+        window.addEventListener('scroll', function() {
+            mobileMenu.classList.add('hidden');
+            const icon = mobileMenuButton.querySelector('i');
+            icon.className = 'fas fa-bars text-xl';
+        });
+    }
 });
 
 // Dropdown-Menüs für Desktop und Mobile
