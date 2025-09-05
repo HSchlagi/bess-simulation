@@ -325,13 +325,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Mehrere Event-Typen für maximale Kompatibilität
-        mobileMenuButton.addEventListener('click', function(e) {
+        // Event-Handler für Maus und Touch
+        function handleMenuToggle(e) {
             e.preventDefault();
             e.stopPropagation();
             toggleMobileMenu();
-        });
+        }
         
+        // Maus-Events (für verkleinerten Browser)
+        mobileMenuButton.addEventListener('click', handleMenuToggle);
+        mobileMenuButton.addEventListener('mousedown', handleMenuToggle);
+        
+        // Touch-Events (für mobile Geräte)
         mobileMenuButton.addEventListener('touchstart', function(e) {
             e.preventDefault();
             e.stopPropagation();
