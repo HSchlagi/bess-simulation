@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}aWattar Test - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">aWattar API Test</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4">API Tests</h2>
+        
+        <div class="space-y-4">
+            <button onclick="testAPI()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                Test API Connection
+            </button>
+            
+            <button onclick="testImport()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                Test Import
+            </button>
+            
+            <button onclick="testStatus()" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                Test Status
+            </button>
+        </div>
+        
+        <div id="results" class="mt-6 p-4 bg-gray-100 rounded hidden">
+            <h3 class="font-semibold mb-2">Results:</h3>
+            <pre id="resultText" class="text-sm"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+function showResult(data) {
+    document.getElementById('results').classList.remove('hidden');
+    document.getElementById('resultText').textContent = JSON.stringify(data, null, 2);
+}
+
+async function testAPI() {
+    try {
+        const response = await fetch('/api/awattar/test');
+        const data = await response.json();
+        showResult({ test: 'API Test', status: response.status, data: data });
+    } catch (error) {
+        showResult({ test: 'API Test', error: error.message });
+    }
+}
+
+async function testImport() {
+    try {
+        const response = await fetch('/api/awattar/fetch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                start_date: '2025-09-06T00:00:00Z',
+                end_date: '2025-09-07T00:00:00Z'
+            })
+        });
+        const data = await response.json();
+        showResult({ test: 'Import Test', status: response.status, data: data });
+    } catch (error) {
+        showResult({ test: 'Import Test', error: error.message });
+    }
+}
+
+async function testStatus() {
+    try {
+        const response = await fetch('/api/awattar/status');
+        const data = await response.json();
+        showResult({ test: 'Status Test', status: response.status, data: data });
+    } catch (error) {
+        showResult({ test: 'Status Test', error: error.message });
+    }
+}
+</script>
+{% endblock %}

@@ -48,6 +48,9 @@ from ehyd_data_fetcher import EHYDDataFetcher
 # PVGIS Data Fetcher importieren
 from pvgis_data_fetcher import PVGISDataFetcher
 
+# aWattar Data Fetcher importieren
+from awattar_data_fetcher import awattar_fetcher
+
 # Auth-Module importieren
 from auth_module import bess_auth, auth_optional
 from permissions import login_required
@@ -6710,3 +6713,186 @@ def api_dispatch_status():
 def dispatch_interface():
     """Dispatch-Interface Seite"""
     return render_template('dispatch_interface.html')
+
+# ============================================================================
+# aWATTAR API INTEGRATION
+# ============================================================================
+
+@main_bp.route('/api/awattar/fetch', methods=['POST'])
+@login_required
+def api_awattar_fetch():
+    """aWattar-Daten von der API holen und in Datenbank speichern"""
+    try:
+        data = request.get_json() or {}
+        
+        # Parameter aus Request extrahieren
+        start_date_str = data.get('start_date')
+        end_date_str = data.get('end_date')
+        
+        start_date = None
+        end_date = None
+        
+        if start_date_str:
+            start_date = datetime.fromisoformat(start_date_str.replace('Z', '+00:00'))
+        if end_date_str:
+            end_date = datetime.fromisoformat(end_date_str.replace('Z', '+00:00'))
+        
+        # aWattar-Daten holen und speichern
+        result = awattar_fetcher.fetch_and_save(
+            start_date=start_date,
+            end_date=end_date
+        )
+        
+        if result['success']:
+            return jsonify({
+                'success': True,
+                'message': f"Erfolgreich {result['save_result']['saved_count']} Preis-Datensätze importiert",
+                'data': {
+                    'saved_count': result['save_result']['saved_count'],
+                    'skipped_count': result['save_result']['skipped_count'],
+                    'error_count': result['save_result']['error_count'],
+                    'total_processed': result['save_result']['total_processed'],
+                    'fetched_at': result['fetched_at'].isoformat()
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': result['error'],
+                'step': result.get('step', 'unknown')
+            }), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f"Fehler beim Importieren der aWattar-Daten: {str(e)}"
+        }), 500
+
+@main_bp.route('/api/awattar/latest')
+def api_awattar_latest():
+    """Neueste aWattar-Preise aus der Datenbank abrufen"""
+    try:
+        hours = request.args.get('hours', 24, type=int)
+        
+        prices = awattar_fetcher.get_latest_prices(hours=hours)
+        
+        return jsonify({
+            'success': True,
+            'data': prices,
+            'count': len(prices),
+            'hours': hours,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f"Fehler beim Abrufen der neuesten Preise: {str(e)}"
+        }), 500
+
+@main_bp.route('/api/awattar/status')
+def api_awattar_status():
+    """Status der aWattar-Integration abrufen"""
+    try:
+        # Neueste Preise aus Datenbank abrufen
+        latest_prices = awattar_fetcher.get_latest_prices(hours=24)
+        
+        # API-Verbindung testen
+        api_test = awattar_fetcher.fetch_market_data()
+        
+        # Statistiken berechnen
+        total_prices = SpotPrice.query.filter(SpotPrice.source == 'aWATTAR').count()
+        latest_price = SpotPrice.query.filter(
+            SpotPrice.source == 'aWATTAR'
+        ).order_by(SpotPrice.timestamp.desc()).first()
+        
+        return jsonify({
+            'success': True,
+            'status': {
+                'api_connection': 'OK' if api_test['success'] else 'Fehler',
+                'database_records': str(total_prices),
+                'last_24h': str(len(latest_prices)),
+                'latest_price': f"{latest_price.price_eur_mwh:.2f} €/MWh" if latest_price else 'N/A'
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f"Fehler beim Abrufen des Status: {str(e)}"
+        }), 500
+
+@main_bp.route('/api/awattar/test')
+def api_awattar_test():
+    """Test der aWattar-Integration"""
+    try:
+        # API-Test
+        api_response = awattar_fetcher.fetch_market_data()
+        
+        if not api_response['success']:
+            return jsonify({
+                'success': False,
+                'error': f"API-Test fehlgeschlagen: {api_response['error']}"
+            }), 400
+        
+        # Parsing-Test
+        parsed_data = awattar_fetcher.parse_market_data(api_response)
+        
+        if not parsed_data:
+            return jsonify({
+                'success': False,
+                'error': "Parsing-Test fehlgeschlagen: Keine Daten konnten geparst werden"
+            }), 400
+        
+        # Datenbank-Test (nur 1 Datensatz)
+        test_data = parsed_data[:1]
+        save_result = awattar_fetcher.save_to_database(test_data)
+        
+        if not save_result['success']:
+            return jsonify({
+                'success': False,
+                'error': f"Datenbank-Test fehlgeschlagen: {save_result['error']}"
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'message': "aWattar-Integration erfolgreich getestet",
+            'test_results': {
+                'api_connection': 'OK',
+                'data_parsing': f"OK - {len(parsed_data)} Datensätze geparst",
+                'database_save': f"OK - {save_result['saved_count']} Datensätze gespeichert",
+                'sample_data': test_data[0] if test_data else None
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f"Test fehlgeschlagen: {str(e)}"
+        }), 500
+
+@main_bp.route('/api/awattar/import')
+@login_required
+def awattar_import_page():
+    """aWattar-Import-Seite"""
+    return render_template('awattar_import.html')
+
+@main_bp.route('/api/awattar/test-page')
+@login_required
+def awattar_test_page():
+    """aWattar-Test-Seite"""
+    return render_template('awattar_test_simple.html')
+
+@main_bp.route('/api/awattar/import-fixed')
+@login_required
+def awattar_import_fixed_page():
+    """aWattar-Import-Seite (korrigierte Version)"""
+    return render_template('awattar_import_fixed.html')
+
+@main_bp.route('/api/awattar/import-working')
+@login_required
+def awattar_import_working_page():
+    """aWattar-Import-Seite (funktionierende Version)"""
+    return render_template('awattar_import_working.html')

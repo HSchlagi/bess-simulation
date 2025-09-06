@@ -497,3 +497,4 @@ price_forecasting_model = PriceForecastingModel()
 bess_optimization_model = BESSOptimizationModel()
 anomaly_detection_model = AnomalyDetectionModel()
 predictive_maintenance_model = PredictiveMaintenanceModel()
+

@@ -1,9 +1,10 @@
 # 📚 BESS Simulation - Vollständige Dokumentation
 
-**Version:** 2.0  
+**Version:** 2.1  
 **Datum:** September 2025  
 **Autor:** Ing. Heinz Schlagintweit  
-**Repository:** https://github.com/HSchlagi/bess-simulation
+**Repository:** https://github.com/HSchlagi/bess-simulation  
+**Letzte Aktualisierung:** aWattar API Integration & ML & KI Dashboard
 
 ---
 
@@ -32,9 +33,10 @@
    - 3.3 Projekt-Management im Detail
    - 3.4 Simulation durchführen
    - 3.5 Dispatch & Redispatch verwenden
-   - 3.6 Datenimport und -verwaltung
-   - 3.7 Export & Reporting
-   - 3.8 Multi-User-System und Berechtigungen
+   - 3.6 ML & KI Dashboard verwenden
+   - 3.7 Datenimport und -verwaltung (inkl. aWattar API)
+   - 3.8 Export & Reporting
+   - 3.9 Multi-User-System und Berechtigungen
 
 ### **Teil III: Technische Dokumentation**
 4. [Technische Dokumentation](#technische-dokumentation)
@@ -45,14 +47,15 @@
    - 4.5 Monitoring und Logging
    - 4.6 Backup und Wiederherstellung
 
-5. [API-Referenz](#api-referenz)
+5. [API-Referenz](#api-referenz) (inkl. aWattar API)
    - 5.1 Authentifizierung und Autorisierung
    - 5.2 Projekt-API
    - 5.3 Simulation-API
    - 5.4 Dispatch-API
-   - 5.5 Datenimport-API
-   - 5.6 Export-API
-   - 5.7 Fehlerbehandlung und Statuscodes
+   - 5.5 ML & KI-API
+   - 5.6 Datenimport-API
+   - 5.7 Export-API
+   - 5.8 Fehlerbehandlung und Statuscodes
 
 ### **Teil IV: Erweiterte Themen**
 6. [Troubleshooting](#troubleshooting)
@@ -161,12 +164,14 @@ Die Dispatch-Integration bietet intelligente Betriebsstrategien für maximale Er
 Umfassendes Datenimport-System für alle relevanten Markt- und Wetterdaten:
 
 - **Spot-Preis-Import:** Automatischer und manueller Import von APG-Spot-Preisen
+- **aWattar-Integration:** Automatischer Import österreichischer Strompreise (täglich 14:00/15:00 Uhr)
 - **Lastprofil-Integration:** Import von Haushalts-, Gewerbe- und Industrieprofilen
 - **Wetterdaten:** Integration von PVGIS-Wetterdaten für PV-Simulationen
 - **EHYD-Integration:** Automatischer Import von Wasserkraftdaten für österreichische Flüsse
 - **CSV/Excel-Support:** Unterstützung verschiedener Dateiformate
 - **Datenvalidierung:** Automatische Validierung und Bereinigung importierter Daten
-- **API-Integrationen:** Direkte Anbindung an externe Datenquellen
+- **API-Integrationen:** Direkte Anbindung an externe Datenquellen (APG, ENTSO-E, aWattar)
+- **Scheduler-System:** Automatische Datenabrufe mit Python Schedule Library
 
 #### ✅ **Export-Funktionen - PDF, Excel, CSV-Reports**
 Professionelle Export-Funktionen für alle Analyseergebnisse:
@@ -1036,6 +1041,148 @@ Das **Dashboard** bietet einen Überblick über:
    - Cashflow-Chart
    - KPI-Übersicht
 
+### ML & KI Dashboard
+
+#### 1. ML & KI Dashboard öffnen
+
+**Navigation:** Daten → ML & KI Dashboard
+
+Das **ML & KI Dashboard** bietet intelligente Analysen und Vorhersagen für optimale BESS-Performance:
+
+#### 2. Verfügbare KI-Features
+
+**Preisprognose:**
+- **Ziel:** Vorhersage von Strompreisen für optimale Handelsstrategien
+- **Algorithmus:** Random Forest Regressor
+- **Genauigkeit:** ~87% (Demo-Modus)
+- **Zeithorizont:** 24-168 Stunden
+- **Anwendung:** Intraday-Trading, Arbitrage-Optimierung
+
+**BESS-Optimierung:**
+- **Ziel:** Automatische Parameter-Optimierung für maximale Wirtschaftlichkeit
+- **Algorithmus:** Grid Search mit Wirtschaftlichkeitsmodell
+- **Optimiert:** Kapazität, Leistung, Zyklen, Effizienz
+- **Ergebnis:** Optimale BESS-Konfiguration mit ROI-Berechnung
+
+**Anomalie-Erkennung:**
+- **Ziel:** Erkennung ungewöhnlicher Lastprofile und Systemverhalten
+- **Algorithmus:** Isolation Forest
+- **Erkennt:** Spitzenlasten, Ausfälle, ungewöhnliche Verbrauchsmuster
+- **Benachrichtigung:** Automatische Alerts bei kritischen Anomalien
+
+**Predictive Maintenance:**
+- **Ziel:** Vorhersage von Wartungsbedarf und Degradation
+- **Algorithmus:** Linear Regression mit Degradationsmodell
+- **Vorhersagt:** Restlebensdauer, Wartungsintervalle, Performance-Verlust
+- **Empfehlungen:** Konkrete Wartungsmaßnahmen
+
+#### 3. Dashboard verwenden
+
+**Schritt 1: Projekt auswählen**
+1. **Dropdown-Menü** "Projekt auswählen" öffnen
+2. **Gewünschtes Projekt** aus der Liste wählen
+3. **"Daten laden"** Button klicken
+4. **Toast-Benachrichtigung** bestätigt erfolgreiches Laden
+
+**Schritt 2: KI-Analysen durchführen**
+
+**Preisprognose starten:**
+1. **"Preisprognose starten"** Button klicken
+2. **Lade-Animation** abwarten (3-5 Sekunden)
+3. **Chart-Ergebnis** wird angezeigt:
+   - Zeitreihe der prognostizierten Preise
+   - Konfidenz-Intervall
+   - Trend-Analyse
+
+**BESS-Optimierung durchführen:**
+1. **"BESS optimieren"** Button klicken
+2. **Optimierungsprozess** läuft (5-10 Sekunden)
+3. **Ergebnisse werden angezeigt:**
+   - Optimale BESS-Parameter
+   - Wirtschaftlichkeits-KPIs
+   - ROI-Vergleich
+
+**Anomalien erkennen:**
+1. **"Anomalien erkennen"** Button klicken
+2. **Analyse läuft** (2-3 Sekunden)
+3. **Anomalie-Liste** wird angezeigt:
+   - Zeitstempel der Anomalien
+   - Schweregrad (niedrig/mittel/hoch)
+   - Typ der Anomalie
+
+**Wartung vorhersagen:**
+1. **"Wartung vorhersagen"** Button klicken
+2. **Berechnung läuft** (2-3 Sekunden)
+3. **Wartungsempfehlungen** werden angezeigt:
+   - Restlebensdauer in Monaten
+   - Degradationsrate
+   - Konkrete Wartungsmaßnahmen
+
+#### 4. Ergebnisse interpretieren
+
+**Preisprognose-Chart:**
+- **Blaue Linie:** Prognostizierte Preise
+- **Grauer Bereich:** Konfidenz-Intervall
+- **X-Achse:** Zeit (Stunden)
+- **Y-Achse:** Preis (EUR/MWh)
+
+**BESS-Optimierung:**
+- **Grüne Karten:** Optimierte Parameter
+- **Gelbe Karten:** Wirtschaftlichkeits-KPIs
+- **ROI:** Return on Investment in Prozent
+- **NPV:** Net Present Value in EUR
+
+**Anomalie-Erkennung:**
+- **Rote Karten:** Kritische Anomalien
+- **Gelbe Karten:** Mittlere Anomalien
+- **Grüne Karten:** Geringe Anomalien
+- **Zeitstempel:** Wann die Anomalie aufgetreten ist
+
+**Predictive Maintenance:**
+- **Degradationsrate:** Prozent pro Monat
+- **Restlebensdauer:** In Monaten
+- **Wartungsempfehlungen:** Konkrete Maßnahmen
+
+#### 5. Praktische Anwendung
+
+**Für Intraday-Trading:**
+1. **Preisprognose** vor Marktöffnung abrufen
+2. **Optimale Handelszeiten** identifizieren
+3. **Dispatch-Strategie** entsprechend anpassen
+
+**Für Systemoptimierung:**
+1. **BESS-Optimierung** regelmäßig durchführen
+2. **Parameter anpassen** basierend auf Ergebnissen
+3. **Wirtschaftlichkeit** kontinuierlich verbessern
+
+**Für Wartungsplanung:**
+1. **Predictive Maintenance** monatlich abrufen
+2. **Wartungsintervalle** entsprechend planen
+3. **Kosten** für vorbeugende Wartung optimieren
+
+**Für Qualitätssicherung:**
+1. **Anomalie-Erkennung** täglich überprüfen
+2. **Ungewöhnliche Muster** schnell identifizieren
+3. **Probleme** proaktiv beheben
+
+#### 6. Technische Details
+
+**Datenquellen:**
+- **Historische Spot-Preise:** APG, ENTSO-E
+- **Lastprofile:** Projekt-spezifische Daten
+- **BESS-Parameter:** Aus Projekt-Konfiguration
+- **Wartungshistorie:** System-Logs und Metriken
+
+**Modell-Training:**
+- **Automatisches Training:** Bei neuen Daten
+- **Modell-Updates:** Wöchentlich
+- **Performance-Monitoring:** Kontinuierlich
+
+**API-Integration:**
+- **REST-API:** Für alle KI-Features
+- **Real-time:** Sofortige Ergebnisse
+- **Fallback:** Demo-Daten bei API-Fehlern
+
 ### Datenimport
 
 #### 1. Datenimport-Center
@@ -1047,13 +1194,75 @@ Das **Dashboard** bietet einen Überblick über:
 **Unterstützte Formate:**
 - **CSV:** Mit Datum/Zeit und Preis
 - **Excel:** XLSX-Dateien
-- **API:** Automatischer Import (APG, ENTSO-E)
+- **API:** Automatischer Import (APG, ENTSO-E, aWattar)
 
 **Schritte:**
 1. **Datei auswählen**
 2. **Spalten zuordnen** (Datum, Preis)
 3. **Import starten**
 4. **Datenvorschau** prüfen
+
+#### 2.1 aWattar API Integration
+
+**Navigation:** Daten → aWattar API
+
+**Funktionen:**
+- **Automatischer Import:** Täglich um 14:00 Uhr (nächster Tag) und 15:00 Uhr (aktueller Tag)
+- **Manueller Import:** Über Import-Buttons
+- **Echtzeit-Status:** API-Verbindung, Datenbank-Records, neuester Preis
+- **Preisverlauf:** Chart der letzten 24 Stunden
+- **Integrationstest:** Überprüfung der API-Verbindung
+
+**Technische Details:**
+- **API-Endpoint:** `https://api.awattar.at/v1/marketdata`
+- **Datenformat:** JSON mit Timestamp und Preis in €/MWh
+- **Speicherung:** SQLite-Datenbank (SpotPrice-Tabelle)
+- **Deduplizierung:** Automatische Vermeidung von Duplikaten
+- **Scheduler:** Python `schedule` Library für automatische Abrufe
+
+**Zeitplan:**
+- **14:00 Uhr:** Import für nächsten Tag (wie von aWattar empfohlen)
+- **15:00 Uhr:** Zusätzlicher Import für aktuellen Tag
+- **Sonntag 16:00:** Wöchentlicher historischer Import und Cleanup
+- **Stündlich:** Health Check des Systems
+
+**Status-Überwachung:**
+- **API-Verbindung:** Grüner Haken bei erfolgreicher Verbindung
+- **Datenbank-Records:** Anzahl gespeicherter Datensätze
+- **Letzte 24h:** Anzahl neuer Datensätze
+- **Neuester Preis:** Aktueller Marktpreis in €/MWh
+
+**Frontend-Features:**
+- **Status-Cards:** Übersichtliche Anzeige aller wichtigen Metriken
+- **Chart.js Integration:** Interaktive Preisverlauf-Darstellung
+- **Real-time Updates:** Automatische Aktualisierung der Anzeige
+- **Error Handling:** Robuste Fehlerbehandlung mit Benutzer-Feedback
+
+**Scheduler-Konfiguration:**
+
+**Lokaler Scheduler:**
+```bash
+# Scheduler starten (läuft nur wenn Rechner eingeschaltet ist)
+python awattar_scheduler.py
+```
+
+**Hetzner-Server Scheduler (Empfohlen für 24/7 Betrieb):**
+```bash
+# Auf Hetzner-Server für kontinuierlichen Betrieb
+sudo systemctl start bess
+sudo systemctl enable bess
+```
+
+**Scheduler-Optionen:**
+- **Lokal:** Nur wenn Rechner läuft, manuelle Kontrolle
+- **Hetzner:** 24/7 Betrieb, automatische Imports auch bei Rechner-Ausfall
+- **Hybrid:** Beide Systeme parallel für Maximum-Sicherheit
+
+**API-Endpunkte:**
+- `GET /api/awattar/status` - System-Status und Statistiken
+- `GET /api/awattar/latest` - Neueste Preisdaten
+- `POST /api/awattar/fetch` - Manueller Datenimport
+- `GET /api/awattar/test` - API-Verbindungstest
 
 #### 3. Lastprofile importieren
 
@@ -1104,7 +1313,19 @@ Das **Dashboard** bietet einen Überblick über:
 │ • Chart.js      │    │ • Python        │    │ • Redis Cache   │
 │ • Tailwind CSS  │    │ • Gunicorn      │    │                 │
 │ • Alpine.js     │    │ • Nginx         │    │                 │
+│ • ML Dashboard  │    │ • ML Models     │    │ • ML Cache      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │   ML & KI       │
+                    │                 │
+                    │ • scikit-learn  │
+                    │ • Random Forest │
+                    │ • Isolation For.│
+                    │ • Linear Regr.  │
+                    │ • Grid Search   │
+                    └─────────────────┘
 ```
 
 #### Technologie-Stack
@@ -1122,6 +1343,15 @@ Das **Dashboard** bietet einen Überblick über:
 - **SQLAlchemy:** ORM für Datenbankzugriff
 - **Gunicorn:** WSGI HTTP Server
 - **Redis:** Caching und Session Management
+
+**ML & KI:**
+- **scikit-learn:** Machine Learning Framework
+- **Random Forest:** Preisprognose-Modell
+- **Isolation Forest:** Anomalie-Erkennung
+- **Linear Regression:** Predictive Maintenance
+- **Grid Search:** BESS-Optimierung
+- **joblib:** Modell-Serialisierung
+- **numpy/pandas:** Datenverarbeitung
 
 **Datenbank:**
 - **SQLite:** Hauptdatenbank
@@ -1172,6 +1402,197 @@ CREATE TABLE spot_prices (
     price_eur_mwh FLOAT,
     source VARCHAR(50)
 );
+```
+
+### ML & KI System
+
+#### Machine Learning Architektur
+
+**Modell-Übersicht:**
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Datenquellen  │    │   ML Pipeline   │    │   Vorhersagen   │
+│                 │    │                 │    │                 │
+│ • Spot-Preise   │───►│ • Preprocessing │───►│ • Preisprognose │
+│ • Lastprofile   │    │ • Training      │    │ • BESS-Optim.   │
+│ • BESS-Daten    │    │ • Validation    │    │ • Anomalien     │
+│ • Wartungshist. │    │ • Deployment    │    │ • Maintenance   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### Implementierte Modelle
+
+**1. Preisprognose-Modell (PriceForecastingModel):**
+```python
+class PriceForecastingModel:
+    def __init__(self):
+        self.model = RandomForestRegressor(
+            n_estimators=100,
+            max_depth=10,
+            random_state=42
+        )
+        self.scaler = StandardScaler()
+        self.is_trained = False
+        self.accuracy = 0.0
+```
+
+**Features:**
+- **Algorithmus:** Random Forest Regressor
+- **Input:** Historische Spot-Preise, Wetterdaten, Marktindikatoren
+- **Output:** Preisprognose für 24-168 Stunden
+- **Genauigkeit:** ~87% (Demo-Modus)
+- **Training:** Automatisch bei neuen Daten
+
+**2. BESS-Optimierungs-Modell (BESSOptimizationModel):**
+```python
+class BESSOptimizationModel:
+    def __init__(self):
+        self.best_score = -np.inf
+        self.optimization_history = []
+```
+
+**Features:**
+- **Algorithmus:** Grid Search mit Wirtschaftlichkeitsmodell
+- **Parameter:** Kapazität, Leistung, Zyklen, Effizienz
+- **Ziel:** Maximierung des ROI
+- **Constraints:** Technische und wirtschaftliche Grenzen
+- **Output:** Optimale BESS-Konfiguration
+
+**3. Anomalie-Erkennungs-Modell (AnomalyDetectionModel):**
+```python
+class AnomalyDetectionModel:
+    def __init__(self):
+        self.model = IsolationForest(
+            contamination=0.1,
+            random_state=42
+        )
+        self.scaler = StandardScaler()
+        self.is_trained = False
+```
+
+**Features:**
+- **Algorithmus:** Isolation Forest
+- **Input:** Lastprofile, Verbrauchsmuster, Systemmetriken
+- **Output:** Anomalie-Scores und Klassifikation
+- **Sensitivität:** Konfigurierbar (Standard: 10%)
+- **Alerting:** Automatische Benachrichtigungen
+
+**4. Predictive Maintenance-Modell (PredictiveMaintenanceModel):**
+```python
+class PredictiveMaintenanceModel:
+    def __init__(self):
+        self.degradation_model = LinearRegression()
+        self.is_trained = False
+        self.maintenance_schedule = []
+```
+
+**Features:**
+- **Algorithmus:** Linear Regression mit Degradationsmodell
+- **Input:** Betriebsstunden, Zyklen, Temperatur, Spannung
+- **Output:** Restlebensdauer, Wartungsempfehlungen
+- **Genauigkeit:** Basierend auf Herstellerdaten
+- **Planung:** Automatische Wartungsintervalle
+
+#### ML Pipeline
+
+**1. Datenvorbereitung:**
+```python
+def prepare_training_data(raw_data):
+    # Datenbereinigung
+    cleaned_data = clean_data(raw_data)
+    
+    # Feature Engineering
+    features = extract_features(cleaned_data)
+    
+    # Normalisierung
+    normalized_data = normalize(features)
+    
+    return normalized_data
+```
+
+**2. Modell-Training:**
+```python
+def train_model(model, training_data, target_data):
+    # Cross-Validation
+    cv_scores = cross_val_score(model, training_data, target_data, cv=5)
+    
+    # Training
+    model.fit(training_data, target_data)
+    
+    # Validierung
+    accuracy = model.score(validation_data, validation_target)
+    
+    return model, accuracy
+```
+
+**3. Modell-Deployment:**
+```python
+def deploy_model(model, model_name):
+    # Serialisierung
+    joblib.dump(model, f'models/{model_name}.pkl')
+    
+    # API-Integration
+    register_model_api(model_name, model)
+    
+    # Monitoring
+    setup_model_monitoring(model_name)
+```
+
+#### API-Integration
+
+**ML API Endpoints:**
+```python
+@ml_bp.route('/price-forecast', methods=['POST'])
+def price_forecast():
+    # Daten laden
+    historical_data = load_historical_prices()
+    
+    # Prognose erstellen
+    forecast = price_forecasting_model.predict(historical_data)
+    
+    # Ergebnis zurückgeben
+    return jsonify({
+        'forecast': forecast,
+        'accuracy': price_forecasting_model.accuracy,
+        'model_status': 'trained' if price_forecasting_model.is_trained else 'demo'
+    })
+```
+
+**Verfügbare Endpoints:**
+- **POST /ml/price-forecast:** Preisprognose
+- **POST /ml/optimize-bess:** BESS-Optimierung
+- **POST /ml/detect-anomalies:** Anomalie-Erkennung
+- **POST /ml/predictive-maintenance:** Wartungsvorhersage
+- **GET /ml/model-status:** Modell-Status
+
+#### Caching und Performance
+
+**ML-Caching-Strategie:**
+- **Modell-Cache:** Trainierte Modelle im Memory
+- **Prediction-Cache:** Häufige Vorhersagen (5 Min TTL)
+- **Training-Cache:** Vorberechnete Features (1 Stunde TTL)
+- **Result-Cache:** API-Responses (2 Min TTL)
+
+**Performance-Optimierungen:**
+- **Batch-Processing:** Mehrere Vorhersagen gleichzeitig
+- **Model-Pooling:** Mehrere Modell-Instanzen
+- **Async-Processing:** Nicht-blockierende API-Calls
+- **Memory-Management:** Automatische Garbage Collection
+
+#### Monitoring und Logging
+
+**ML-Metriken:**
+- **Model-Accuracy:** Kontinuierliche Überwachung
+- **Prediction-Latency:** Response-Zeit-Monitoring
+- **Training-Time:** Modell-Update-Performance
+- **Error-Rate:** Fehlerrate der Vorhersagen
+
+**Logging:**
+```python
+logger.info(f"ML Model Training: {model_name}")
+logger.info(f"Accuracy: {accuracy:.3f}")
+logger.info(f"Training Time: {training_time:.2f}s")
+logger.warning(f"Model Accuracy below threshold: {accuracy}")
 ```
 
 ### Performance-Optimierung
@@ -1356,6 +1777,72 @@ Authorization: Bearer jwt_token
 Content-Type: multipart/form-data
 
 file: [CSV/Excel Datei]
+```
+
+#### aWattar API Integration
+
+**System-Status abrufen**
+```http
+GET /api/awattar/status
+```
+
+**Response:**
+```json
+{
+    "api_connection": "OK",
+    "database_records": 48,
+    "last_24h": 48,
+    "latest_price": "91.14 €/MWh"
+}
+```
+
+**Neueste Preisdaten abrufen**
+```http
+GET /api/awattar/latest
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "timestamp": "2025-01-07T23:00:00+01:00",
+            "price_eur_mwh": 91.14,
+            "source": "aWATTAR",
+            "region": "AT"
+        }
+    ]
+}
+```
+
+**Manueller Datenimport**
+```http
+POST /api/awattar/fetch
+Content-Type: application/json
+
+{
+    "start_date": "2025-01-07",
+    "end_date": "2025-01-08"
+}
+```
+
+**API-Verbindungstest**
+```http
+GET /api/awattar/test
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "aWattar API Verbindung erfolgreich",
+    "test_data": {
+        "api_url": "https://api.awattar.at/v1/marketdata",
+        "response_time": "0.234s",
+        "data_points": 24
+    }
+}
 ```
 
 ### Export
@@ -2672,6 +3159,263 @@ X-CSRFToken: <csrf_token>
 }
 ```
 
+### 🤖 ML & KI API
+
+#### POST /ml/price-forecast
+**Beschreibung:** Preisprognose für optimale Handelsstrategien
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "forecast_hours": 24,
+  "include_confidence": true,
+  "model_type": "random_forest"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "forecast": [
+      {
+        "timestamp": "2025-09-06T21:00:00Z",
+        "price_eur_mwh": 45.2,
+        "confidence": 0.87
+      },
+      {
+        "timestamp": "2025-09-06T22:00:00Z",
+        "price_eur_mwh": 52.1,
+        "confidence": 0.89
+      }
+    ],
+    "model_info": {
+      "algorithm": "Random Forest Regressor",
+      "accuracy": 0.87,
+      "training_date": "2025-09-05T10:00:00Z",
+      "status": "trained"
+    }
+  }
+}
+```
+
+#### POST /ml/optimize-bess
+**Beschreibung:** BESS-Parameter für maximale Wirtschaftlichkeit optimieren
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "optimization_target": "roi",
+  "constraints": {
+    "max_capacity_kwh": 1000,
+    "max_power_kw": 500,
+    "min_efficiency": 0.85
+  },
+  "market_conditions": {
+    "spot_price_volatility": "high",
+    "regulation_demand": "medium"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "optimized_parameters": {
+      "capacity_kwh": 750.0,
+      "power_charge_kw": 375.0,
+      "power_discharge_kw": 375.0,
+      "efficiency_charge": 0.95,
+      "efficiency_discharge": 0.95,
+      "cycles_per_day": 2.5
+    },
+    "economic_analysis": {
+      "roi_percent": 12.5,
+      "npv_eur": 125000,
+      "payback_years": 8.2,
+      "annual_revenue_eur": 45000
+    },
+    "optimization_info": {
+      "algorithm": "Grid Search",
+      "iterations": 150,
+      "optimization_time": 2.3
+    }
+  }
+}
+```
+
+#### POST /ml/detect-anomalies
+**Beschreibung:** Ungewöhnliche Lastprofile und Systemverhalten erkennen
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "analysis_period": "7_days",
+  "sensitivity": "medium",
+  "include_load_profile": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "anomalies": [
+      {
+        "timestamp": "2025-09-05T14:30:00Z",
+        "value": 1250.5,
+        "severity": "high",
+        "type": "Spitzenlast",
+        "description": "Ungewöhnlich hoher Verbrauch um 14:30 Uhr"
+      },
+      {
+        "timestamp": "2025-09-04T02:15:00Z",
+        "value": 50.2,
+        "severity": "medium",
+        "type": "Niedriglast",
+        "description": "Ungewöhnlich niedriger Verbrauch in der Nacht"
+      }
+    ],
+    "analysis_info": {
+      "algorithm": "Isolation Forest",
+      "contamination_rate": 0.1,
+      "total_data_points": 1008,
+      "anomalies_detected": 2
+    }
+  }
+}
+```
+
+#### POST /ml/predictive-maintenance
+**Beschreibung:** Wartungsbedarf und Degradation vorhersagen
+
+**Request Body:**
+```json
+{
+  "project_id": 1,
+  "current_state": {
+    "operating_hours": 8760,
+    "total_cycles": 2190,
+    "average_temperature": 25.5,
+    "voltage_deviation": 0.02
+  },
+  "include_recommendations": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "degradation_analysis": {
+      "degradation_rate_per_month": 0.005,
+      "remaining_lifetime_months": 120,
+      "current_health_score": 0.92
+    },
+    "maintenance_recommendations": [
+      {
+        "description": "Überprüfung der Zellspannung",
+        "priority": "medium",
+        "estimated_cost_eur": 500,
+        "recommended_date": "2025-10-15"
+      },
+      {
+        "description": "Temperatur-Sensor Kalibrierung",
+        "priority": "low",
+        "estimated_cost_eur": 200,
+        "recommended_date": "2025-11-01"
+      }
+    ],
+    "model_info": {
+      "algorithm": "Linear Regression",
+      "training_data_points": 5000,
+      "prediction_confidence": 0.85
+    }
+  }
+}
+```
+
+#### GET /ml/model-status
+**Beschreibung:** Status aller ML-Modelle abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "models": {
+      "price_forecasting": {
+        "status": "trained",
+        "accuracy": 0.87,
+        "last_training": "2025-09-05T10:00:00Z",
+        "version": "1.2.3"
+      },
+      "bess_optimization": {
+        "status": "ready",
+        "last_optimization": "2025-09-05T11:30:00Z",
+        "version": "1.1.0"
+      },
+      "anomaly_detection": {
+        "status": "trained",
+        "sensitivity": 0.1,
+        "last_training": "2025-09-04T15:00:00Z",
+        "version": "1.0.5"
+      },
+      "predictive_maintenance": {
+        "status": "trained",
+        "confidence": 0.85,
+        "last_training": "2025-09-03T09:00:00Z",
+        "version": "1.3.1"
+      }
+    },
+    "system_status": {
+      "total_models": 4,
+      "trained_models": 4,
+      "api_uptime": "99.9%",
+      "average_response_time": "0.8s"
+    }
+  }
+}
+```
+
+#### GET /ml/projects
+**Beschreibung:** Verfügbare Projekte für ML-Analysen abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "name": "BESS Wien Hauptbahnhof",
+      "location": "Wien, Österreich",
+      "bess_size": 500.0,
+      "bess_power": 250.0,
+      "has_historical_data": true,
+      "last_analysis": "2025-09-05T14:30:00Z"
+    },
+    {
+      "id": 2,
+      "name": "BESS Graz Industrie",
+      "location": "Graz, Österreich",
+      "bess_size": 1000.0,
+      "bess_power": 500.0,
+      "has_historical_data": true,
+      "last_analysis": "2025-09-04T16:45:00Z"
+    }
+  ]
+}
+```
+
 ### 📥 Datenimport API
 
 #### POST /api/import/spot-prices
@@ -3595,6 +4339,68 @@ time curl -s http://localhost:5000/api/health
 - Zusammenarbeit und Backup
 - Wichtig für Software-Entwicklung
 
+### 🤖 Machine Learning & KI
+
+**Random Forest**
+- Ensemble-Machine-Learning-Algorithmus
+- Verwendet für Preisprognose
+- Kombiniert mehrere Entscheidungsbäume
+- Robust gegen Overfitting
+
+**Isolation Forest**
+- Algorithmus zur Anomalie-Erkennung
+- Erkennt ungewöhnliche Datenpunkte
+- Funktioniert ohne Label-Daten
+- Ideal für Lastprofil-Analysen
+
+**Linear Regression**
+- Einfacher ML-Algorithmus
+- Verwendet für Predictive Maintenance
+- Modelliert lineare Zusammenhänge
+- Schnell und interpretierbar
+
+**Grid Search**
+- Optimierungs-Algorithmus
+- Testet systematisch Parameter-Kombinationen
+- Verwendet für BESS-Optimierung
+- Findet globale Optima
+
+**Feature Engineering**
+- Vorbereitung von Eingabedaten
+- Extraktion relevanter Merkmale
+- Normalisierung und Skalierung
+- Wichtig für Modell-Performance
+
+**Cross-Validation**
+- Validierungs-Technik
+- Teilt Daten in Trainings-/Test-Sets
+- Verhindert Overfitting
+- Schätzt echte Modell-Performance
+
+**Model Training**
+- Prozess des Lernens aus Daten
+- Anpassung der Modell-Parameter
+- Minimierung der Vorhersage-Fehler
+- Automatisch bei neuen Daten
+
+**Prediction Confidence**
+- Maß für Vorhersage-Sicherheit
+- Wird als Konfidenz-Intervall angezeigt
+- Wichtig für Entscheidungsfindung
+- Basiert auf Modell-Unsicherheit
+
+**Anomaly Detection**
+- Erkennung ungewöhnlicher Muster
+- Automatische Alert-Generierung
+- Wichtig für System-Monitoring
+- Verhindert Ausfälle proaktiv
+
+**Predictive Maintenance**
+- Vorhersage von Wartungsbedarf
+- Basiert auf Degradationsmodellen
+- Optimiert Wartungsintervalle
+- Reduziert ungeplante Ausfälle
+
 ### 📊 Messungen & Einheiten
 
 **kW (Kilowatt)**
@@ -3634,6 +4440,11 @@ time curl -s http://localhost:5000/api/health
 ### Version 2.0 (September 2025)
 
 #### ✅ Neue Features
+- **ML & KI Dashboard:** Vollständige Machine Learning Integration
+  - **Preisprognose:** Random Forest-basierte Strompreis-Vorhersagen
+  - **BESS-Optimierung:** Grid Search für optimale Parameter
+  - **Anomalie-Erkennung:** Isolation Forest für ungewöhnliche Muster
+  - **Predictive Maintenance:** Linear Regression für Wartungsvorhersagen
 - **Dispatch-Integration:** Vollständige Dispatch & Redispatch-Funktionalität
 - **Mobile-Optimierung:** Touch-Events und responsive Design
 - **Export-Zentrum:** Erweiterte PDF/Excel-Export-Funktionen
@@ -3641,12 +4452,14 @@ time curl -s http://localhost:5000/api/health
 - **Performance-Optimierung:** Redis-Caching und Datenbank-Indizes
 
 #### 🔧 Verbesserungen
+- **ML & KI Integration:** Vollständige API-Integration mit scikit-learn
 - **Dashboard:** Interaktive Charts mit Chart.js
 - **API:** RESTful API mit vollständiger Dokumentation
 - **Monitoring:** Umfassendes Logging und Error-Tracking
 - **Sicherheit:** CSRF-Protection und Input-Validierung
 
 #### 🐛 Bug-Fixes
+- **ML & KI Dashboard:** Chart-Rendering und API-Response-Parsing
 - **Excel-Import:** Datum-Korrektur für Excel-Dateien
 - **Lastprofil-Import:** API-Endpunkt-Korrekturen
 - **Mobile-Menü:** Touch-Event-Handling für Safari
@@ -3694,4 +4507,4 @@ time curl -s http://localhost:5000/api/health
 
 **BESS Simulation** - Professionelle Batteriespeicher-Simulation für erneuerbare Energien 🚀
 
-*Letzte Aktualisierung: September 2025*
+*Letzte Aktualisierung: September 2025 - ML & KI Integration*
