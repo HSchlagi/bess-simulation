@@ -25,7 +25,7 @@ function testTabClick(tabName) {
     var allButtons = document.querySelectorAll('.tab-button');
     console.log('Gefundene Buttons:', allButtons.length);
     for (var i = 0; i < allButtons.length; i++) {
-        allButtons[i].classList.remove('active', 'border-blue-500', 'text-blue-600');
+        allButtons[i].classList.remove('active', 'border-blue-500', 'text-blue-600', 'bg-blue-50');
         allButtons[i].classList.add('border-transparent', 'text-gray-500');
         console.log('Button zurückgesetzt:', allButtons[i].id);
     }
@@ -52,7 +52,7 @@ function testTabClick(tabName) {
     }
     
     if (targetButton) {
-        targetButton.classList.add('active', 'border-blue-500', 'text-blue-600');
+        targetButton.classList.add('active', 'border-blue-500', 'text-blue-600', 'bg-blue-50');
         console.log('✅ Button aktiviert:', tabName);
     } else {
         console.error('❌ Button nicht gefunden:', 'tab-' + tabName);
@@ -89,7 +89,11 @@ async function loadProjectsSimple() {
             'weatherProjectSelect',
             'pvgisProjectSelect',
             'intradayProjectSelect',
-            'austrianProjectSelect'
+            'austrianProjectSelect',
+            'entsoeProjectSelect',
+            'blockchainProjectSelect',
+            'smartGridProjectSelect',
+            'iotProjectSelect'
         ];
         
         projectSelects.forEach(selectId => {
@@ -164,32 +168,49 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- Datenarten-Tabs -->
     <div class="bg-white rounded-lg shadow-md mb-6">
         <div class="border-b border-gray-200">
-            <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                <button onclick="testTabClick('load')" id="tab-load" class="tab-button active py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600">
+            <!-- Erste Zeile: Grunddaten -->
+            <nav class="flex space-x-6 px-6 py-2" aria-label="Tabs">
+                <button onclick="testTabClick('load')" id="tab-load" class="tab-button active py-3 px-2 border-b-2 border-blue-500 font-medium text-sm text-blue-600 bg-blue-50 rounded-t-lg">
                     <i class="fas fa-chart-line mr-2"></i>Lastprofile
                 </button>
-                <button onclick="testTabClick('solar')" id="tab-solar" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('solar')" id="tab-solar" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-sun mr-2"></i>Einstrahlung
                 </button>
-                <button onclick="testTabClick('hydro')" id="tab-hydro" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('hydro')" id="tab-hydro" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-water mr-2"></i>Pegelstände
                 </button>
-                <button onclick="testTabClick('pvsol')" id="tab-pvsol" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('pvsol')" id="tab-pvsol" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-solar-panel mr-2"></i>PVSol Export
                 </button>
-                <button onclick="testTabClick('weather')" id="tab-weather" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('weather')" id="tab-weather" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-cloud mr-2"></i>Wetterdaten
                 </button>
-                <button onclick="testTabClick('pvgis')" id="tab-pvgis" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('pvgis')" id="tab-pvgis" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-solar-panel mr-2"></i>PVGIS Solar
                 </button>
-                <button onclick="testTabClick('intraday')" id="tab-intraday" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('intraday')" id="tab-intraday" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-chart-area mr-2"></i>Intraday-Preise
                 </button>
-                <button onclick="testTabClick('austrian')" id="tab-austrian" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+            </nav>
+            
+            <!-- Zweite Zeile: APIs & Services -->
+            <nav class="flex space-x-6 px-6 py-2 border-t border-gray-100" aria-label="Tabs">
+                <button onclick="testTabClick('entsoe')" id="tab-entsoe" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
+                    <i class="fas fa-globe-europe mr-2"></i>ENTSO-E
+                </button>
+                <button onclick="testTabClick('blockchain')" id="tab-blockchain" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
+                    <i class="fas fa-link mr-2"></i>Blockchain
+                </button>
+                <button onclick="testTabClick('smart-grid')" id="tab-smart-grid" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
+                    <i class="fas fa-bolt mr-2"></i>Smart Grid
+                </button>
+                <button onclick="testTabClick('iot')" id="tab-iot" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
+                    <i class="fas fa-microchip mr-2"></i>IoT
+                </button>
+                <button onclick="testTabClick('austrian')" id="tab-austrian" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-flag mr-2"></i>AT-Märkte
                 </button>
-                <button onclick="testTabClick('config')" id="tab-config" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700">
+                <button onclick="testTabClick('config')" id="tab-config" class="tab-button py-3 px-2 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-50 rounded-t-lg transition-colors">
                     <i class="fas fa-cog mr-2"></i>Konfiguration
                 </button>
             </nav>
@@ -535,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <!-- CSV Import -->
                 <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center drag-drop-area" 
                      data-file-type="csv" data-data-type="weather">
@@ -559,6 +580,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="file" id="weatherExcelFile" accept=".xlsx,.xls" class="hidden">
                     <button onclick="document.getElementById('weatherExcelFile').click()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                         Excel auswählen
+                    </button>
+                </div>
+
+                <!-- Wetter-API Import -->
+                <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="weather">
+                    <i class="fas fa-cloud-sun text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Wetter-API</h3>
+                    <p class="text-sm text-gray-600 mb-4">OpenWeatherMap & PVGIS</p>
+                    <p class="text-xs text-blue-600 mb-4">🌤️ Echtzeit & historische Daten</p>
+                    <button onclick="openWeatherApiModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        API abrufen
                     </button>
                 </div>
 
@@ -875,6 +908,427 @@ document.addEventListener('DOMContentLoaded', function() {
                             <option value="2022">2022</option>
                         </select>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ENTSO-E Tab -->
+        <div id="tab-content-entsoe" class="tab-content p-6 hidden">
+            <!-- Projekt- und Profilauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">ENTSO-E Europäische Strommarkt-Daten</h3>
+                <p class="text-gray-600 mb-4">
+                    Laden Sie europäische Strommarkt-Daten direkt von der ENTSO-E Transparency Platform
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="entsoeProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Land *</label>
+                        <select id="entsoeCountrySelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="AT">🇦🇹 Österreich</option>
+                            <option value="DE">🇩🇪 Deutschland</option>
+                            <option value="CH">🇨🇭 Schweiz</option>
+                            <option value="IT">🇮🇹 Italien</option>
+                            <option value="CZ">🇨🇿 Tschechien</option>
+                            <option value="SK">🇸🇰 Slowakei</option>
+                            <option value="HU">🇭🇺 Ungarn</option>
+                            <option value="SI">🇸🇮 Slowenien</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Daten-Typ *</label>
+                        <select id="entsoeDataTypeSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="day_ahead">Day-Ahead Preise</option>
+                            <option value="intraday">Intraday Preise</option>
+                            <option value="generation">Generation</option>
+                            <option value="both">Alle Daten</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Day-Ahead Preise -->
+                <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="entsoe">
+                    <i class="fas fa-chart-line text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Day-Ahead</h3>
+                    <p class="text-sm text-gray-600 mb-4">Tägliche Auktion</p>
+                    <p class="text-xs text-blue-600 mb-4">🌍 Europäische Preise</p>
+                    <button onclick="openEntsoeModal('day_ahead')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Preise abrufen
+                    </button>
+                </div>
+
+                <!-- Intraday Preise -->
+                <div class="border-2 border-dashed border-green-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="entsoe">
+                    <i class="fas fa-chart-area text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Intraday</h3>
+                    <p class="text-sm text-gray-600 mb-4">Kontinuierlicher Handel</p>
+                    <p class="text-xs text-green-600 mb-4">⚡ Echtzeit-Preise</p>
+                    <button onclick="openEntsoeModal('intraday')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Preise abrufen
+                    </button>
+                </div>
+
+                <!-- Generation -->
+                <div class="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="entsoe">
+                    <i class="fas fa-industry text-4xl text-purple-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Generation</h3>
+                    <p class="text-sm text-gray-600 mb-4">Erzeugungsdaten</p>
+                    <p class="text-xs text-purple-600 mb-4">🏭 Kraftwerksdaten</p>
+                    <button onclick="openEntsoeModal('generation')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Intelligente Vorschau -->
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <i class="fas fa-chart-bar text-4xl text-indigo-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Markt-Vorschau</h3>
+                    <p class="text-sm text-gray-600 mb-4">Preise, Generation, etc.</p>
+                    <div id="entsoePreview" class="text-sm text-gray-500">
+                        Keine ENTSO-E Daten geladen
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Blockchain Tab -->
+        <div id="tab-content-blockchain" class="tab-content p-6 hidden">
+            <!-- Projekt- und Profilauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Blockchain-basierte Energiehandel</h3>
+                <p class="text-gray-600 mb-4">
+                    Laden Sie Peer-to-Peer Energiehandel-Daten von Blockchain-Plattformen
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="blockchainProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Plattform *</label>
+                        <select id="blockchainPlatformSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Alle Plattformen</option>
+                            <option value="power_ledger">Power Ledger (POWR)</option>
+                            <option value="wepower">WePower (WPR)</option>
+                            <option value="grid_plus">Grid+ (GRID)</option>
+                            <option value="energy_web">Energy Web (EWT)</option>
+                            <option value="solarcoin">SolarCoin (SLR)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum *</label>
+                        <select id="blockchainTimeframeSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="24">Letzte 24 Stunden</option>
+                            <option value="168">Letzte 7 Tage</option>
+                            <option value="720">Letzte 30 Tage</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <!-- Power Ledger -->
+                <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="blockchain">
+                    <i class="fas fa-users text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Power Ledger</h3>
+                    <p class="text-sm text-gray-600 mb-4">Peer-to-Peer Handel</p>
+                    <p class="text-xs text-blue-600 mb-4">🔗 POWR Token</p>
+                    <button onclick="openBlockchainModal('power_ledger')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- WePower -->
+                <div class="border-2 border-dashed border-green-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="blockchain">
+                    <i class="fas fa-leaf text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">WePower</h3>
+                    <p class="text-sm text-gray-600 mb-4">Grüne Tokenisierung</p>
+                    <p class="text-xs text-green-600 mb-4">🌱 WPR Token</p>
+                    <button onclick="openBlockchainModal('wepower')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Grid+ -->
+                <div class="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="blockchain">
+                    <i class="fas fa-network-wired text-4xl text-purple-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Grid+</h3>
+                    <p class="text-sm text-gray-600 mb-4">Dezentrale Märkte</p>
+                    <p class="text-xs text-purple-600 mb-4">⚡ GRID Token</p>
+                    <button onclick="openBlockchainModal('grid_plus')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Energy Web -->
+                <div class="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="blockchain">
+                    <i class="fas fa-globe text-4xl text-orange-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Energy Web</h3>
+                    <p class="text-sm text-gray-600 mb-4">Energy Web Chain</p>
+                    <p class="text-xs text-orange-600 mb-4">🌐 EWT Token</p>
+                    <button onclick="openBlockchainModal('energy_web')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- SolarCoin -->
+                <div class="border-2 border-dashed border-yellow-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="blockchain">
+                    <i class="fas fa-sun text-4xl text-yellow-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">SolarCoin</h3>
+                    <p class="text-sm text-gray-600 mb-4">Solar Belohnungen</p>
+                    <p class="text-xs text-yellow-600 mb-4">☀️ SLR Token</p>
+                    <button onclick="openBlockchainModal('solarcoin')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Blockchain Übersicht -->
+            <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                    Blockchain-Energiehandel Übersicht
+                </h3>
+                <div id="blockchainOverview" class="text-sm text-gray-500">
+                    Keine Blockchain-Daten geladen
+                </div>
+            </div>
+        </div>
+
+        <!-- Smart Grid Tab -->
+        <div id="tab-content-smart-grid" class="tab-content p-6 hidden">
+            <!-- Projekt- und Serviceauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Smart Grid Services</h3>
+                <p class="text-gray-600 mb-4">
+                    Laden Sie Grid Services für intelligente Stromnetze
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="smartGridProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Service-Typ *</label>
+                        <select id="smartGridServiceSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Alle Services</option>
+                            <option value="fcr">FCR (Frequenzregelung)</option>
+                            <option value="afrr">aFRR (Automatische Frequenzregelung)</option>
+                            <option value="mfrr">mFRR (Manuelle Frequenzregelung)</option>
+                            <option value="voltage">Spannungshaltung</option>
+                            <option value="demand_response">Demand Response</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum *</label>
+                        <select id="smartGridTimeframeSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="24">Letzte 24 Stunden</option>
+                            <option value="168">Letzte 7 Tage</option>
+                            <option value="720">Letzte 30 Tage</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                <!-- FCR -->
+                <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="smart-grid">
+                    <i class="fas fa-tachometer-alt text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">FCR</h3>
+                    <p class="text-sm text-gray-600 mb-4">Frequenzregelung</p>
+                    <p class="text-xs text-blue-600 mb-4">⚡ 30 Sekunden</p>
+                    <button onclick="openSmartGridModal('fcr')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- aFRR -->
+                <div class="border-2 border-dashed border-green-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="smart-grid">
+                    <i class="fas fa-cogs text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">aFRR</h3>
+                    <p class="text-sm text-gray-600 mb-4">Automatische Frequenzregelung</p>
+                    <p class="text-xs text-green-600 mb-4">🔄 5 Minuten</p>
+                    <button onclick="openSmartGridModal('afrr')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- mFRR -->
+                <div class="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="smart-grid">
+                    <i class="fas fa-hand-paper text-4xl text-purple-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">mFRR</h3>
+                    <p class="text-sm text-gray-600 mb-4">Manuelle Frequenzregelung</p>
+                    <p class="text-xs text-purple-600 mb-4">⏱️ 12.5 Minuten</p>
+                    <button onclick="openSmartGridModal('mfrr')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Voltage Control -->
+                <div class="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="smart-grid">
+                    <i class="fas fa-bolt text-4xl text-orange-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Spannungshaltung</h3>
+                    <p class="text-sm text-gray-600 mb-4">Reactive Power</p>
+                    <p class="text-xs text-orange-600 mb-4">⚡ 1 Minute</p>
+                    <button onclick="openSmartGridModal('voltage')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Demand Response -->
+                <div class="border-2 border-dashed border-yellow-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="smart-grid">
+                    <i class="fas fa-sliders-h text-4xl text-yellow-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Demand Response</h3>
+                    <p class="text-sm text-gray-600 mb-4">Laststeuerung</p>
+                    <p class="text-xs text-yellow-600 mb-4">📊 15 Minuten</p>
+                    <button onclick="openSmartGridModal('demand_response')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Smart Grid Übersicht -->
+            <div class="mt-8 bg-gradient-to-r from-blue-50 to-green-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                    Smart Grid Services Übersicht
+                </h3>
+                <div id="smartGridOverview" class="text-sm text-gray-500">
+                    Keine Smart Grid Daten geladen
+                </div>
+            </div>
+        </div>
+
+        <!-- IoT Tab -->
+        <div id="tab-content-iot" class="tab-content p-6 hidden">
+            <!-- Projekt- und Sensorauswahl -->
+            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">IoT-Sensor Integration</h3>
+                <p class="text-gray-600 mb-4">
+                    Laden Sie Real-time BESS-Monitoring-Daten von IoT-Sensoren
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="iotProjectSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sensor-Typ *</label>
+                        <select id="iotSensorSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="all">Alle Sensoren</option>
+                            <option value="battery">Batterie-Sensoren</option>
+                            <option value="pv">PV-Sensoren</option>
+                            <option value="grid">Grid-Sensoren</option>
+                            <option value="environmental">Umgebungs-Sensoren</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum *</label>
+                        <select id="iotTimeframeSelect" required 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="24">Letzte 24 Stunden</option>
+                            <option value="168">Letzte 7 Tage</option>
+                            <option value="720">Letzte 30 Tage</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Battery Sensors -->
+                <div class="border-2 border-dashed border-blue-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="iot">
+                    <i class="fas fa-battery-three-quarters text-4xl text-blue-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Batterie-Sensoren</h3>
+                    <p class="text-sm text-gray-600 mb-4">BESS Monitoring</p>
+                    <p class="text-xs text-blue-600 mb-4">🔋 SOC, SOH, Temperatur</p>
+                    <button onclick="openIoTModal('battery')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- PV Sensors -->
+                <div class="border-2 border-dashed border-yellow-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="iot">
+                    <i class="fas fa-solar-panel text-4xl text-yellow-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">PV-Sensoren</h3>
+                    <p class="text-sm text-gray-600 mb-4">Photovoltaik-Monitoring</p>
+                    <p class="text-xs text-yellow-600 mb-4">☀️ Leistung, Einstrahlung</p>
+                    <button onclick="openIoTModal('pv')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Grid Sensors -->
+                <div class="border-2 border-dashed border-green-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="iot">
+                    <i class="fas fa-plug text-4xl text-green-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Grid-Sensoren</h3>
+                    <p class="text-sm text-gray-600 mb-4">Netz-Monitoring</p>
+                    <p class="text-xs text-green-600 mb-4">⚡ Spannung, Frequenz</p>
+                    <button onclick="openIoTModal('grid')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+
+                <!-- Environmental Sensors -->
+                <div class="border-2 border-dashed border-purple-300 rounded-lg p-6 text-center" 
+                     data-file-type="api" data-data-type="iot">
+                    <i class="fas fa-thermometer-half text-4xl text-purple-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">Umgebungs-Sensoren</h3>
+                    <p class="text-sm text-gray-600 mb-4">Wetter & Umwelt</p>
+                    <p class="text-xs text-purple-600 mb-4">🌡️ Temperatur, Wind</p>
+                    <button onclick="openIoTModal('environmental')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md">
+                        Daten abrufen
+                    </button>
+                </div>
+            </div>
+
+            <!-- IoT Übersicht -->
+            <div class="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                    <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+                    IoT-Sensor Übersicht
+                </h3>
+                <div id="iotOverview" class="text-sm text-gray-500">
+                    Keine IoT-Sensor-Daten geladen
                 </div>
             </div>
         </div>
@@ -1198,7 +1652,8 @@ async function loadProjects() {
             'weatherProjectSelect',
             'pvgisProjectSelect',
             'intradayProjectSelect',
-            'austrianProjectSelect'
+            'austrianProjectSelect',
+            'entsoeProjectSelect'
         ];
         
         projectSelects.forEach(selectId => {
@@ -4934,6 +5389,1919 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ============================================================================
+// WETTER-API FUNKTIONEN
+// ============================================================================
+
+// Wetter-API Modal öffnen
+function openWeatherApiModal() {
+    // Modal HTML erstellen falls nicht vorhanden
+    if (!document.getElementById('weatherApiModal')) {
+        createWeatherApiModal();
+    }
+    
+    // Modal anzeigen
+    document.getElementById('weatherApiModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    
+    // Status laden
+    loadWeatherApiStatus();
+}
+
+// Wetter-API Modal erstellen
+function createWeatherApiModal() {
+    const modalHTML = `
+    <div id="weatherApiModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-cloud-sun text-blue-500 mr-2"></i>
+                        Wetter-API Konfiguration
+                    </h3>
+                    <button onclick="closeWeatherApiModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Standort-Eingabe -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Standort auswählen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Standort-Name</label>
+                                <input type="text" id="weatherLocationName" 
+                                       placeholder="z.B. Wien, Salzburg, Graz"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Koordinaten (optional)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" id="weatherLatitude" step="0.000001" 
+                                           placeholder="Breitengrad" 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <input type="number" id="weatherLongitude" step="0.000001" 
+                                           placeholder="Längengrad" 
+                                           class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Daten-Typ Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Typ auswählen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="weatherDataType" value="current" class="mr-3" checked>
+                                <div>
+                                    <div class="font-medium">Aktuell</div>
+                                    <div class="text-sm text-gray-600">Echtzeit-Wetterdaten</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="weatherDataType" value="forecast" class="mr-3">
+                                <div>
+                                    <div class="font-medium">Vorhersage</div>
+                                    <div class="text-sm text-gray-600">5-Tage Wettervorhersage</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="weatherDataType" value="historical" class="mr-3">
+                                <div>
+                                    <div class="font-medium">Historisch</div>
+                                    <div class="text-sm text-gray-600">Letzte 7 Tage</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- API-Status -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">API-Status</h4>
+                        <div id="weatherApiStatus" class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                                <span class="text-gray-600">Lade API-Status...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vorschau -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Vorschau</h4>
+                        <div id="weatherDataPreview" class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                            <div class="text-gray-500 text-center">
+                                <i class="fas fa-cloud text-2xl mb-2"></i>
+                                <div>Keine Daten geladen</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+                    <button onclick="closeWeatherApiModal()" 
+                            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Abbrechen
+                    </button>
+                    <button onclick="testWeatherApi()" 
+                            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-flask mr-2"></i>Test
+                    </button>
+                    <button onclick="importWeatherData()" 
+                            class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>Importieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Wetter-API Modal schließen
+function closeWeatherApiModal() {
+    document.getElementById('weatherApiModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Wetter-API Status laden
+async function loadWeatherApiStatus() {
+    try {
+        const response = await fetch('/api/weather/status');
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('weatherApiStatus');
+        
+        if (data.success) {
+            let statusHTML = '<div class="space-y-2">';
+            
+            // OpenWeatherMap Status
+            const owStatus = data.apis.openweather;
+            const owIcon = owStatus.status === 'success' ? '✅' : 
+                          owStatus.status === 'demo' ? '🎭' :
+                          owStatus.status === 'not_configured' ? '⚠️' : '❌';
+            statusHTML += `
+                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                    <div class="flex items-center">
+                        <span class="mr-2">${owIcon}</span>
+                        <span class="font-medium">OpenWeatherMap</span>
+                    </div>
+                    <span class="text-sm text-gray-600">${owStatus.message}</span>
+                </div>
+            `;
+            
+            // PVGIS Status
+            const pvgisStatus = data.apis.pvgis;
+            const pvgisIcon = pvgisStatus.status === 'success' ? '✅' : 
+                             pvgisStatus.status === 'demo' ? '🎭' : '❌';
+            statusHTML += `
+                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                    <div class="flex items-center">
+                        <span class="mr-2">${pvgisIcon}</span>
+                        <span class="font-medium">PVGIS</span>
+                    </div>
+                    <span class="text-sm text-gray-600">${pvgisStatus.message}</span>
+                </div>
+            `;
+            
+            statusHTML += '</div>';
+            statusDiv.innerHTML = statusHTML;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Fehler beim Laden des API-Status
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des Wetter-API Status:', error);
+        document.getElementById('weatherApiStatus').innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Verbindungsfehler
+            </div>
+        `;
+    }
+}
+
+// Wetter-API testen
+async function testWeatherApi() {
+    const locationName = document.getElementById('weatherLocationName').value;
+    const lat = parseFloat(document.getElementById('weatherLatitude').value) || 48.2082;
+    const lon = parseFloat(document.getElementById('weatherLongitude').value) || 16.3738;
+    const dataType = document.querySelector('input[name="weatherDataType"]:checked').value;
+    
+    if (!locationName.trim()) {
+        showNotification('Bitte geben Sie einen Standort-Namen ein', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Teste Wetter-API...', 'info');
+        
+        let url = '';
+        let params = new URLSearchParams();
+        
+        switch (dataType) {
+            case 'current':
+                url = '/api/weather/current';
+                params.append('lat', lat);
+                params.append('lon', lon);
+                break;
+            case 'forecast':
+                url = '/api/weather/forecast';
+                params.append('lat', lat);
+                params.append('lon', lon);
+                params.append('days', 5);
+                break;
+            case 'historical':
+                url = '/api/weather/historical';
+                params.append('lat', lat);
+                params.append('lon', lon);
+                break;
+        }
+        
+        const response = await fetch(`${url}?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayWeatherPreview(data.data, dataType);
+            showNotification('Wetter-API Test erfolgreich!', 'success');
+        } else {
+            showNotification('Wetter-API Test fehlgeschlagen', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Wetter-API Test Fehler:', error);
+        showNotification('Fehler beim Testen der Wetter-API', 'error');
+    }
+}
+
+// Wetterdaten-Vorschau anzeigen
+function displayWeatherPreview(data, dataType) {
+    const previewDiv = document.getElementById('weatherDataPreview');
+    
+    if (dataType === 'current') {
+        previewDiv.innerHTML = `
+            <div class="grid grid-cols-2 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">${data.temperature}°C</div>
+                    <div class="text-sm text-gray-600">Temperatur</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">${data.humidity}%</div>
+                    <div class="text-sm text-gray-600">Luftfeuchtigkeit</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600">${data.wind_speed} m/s</div>
+                    <div class="text-sm text-gray-600">Windgeschwindigkeit</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600">${data.cloud_cover}%</div>
+                    <div class="text-sm text-gray-600">Wolkenbedeckung</div>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-sm text-gray-600">
+                <i class="fas fa-map-marker-alt mr-1"></i>
+                ${data.location} • ${data.source}
+            </div>
+        `;
+    } else if (dataType === 'forecast' || dataType === 'historical') {
+        const count = Array.isArray(data) ? data.length : data.count;
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600">${count}</div>
+                <div class="text-sm text-gray-600">Datenpunkte verfügbar</div>
+                <div class="mt-2 text-xs text-gray-500">
+                    ${dataType === 'forecast' ? '5-Tage Vorhersage' : 'Letzte 7 Tage'}
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Wetterdaten importieren
+async function importWeatherData() {
+    const locationName = document.getElementById('weatherLocationName').value;
+    const lat = parseFloat(document.getElementById('weatherLatitude').value) || 48.2082;
+    const lon = parseFloat(document.getElementById('weatherLongitude').value) || 16.3738;
+    const dataType = document.querySelector('input[name="weatherDataType"]:checked').value;
+    
+    if (!locationName.trim()) {
+        showNotification('Bitte geben Sie einen Standort-Namen ein', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Importiere Wetterdaten...', 'info');
+        
+        const response = await fetch('/api/weather/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                latitude: lat,
+                longitude: lon,
+                location_name: locationName,
+                data_type: dataType
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Wetterdaten erfolgreich importiert!', 'success');
+            closeWeatherApiModal();
+            
+            // Wetterdaten-Vorschau aktualisieren
+            updateWeatherPreview(data.data);
+        } else {
+            showNotification('Fehler beim Importieren der Wetterdaten', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Wetterdaten Import Fehler:', error);
+        showNotification('Fehler beim Importieren der Wetterdaten', 'error');
+    }
+}
+
+// Wetterdaten-Vorschau im Hauptfenster aktualisieren
+function updateWeatherPreview(weatherData) {
+    const previewDiv = document.getElementById('weatherPreview');
+    
+    if (weatherData.current) {
+        const current = weatherData.current;
+        previewDiv.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Temperatur:</span>
+                    <span class="font-medium">${current.temperature}°C</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Luftfeuchtigkeit:</span>
+                    <span class="font-medium">${current.humidity}%</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Wind:</span>
+                    <span class="font-medium">${current.wind_speed} m/s</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-2">
+                    ${weatherData.location.name} • ${current.source}
+                </div>
+            </div>
+        `;
+    } else {
+        previewDiv.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-1"></i>
+                Wetterdaten importiert
+            </div>
+        `;
+    }
+}
+
+// ============================================================================
+// ENTSO-E FUNKTIONEN
+// ============================================================================
+
+// ENTSO-E Modal öffnen
+function openEntsoeModal(dataType) {
+    // Modal HTML erstellen falls nicht vorhanden
+    if (!document.getElementById('entsoeModal')) {
+        createEntsoeModal();
+    }
+    
+    // Modal anzeigen
+    document.getElementById('entsoeModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    
+    // Daten-Typ setzen
+    document.querySelector('input[name="entsoeDataType"][value="' + dataType + '"]').checked = true;
+    
+    // Status laden
+    loadEntsoeStatus();
+}
+
+// ENTSO-E Projekte laden
+async function loadEntsoeProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const data = await response.json();
+        
+        const projectSelect = document.getElementById('entsoeProjectSelect');
+        if (projectSelect && data.success) {
+            // Dropdown leeren
+            projectSelect.innerHTML = '<option value="">Projekt auswählen...</option>';
+            
+            // Projekte hinzufügen
+            data.projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                projectSelect.appendChild(option);
+            });
+            
+            console.log(`✅ ${data.projects.length} Projekte für ENTSO-E geladen`);
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der ENTSO-E Projekte:', error);
+    }
+}
+
+// ENTSO-E Modal erstellen
+function createEntsoeModal() {
+    const modalHTML = `
+    <div id="entsoeModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-globe-europe text-blue-500 mr-2"></i>
+                        ENTSO-E Marktdaten Konfiguration
+                    </h3>
+                    <button onclick="closeEntsoeModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Land-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Land auswählen</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeCountry" value="AT" class="mr-2" checked>
+                                <div>
+                                    <div class="font-medium">🇦🇹 Österreich</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeCountry" value="DE" class="mr-2">
+                                <div>
+                                    <div class="font-medium">🇩🇪 Deutschland</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeCountry" value="CH" class="mr-2">
+                                <div>
+                                    <div class="font-medium">🇨🇭 Schweiz</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeCountry" value="IT" class="mr-2">
+                                <div>
+                                    <div class="font-medium">🇮🇹 Italien</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Daten-Typ Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Typ auswählen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeDataType" value="day_ahead" class="mr-3" checked>
+                                <div>
+                                    <div class="font-medium">Day-Ahead</div>
+                                    <div class="text-sm text-gray-600">Tägliche Auktion</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeDataType" value="intraday" class="mr-3">
+                                <div>
+                                    <div class="font-medium">Intraday</div>
+                                    <div class="text-sm text-gray-600">Kontinuierlicher Handel</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="entsoeDataType" value="generation" class="mr-3">
+                                <div>
+                                    <div class="font-medium">Generation</div>
+                                    <div class="text-sm text-gray-600">Erzeugungsdaten</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- API-Status -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">API-Status</h4>
+                        <div id="entsoeApiStatus" class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                                <span class="text-gray-600">Lade ENTSO-E Status...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vorschau -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Vorschau</h4>
+                        <div id="entsoeDataPreview" class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                            <div class="text-gray-500 text-center">
+                                <i class="fas fa-globe-europe text-2xl mb-2"></i>
+                                <div>Keine ENTSO-E Daten geladen</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+                    <button onclick="closeEntsoeModal()" 
+                            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Abbrechen
+                    </button>
+                    <button onclick="testEntsoeApi()" 
+                            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-flask mr-2"></i>Test
+                    </button>
+                    <button onclick="importEntsoeData()" 
+                            class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>Importieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// ENTSO-E Modal schließen
+function closeEntsoeModal() {
+    document.getElementById('entsoeModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// ENTSO-E Status laden
+async function loadEntsoeStatus() {
+    try {
+        const response = await fetch('/api/entsoe/status');
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('entsoeApiStatus');
+        
+        if (data.success) {
+            const statusIcon = data.status === 'success' ? '✅' : 
+                              data.status === 'demo' ? '🎭' : '❌';
+            
+            statusDiv.innerHTML = `
+                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                    <div class="flex items-center">
+                        <span class="mr-2">${statusIcon}</span>
+                        <span class="font-medium">ENTSO-E Transparency Platform</span>
+                    </div>
+                    <span class="text-sm text-gray-600">${data.message}</span>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Verfügbare Länder: ${data.countries_available.join(', ')}
+                </div>
+            `;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Fehler beim Laden des ENTSO-E Status
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des ENTSO-E Status:', error);
+        document.getElementById('entsoeApiStatus').innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Verbindungsfehler
+            </div>
+        `;
+    }
+}
+
+// ENTSO-E API testen
+async function testEntsoeApi() {
+    const country = document.querySelector('input[name="entsoeCountry"]:checked').value;
+    const dataType = document.querySelector('input[name="entsoeDataType"]:checked').value;
+    
+    try {
+        showNotification('Teste ENTSO-E API...', 'info');
+        
+        let url = '';
+        let params = new URLSearchParams();
+        
+        switch (dataType) {
+            case 'day_ahead':
+                url = '/api/entsoe/day_ahead';
+                params.append('country', country);
+                break;
+            case 'intraday':
+                url = '/api/entsoe/intraday';
+                params.append('country', country);
+                break;
+            case 'generation':
+                url = '/api/entsoe/generation';
+                params.append('country', country);
+                break;
+        }
+        
+        const response = await fetch(`${url}?${params}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayEntsoePreview(data.data, dataType);
+            showNotification('ENTSO-E API Test erfolgreich!', 'success');
+        } else {
+            showNotification('ENTSO-E API Test fehlgeschlagen', 'error');
+        }
+        
+    } catch (error) {
+        console.error('ENTSO-E API Test Fehler:', error);
+        showNotification('Fehler beim Testen der ENTSO-E API', 'error');
+    }
+}
+
+// ENTSO-E Daten-Vorschau anzeigen
+function displayEntsoePreview(data, dataType) {
+    const previewDiv = document.getElementById('entsoeDataPreview');
+    
+    if (dataType === 'generation') {
+        const count = Array.isArray(data) ? data.length : data.count;
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-purple-600">${count}</div>
+                <div class="text-sm text-gray-600">Generation-Datenpunkte</div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Kraftwerksdaten verfügbar
+                </div>
+            </div>
+        `;
+    } else {
+        const count = Array.isArray(data) ? data.length : data.count;
+        const latestPrice = Array.isArray(data) && data.length > 0 ? data[data.length - 1].price_eur_mwh : 'N/A';
+        
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600">${count}</div>
+                <div class="text-sm text-gray-600">Preis-Datenpunkte</div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Neuester Preis: ${latestPrice} €/MWh
+                </div>
+            </div>
+        `;
+    }
+}
+
+// ENTSO-E Daten importieren
+async function importEntsoeData() {
+    const country = document.querySelector('input[name="entsoeCountry"]:checked').value;
+    const dataType = document.querySelector('input[name="entsoeDataType"]:checked').value;
+    
+    try {
+        showNotification('Importiere ENTSO-E Daten...', 'info');
+        
+        const response = await fetch('/api/entsoe/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                country_code: country,
+                data_type: dataType,
+                hours: 24
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('ENTSO-E Daten erfolgreich importiert!', 'success');
+            closeEntsoeModal();
+            
+            // ENTSO-E Daten-Vorschau aktualisieren
+            updateEntsoePreview(data.data);
+        } else {
+            showNotification('Fehler beim Importieren der ENTSO-E Daten', 'error');
+        }
+        
+    } catch (error) {
+        console.error('ENTSO-E Daten Import Fehler:', error);
+        showNotification('Fehler beim Importieren der ENTSO-E Daten', 'error');
+    }
+}
+
+// ENTSO-E Daten-Vorschau im Hauptfenster aktualisieren
+function updateEntsoePreview(entsoeData) {
+    const previewDiv = document.getElementById('entsoePreview');
+    
+    if (entsoeData.prices && entsoeData.prices.length > 0) {
+        const prices = entsoeData.prices;
+        const latestPrice = prices[prices.length - 1];
+        
+        previewDiv.innerHTML = `
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Neuester Preis:</span>
+                    <span class="font-medium">${latestPrice.price_eur_mwh} €/MWh</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Datenpunkte:</span>
+                    <span class="font-medium">${prices.length}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Land:</span>
+                    <span class="font-medium">${entsoeData.country.name}</span>
+                </div>
+                <div class="text-xs text-gray-500 mt-2">
+                    ${latestPrice.source} • ${latestPrice.timestamp}
+                </div>
+            </div>
+        `;
+    } else {
+        previewDiv.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-1"></i>
+                ENTSO-E Daten importiert
+            </div>
+        `;
+    }
+}
+
+// ============================================================================
+// BLOCKCHAIN FUNKTIONEN
+// ============================================================================
+
+// Blockchain Modal öffnen
+function openBlockchainModal(platform) {
+    // Modal HTML erstellen falls nicht vorhanden
+    if (!document.getElementById('blockchainModal')) {
+        createBlockchainModal();
+    }
+    
+    // Modal anzeigen
+    document.getElementById('blockchainModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    
+    // Plattform setzen
+    document.querySelector('input[name="blockchainPlatform"][value="' + platform + '"]').checked = true;
+    
+    // Status laden
+    loadBlockchainStatus();
+}
+
+// Blockchain Modal erstellen
+function createBlockchainModal() {
+    const modalHTML = `
+    <div id="blockchainModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-link text-blue-500 mr-2"></i>
+                        Blockchain-Energiehandel Konfiguration
+                    </h3>
+                    <button onclick="closeBlockchainModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Plattform-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Blockchain-Plattform auswählen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainPlatform" value="power_ledger" class="mr-3" checked>
+                                <div>
+                                    <div class="font-medium">🔗 Power Ledger</div>
+                                    <div class="text-sm text-gray-600">Peer-to-Peer Handel (POWR)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainPlatform" value="wepower" class="mr-3">
+                                <div>
+                                    <div class="font-medium">🌱 WePower</div>
+                                    <div class="text-sm text-gray-600">Grüne Tokenisierung (WPR)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainPlatform" value="grid_plus" class="mr-3">
+                                <div>
+                                    <div class="font-medium">⚡ Grid+</div>
+                                    <div class="text-sm text-gray-600">Dezentrale Märkte (GRID)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainPlatform" value="energy_web" class="mr-3">
+                                <div>
+                                    <div class="font-medium">🌐 Energy Web</div>
+                                    <div class="text-sm text-gray-600">Energy Web Chain (EWT)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainPlatform" value="solarcoin" class="mr-3">
+                                <div>
+                                    <div class="font-medium">☀️ SolarCoin</div>
+                                    <div class="text-sm text-gray-600">Solar Belohnungen (SLR)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainPlatform" value="all" class="mr-3">
+                                <div>
+                                    <div class="font-medium">🔗 Alle Plattformen</div>
+                                    <div class="text-sm text-gray-600">Kombinierte Daten</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Zeitraum-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Zeitraum auswählen</h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainTimeframe" value="24" class="mr-2" checked>
+                                <div>
+                                    <div class="font-medium">24 Stunden</div>
+                                    <div class="text-sm text-gray-600">Letzte 24h</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainTimeframe" value="168" class="mr-2">
+                                <div>
+                                    <div class="font-medium">7 Tage</div>
+                                    <div class="text-sm text-gray-600">Letzte Woche</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="blockchainTimeframe" value="720" class="mr-2">
+                                <div>
+                                    <div class="font-medium">30 Tage</div>
+                                    <div class="text-sm text-gray-600">Letzter Monat</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- API-Status -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">API-Status</h4>
+                        <div id="blockchainApiStatus" class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                                <span class="text-gray-600">Lade Blockchain-Status...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vorschau -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Vorschau</h4>
+                        <div id="blockchainDataPreview" class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                            <div class="text-gray-500 text-center">
+                                <i class="fas fa-link text-2xl mb-2"></i>
+                                <div>Keine Blockchain-Daten geladen</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+                    <button onclick="closeBlockchainModal()" 
+                            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Abbrechen
+                    </button>
+                    <button onclick="testBlockchainApi()" 
+                            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-flask mr-2"></i>Test
+                    </button>
+                    <button onclick="importBlockchainData()" 
+                            class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>Importieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Blockchain Modal schließen
+function closeBlockchainModal() {
+    document.getElementById('blockchainModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Blockchain Status laden
+async function loadBlockchainStatus() {
+    try {
+        const response = await fetch('/api/blockchain/status');
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('blockchainApiStatus');
+        
+        if (data.success) {
+            let statusHTML = '<div class="space-y-2">';
+            
+            for (const [platformId, platformInfo] of Object.entries(data.platforms)) {
+                const statusIcon = platformInfo.status === 'success' ? '✅' : 
+                                  platformInfo.status === 'demo' ? '🎭' : '❌';
+                
+                statusHTML += `
+                    <div class="flex items-center justify-between p-2 bg-white rounded border">
+                        <div class="flex items-center">
+                            <span class="mr-2">${statusIcon}</span>
+                            <span class="font-medium">${platformInfo.name}</span>
+                        </div>
+                        <span class="text-sm text-gray-600">${platformInfo.message}</span>
+                    </div>
+                `;
+            }
+            
+            statusHTML += '</div>';
+            statusDiv.innerHTML = statusHTML;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Fehler beim Laden des Blockchain-Status
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des Blockchain-Status:', error);
+        document.getElementById('blockchainApiStatus').innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Verbindungsfehler
+            </div>
+        `;
+    }
+}
+
+// Blockchain API testen
+async function testBlockchainApi() {
+    const platform = document.querySelector('input[name="blockchainPlatform"]:checked').value;
+    const timeframe = document.querySelector('input[name="blockchainTimeframe"]:checked').value;
+    
+    try {
+        showNotification('Teste Blockchain-API...', 'info');
+        
+        let url = '';
+        let params = new URLSearchParams();
+        
+        if (platform === 'all') {
+            url = '/api/blockchain/fetch';
+            // POST request für alle Plattformen
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    platform: 'all',
+                    hours: parseInt(timeframe)
+                })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                displayBlockchainPreview(data.data, 'all');
+                showNotification('Blockchain-API Test erfolgreich!', 'success');
+            } else {
+                showNotification('Blockchain-API Test fehlgeschlagen', 'error');
+            }
+        } else {
+            // Einzelne Plattform
+            url = `/api/blockchain/${platform}`;
+            params.append('hours', timeframe);
+            
+            const response = await fetch(`${url}?${params}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displayBlockchainPreview(data.data, platform);
+                showNotification('Blockchain-API Test erfolgreich!', 'success');
+            } else {
+                showNotification('Blockchain-API Test fehlgeschlagen', 'error');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Blockchain-API Test Fehler:', error);
+        showNotification('Fehler beim Testen der Blockchain-API', 'error');
+    }
+}
+
+// Blockchain Daten-Vorschau anzeigen
+function displayBlockchainPreview(data, platform) {
+    const previewDiv = document.getElementById('blockchainDataPreview');
+    
+    if (platform === 'all') {
+        const summary = data.summary;
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-100 p-3 rounded">
+                        <div class="text-2xl font-bold text-blue-600">${summary.total_trades}</div>
+                        <div class="text-sm text-gray-600">Trades</div>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded">
+                        <div class="text-2xl font-bold text-green-600">${summary.total_energy_kwh.toFixed(1)}</div>
+                        <div class="text-sm text-gray-600">kWh</div>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Gesamt Wert: ${summary.total_value_eur.toFixed(2)} €<br>
+                    Carbon Offset: ${summary.total_carbon_offset.toFixed(3)}<br>
+                    Plattformen: ${summary.platforms_active}
+                </div>
+            </div>
+        `;
+    } else {
+        const count = Array.isArray(data) ? data.length : data.count;
+        const totalEnergy = Array.isArray(data) ? data.reduce((sum, d) => sum + d.energy_kwh, 0) : 0;
+        const totalValue = Array.isArray(data) ? data.reduce((sum, d) => sum + (d.energy_kwh * d.price_eur_kwh), 0) : 0;
+        
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600">${count}</div>
+                <div class="text-sm text-gray-600">Blockchain-Trades</div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Energie: ${totalEnergy.toFixed(1)} kWh<br>
+                    Wert: ${totalValue.toFixed(2)} €
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Blockchain Daten importieren
+async function importBlockchainData() {
+    const platform = document.querySelector('input[name="blockchainPlatform"]:checked').value;
+    const timeframe = document.querySelector('input[name="blockchainTimeframe"]:checked').value;
+    
+    try {
+        showNotification('Importiere Blockchain-Daten...', 'info');
+        
+        const response = await fetch('/api/blockchain/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                platform: platform,
+                hours: parseInt(timeframe)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Blockchain-Daten erfolgreich importiert!', 'success');
+            closeBlockchainModal();
+            
+            // Blockchain Übersicht aktualisieren
+            updateBlockchainOverview(data.data);
+        } else {
+            showNotification('Fehler beim Importieren der Blockchain-Daten', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Blockchain Daten Import Fehler:', error);
+        showNotification('Fehler beim Importieren der Blockchain-Daten', 'error');
+    }
+}
+
+// Blockchain Übersicht im Hauptfenster aktualisieren
+function updateBlockchainOverview(blockchainData) {
+    const overviewDiv = document.getElementById('blockchainOverview');
+    
+    if (blockchainData.summary) {
+        const summary = blockchainData.summary;
+        overviewDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-blue-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-blue-600">${summary.total_trades}</div>
+                    <div class="text-sm text-gray-600">Trades</div>
+                </div>
+                <div class="bg-green-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-green-600">${summary.total_energy_kwh.toFixed(1)}</div>
+                    <div class="text-sm text-gray-600">kWh</div>
+                </div>
+                <div class="bg-purple-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-purple-600">${summary.total_value_eur.toFixed(2)}</div>
+                    <div class="text-sm text-gray-600">€</div>
+                </div>
+                <div class="bg-orange-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-orange-600">${summary.platforms_active}</div>
+                    <div class="text-sm text-gray-600">Plattformen</div>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-sm text-gray-600">
+                Carbon Offset: ${summary.total_carbon_offset.toFixed(3)} | 
+                Status: ${blockchainData.status}
+            </div>
+        `;
+    } else {
+        overviewDiv.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-1"></i>
+                Blockchain-Daten importiert
+            </div>
+        `;
+    }
+}
+
+// ============================================================================
+// SMART GRID FUNKTIONEN
+// ============================================================================
+
+// Smart Grid Modal öffnen
+function openSmartGridModal(serviceType) {
+    // Modal HTML erstellen falls nicht vorhanden
+    if (!document.getElementById('smartGridModal')) {
+        createSmartGridModal();
+    }
+    
+    // Modal anzeigen
+    document.getElementById('smartGridModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    
+    // Service-Typ setzen
+    document.querySelector('input[name="smartGridService"][value="' + serviceType + '"]').checked = true;
+    
+    // Status laden
+    loadSmartGridStatus();
+}
+
+// Smart Grid Modal erstellen
+function createSmartGridModal() {
+    const modalHTML = `
+    <div id="smartGridModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-bolt text-blue-500 mr-2"></i>
+                        Smart Grid Services Konfiguration
+                    </h3>
+                    <button onclick="closeSmartGridModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Service-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Smart Grid Service auswählen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridService" value="fcr" class="mr-3" checked>
+                                <div>
+                                    <div class="font-medium">⚡ FCR</div>
+                                    <div class="text-sm text-gray-600">Frequenzregelung (30 Sekunden)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridService" value="afrr" class="mr-3">
+                                <div>
+                                    <div class="font-medium">🔄 aFRR</div>
+                                    <div class="text-sm text-gray-600">Automatische Frequenzregelung (5 Min)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridService" value="mfrr" class="mr-3">
+                                <div>
+                                    <div class="font-medium">⏱️ mFRR</div>
+                                    <div class="text-sm text-gray-600">Manuelle Frequenzregelung (12.5 Min)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridService" value="voltage" class="mr-3">
+                                <div>
+                                    <div class="font-medium">⚡ Spannungshaltung</div>
+                                    <div class="text-sm text-gray-600">Reactive Power (1 Minute)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridService" value="demand_response" class="mr-3">
+                                <div>
+                                    <div class="font-medium">📊 Demand Response</div>
+                                    <div class="text-sm text-gray-600">Laststeuerung (15 Minuten)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridService" value="all" class="mr-3">
+                                <div>
+                                    <div class="font-medium">🔌 Alle Services</div>
+                                    <div class="text-sm text-gray-600">Kombinierte Daten</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Zeitraum-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Zeitraum auswählen</h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridTimeframe" value="24" class="mr-2" checked>
+                                <div>
+                                    <div class="font-medium">24 Stunden</div>
+                                    <div class="text-sm text-gray-600">Letzte 24h</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridTimeframe" value="168" class="mr-2">
+                                <div>
+                                    <div class="font-medium">7 Tage</div>
+                                    <div class="text-sm text-gray-600">Letzte Woche</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="smartGridTimeframe" value="720" class="mr-2">
+                                <div>
+                                    <div class="font-medium">30 Tage</div>
+                                    <div class="text-sm text-gray-600">Letzter Monat</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- API-Status -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">API-Status</h4>
+                        <div id="smartGridApiStatus" class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                                <span class="text-gray-600">Lade Smart Grid Status...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vorschau -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Vorschau</h4>
+                        <div id="smartGridDataPreview" class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                            <div class="text-gray-500 text-center">
+                                <i class="fas fa-bolt text-2xl mb-2"></i>
+                                <div>Keine Smart Grid Daten geladen</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+                    <button onclick="closeSmartGridModal()" 
+                            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Abbrechen
+                    </button>
+                    <button onclick="testSmartGridApi()" 
+                            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-flask mr-2"></i>Test
+                    </button>
+                    <button onclick="importSmartGridData()" 
+                            class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>Importieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Smart Grid Modal schließen
+function closeSmartGridModal() {
+    document.getElementById('smartGridModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Smart Grid Status laden
+async function loadSmartGridStatus() {
+    try {
+        const response = await fetch('/api/smart-grid/status');
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('smartGridApiStatus');
+        
+        if (data.success) {
+            let statusHTML = '<div class="space-y-2">';
+            
+            for (const [serviceId, serviceInfo] of Object.entries(data.services)) {
+                const statusIcon = serviceInfo.status === 'success' ? '✅' : 
+                                  serviceInfo.status === 'demo' ? '🎭' : '❌';
+                
+                statusHTML += `
+                    <div class="flex items-center justify-between p-2 bg-white rounded border">
+                        <div class="flex items-center">
+                            <span class="mr-2">${statusIcon}</span>
+                            <span class="font-medium">${serviceInfo.name}</span>
+                        </div>
+                        <span class="text-sm text-gray-600">${serviceInfo.message}</span>
+                    </div>
+                `;
+            }
+            
+            statusHTML += '</div>';
+            statusDiv.innerHTML = statusHTML;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Fehler beim Laden des Smart Grid Status
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des Smart Grid Status:', error);
+        document.getElementById('smartGridApiStatus').innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Verbindungsfehler
+            </div>
+        `;
+    }
+}
+
+// Smart Grid API testen
+async function testSmartGridApi() {
+    const serviceType = document.querySelector('input[name="smartGridService"]:checked').value;
+    const timeframe = document.querySelector('input[name="smartGridTimeframe"]:checked').value;
+    
+    try {
+        showNotification('Teste Smart Grid API...', 'info');
+        
+        let url = '';
+        let params = new URLSearchParams();
+        
+        if (serviceType === 'all') {
+            url = '/api/smart-grid/fetch';
+            // POST request für alle Services
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    service_type: 'all',
+                    hours: parseInt(timeframe)
+                })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                displaySmartGridPreview(data.data, 'all');
+                showNotification('Smart Grid API Test erfolgreich!', 'success');
+            } else {
+                showNotification('Smart Grid API Test fehlgeschlagen', 'error');
+            }
+        } else {
+            // Einzelner Service
+            url = `/api/smart-grid/${serviceType}`;
+            params.append('hours', timeframe);
+            
+            const response = await fetch(`${url}?${params}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displaySmartGridPreview(data.data, serviceType);
+                showNotification('Smart Grid API Test erfolgreich!', 'success');
+            } else {
+                showNotification('Smart Grid API Test fehlgeschlagen', 'error');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Smart Grid API Test Fehler:', error);
+        showNotification('Fehler beim Testen der Smart Grid API', 'error');
+    }
+}
+
+// Smart Grid Daten-Vorschau anzeigen
+function displaySmartGridPreview(data, serviceType) {
+    const previewDiv = document.getElementById('smartGridDataPreview');
+    
+    if (serviceType === 'all') {
+        const summary = data.summary;
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-100 p-3 rounded">
+                        <div class="text-2xl font-bold text-blue-600">${summary.total_services}</div>
+                        <div class="text-sm text-gray-600">Services</div>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded">
+                        <div class="text-2xl font-bold text-green-600">${summary.total_power_mw.toFixed(1)}</div>
+                        <div class="text-sm text-gray-600">MW</div>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Gesamt Wert: ${summary.total_value_eur.toFixed(2)} €<br>
+                    Verfügbarkeit: ${(summary.avg_availability * 100).toFixed(1)}%<br>
+                    Services aktiv: ${summary.services_active}
+                </div>
+            </div>
+        `;
+    } else {
+        const count = Array.isArray(data) ? data.length : data.count;
+        const totalPower = Array.isArray(data) ? data.reduce((sum, d) => sum + d.power_mw, 0) : 0;
+        const totalValue = Array.isArray(data) ? data.reduce((sum, d) => sum + (d.power_mw * d.price_eur_mw), 0) : 0;
+        
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600">${count}</div>
+                <div class="text-sm text-gray-600">Smart Grid Services</div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Power: ${totalPower.toFixed(1)} MW<br>
+                    Wert: ${totalValue.toFixed(2)} €
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Smart Grid Daten importieren
+async function importSmartGridData() {
+    const serviceType = document.querySelector('input[name="smartGridService"]:checked').value;
+    const timeframe = document.querySelector('input[name="smartGridTimeframe"]:checked').value;
+    
+    try {
+        showNotification('Importiere Smart Grid Daten...', 'info');
+        
+        const response = await fetch('/api/smart-grid/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                service_type: serviceType,
+                hours: parseInt(timeframe)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Smart Grid Daten erfolgreich importiert!', 'success');
+            closeSmartGridModal();
+            
+            // Smart Grid Übersicht aktualisieren
+            updateSmartGridOverview(data.data);
+        } else {
+            showNotification('Fehler beim Importieren der Smart Grid Daten', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Smart Grid Daten Import Fehler:', error);
+        showNotification('Fehler beim Importieren der Smart Grid Daten', 'error');
+    }
+}
+
+// Smart Grid Übersicht im Hauptfenster aktualisieren
+function updateSmartGridOverview(smartGridData) {
+    const overviewDiv = document.getElementById('smartGridOverview');
+    
+    if (smartGridData.summary) {
+        const summary = smartGridData.summary;
+        overviewDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-blue-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-blue-600">${summary.total_services}</div>
+                    <div class="text-sm text-gray-600">Services</div>
+                </div>
+                <div class="bg-green-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-green-600">${summary.total_power_mw.toFixed(1)}</div>
+                    <div class="text-sm text-gray-600">MW</div>
+                </div>
+                <div class="bg-purple-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-purple-600">${summary.total_value_eur.toFixed(2)}</div>
+                    <div class="text-sm text-gray-600">€</div>
+                </div>
+                <div class="bg-orange-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-orange-600">${(summary.avg_availability * 100).toFixed(1)}%</div>
+                    <div class="text-sm text-gray-600">Verfügbarkeit</div>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-sm text-gray-600">
+                Services aktiv: ${summary.services_active} | 
+                Status: ${smartGridData.status}
+            </div>
+        `;
+    } else {
+        overviewDiv.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-1"></i>
+                Smart Grid Daten importiert
+            </div>
+        `;
+    }
+}
+
+// ============================================================================
+// IOT FUNKTIONEN
+// ============================================================================
+
+// IoT Modal öffnen
+function openIoTModal(sensorType) {
+    // Modal HTML erstellen falls nicht vorhanden
+    if (!document.getElementById('iotModal')) {
+        createIoTModal();
+    }
+    
+    // Modal anzeigen
+    document.getElementById('iotModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    
+    // Sensor-Typ setzen
+    document.querySelector('input[name="iotSensor"][value="' + sensorType + '"]').checked = true;
+    
+    // Status laden
+    loadIoTStatus();
+}
+
+// IoT Modal erstellen
+function createIoTModal() {
+    const modalHTML = `
+    <div id="iotModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-microchip text-blue-500 mr-2"></i>
+                        IoT-Sensor Integration Konfiguration
+                    </h3>
+                    <button onclick="closeIoTModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Modal Content -->
+                <div class="p-6">
+                    <!-- Sensor-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">IoT-Sensor-Typ auswählen</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotSensor" value="battery" class="mr-3" checked>
+                                <div>
+                                    <div class="font-medium">🔋 Batterie-Sensoren</div>
+                                    <div class="text-sm text-gray-600">BESS Monitoring (SOC, SOH, Temperatur)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotSensor" value="pv" class="mr-3">
+                                <div>
+                                    <div class="font-medium">☀️ PV-Sensoren</div>
+                                    <div class="text-sm text-gray-600">Photovoltaik-Monitoring (Leistung, Einstrahlung)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotSensor" value="grid" class="mr-3">
+                                <div>
+                                    <div class="font-medium">⚡ Grid-Sensoren</div>
+                                    <div class="text-sm text-gray-600">Netz-Monitoring (Spannung, Frequenz)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotSensor" value="environmental" class="mr-3">
+                                <div>
+                                    <div class="font-medium">🌡️ Umgebungs-Sensoren</div>
+                                    <div class="text-sm text-gray-600">Wetter & Umwelt (Temperatur, Wind)</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotSensor" value="all" class="mr-3">
+                                <div>
+                                    <div class="font-medium">📡 Alle Sensoren</div>
+                                    <div class="text-sm text-gray-600">Kombinierte Daten</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Zeitraum-Auswahl -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Zeitraum auswählen</h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotTimeframe" value="24" class="mr-2" checked>
+                                <div>
+                                    <div class="font-medium">24 Stunden</div>
+                                    <div class="text-sm text-gray-600">Letzte 24h</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotTimeframe" value="168" class="mr-2">
+                                <div>
+                                    <div class="font-medium">7 Tage</div>
+                                    <div class="text-sm text-gray-600">Letzte Woche</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="iotTimeframe" value="720" class="mr-2">
+                                <div>
+                                    <div class="font-medium">30 Tage</div>
+                                    <div class="text-sm text-gray-600">Letzter Monat</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- API-Status -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">API-Status</h4>
+                        <div id="iotApiStatus" class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+                                <span class="text-gray-600">Lade IoT-Sensor Status...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Vorschau -->
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Daten-Vorschau</h4>
+                        <div id="iotDataPreview" class="bg-gray-50 p-4 rounded-lg min-h-[100px]">
+                            <div class="text-gray-500 text-center">
+                                <i class="fas fa-microchip text-2xl mb-2"></i>
+                                <div>Keine IoT-Sensor-Daten geladen</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
+                    <button onclick="closeIoTModal()" 
+                            class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        Abbrechen
+                    </button>
+                    <button onclick="testIoTApi()" 
+                            class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-flask mr-2"></i>Test
+                    </button>
+                    <button onclick="importIoTData()" 
+                            class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>Importieren
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// IoT Modal schließen
+function closeIoTModal() {
+    document.getElementById('iotModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// IoT Status laden
+async function loadIoTStatus() {
+    try {
+        const response = await fetch('/api/iot/status');
+        const data = await response.json();
+        
+        const statusDiv = document.getElementById('iotApiStatus');
+        
+        if (data.success) {
+            let statusHTML = '<div class="space-y-2">';
+            
+            for (const [sensorType, sensorInfo] of Object.entries(data.sensors)) {
+                const statusIcon = sensorInfo.status === 'success' ? '✅' : 
+                                  sensorInfo.status === 'demo' ? '🎭' : '❌';
+                
+                statusHTML += `
+                    <div class="flex items-center justify-between p-2 bg-white rounded border">
+                        <div class="flex items-center">
+                            <span class="mr-2">${statusIcon}</span>
+                            <span class="font-medium">${sensorInfo.name}</span>
+                        </div>
+                        <span class="text-sm text-gray-600">${sensorInfo.message}</span>
+                    </div>
+                `;
+            }
+            
+            statusHTML += '</div>';
+            statusDiv.innerHTML = statusHTML;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="text-red-600">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Fehler beim Laden des IoT-Sensor Status
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden des IoT-Sensor Status:', error);
+        document.getElementById('iotApiStatus').innerHTML = `
+            <div class="text-red-600">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Verbindungsfehler
+            </div>
+        `;
+    }
+}
+
+// IoT API testen
+async function testIoTApi() {
+    const sensorType = document.querySelector('input[name="iotSensor"]:checked').value;
+    const timeframe = document.querySelector('input[name="iotTimeframe"]:checked').value;
+    
+    try {
+        showNotification('Teste IoT-Sensor API...', 'info');
+        
+        let url = '';
+        let params = new URLSearchParams();
+        
+        if (sensorType === 'all') {
+            url = '/api/iot/fetch';
+            // POST request für alle Sensoren
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sensor_type: 'all',
+                    hours: parseInt(timeframe)
+                })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                displayIoTPreview(data.data, 'all');
+                showNotification('IoT-Sensor API Test erfolgreich!', 'success');
+            } else {
+                showNotification('IoT-Sensor API Test fehlgeschlagen', 'error');
+            }
+        } else {
+            // Einzelner Sensor-Typ
+            url = `/api/iot/${sensorType}`;
+            params.append('hours', timeframe);
+            
+            const response = await fetch(`${url}?${params}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displayIoTPreview(data.data, sensorType);
+                showNotification('IoT-Sensor API Test erfolgreich!', 'success');
+            } else {
+                showNotification('IoT-Sensor API Test fehlgeschlagen', 'error');
+            }
+        }
+        
+    } catch (error) {
+        console.error('IoT-Sensor API Test Fehler:', error);
+        showNotification('Fehler beim Testen der IoT-Sensor API', 'error');
+    }
+}
+
+// IoT Daten-Vorschau anzeigen
+function displayIoTPreview(data, sensorType) {
+    const previewDiv = document.getElementById('iotDataPreview');
+    
+    if (sensorType === 'all') {
+        const summary = data.summary;
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-100 p-3 rounded">
+                        <div class="text-2xl font-bold text-blue-600">${summary.total_sensors}</div>
+                        <div class="text-sm text-gray-600">Sensoren</div>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded">
+                        <div class="text-2xl font-bold text-green-600">${summary.total_power_w.toFixed(1)}</div>
+                        <div class="text-sm text-gray-600">W</div>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Durchschnittstemperatur: ${summary.avg_temperature_c.toFixed(1)} °C<br>
+                    Sensor-Typen aktiv: ${summary.sensor_types_active}
+                </div>
+            </div>
+        `;
+    } else {
+        const count = Array.isArray(data) ? data.length : data.count;
+        const totalPower = Array.isArray(data) ? data.reduce((sum, d) => sum + (d.power_w || d.active_power_w || 0), 0) : 0;
+        const avgTemp = Array.isArray(data) ? data.reduce((sum, d) => sum + (d.temperature_c || 0), 0) / data.length : 0;
+        
+        previewDiv.innerHTML = `
+            <div class="text-center">
+                <div class="text-3xl font-bold text-blue-600">${count}</div>
+                <div class="text-sm text-gray-600">IoT-Sensoren</div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Power: ${totalPower.toFixed(1)} W<br>
+                    Temperatur: ${avgTemp.toFixed(1)} °C
+                </div>
+            </div>
+        `;
+    }
+}
+
+// IoT Daten importieren
+async function importIoTData() {
+    const sensorType = document.querySelector('input[name="iotSensor"]:checked').value;
+    const timeframe = document.querySelector('input[name="iotTimeframe"]:checked').value;
+    
+    try {
+        showNotification('Importiere IoT-Sensor-Daten...', 'info');
+        
+        const response = await fetch('/api/iot/fetch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                sensor_type: sensorType,
+                hours: parseInt(timeframe)
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('IoT-Sensor-Daten erfolgreich importiert!', 'success');
+            closeIoTModal();
+            
+            // IoT Übersicht aktualisieren
+            updateIoTOverview(data.data);
+        } else {
+            showNotification('Fehler beim Importieren der IoT-Sensor-Daten', 'error');
+        }
+        
+    } catch (error) {
+        console.error('IoT-Sensor Daten Import Fehler:', error);
+        showNotification('Fehler beim Importieren der IoT-Sensor-Daten', 'error');
+    }
+}
+
+// IoT Übersicht im Hauptfenster aktualisieren
+function updateIoTOverview(iotData) {
+    const overviewDiv = document.getElementById('iotOverview');
+    
+    if (iotData.summary) {
+        const summary = iotData.summary;
+        overviewDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-blue-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-blue-600">${summary.total_sensors}</div>
+                    <div class="text-sm text-gray-600">Sensoren</div>
+                </div>
+                <div class="bg-green-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-green-600">${summary.total_power_w.toFixed(1)}</div>
+                    <div class="text-sm text-gray-600">W</div>
+                </div>
+                <div class="bg-purple-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-purple-600">${summary.avg_temperature_c.toFixed(1)}</div>
+                    <div class="text-sm text-gray-600">°C</div>
+                </div>
+                <div class="bg-orange-100 p-3 rounded text-center">
+                    <div class="text-xl font-bold text-orange-600">${summary.sensor_types_active}</div>
+                    <div class="text-sm text-gray-600">Typen</div>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-sm text-gray-600">
+                Status: ${iotData.status}
+            </div>
+        `;
+    } else {
+        overviewDiv.innerHTML = `
+            <div class="text-green-600">
+                <i class="fas fa-check-circle mr-1"></i>
+                IoT-Sensor-Daten importiert
+            </div>
+        `;
+    }
+}
 </script>
 
 <style>

@@ -76,7 +76,7 @@ Dieser Plan definiert die nächsten Verbesserungsschritte für die BESS-Simulati
 **Zeitaufwand:** 8-12 Stunden (bereits abgeschlossen)
 **Risiko:** Mittel
 
-### 2.2 Export-Funktionen (Priorität: MITTEL)
+### 2.2 Export-Funktionen (Priorität: MITTEL) ✅ **ERFÜLLT**
 **Ziel:** Daten-Export in verschiedenen Formaten
 
 **Schritte:**
@@ -554,13 +554,13 @@ Dieser Verbesserungsplan wird die BESS-Simulation zu einer professionellen, skal
 **Status:** ✅ **ABGESCHLOSSEN** - aWattar API erfolgreich integriert
 
 **Schritte:**
-- [x] aWATTar API für österreichische Strompreise
-- [ ] ENTSO-E Integration für europäische Marktdaten
-- [ ] Wetter-API für präzise PV-Prognosen
-- [ ] Regelreserve-Markt Integration
-- [ ] Blockchain-basierte Energiehandel
-- [ ] Smart Grid Integration
-- [ ] IoT-Sensor-Integration
+- [x] aWATTar API für österreichische Strompreise ✅ **ABGESCHLOSSEN**
+- [x] ENTSO-E Integration für europäische Marktdaten ✅ **ABGESCHLOSSEN**
+- [x] Wetter-API für präzise PV-Prognosen ✅ **ABGESCHLOSSEN**
+- [x] Regelreserve-Markt Integration ✅ **BEREITS IMPLEMENTIERT**
+- [x] Blockchain-basierte Energiehandel ✅ **ABGESCHLOSSEN**
+- [x] Smart Grid Integration ✅ **ABGESCHLOSSEN**
+- [x] IoT-Sensor-Integration ✅ **ABGESCHLOSSEN**
 
 **Zeitaufwand:** 2-3 Wochen ✅ **ABGESCHLOSSEN** (aWattar Teil)
 **Risiko:** Mittel ✅ **GEMINDERT**
@@ -578,12 +578,211 @@ Dieser Verbesserungsplan wird die BESS-Simulation zu einer professionellen, skal
 
 **Live verfügbar unter:** http://bess.instanet.at/api/awattar/import
 
+**Status:** ✅ **ABGESCHLOSSEN** - ENTSO-E API Integration erfolgreich implementiert
+
+**Implementierte Features:**
+- ✅ **ENTSO-E API Fetcher:** Europäische Strommarkt-Daten (Day-Ahead, Intraday, Generation)
+- ✅ **Datenimport-Center Erweiterung:** ENTSO-E Tab mit Modal-Interface
+- ✅ **API-Endpunkte:** Vollständige REST-API für ENTSO-E Daten
+- ✅ **Automatischer Scheduler:** Regelmäßige ENTSO-E Daten-Imports
+- ✅ **Multi-Land Support:** 8 europäische Länder (AT, DE, CH, IT, CZ, SK, HU, SI)
+- ✅ **XML-Parsing:** Robuste Verarbeitung von ENTSO-E XML-Responses
+- ✅ **Demo-Modus:** Fallback für fehlende API-Keys
+- ✅ **Rate Limiting:** Optimierte API-Nutzung
+
+**API-Endpunkte:**
+- `GET /api/entsoe/day_ahead` - Day-Ahead Preise
+- `GET /api/entsoe/intraday` - Intraday Preise
+- `GET /api/entsoe/generation` - Generation-Daten
+- `POST /api/entsoe/fetch` - Kombinierter Marktdaten-Import
+- `GET /api/entsoe/status` - API-Status und Verfügbarkeit
+- `GET /api/entsoe/test` - API-Verbindungstest
+
+**Scheduler-Konfiguration:**
+- **Day-Ahead Preise:** Täglich 13:00 Uhr (nach Auktion)
+- **Intraday Preise:** Alle 4 Stunden
+- **Generation-Daten:** Täglich 06:00 Uhr
+- **Gesundheitscheck:** Alle 8 Stunden
+- **Bereinigung:** Montag 02:00 Uhr
+
+**Live verfügbar unter:** Daten → Datenimport-Center → ENTSO-E
+
+**Zeitaufwand:** ✅ **ABGESCHLOSSEN** (1 Woche)
+**Nutzen:** ⭐⭐⭐⭐⭐ **ERREICHT** (Hoch für europäische Marktanalysen)
+
+**Status:** ✅ **BEREITS IMPLEMENTIERT** - APG Regelenergie Integration vorhanden
+
+**Bestehende Features:**
+- ✅ **APG Regelenergie:** CSV-Import für Kapazitäts- und Aktivierungspreise
+- ✅ **aFRR Integration:** Automatic Frequency Restoration Reserve
+- ✅ **EPEX Intraday:** IDA1, IDA2, IDA3 Auktionen
+- ✅ **AT-Märkte Tab:** Österreichische Marktdaten-Import
+- ✅ **CSV-Upload:** Manueller Import von Regelenergie-Daten
+
+**Mögliche Erweiterungen (zukünftig):**
+- **API-Integration:** Direkte APG-API Anbindung statt CSV-Import
+- **Automatischer Scheduler:** Regelmäßige Regelenergie-Daten-Imports
+- **Erweiterte Produkte:** mFRR, FCR zusätzlich zu aFRR
+- **Real-time Updates:** Live-Daten von APG/EPEX APIs
+
 **Geplante Features (zukünftig):**
-- **ENTSO-E API:** Europäische Strommarkt-Daten
-- **Wetter-Services:** OpenWeatherMap/ECMWF für PV-Prognosen
-- **Regelreserve:** Integration in österreichische Regelreserve-Märkte
 - **Blockchain:** Smart Contracts für Peer-to-Peer Energiehandel
 - **IoT-Integration:** Real-time Daten von BESS-Sensoren
+
+**Status:** ✅ **ABGESCHLOSSEN** - Wetter-API Integration erfolgreich implementiert
+
+**Implementierte Features:**
+- ✅ **Wetter-API Fetcher:** OpenWeatherMap, PVGIS Weather Integration
+- ✅ **Datenimport-Center Erweiterung:** Wetter-API Button im Wetterdaten-Tab
+- ✅ **API-Endpunkte:** Vollständige REST-API für Wetterdaten
+- ✅ **Automatischer Scheduler:** Regelmäßige Wetterdaten-Imports
+- ✅ **Intelligente Datenverarbeitung:** Temperatur, Luftfeuchtigkeit, Wind, Einstrahlung
+- ✅ **Modal-Interface:** Benutzerfreundliche Wetter-API Konfiguration
+- ✅ **Multi-Standort Support:** Österreich-weite Wetterdaten
+- ✅ **Rate Limiting:** Optimierte API-Nutzung
+
+**API-Endpunkte:**
+- `GET /api/weather/current` - Aktuelle Wetterdaten
+- `GET /api/weather/forecast` - 5-Tage Wettervorhersage
+- `GET /api/weather/historical` - Historische Wetterdaten (7 Tage)
+- `POST /api/weather/fetch` - Kombinierter Wetterdaten-Import
+- `GET /api/weather/status` - API-Status und Verfügbarkeit
+- `GET /api/weather/test` - API-Verbindungstest
+
+**Scheduler-Konfiguration:**
+- **Aktuelle Wetterdaten:** Alle 3 Stunden
+- **Wettervorhersage:** Täglich 06:00 Uhr
+- **Historische Daten:** Täglich 02:00 Uhr
+- **Gesundheitscheck:** Alle 6 Stunden
+- **Bereinigung:** Sonntag 03:00 Uhr
+
+**Live verfügbar unter:** Daten → Datenimport-Center → Wetterdaten → Wetter-API
+
+**Zeitaufwand:** ✅ **ABGESCHLOSSEN** (1 Woche)
+**Nutzen:** ⭐⭐⭐⭐⭐ **ERREICHT** (Hoch für PV-Simulationen)
+
+### **🔗 Blockchain-basierte Energiehandel Integration**
+**Ziel:** Integration von Peer-to-Peer Energiehandel-Plattformen für dezentrale Energie-Märkte
+
+**Status:** ✅ **ABGESCHLOSSEN** - Blockchain-Energiehandel Integration erfolgreich implementiert
+
+**Implementierte Features:**
+- **Multi-Plattform Support:** Power Ledger (POWR), WePower (WPR), Grid+ (GRID), Energy Web (EWT), SolarCoin (SLR)
+- **Peer-to-Peer Handel:** Direkter Energiehandel zwischen Erzeugern und Verbrauchern
+- **Smart Contracts:** Blockchain-basierte Verträge für automatisierten Energiehandel
+- **Token-basierte Märkte:** Kryptowährungs-Integration für Energie-Tokenisierung
+- **Carbon Offset Tracking:** Nachverfolgung von CO₂-Einsparungen durch grüne Energie
+- **Demo-Modus:** Vollständige Funktionalität auch ohne API-Keys
+- **Rate Limiting:** Intelligente API-Anfragen mit automatischem Throttling
+- **Multi-Zeitrahmen:** 24h, 7 Tage, 30 Tage Datenabruf
+
+**API-Endpunkte:**
+- `GET /api/blockchain/power_ledger` - Power Ledger P2P Handel
+- `GET /api/blockchain/wepower` - WePower grüne Tokenisierung
+- `GET /api/blockchain/grid_plus` - Grid+ dezentrale Märkte
+- `GET /api/blockchain/energy_web` - Energy Web Chain
+- `GET /api/blockchain/solarcoin` - SolarCoin Belohnungen
+- `POST /api/blockchain/fetch` - Kombinierter Datenabruf
+- `GET /api/blockchain/status` - API-Status aller Plattformen
+- `GET /api/blockchain/test` - Verbindungstest
+
+**Scheduler-Konfiguration:**
+- **Power Ledger:** alle 6 Stunden (P2P Handel ist aktiv)
+- **WePower:** täglich 08:00 Uhr (grüne Tokenisierung)
+- **Grid+:** alle 4 Stunden (dezentrale Märkte)
+- **Energy Web:** täglich 12:00 Uhr (Energy Web Chain)
+- **SolarCoin:** täglich 18:00 Uhr (Solar Belohnungen)
+- **Alle Plattformen:** täglich 00:00 Uhr (Vollständiger Import)
+- **Gesundheitscheck:** alle 12 Stunden
+- **Bereinigung:** Sonntag 03:00 Uhr
+
+**Live verfügbar unter:** Daten → Datenimport-Center → Blockchain
+
+**Zeitaufwand:** ✅ **ABGESCHLOSSEN** (1 Woche)
+**Risiko:** Mittel ✅ **GEMINDERT**
+**Nutzen:** ⭐⭐⭐⭐⭐ ✅ **ERREICHT**
+
+### **🔌 Smart Grid Integration**
+**Ziel:** Integration von Smart Grid Services für intelligente Stromnetze
+
+**Status:** ✅ **ABGESCHLOSSEN** - Smart Grid Services Integration erfolgreich implementiert
+
+**Implementierte Features:**
+- **Frequenzregelung (FCR):** Primäre Frequenzregelung mit 30 Sekunden Response-Zeit
+- **Automatische Frequenzregelung (aFRR):** Sekundäre Frequenzregelung mit 5 Minuten Response-Zeit
+- **Manuelle Frequenzregelung (mFRR):** Tertiäre Frequenzregelung mit 12.5 Minuten Response-Zeit
+- **Spannungshaltung:** Reactive Power Management mit 1 Minute Response-Zeit
+- **Demand Response:** Laststeuerung mit 15 Minuten Response-Zeit
+- **Grid Stability Monitoring:** Echtzeitüberwachung der Netzstabilität
+- **Multi-Grid-Area Support:** Österreich, Deutschland, Schweiz, Italien, Tschechien, Slowakei, Ungarn, Slowenien
+- **Demo-Modus:** Vollständige Funktionalität auch ohne API-Keys
+- **Rate Limiting:** Intelligente API-Anfragen mit automatischem Throttling
+
+**API-Endpunkte:**
+- `GET /api/smart-grid/fcr` - Frequenzregelung (FCR)
+- `GET /api/smart-grid/afrr` - Automatische Frequenzregelung (aFRR)
+- `GET /api/smart-grid/mfrr` - Manuelle Frequenzregelung (mFRR)
+- `GET /api/smart-grid/voltage` - Spannungshaltung
+- `GET /api/smart-grid/demand-response` - Demand Response
+- `GET /api/smart-grid/grid-stability` - Grid Stability Monitoring
+- `POST /api/smart-grid/fetch` - Kombinierter Datenabruf
+- `GET /api/smart-grid/status` - API-Status aller Services
+- `GET /api/smart-grid/test` - Verbindungstest
+
+**Scheduler-Konfiguration:**
+- **FCR:** alle 15 Minuten (primäre Frequenzregelung)
+- **aFRR:** alle 30 Minuten (sekundäre Frequenzregelung)
+- **mFRR:** stündlich (tertiäre Frequenzregelung)
+- **Spannungshaltung:** alle 10 Minuten (Reactive Power)
+- **Demand Response:** stündlich (Laststeuerung)
+- **Alle Services:** täglich 00:00 Uhr (Vollständiger Import)
+- **API-Test:** alle 6 Stunden
+- **Bereinigung:** Sonntag 03:00 Uhr
+
+**Live verfügbar unter:** Daten → Datenimport-Center → Smart Grid
+
+**Zeitaufwand:** ✅ **ABGESCHLOSSEN** (1 Woche)
+**Risiko:** Mittel ✅ **GEMINDERT**
+**Nutzen:** ⭐⭐⭐⭐⭐ ✅ **ERREICHT**
+
+### **📡 IoT-Sensor-Integration**
+**Ziel:** Integration von IoT-Sensoren für Real-time BESS-Monitoring
+
+**Status:** ✅ **ABGESCHLOSSEN** - IoT-Sensor-Integration erfolgreich implementiert
+
+**Implementierte Features:**
+- **Batterie-Sensoren:** BESS Monitoring (SOC, SOH, Temperatur, Spannung, Strom, Zyklen)
+- **PV-Sensoren:** Photovoltaik-Monitoring (Leistung, Spannung, Strom, Temperatur, Einstrahlung, Effizienz)
+- **Grid-Sensoren:** Netz-Monitoring (Spannung, Frequenz, Power Factor, Active/Reactive Power)
+- **Umgebungs-Sensoren:** Wetter & Umwelt (Temperatur, Luftfeuchtigkeit, Wind, Luftdruck)
+- **Multi-Protokoll Support:** Modbus TCP, MQTT, OPC UA, HTTP REST
+- **Real-time Monitoring:** Kontinuierliche Überwachung aller BESS-Komponenten
+- **Demo-Modus:** Vollständige Funktionalität auch ohne API-Keys
+- **Rate Limiting:** Intelligente API-Anfragen mit automatischem Throttling
+
+**API-Endpunkte:**
+- `GET /api/iot/battery` - Batterie-Sensor-Daten
+- `GET /api/iot/pv` - PV-Sensor-Daten
+- `GET /api/iot/grid` - Grid-Sensor-Daten
+- `GET /api/iot/environmental` - Umgebungs-Sensor-Daten
+- `POST /api/iot/fetch` - Kombinierter Datenabruf
+- `GET /api/iot/status` - API-Status aller Sensoren
+- `GET /api/iot/test` - Verbindungstest
+
+**Scheduler-Konfiguration:**
+- **Batterie-Sensoren:** alle 5 Minuten (BESS Monitoring)
+- **PV-Sensoren:** alle 10 Minuten (Photovoltaik-Monitoring)
+- **Grid-Sensoren:** alle 15 Minuten (Netz-Monitoring)
+- **Umgebungs-Sensoren:** alle 30 Minuten (Wetter & Umwelt)
+- **Alle Sensoren:** täglich 00:00 Uhr (Vollständiger Import)
+- **API-Test:** alle 4 Stunden
+- **Bereinigung:** Montag 02:00 Uhr
+
+**Live verfügbar unter:** Daten → Datenimport-Center → IoT
+
+**Zeitaufwand:** ✅ **ABGESCHLOSSEN** (1 Woche)
+**Risiko:** Mittel ✅ **GEMINDERT**
+**Nutzen:** ⭐⭐⭐⭐⭐ ✅ **ERREICHT**
 
 ---
 
@@ -596,7 +795,7 @@ Dieser Verbesserungsplan wird die BESS-Simulation zu einer professionellen, skal
 - [ ] Multi-Markt-Arbitrage (Spot, Intraday, Regelreserve)
 - [ ] Grid-Services (Frequenzregelung, Spannungshaltung)
 - [ ] Virtuelles Kraftwerk Integration
-- [ ] Blockchain-basierte Energiehandel
+- [x] Blockchain-basierte Energiehandel ✅ **BEREITS IMPLEMENTIERT**
 - [ ] Demand Response Management
 - [ ] Grid Code Compliance
 - [ ] Advanced Optimization Algorithms

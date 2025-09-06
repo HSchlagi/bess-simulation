@@ -6896,3 +6896,1448 @@ def awattar_import_fixed_page():
 def awattar_import_working_page():
     """aWattar-Import-Seite (funktionierende Version)"""
     return render_template('awattar_import_working.html')
+
+# ============================================================================
+# WETTER-API ROUTES
+# ============================================================================
+
+# Weather API Fetcher importieren
+from weather_api_fetcher import WeatherAPIFetcher
+
+@main_bp.route('/api/weather/fetch', methods=['POST'])
+def api_weather_fetch():
+    """Wetterdaten von APIs abrufen"""
+    try:
+        data = request.get_json()
+        lat = float(data.get('latitude', 48.2082))  # Wien als Standard
+        lon = float(data.get('longitude', 16.3738))
+        location_name = data.get('location_name', '')
+        
+        print(f"🌤️ Wetterdaten-Request: {location_name} ({lat}, {lon})")
+        
+        fetcher = WeatherAPIFetcher()
+        weather_data = fetcher.get_weather_for_location(lat, lon, location_name)
+        
+        return jsonify({
+            'success': True,
+            'data': weather_data,
+            'message': f'Wetterdaten für {location_name or f"{lat}, {lon}"} abgerufen'
+        })
+        
+    except Exception as e:
+        print(f"❌ Wetterdaten-Fetch Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Fehler beim Abrufen der Wetterdaten'
+        }), 500
+
+@main_bp.route('/api/weather/current')
+def api_weather_current():
+    """Aktuelle Wetterdaten abrufen"""
+    try:
+        lat = float(request.args.get('lat', 48.2082))
+        lon = float(request.args.get('lon', 16.3738))
+        
+        fetcher = WeatherAPIFetcher()
+        current_weather = fetcher.get_openweather_current(lat, lon)
+        
+        if current_weather:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'timestamp': current_weather.timestamp.isoformat(),
+                    'temperature': current_weather.temperature,
+                    'humidity': current_weather.humidity,
+                    'wind_speed': current_weather.wind_speed,
+                    'wind_direction': current_weather.wind_direction,
+                    'pressure': current_weather.pressure,
+                    'cloud_cover': current_weather.cloud_cover,
+                    'precipitation': current_weather.precipitation,
+                    'location': current_weather.location,
+                    'source': current_weather.source
+                }
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine aktuellen Wetterdaten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Aktuelle Wetterdaten Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/weather/forecast')
+def api_weather_forecast():
+    """Wettervorhersage abrufen"""
+    try:
+        lat = float(request.args.get('lat', 48.2082))
+        lon = float(request.args.get('lon', 16.3738))
+        days = int(request.args.get('days', 5))
+        
+        fetcher = WeatherAPIFetcher()
+        forecast_data = fetcher.get_openweather_forecast(lat, lon, days)
+        
+        if forecast_data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': w.timestamp.isoformat(),
+                        'temperature': w.temperature,
+                        'humidity': w.humidity,
+                        'wind_speed': w.wind_speed,
+                        'wind_direction': w.wind_direction,
+                        'pressure': w.pressure,
+                        'cloud_cover': w.cloud_cover,
+                        'precipitation': w.precipitation,
+                        'source': w.source
+                    }
+                    for w in forecast_data
+                ],
+                'count': len(forecast_data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Wettervorhersage verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Wettervorhersage Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/weather/historical')
+def api_weather_historical():
+    """Historische Wetterdaten abrufen"""
+    try:
+        lat = float(request.args.get('lat', 48.2082))
+        lon = float(request.args.get('lon', 16.3738))
+        start_date = request.args.get('start_date', (datetime.now() - timedelta(days=7)).strftime('%Y%m%d'))
+        end_date = request.args.get('end_date', datetime.now().strftime('%Y%m%d'))
+        
+        fetcher = WeatherAPIFetcher()
+        historical_data = fetcher.get_pvgis_weather(lat, lon, start_date, end_date)
+        
+        if historical_data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': w.timestamp.isoformat(),
+                        'temperature': w.temperature,
+                        'humidity': w.humidity,
+                        'wind_speed': w.wind_speed,
+                        'wind_direction': w.wind_direction,
+                        'pressure': w.pressure,
+                        'solar_irradiation': w.solar_irradiation,
+                        'source': w.source
+                    }
+                    for w in historical_data
+                ],
+                'count': len(historical_data),
+                'period': f"{start_date} - {end_date}"
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine historischen Wetterdaten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Historische Wetterdaten Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/weather/status')
+def api_weather_status():
+    """Status der Wetter-APIs abrufen"""
+    try:
+        fetcher = WeatherAPIFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        return jsonify({
+            'success': True,
+            'status': test_result['overall'],
+            'apis': {
+                'openweather': test_result['openweather'],
+                'pvgis': test_result['pvgis']
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Wetter-API Status Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/weather/test')
+def api_weather_test():
+    """Wetter-API Verbindungstest"""
+    try:
+        fetcher = WeatherAPIFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        # Test mit Wien-Koordinaten
+        test_weather = fetcher.get_weather_for_location(48.2082, 16.3738, "Wien (Test)")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Wetter-API Test erfolgreich',
+            'test_result': test_result,
+            'sample_data': {
+                'location': test_weather['location'],
+                'current_available': test_weather['current'] is not None,
+                'forecast_count': len(test_weather['forecast']),
+                'historical_count': len(test_weather['historical']),
+                'status': test_weather['status']
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Wetter-API Test Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Wetter-API Test fehlgeschlagen'
+        }), 500
+
+@main_bp.route('/api/weather/import')
+@login_required
+def weather_import_page():
+    """Wetterdaten-Import-Seite"""
+    return render_template('weather_import.html')
+
+# ============================================================================
+# ENTSO-E API ROUTES
+# ============================================================================
+
+# ENTSO-E API Fetcher importieren
+from entsoe_api_fetcher import ENTSOEAPIFetcher
+
+@main_bp.route('/api/entsoe/fetch', methods=['POST'])
+def api_entsoe_fetch():
+    """ENTSO-E Marktdaten abrufen"""
+    try:
+        data = request.get_json()
+        country_code = data.get('country_code', 'AT')
+        data_type = data.get('data_type', 'day_ahead')
+        hours = int(data.get('hours', 24))
+        
+        print(f"🌍 ENTSO-E Request: {country_code} ({data_type}) - {hours}h")
+        
+        fetcher = ENTSOEAPIFetcher()
+        market_data = fetcher.get_market_data(country_code, data_type, hours)
+        
+        return jsonify({
+            'success': True,
+            'data': market_data,
+            'message': f'ENTSO-E Marktdaten für {country_code} abgerufen'
+        })
+        
+    except Exception as e:
+        print(f"❌ ENTSO-E Fetch Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Fehler beim Abrufen der ENTSO-E Daten'
+        }), 500
+
+@main_bp.route('/api/entsoe/day_ahead')
+def api_entsoe_day_ahead():
+    """Day-Ahead Preise von ENTSO-E abrufen"""
+    try:
+        country_code = request.args.get('country', 'AT')
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = ENTSOEAPIFetcher()
+        prices = fetcher.get_day_ahead_prices(country_code)
+        
+        if prices:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': p.timestamp.isoformat(),
+                        'price_eur_mwh': p.price_eur_mwh,
+                        'country_code': p.country_code,
+                        'market_type': p.market_type,
+                        'source': p.source
+                    }
+                    for p in prices
+                ],
+                'count': len(prices)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Day-Ahead Preise verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ ENTSO-E Day-Ahead Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/entsoe/intraday')
+def api_entsoe_intraday():
+    """Intraday Preise von ENTSO-E abrufen"""
+    try:
+        country_code = request.args.get('country', 'AT')
+        hours = int(request.args.get('hours', 6))
+        
+        fetcher = ENTSOEAPIFetcher()
+        prices = fetcher.get_intraday_prices(country_code)
+        
+        if prices:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': p.timestamp.isoformat(),
+                        'price_eur_mwh': p.price_eur_mwh,
+                        'country_code': p.country_code,
+                        'market_type': p.market_type,
+                        'source': p.source
+                    }
+                    for p in prices
+                ],
+                'count': len(prices)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Intraday Preise verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ ENTSO-E Intraday Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/entsoe/generation')
+def api_entsoe_generation():
+    """Generation-Daten von ENTSO-E abrufen"""
+    try:
+        country_code = request.args.get('country', 'AT')
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = ENTSOEAPIFetcher()
+        generation = fetcher.get_generation_data(country_code)
+        
+        if generation:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': g.timestamp.isoformat(),
+                        'generation_mw': g.price_eur_mwh,  # price_eur_mwh wird für Generation MW verwendet
+                        'country_code': g.country_code,
+                        'market_type': g.market_type,
+                        'source': g.source
+                    }
+                    for g in generation
+                ],
+                'count': len(generation)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Generation-Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ ENTSO-E Generation Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/entsoe/status')
+def api_entsoe_status():
+    """Status der ENTSO-E API abrufen"""
+    try:
+        fetcher = ENTSOEAPIFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        return jsonify({
+            'success': True,
+            'status': test_result['status'],
+            'message': test_result['message'],
+            'countries_available': test_result.get('countries_available', []),
+            'market_types': test_result.get('market_types', []),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ ENTSO-E Status Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/entsoe/test')
+def api_entsoe_test():
+    """ENTSO-E API Verbindungstest"""
+    try:
+        fetcher = ENTSOEAPIFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        # Test mit Österreich
+        test_data = fetcher.get_market_data('AT', 'day_ahead', 24)
+        
+        return jsonify({
+            'success': True,
+            'message': 'ENTSO-E API Test erfolgreich',
+            'test_result': test_result,
+            'sample_data': {
+                'country': test_data['country'],
+                'prices_count': len(test_data['prices']),
+                'generation_count': len(test_data['generation']),
+                'status': test_data['status']
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ ENTSO-E Test Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'ENTSO-E API Test fehlgeschlagen'
+        }), 500
+
+@main_bp.route('/api/entsoe/import')
+@login_required
+def entsoe_import_page():
+    """ENTSO-E Daten-Import-Seite"""
+    return render_template('entsoe_import.html')
+
+# ============================================================================
+# BLOCKCHAIN-ENERGIEHANDEL API ROUTES
+# ============================================================================
+
+# Blockchain Energy Fetcher importieren
+from blockchain_energy_fetcher import BlockchainEnergyFetcher
+
+@main_bp.route('/api/blockchain/fetch', methods=['POST'])
+def api_blockchain_fetch():
+    """Blockchain-Energiehandel Daten abrufen"""
+    try:
+        data = request.get_json()
+        hours = int(data.get('hours', 24))
+        platform = data.get('platform', 'all')
+        
+        print(f"🔗 Blockchain Request: {platform} - {hours}h")
+        
+        fetcher = BlockchainEnergyFetcher()
+        
+        if platform == 'all':
+            blockchain_data = fetcher.get_all_platform_data(hours)
+        else:
+            # Einzelne Plattform
+            if platform == 'power_ledger':
+                data_list = fetcher.get_power_ledger_data(hours)
+            elif platform == 'wepower':
+                data_list = fetcher.get_wepower_data(hours)
+            elif platform == 'grid_plus':
+                data_list = fetcher.get_grid_plus_data(hours)
+            elif platform == 'energy_web':
+                data_list = fetcher.get_energy_web_data(hours)
+            elif platform == 'solarcoin':
+                data_list = fetcher.get_solarcoin_data(hours)
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': f'Unbekannte Plattform: {platform}'
+                }), 400
+            
+            blockchain_data = {
+                'platforms': {
+                    platform: {
+                        'data': data_list,
+                        'count': len(data_list)
+                    }
+                },
+                'status': 'success'
+            }
+        
+        return jsonify({
+            'success': True,
+            'data': blockchain_data,
+            'message': f'Blockchain-Energiehandel Daten für {platform} abgerufen'
+        })
+        
+    except Exception as e:
+        print(f"❌ Blockchain Fetch Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Fehler beim Abrufen der Blockchain-Daten'
+        }), 500
+
+@main_bp.route('/api/blockchain/power_ledger')
+def api_blockchain_power_ledger():
+    """Power Ledger Peer-to-Peer Energiehandel Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = BlockchainEnergyFetcher()
+        data = fetcher.get_power_ledger_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'energy_kwh': d.energy_kwh,
+                        'price_eur_kwh': d.price_eur_kwh,
+                        'blockchain_platform': d.blockchain_platform,
+                        'smart_contract_address': d.smart_contract_address,
+                        'transaction_hash': d.transaction_hash,
+                        'seller_address': d.seller_address,
+                        'buyer_address': d.buyer_address,
+                        'energy_type': d.energy_type,
+                        'carbon_offset': d.carbon_offset,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Power Ledger Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Power Ledger Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/blockchain/wepower')
+def api_blockchain_wepower():
+    """WePower grüne Energie-Tokenisierung Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = BlockchainEnergyFetcher()
+        data = fetcher.get_wepower_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'energy_kwh': d.energy_kwh,
+                        'price_eur_kwh': d.price_eur_kwh,
+                        'blockchain_platform': d.blockchain_platform,
+                        'smart_contract_address': d.smart_contract_address,
+                        'transaction_hash': d.transaction_hash,
+                        'seller_address': d.seller_address,
+                        'buyer_address': d.buyer_address,
+                        'energy_type': d.energy_type,
+                        'carbon_offset': d.carbon_offset,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine WePower Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ WePower Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/blockchain/grid_plus')
+def api_blockchain_grid_plus():
+    """Grid+ dezentrale Energie-Märkte Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = BlockchainEnergyFetcher()
+        data = fetcher.get_grid_plus_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'energy_kwh': d.energy_kwh,
+                        'price_eur_kwh': d.price_eur_kwh,
+                        'blockchain_platform': d.blockchain_platform,
+                        'smart_contract_address': d.smart_contract_address,
+                        'transaction_hash': d.transaction_hash,
+                        'seller_address': d.seller_address,
+                        'buyer_address': d.buyer_address,
+                        'energy_type': d.energy_type,
+                        'carbon_offset': d.carbon_offset,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Grid+ Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Grid+ Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/blockchain/energy_web')
+def api_blockchain_energy_web():
+    """Energy Web Chain Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = BlockchainEnergyFetcher()
+        data = fetcher.get_energy_web_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'energy_kwh': d.energy_kwh,
+                        'price_eur_kwh': d.price_eur_kwh,
+                        'blockchain_platform': d.blockchain_platform,
+                        'smart_contract_address': d.smart_contract_address,
+                        'transaction_hash': d.transaction_hash,
+                        'seller_address': d.seller_address,
+                        'buyer_address': d.buyer_address,
+                        'energy_type': d.energy_type,
+                        'carbon_offset': d.carbon_offset,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Energy Web Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Energy Web Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/blockchain/solarcoin')
+def api_blockchain_solarcoin():
+    """SolarCoin Solar-Energie Belohnungen Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = BlockchainEnergyFetcher()
+        data = fetcher.get_solarcoin_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'energy_kwh': d.energy_kwh,
+                        'price_eur_kwh': d.price_eur_kwh,
+                        'blockchain_platform': d.blockchain_platform,
+                        'smart_contract_address': d.smart_contract_address,
+                        'transaction_hash': d.transaction_hash,
+                        'seller_address': d.seller_address,
+                        'buyer_address': d.buyer_address,
+                        'energy_type': d.energy_type,
+                        'carbon_offset': d.carbon_offset,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine SolarCoin Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ SolarCoin Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/blockchain/status')
+def api_blockchain_status():
+    """Status der Blockchain-APIs abrufen"""
+    try:
+        fetcher = BlockchainEnergyFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        return jsonify({
+            'success': True,
+            'status': test_result['status'],
+            'message': test_result['message'],
+            'platforms': test_result['platforms'],
+            'demo_available': test_result['demo_available'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Blockchain Status Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/blockchain/test')
+def api_blockchain_test():
+    """Blockchain-API Verbindungstest"""
+    try:
+        fetcher = BlockchainEnergyFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        # Test mit Demo-Daten
+        test_data = fetcher.get_all_platform_data(1)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Blockchain-API Test erfolgreich',
+            'test_result': test_result,
+            'sample_data': {
+                'platforms_active': test_data['summary']['platforms_active'],
+                'total_trades': test_data['summary']['total_trades'],
+                'total_energy_kwh': test_data['summary']['total_energy_kwh'],
+                'total_value_eur': test_data['summary']['total_value_eur'],
+                'status': test_data['status']
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Blockchain Test Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Blockchain-API Test fehlgeschlagen'
+        }), 500
+
+@main_bp.route('/api/blockchain/import')
+@login_required
+def blockchain_import_page():
+    """Blockchain-Energiehandel Daten-Import-Seite"""
+    return render_template('blockchain_import.html')
+
+# ============================================================================
+# SMART GRID API ROUTES
+# ============================================================================
+
+# Smart Grid Fetcher importieren
+from smart_grid_fetcher import SmartGridFetcher
+
+@main_bp.route('/api/smart-grid/fetch', methods=['POST'])
+def api_smart_grid_fetch():
+    """Smart Grid Services Daten abrufen"""
+    try:
+        data = request.get_json()
+        hours = int(data.get('hours', 24))
+        service_type = data.get('service_type', 'all')
+        
+        print(f"🔌 Smart Grid Request: {service_type} - {hours}h")
+        
+        fetcher = SmartGridFetcher()
+        
+        if service_type == 'all':
+            grid_data = fetcher.get_all_grid_services(hours)
+        else:
+            # Einzelner Service
+            if service_type == 'fcr':
+                data_list = fetcher.get_fcr_data(hours)
+            elif service_type == 'afrr':
+                data_list = fetcher.get_afrr_data(hours)
+            elif service_type == 'mfrr':
+                data_list = fetcher.get_mfrr_data(hours)
+            elif service_type == 'voltage':
+                data_list = fetcher.get_voltage_control_data(hours)
+            elif service_type == 'demand_response':
+                data_list = fetcher.get_demand_response_data(hours)
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': f'Unbekannter Service: {service_type}'
+                }), 400
+            
+            grid_data = {
+                'services': {
+                    service_type: {
+                        'data': data_list,
+                        'count': len(data_list)
+                    }
+                },
+                'status': 'success'
+            }
+        
+        return jsonify({
+            'success': True,
+            'data': grid_data,
+            'message': f'Smart Grid Services Daten für {service_type} abgerufen'
+        })
+        
+    except Exception as e:
+        print(f"❌ Smart Grid Fetch Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Fehler beim Abrufen der Smart Grid Daten'
+        }), 500
+
+@main_bp.route('/api/smart-grid/fcr')
+def api_smart_grid_fcr():
+    """Frequenzregelung (FCR) Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = SmartGridFetcher()
+        data = fetcher.get_fcr_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'service_type': d.service_type,
+                        'power_mw': d.power_mw,
+                        'price_eur_mw': d.price_eur_mw,
+                        'grid_operator': d.grid_operator,
+                        'service_provider': d.service_provider,
+                        'grid_area': d.grid_area,
+                        'frequency_hz': d.frequency_hz,
+                        'voltage_kv': d.voltage_kv,
+                        'response_time_ms': d.response_time_ms,
+                        'availability': d.availability,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine FCR Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ FCR Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/afrr')
+def api_smart_grid_afrr():
+    """Automatische Frequenzregelung (aFRR) Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = SmartGridFetcher()
+        data = fetcher.get_afrr_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'service_type': d.service_type,
+                        'power_mw': d.power_mw,
+                        'price_eur_mw': d.price_eur_mw,
+                        'grid_operator': d.grid_operator,
+                        'service_provider': d.service_provider,
+                        'grid_area': d.grid_area,
+                        'frequency_hz': d.frequency_hz,
+                        'voltage_kv': d.voltage_kv,
+                        'response_time_ms': d.response_time_ms,
+                        'availability': d.availability,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine aFRR Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ aFRR Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/mfrr')
+def api_smart_grid_mfrr():
+    """Manuelle Frequenzregelung (mFRR) Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = SmartGridFetcher()
+        data = fetcher.get_mfrr_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'service_type': d.service_type,
+                        'power_mw': d.power_mw,
+                        'price_eur_mw': d.price_eur_mw,
+                        'grid_operator': d.grid_operator,
+                        'service_provider': d.service_provider,
+                        'grid_area': d.grid_area,
+                        'frequency_hz': d.frequency_hz,
+                        'voltage_kv': d.voltage_kv,
+                        'response_time_ms': d.response_time_ms,
+                        'availability': d.availability,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine mFRR Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ mFRR Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/voltage')
+def api_smart_grid_voltage():
+    """Spannungshaltung Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = SmartGridFetcher()
+        data = fetcher.get_voltage_control_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'service_type': d.service_type,
+                        'power_mw': d.power_mw,
+                        'price_eur_mw': d.price_eur_mw,
+                        'grid_operator': d.grid_operator,
+                        'service_provider': d.service_provider,
+                        'grid_area': d.grid_area,
+                        'frequency_hz': d.frequency_hz,
+                        'voltage_kv': d.voltage_kv,
+                        'response_time_ms': d.response_time_ms,
+                        'availability': d.availability,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Voltage Control Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Voltage Control Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/demand-response')
+def api_smart_grid_demand_response():
+    """Demand Response Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = SmartGridFetcher()
+        data = fetcher.get_demand_response_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'service_type': d.service_type,
+                        'power_mw': d.power_mw,
+                        'price_eur_mw': d.price_eur_mw,
+                        'grid_operator': d.grid_operator,
+                        'service_provider': d.service_provider,
+                        'grid_area': d.grid_area,
+                        'frequency_hz': d.frequency_hz,
+                        'voltage_kv': d.voltage_kv,
+                        'response_time_ms': d.response_time_ms,
+                        'availability': d.availability,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Demand Response Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Demand Response Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/grid-stability')
+def api_smart_grid_stability():
+    """Grid Stability Monitoring Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = SmartGridFetcher()
+        data = fetcher.get_grid_stability_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'frequency_hz': d.frequency_hz,
+                        'voltage_kv': d.voltage_kv,
+                        'power_flow_mw': d.power_flow_mw,
+                        'grid_load_percent': d.grid_load_percent,
+                        'stability_index': d.stability_index,
+                        'grid_area': d.grid_area,
+                        'operator': d.operator,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Grid Stability Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Grid Stability Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/status')
+def api_smart_grid_status():
+    """Status der Smart Grid APIs abrufen"""
+    try:
+        fetcher = SmartGridFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        return jsonify({
+            'success': True,
+            'status': test_result['status'],
+            'message': test_result['message'],
+            'services': test_result['services'],
+            'demo_available': test_result['demo_available'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Smart Grid Status Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/smart-grid/test')
+def api_smart_grid_test():
+    """Smart Grid API Verbindungstest"""
+    try:
+        fetcher = SmartGridFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        # Test mit Demo-Daten
+        test_data = fetcher.get_all_grid_services(1)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Smart Grid API Test erfolgreich',
+            'test_result': test_result,
+            'sample_data': {
+                'services_active': test_data['summary']['services_active'],
+                'total_services': test_data['summary']['total_services'],
+                'total_power_mw': test_data['summary']['total_power_mw'],
+                'total_value_eur': test_data['summary']['total_value_eur'],
+                'status': test_data['status']
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ Smart Grid Test Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Smart Grid API Test fehlgeschlagen'
+        }), 500
+
+@main_bp.route('/api/smart-grid/import')
+@login_required
+def smart_grid_import_page():
+    """Smart Grid Services Daten-Import-Seite"""
+    return render_template('smart_grid_import.html')
+
+# ============================================================================
+# IOT SENSOR API ROUTES
+# ============================================================================
+
+# IoT Sensor Fetcher importieren
+from iot_sensor_fetcher import IoTSensorFetcher
+
+@main_bp.route('/api/iot/fetch', methods=['POST'])
+def api_iot_fetch():
+    """IoT-Sensor-Daten abrufen"""
+    try:
+        data = request.get_json()
+        hours = int(data.get('hours', 24))
+        sensor_type = data.get('sensor_type', 'all')
+        
+        print(f"📡 IoT Request: {sensor_type} - {hours}h")
+        
+        fetcher = IoTSensorFetcher()
+        
+        if sensor_type == 'all':
+            iot_data = fetcher.get_all_sensor_data(hours)
+        else:
+            # Einzelner Sensor-Typ
+            if sensor_type == 'battery':
+                data_list = fetcher.get_battery_sensor_data(hours)
+            elif sensor_type == 'pv':
+                data_list = fetcher.get_pv_sensor_data(hours)
+            elif sensor_type == 'grid':
+                data_list = fetcher.get_grid_sensor_data(hours)
+            elif sensor_type == 'environmental':
+                data_list = fetcher.get_environmental_sensor_data(hours)
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': f'Unbekannter Sensor-Typ: {sensor_type}'
+                }), 400
+            
+            iot_data = {
+                'sensors': {
+                    sensor_type: {
+                        'data': data_list,
+                        'count': len(data_list)
+                    }
+                },
+                'status': 'success'
+            }
+        
+        return jsonify({
+            'success': True,
+            'data': iot_data,
+            'message': f'IoT-Sensor-Daten für {sensor_type} abgerufen'
+        })
+        
+    except Exception as e:
+        print(f"❌ IoT Fetch Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Fehler beim Abrufen der IoT-Sensor-Daten'
+        }), 500
+
+@main_bp.route('/api/iot/battery')
+def api_iot_battery():
+    """Batterie-Sensor-Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = IoTSensorFetcher()
+        data = fetcher.get_battery_sensor_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'voltage_v': d.voltage_v,
+                        'current_a': d.current_a,
+                        'power_w': d.power_w,
+                        'temperature_c': d.temperature_c,
+                        'soc_percent': d.soc_percent,
+                        'soh_percent': d.soh_percent,
+                        'cycle_count': d.cycle_count,
+                        'sensor_id': d.sensor_id,
+                        'battery_id': d.battery_id,
+                        'location': d.location,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Battery Sensor Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Battery Sensor Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/iot/pv')
+def api_iot_pv():
+    """PV-Sensor-Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = IoTSensorFetcher()
+        data = fetcher.get_pv_sensor_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'power_w': d.power_w,
+                        'voltage_v': d.voltage_v,
+                        'current_a': d.current_a,
+                        'temperature_c': d.temperature_c,
+                        'irradiance_w_m2': d.irradiance_w_m2,
+                        'efficiency_percent': d.efficiency_percent,
+                        'sensor_id': d.sensor_id,
+                        'pv_string_id': d.pv_string_id,
+                        'location': d.location,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine PV Sensor Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ PV Sensor Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/iot/grid')
+def api_iot_grid():
+    """Grid-Sensor-Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = IoTSensorFetcher()
+        data = fetcher.get_grid_sensor_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'voltage_v': d.voltage_v,
+                        'frequency_hz': d.frequency_hz,
+                        'power_factor': d.power_factor,
+                        'active_power_w': d.active_power_w,
+                        'reactive_power_var': d.reactive_power_var,
+                        'apparent_power_va': d.apparent_power_va,
+                        'sensor_id': d.sensor_id,
+                        'grid_connection_id': d.grid_connection_id,
+                        'location': d.location,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Grid Sensor Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Grid Sensor Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/iot/environmental')
+def api_iot_environmental():
+    """Umgebungs-Sensor-Daten abrufen"""
+    try:
+        hours = int(request.args.get('hours', 24))
+        
+        fetcher = IoTSensorFetcher()
+        data = fetcher.get_environmental_sensor_data(hours)
+        
+        if data:
+            return jsonify({
+                'success': True,
+                'data': [
+                    {
+                        'timestamp': d.timestamp.isoformat(),
+                        'temperature_c': d.temperature_c,
+                        'humidity_percent': d.humidity_percent,
+                        'wind_speed_ms': d.wind_speed_ms,
+                        'wind_direction_deg': d.wind_direction_deg,
+                        'pressure_hpa': d.pressure_hpa,
+                        'sensor_id': d.sensor_id,
+                        'location': d.location,
+                        'source': d.source
+                    }
+                    for d in data
+                ],
+                'count': len(data)
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Keine Environmental Sensor Daten verfügbar'
+            }), 404
+            
+    except Exception as e:
+        print(f"❌ Environmental Sensor Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/iot/status')
+def api_iot_status():
+    """Status der IoT-Sensor APIs abrufen"""
+    try:
+        fetcher = IoTSensorFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        return jsonify({
+            'success': True,
+            'status': test_result['status'],
+            'message': test_result['message'],
+            'sensors': test_result['sensors'],
+            'protocols': test_result['protocols'],
+            'demo_available': test_result['demo_available'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ IoT Status Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@main_bp.route('/api/iot/test')
+def api_iot_test():
+    """IoT-Sensor API Verbindungstest"""
+    try:
+        fetcher = IoTSensorFetcher()
+        test_result = fetcher.test_api_connection()
+        
+        # Test mit Demo-Daten
+        test_data = fetcher.get_all_sensor_data(1)
+        
+        return jsonify({
+            'success': True,
+            'message': 'IoT-Sensor API Test erfolgreich',
+            'test_result': test_result,
+            'sample_data': {
+                'sensor_types_active': test_data['summary']['sensor_types_active'],
+                'total_sensors': test_data['summary']['total_sensors'],
+                'total_power_w': test_data['summary']['total_power_w'],
+                'avg_temperature_c': test_data['summary']['avg_temperature_c'],
+                'status': test_data['status']
+            }
+        })
+        
+    except Exception as e:
+        print(f"❌ IoT Test Fehler: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'IoT-Sensor API Test fehlgeschlagen'
+        }), 500
+
+@main_bp.route('/api/iot/import')
+@login_required
+def iot_import_page():
+    """IoT-Sensor Daten-Import-Seite"""
+    return render_template('iot_import.html')

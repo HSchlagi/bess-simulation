@@ -4,7 +4,7 @@
 **Datum:** September 2025  
 **Autor:** Ing. Heinz Schlagintweit  
 **Repository:** https://github.com/HSchlagi/bess-simulation  
-**Letzte Aktualisierung:** aWattar API Integration & ML & KI Dashboard
+**Letzte Aktualisierung:** Smart Grid & IoT Integration, aWattar API Integration & ML & KI Dashboard
 
 ---
 
@@ -34,7 +34,7 @@
    - 3.4 Simulation durchführen
    - 3.5 Dispatch & Redispatch verwenden
    - 3.6 ML & KI Dashboard verwenden
-   - 3.7 Datenimport und -verwaltung (inkl. aWattar API)
+   - 3.7 Datenimport und -verwaltung (inkl. aWattar API, Smart Grid & IoT)
    - 3.8 Export & Reporting
    - 3.9 Multi-User-System und Berechtigungen
 
@@ -47,7 +47,7 @@
    - 4.5 Monitoring und Logging
    - 4.6 Backup und Wiederherstellung
 
-5. [API-Referenz](#api-referenz) (inkl. aWattar API)
+5. [API-Referenz](#api-referenz) (inkl. aWattar API, Smart Grid & IoT)
    - 5.1 Authentifizierung und Autorisierung
    - 5.2 Projekt-API
    - 5.3 Simulation-API
@@ -1232,6 +1232,62 @@ Das **ML & KI Dashboard** bietet intelligente Analysen und Vorhersagen für opti
 - **Letzte 24h:** Anzahl neuer Datensätze
 - **Neuester Preis:** Aktueller Marktpreis in €/MWh
 
+#### 2.2 Smart Grid Integration
+
+**Navigation:** Daten → Datenimport-Center → Smart Grid
+
+**Funktionen:**
+- **Frequenzregelung (FCR):** Primäre Frequenzregelung mit 30 Sekunden Response-Zeit
+- **Automatische Frequenzregelung (aFRR):** Sekundäre Frequenzregelung mit 5 Minuten Response-Zeit
+- **Manuelle Frequenzregelung (mFRR):** Tertiäre Frequenzregelung mit 12.5 Minuten Response-Zeit
+- **Spannungshaltung:** Reactive Power Management mit 1 Minute Response-Zeit
+- **Demand Response:** Laststeuerung mit 15 Minuten Response-Zeit
+- **Grid Stability Monitoring:** Echtzeitüberwachung der Netzstabilität
+
+**Technische Details:**
+- **Multi-Grid-Area Support:** Österreich, Deutschland, Schweiz, Italien, Tschechien, Slowakei, Ungarn, Slowenien
+- **Demo-Modus:** Vollständige Funktionalität auch ohne API-Keys
+- **Rate Limiting:** Intelligente API-Anfragen mit automatischem Throttling
+- **Speicherung:** SQLite-Datenbank (GridServiceData, GridStabilityData)
+- **Scheduler:** Python `schedule` Library für automatische Abrufe
+
+**Zeitplan:**
+- **FCR:** alle 15 Minuten (primäre Frequenzregelung)
+- **aFRR:** alle 30 Minuten (sekundäre Frequenzregelung)
+- **mFRR:** stündlich (tertiäre Frequenzregelung)
+- **Spannungshaltung:** alle 10 Minuten (Reactive Power)
+- **Demand Response:** stündlich (Laststeuerung)
+- **Alle Services:** täglich 00:00 Uhr (Vollständiger Import)
+- **API-Test:** alle 6 Stunden
+- **Bereinigung:** Sonntag 03:00 Uhr
+
+#### 2.3 IoT-Sensor-Integration
+
+**Navigation:** Daten → Datenimport-Center → IoT
+
+**Funktionen:**
+- **Batterie-Sensoren:** BESS Monitoring (SOC, SOH, Temperatur, Spannung, Strom, Zyklen)
+- **PV-Sensoren:** Photovoltaik-Monitoring (Leistung, Spannung, Strom, Temperatur, Einstrahlung, Effizienz)
+- **Grid-Sensoren:** Netz-Monitoring (Spannung, Frequenz, Power Factor, Active/Reactive Power)
+- **Umgebungs-Sensoren:** Wetter & Umwelt (Temperatur, Luftfeuchtigkeit, Wind, Luftdruck)
+
+**Technische Details:**
+- **Multi-Protokoll Support:** Modbus TCP, MQTT, OPC UA, HTTP REST
+- **Real-time Monitoring:** Kontinuierliche Überwachung aller BESS-Komponenten
+- **Demo-Modus:** Vollständige Funktionalität auch ohne API-Keys
+- **Rate Limiting:** Intelligente API-Anfragen mit automatischem Throttling
+- **Speicherung:** SQLite-Datenbank (BatterySensorData, PVSensorData, GridSensorData, EnvironmentalSensorData)
+- **Scheduler:** Python `schedule` Library für automatische Abrufe
+
+**Zeitplan:**
+- **Batterie-Sensoren:** alle 5 Minuten (BESS Monitoring)
+- **PV-Sensoren:** alle 10 Minuten (Photovoltaik-Monitoring)
+- **Grid-Sensoren:** alle 15 Minuten (Netz-Monitoring)
+- **Umgebungs-Sensoren:** alle 30 Minuten (Wetter & Umwelt)
+- **Alle Sensoren:** täglich 00:00 Uhr (Vollständiger Import)
+- **API-Test:** alle 4 Stunden
+- **Bereinigung:** Montag 02:00 Uhr
+
 **Frontend-Features:**
 - **Status-Cards:** Übersichtliche Anzeige aller wichtigen Metriken
 - **Chart.js Integration:** Interaktive Preisverlauf-Darstellung
@@ -1842,6 +1898,156 @@ GET /api/awattar/test
         "response_time": "0.234s",
         "data_points": 24
     }
+}
+```
+
+#### Smart Grid API Integration
+
+**FCR (Frequenzregelung) Daten abrufen**
+```http
+GET /api/smart-grid/fcr?hours=24
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "timestamp": "2025-01-07T23:00:00+01:00",
+            "service_type": "fcr",
+            "power_mw": 15.5,
+            "price_eur_mw": 25.30,
+            "grid_operator": "APG",
+            "service_provider": "Provider 1",
+            "grid_area": "at",
+            "frequency_hz": 50.02,
+            "voltage_kv": 400.1,
+            "response_time_ms": 30000,
+            "availability": 0.95,
+            "source": "APG FCR API"
+        }
+    ],
+    "count": 24
+}
+```
+
+**Alle Smart Grid Services abrufen**
+```http
+POST /api/smart-grid/fetch
+Content-Type: application/json
+
+{
+    "service_type": "all",
+    "hours": 24
+}
+```
+
+**Smart Grid API-Status**
+```http
+GET /api/smart-grid/status
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "status": "demo",
+    "message": "Demo-Modus für 5 Services verfügbar",
+    "services": {
+        "fcr": {
+            "name": "Frequenzregelung (FCR)",
+            "status": "demo",
+            "message": "Demo-Modus - 24 Test-Datenpunkte"
+        },
+        "afrr": {
+            "name": "Automatische Frequenzregelung (aFRR)",
+            "status": "demo",
+            "message": "Demo-Modus - 24 Test-Datenpunkte"
+        }
+    },
+    "demo_available": true
+}
+```
+
+#### IoT-Sensor API Integration
+
+**Batterie-Sensor-Daten abrufen**
+```http
+GET /api/iot/battery?hours=24
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "data": [
+        {
+            "timestamp": "2025-01-07T23:00:00+01:00",
+            "voltage_v": 402.5,
+            "current_a": 25.3,
+            "power_w": 10180.0,
+            "temperature_c": 28.5,
+            "soc_percent": 85.2,
+            "soh_percent": 98.1,
+            "cycle_count": 1250,
+            "sensor_id": "BAT_SENSOR_01",
+            "battery_id": "BATTERY_01",
+            "location": "BESS_Location_1",
+            "source": "Battery Sensor (Demo)"
+        }
+    ],
+    "count": 96
+}
+```
+
+**Alle IoT-Sensor-Daten abrufen**
+```http
+POST /api/iot/fetch
+Content-Type: application/json
+
+{
+    "sensor_type": "all",
+    "hours": 24
+}
+```
+
+**IoT-Sensor API-Status**
+```http
+GET /api/iot/status
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "status": "demo",
+    "message": "Demo-Modus für 4 Sensor-Typen verfügbar",
+    "sensors": {
+        "battery": {
+            "name": "Batterie-Sensoren",
+            "status": "demo",
+            "message": "Demo-Modus - 96 Test-Datenpunkte"
+        },
+        "pv": {
+            "name": "PV-Sensoren",
+            "status": "demo",
+            "message": "Demo-Modus - 96 Test-Datenpunkte"
+        }
+    },
+    "protocols": {
+        "modbus_tcp": {
+            "name": "Modbus TCP",
+            "status": "available",
+            "message": "Port 502 verfügbar"
+        },
+        "mqtt": {
+            "name": "MQTT",
+            "status": "available",
+            "message": "Port 1883 verfügbar"
+        }
+    },
+    "demo_available": true
 }
 ```
 
