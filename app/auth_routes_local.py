@@ -63,12 +63,12 @@ def logout():
 
 @auth_local_bp.route('/register', methods=['GET', 'POST'])
 def register():
-    """Benutzer-Registrierung (nur für Admins verfügbar)"""
-    # Registrierung nur für Admins erlauben
-    current_user = get_current_user()
-    if not current_user or not current_user.is_admin():
-        flash("Registrierung ist nur für Administratoren verfügbar.", "error")
-        return redirect(url_for("auth_local.login"))
+    """Benutzer-Registrierung (für alle Benutzer verfügbar)"""
+    # Registrierung für alle Benutzer erlauben
+    # current_user = get_current_user()
+    # if not current_user or not current_user.is_admin():
+    #     flash("Registrierung ist nur für Administratoren verfügbar.", "error")
+    #     return redirect(url_for("auth_local.login"))
     
     if request.method == 'POST':
         try:
@@ -109,7 +109,7 @@ def register():
                 last_name=last_name,
                 company=company,
                 phone=phone,
-                role_id=role_id,
+                role_id=role_id if role_id else 2,  # Standard-Rolle: Benutzer (ID 2)
                 is_verified=True,
                 is_active=True
             )
@@ -119,7 +119,7 @@ def register():
             db.session.commit()
             
             flash("Benutzer erfolgreich registriert.", "success")
-            return redirect(url_for("admin.users"))
+            return redirect(url_for("auth_local.login"))
             
         except Exception as e:
             flash(f"Fehler bei der Registrierung: {e}", "error")
