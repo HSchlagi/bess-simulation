@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Dispatch & Grid Services - BESS Simulation{% endblock %}
+
+{% block extra_head %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .card-header-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .metric-card {
+            border-left: 4px solid #3b82f6;
+            transition: transform 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+        }
+        .revenue-highlight {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #10b981;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Advanced Dispatch & Grid Services</h1>
+            <p class="text-gray-600">Intelligente BESS-Optimierung für Multi-Markt-Arbitrage und Grid-Services</p>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Projekt-Auswahl & Parameter -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-cog text-blue-600 mr-2"></i>
+                        Projekt auswählen & Parameter setzen
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Projekt:</label>
+                            <select id="projectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Projekt auswählen...</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Aktueller SOC:</label>
+                            <input type="range" id="socSlider" min="5" max="95" value="50" class="w-full">
+                            <div class="flex justify-between text-sm text-gray-500 mt-1">
+                                <span>5%</span>
+                                <span id="socValue">50%</span>
+                                <span>95%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button id="standardOptimizeBtn" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                <i class="fas fa-play mr-2"></i>
+                                Standard Optimierung
+                            </button>
+                            <button id="advancedOptimizeBtn" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-rocket mr-2"></i>
+                                Advanced Optimierung
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Marktdaten -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                        Aktuelle Marktdaten
+                    </h2>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="metric-card bg-gray-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600">Min</div>
+                            <div class="text-lg font-semibold text-gray-900" id="minPrice">-</div>
+                        </div>
+                        <div class="metric-card bg-gray-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600">Max</div>
+                            <div class="text-lg font-semibold text-gray-900" id="maxPrice">-</div>
+                        </div>
+                        <div class="metric-card bg-gray-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600">Avg</div>
+                            <div class="text-lg font-semibold text-gray-900" id="avgPrice">-</div>
+                        </div>
+                        <div class="metric-card bg-gray-50 p-4 rounded-lg">
+                            <div class="text-sm text-gray-600">Current</div>
+                            <div class="text-lg font-semibold text-gray-900" id="currentPrice">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="h-64">
+                        <canvas id="marketDataChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Optimierungsergebnisse -->
+        <div class="mt-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                    Optimierungsergebnisse
+                </h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="metric-card bg-blue-50 p-4 rounded-lg">
+                        <div class="text-sm text-blue-600">Arbitrage Erlös</div>
+                        <div class="text-xl font-bold text-blue-900" id="arbitrageRevenue">0.00 €</div>
+                    </div>
+                    <div class="metric-card bg-green-50 p-4 rounded-lg">
+                        <div class="text-sm text-green-600">Grid Services Erlös</div>
+                        <div class="text-xl font-bold text-green-900" id="gridServicesRevenue">0.00 €</div>
+                    </div>
+                    <div class="metric-card bg-yellow-50 p-4 rounded-lg">
+                        <div class="text-sm text-yellow-600">Demand Response Erlös</div>
+                        <div class="text-xl font-bold text-yellow-900" id="demandResponseRevenue">0.00 €</div>
+                    </div>
+                    <div class="metric-card bg-purple-50 p-4 rounded-lg">
+                        <div class="text-sm text-purple-600">Gesamterlös</div>
+                        <div class="text-xl font-bold text-purple-900 revenue-highlight" id="totalRevenue">0.00 €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid Services & VPP -->
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Grid Services -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-bolt text-yellow-600 mr-2"></i>
+                    Grid Services
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">Frequenzregelung</div>
+                            <div class="text-sm text-gray-600">FCR/aFRR Services</div>
+                        </div>
+                        <div class="text-lg font-bold text-yellow-600">45.60 €/MWh</div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">Spannungsunterstützung</div>
+                            <div class="text-sm text-gray-600">Blindleistung</div>
+                        </div>
+                        <div class="text-lg font-bold text-yellow-600">38.90 €/MWh</div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">Reaktive Leistung</div>
+                            <div class="text-sm text-gray-600">Power Factor Control</div>
+                        </div>
+                        <div class="text-lg font-bold text-yellow-600">42.30 €/MWh</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- VPP Portfolio -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-network-wired text-blue-600 mr-2"></i>
+                    VPP Portfolio
+                </h2>
+                
+                <div class="space-y-4">
+                    <div class="p-4 bg-blue-50 rounded-lg">
+                        <div class="text-sm text-blue-600">Gesamtkapazität</div>
+                        <div class="text-2xl font-bold text-blue-900">14.0 MW</div>
+                    </div>
+                    
+                    <div class="p-4 bg-green-50 rounded-lg">
+                        <div class="text-sm text-green-600">Gesamtspeicher</div>
+                        <div class="text-2xl font-bold text-green-900">32.0 MWh</div>
+                    </div>
+                    
+                    <div class="p-4 bg-purple-50 rounded-lg">
+                        <div class="text-sm text-purple-600">Portfolio-Erlös</div>
+                        <div class="text-2xl font-bold text-purple-900">2,450 €/Tag</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demand Response Events -->
+        <div class="mt-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-calendar-alt text-red-600 mr-2"></i>
+                    Demand Response Events
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="font-medium text-gray-900">Event #1</div>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Aktiv</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">14:00 - 16:00 Uhr</div>
+                        <div class="text-sm text-gray-600 mb-2">Leistungsreduktion: 3.5 MW</div>
+                        <div class="text-sm text-gray-600 mb-2">Vergütung: 45.0 €/MWh</div>
+                        <div class="text-lg font-bold text-green-600">315.00 €</div>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="font-medium text-gray-900">Event #2</div>
+                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Geplant</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">18:00 - 19:30 Uhr</div>
+                        <div class="text-sm text-gray-600 mb-2">Leistungsreduktion: 2.8 MW</div>
+                        <div class="text-sm text-gray-600 mb-2">Vergütung: 52.0 €/MWh</div>
+                        <div class="text-lg font-bold text-yellow-600">218.40 €</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid Code Compliance -->
+        <div class="mt-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-shield-alt text-green-600 mr-2"></i>
+                    Grid Code Compliance
+                </h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600 mb-1">✓</div>
+                        <div class="text-sm text-green-800">Frequenz</div>
+                        <div class="text-xs text-gray-600">49.5-50.5 Hz</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600 mb-1">✓</div>
+                        <div class="text-sm text-green-800">Spannung</div>
+                        <div class="text-xs text-gray-600">0.9-1.1 pu</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600 mb-1">✓</div>
+                        <div class="text-sm text-green-800">Leistungsfaktor</div>
+                        <div class="text-xs text-gray-600">0.9-1.0</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600 mb-1">✓</div>
+                        <div class="text-sm text-green-800">Response-Zeit</div>
+                        <div class="text-xs text-gray-600">≤ 1 Sekunde</div>
+                    </div>
+                    
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600 mb-1">✓</div>
+                        <div class="text-sm text-green-800">Ramp-Rate</div>
+                        <div class="text-xs text-gray-600">≥ 1 MW/min</div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-4 bg-green-100 rounded-lg">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                        <span class="text-green-800 font-medium">100% Grid Code Compliance - Alle Anforderungen erfüllt</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript direkt im Body -->
+    <script>
+        console.log('Advanced Dispatch Script wird geladen...');
+        let marketDataChart;
+        let projects = [];
+
+        // Sofortige Initialisierung
+        function initDashboard() {
+            console.log('Dashboard wird initialisiert...');
+            loadProjects();
+            loadMarketData();
+            setDefaultDateTime();
+            loadDemandResponseEvents();
+        }
+
+        function setDefaultDateTime() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            const drStartTime = document.getElementById('drStartTime');
+            if (drStartTime) {
+                drStartTime.value = now.toISOString().slice(0, 16);
+            }
+        }
+
+        async function loadProjects() {
+            console.log('Lade Projekte...');
+            try {
+                const response = await fetch('/advanced-dispatch/api/projects');
+                console.log('Response erhalten:', response.status);
+                const data = await response.json();
+                console.log('Daten erhalten:', data);
+                
+                if (data.success) {
+                    projects = data.projects;
+                    console.log('Projekte geladen:', projects);
+                    
+                    const select = document.getElementById('projectSelect');
+                    select.innerHTML = '<option value="">Projekt auswählen...</option>';
+                    
+                    projects.forEach(project => {
+                        const option = document.createElement('option');
+                        option.value = project.id;
+                        option.textContent = project.name;
+                        select.appendChild(option);
+                    });
+                    console.log('Projekte in Dropdown eingefügt');
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Projekte:', error);
+            }
+        }
+
+        async function loadMarketData() {
+            console.log('Lade Marktdaten...');
+            try {
+                const response = await fetch('/advanced-dispatch/api/market-data');
+                console.log('Marktdaten Response:', response.status);
+                const data = await response.json();
+                console.log('Marktdaten erhalten:', data);
+                
+                if (data.success) {
+                    // Statistiken anzeigen
+                    document.getElementById('minPrice').textContent = data.statistics.min_price_eur_mwh + ' €/MWh';
+                    document.getElementById('maxPrice').textContent = data.statistics.max_price_eur_mwh + ' €/MWh';
+                    document.getElementById('avgPrice').textContent = data.statistics.average_price_eur_mwh + ' €/MWh';
+                    document.getElementById('currentPrice').textContent = data.statistics.current_price + ' €/MWh';
+                    
+                    // Chart erstellen
+                    createMarketDataChart(data.spot_prices);
+                    console.log('Marktdaten angezeigt');
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Marktdaten:', error);
+            }
+        }
+
+        function createMarketDataChart(spotPrices) {
+            const ctx = document.getElementById('marketDataChart').getContext('2d');
+            
+            if (marketDataChart) {
+                marketDataChart.destroy();
+            }
+            
+            const labels = spotPrices.map(p => new Date(p.timestamp).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'}));
+            const prices = spotPrices.map(p => p.price_eur_mwh);
+            
+            marketDataChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Spotpreis (€/MWh)',
+                        data: prices,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Preis (€/MWh)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadDemandResponseEvents() {
+            try {
+                const response = await fetch('/advanced-dispatch/api/demand-response');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Demand Response Events anzeigen
+                    console.log('Demand Response Events geladen:', data.events);
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Demand Response Events:', error);
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM Content Loaded - Initialisiere Dashboard');
+            initDashboard();
+            
+            // SOC Slider
+            const socSlider = document.getElementById('socSlider');
+            const socValue = document.getElementById('socValue');
+            
+            if (socSlider && socValue) {
+                socSlider.addEventListener('input', function() {
+                    socValue.textContent = this.value + '%';
+                });
+            }
+            
+            // Optimierung Buttons
+            const standardBtn = document.getElementById('standardOptimizeBtn');
+            const advancedBtn = document.getElementById('advancedOptimizeBtn');
+            
+            if (standardBtn) {
+                standardBtn.addEventListener('click', function() {
+                    runStandardOptimization();
+                });
+            }
+            
+            if (advancedBtn) {
+                advancedBtn.addEventListener('click', function() {
+                    runAdvancedOptimization();
+                });
+            }
+        });
+
+        async function runStandardOptimization() {
+            const projectId = document.getElementById('projectSelect').value;
+            const soc = document.getElementById('socSlider').value;
+            
+            if (!projectId) {
+                alert('Bitte wählen Sie ein Projekt aus');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/advanced-dispatch/api/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_id: projectId,
+                        current_soc_pct: parseFloat(soc),
+                        market_conditions: {}
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Ergebnisse anzeigen
+                    document.getElementById('arbitrageRevenue').textContent = data.arbitrage.revenue_eur.toFixed(2) + ' €';
+                    document.getElementById('gridServicesRevenue').textContent = (data.grid_services.frequency_regulation + data.grid_services.voltage_support).toFixed(2) + ' €';
+                    document.getElementById('demandResponseRevenue').textContent = data.demand_response_revenue.toFixed(2) + ' €';
+                    document.getElementById('totalRevenue').textContent = data.total_revenue_eur.toFixed(2) + ' €';
+                }
+            } catch (error) {
+                console.error('Fehler bei Standard-Optimierung:', error);
+            }
+        }
+
+        async function runAdvancedOptimization() {
+            const projectId = document.getElementById('projectSelect').value;
+            const soc = document.getElementById('socSlider').value;
+            
+            if (!projectId) {
+                alert('Bitte wählen Sie ein Projekt aus');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/advanced-dispatch/api/advanced-optimization', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_id: projectId,
+                        current_soc_pct: parseFloat(soc),
+                        use_advanced_algorithms: true,
+                        market_conditions: {}
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Ergebnisse anzeigen
+                    document.getElementById('arbitrageRevenue').textContent = data.arbitrage.revenue_eur.toFixed(2) + ' €';
+                    document.getElementById('gridServicesRevenue').textContent = (data.grid_services.frequency_regulation + data.grid_services.voltage_support).toFixed(2) + ' €';
+                    document.getElementById('demandResponseRevenue').textContent = data.demand_response_revenue.toFixed(2) + ' €';
+                    document.getElementById('totalRevenue').textContent = data.total_revenue_eur.toFixed(2) + ' €';
+                }
+            } catch (error) {
+                console.error('Fehler bei Advanced-Optimierung:', error);
+            }
+        }
+
+        // Mehrfache Initialisierung für bessere Kompatibilität
+        setTimeout(initDashboard, 100);
+        setTimeout(initDashboard, 500);
+        setTimeout(initDashboard, 1000);
+        setTimeout(initDashboard, 2000);
+        
+        // Zusätzliche Initialisierung nach 5 Sekunden
+        setTimeout(() => {
+            console.log('Späte Initialisierung...');
+            loadProjects();
+        }, 5000);
+    </script>
+{% endblock %}

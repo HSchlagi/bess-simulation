@@ -95,6 +95,9 @@
                         <a href="/dispatch" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-rocket mr-2"></i>Dispatch & Redispatch
                         </a>
+                        <a href="{{ url_for('advanced_dispatch.dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
+                            <i class="fas fa-microchip mr-2"></i>Advanced Dispatch & Grid Services
+                        </a>
                         <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-play mr-2"></i>BESS-Simulation
                         </a>
@@ -126,7 +129,7 @@
                         <a href="{{ url_for('main.economic_analysis') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-chart-line mr-2"></i>Wirtschaftlichkeitsanalyse
                         </a>
-                        <a href="{{ url_for('co2.co2_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50 rounded-b-md">
+                        <a href="{{ url_for('co2_tracking.co2_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50 rounded-b-md">
                             <i class="fas fa-leaf mr-2"></i>CO₂-Tracking & Nachhaltigkeit
                         </a>
                     </div>
@@ -271,7 +274,7 @@
                     <a href="{{ url_for('main.economic_analysis') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
                         <i class="fas fa-chart-line mr-2"></i>Wirtschaftlichkeitsanalyse
                     </a>
-                    <a href="{{ url_for('co2.co2_dashboard') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
+                    <a href="{{ url_for('co2_tracking.co2_dashboard') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
                         <i class="fas fa-leaf mr-2"></i>CO₂-Tracking & Nachhaltigkeit
                     </a>
                 </div>

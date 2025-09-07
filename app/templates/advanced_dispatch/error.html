@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Dispatch - Fehler{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Advanced Dispatch System nicht verfügbar
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-info-circle me-2"></i>System-Information</h5>
+                            <p class="mb-0">{{ error }}</p>
+                        </div>
+                        
+                        <h5>Mögliche Lösungen:</h5>
+                        <ul>
+                            <li>Stellen Sie sicher, dass alle erforderlichen Python-Pakete installiert sind</li>
+                            <li>Überprüfen Sie die Datei <code>advanced_dispatch_system.py</code></li>
+                            <li>Kontaktieren Sie den Systemadministrator</li>
+                        </ul>
+                        
+                        <div class="mt-4">
+                            <a href="/" class="btn btn-primary">
+                                <i class="fas fa-home me-2"></i>Zurück zur Startseite
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

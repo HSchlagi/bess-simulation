@@ -76,8 +76,20 @@ def create_app():
     app.register_blueprint(notification_bp)
     
     # CO₂-Tracking-Blueprint registrieren
-    from .co2_routes import co2_bp
-    app.register_blueprint(co2_bp)
+    try:
+        from .co2_routes import co2_bp
+        app.register_blueprint(co2_bp, name='co2_tracking')
+        print("✅ CO₂-Tracking System erfolgreich registriert")
+    except Exception as e:
+        print(f"⚠️  CO₂-Tracking System nicht verfügbar: {e}")
+    
+    # Advanced Dispatch-Blueprint registrieren
+    try:
+        from .advanced_dispatch_routes import advanced_dispatch_bp
+        app.register_blueprint(advanced_dispatch_bp)
+        print("✅ Advanced Dispatch System erfolgreich registriert")
+    except ImportError as e:
+        print(f"⚠️  Advanced Dispatch System nicht verfügbar: {e}")
     
     # Monitoring & Logging Blueprint registrieren
     app.register_blueprint(monitoring_bp)
