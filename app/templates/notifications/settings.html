@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Benachrichtigungs-Einstellungen - BESS-Simulation</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% extends "base.html" %}
+
+{% block title %}Benachrichtigungs-Einstellungen - BESS-Simulation{% endblock %}
+
+{% block head %}
     <style>
         .toggle-switch {
             position: relative;
@@ -54,8 +51,9 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
     </style>
-</head>
-<body class="bg-gray-50">
+{% endblock %}
+
+{% block content %}
     <!-- Header -->
     <div class="bg-white shadow-sm border-b">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -597,5 +595,4 @@
             }, 5000);
         }
     </script>
-</body>
-</html>
+{% endblock %}
