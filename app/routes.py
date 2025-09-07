@@ -10,6 +10,7 @@ from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, Re
 from datetime import datetime, timedelta
 import random
 import math
+from .notification_routes import create_notification, send_simulation_complete_notification, send_system_alert_notification, send_welcome_notification
 
 def generate_legacy_demo_water_levels(start_date, end_date):
     """Generiert Legacy Demo-Wasserpegel-Daten für Fallback"""

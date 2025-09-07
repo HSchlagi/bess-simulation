@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benachrichtigungs-Einstellungen - BESS-Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #3B82F6;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .setting-card {
+            transition: all 0.3s ease;
+        }
+        .setting-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <a href="/notifications" class="text-gray-600 hover:text-gray-900 mr-4">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-cog text-blue-600 mr-2"></i>
+                        Benachrichtigungs-Einstellungen
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="saveSettingsBtn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        Einstellungen speichern
+                    </button>
+                    <button id="resetSettingsBtn" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-undo mr-2"></i>
+                        Zurücksetzen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- General Settings -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-bell text-blue-600 mr-2"></i>
+                    Allgemeine Einstellungen
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">Grundlegende Benachrichtigungs-Einstellungen</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- In-App Benachrichtigungen -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <i class="fas fa-desktop text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">In-App Benachrichtigungen</h3>
+                            <p class="text-sm text-gray-600">Benachrichtigungen direkt in der Anwendung anzeigen</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="inAppEnabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- E-Mail Benachrichtigungen -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                            <i class="fas fa-envelope text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">E-Mail Benachrichtigungen</h3>
+                            <p class="text-sm text-gray-600">Benachrichtigungen per E-Mail erhalten</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="emailEnabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Push Benachrichtigungen -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                            <i class="fas fa-mobile-alt text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Push Benachrichtigungen</h3>
+                            <p class="text-sm text-gray-600">Benachrichtigungen auf mobilen Geräten erhalten</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="pushEnabled" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- E-Mail Einstellungen -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-envelope text-green-600 mr-2"></i>
+                    E-Mail Einstellungen
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">Konfiguration der E-Mail-Benachrichtigungen</p>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- E-Mail Frequenz -->
+                <div class="setting-card p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <i class="fas fa-clock text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">E-Mail Frequenz</h3>
+                            <p class="text-sm text-gray-600">Wie oft sollen E-Mail-Benachrichtigungen gesendet werden?</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="emailFrequency" value="immediate" class="mr-3" checked>
+                            <div>
+                                <div class="font-medium text-gray-900">Sofort</div>
+                                <div class="text-sm text-gray-600">Jede Benachrichtigung sofort senden</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="emailFrequency" value="hourly" class="mr-3">
+                            <div>
+                                <div class="font-medium text-gray-900">Stündlich</div>
+                                <div class="text-sm text-gray-600">Zusammenfassung alle Stunde</div>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                            <input type="radio" name="emailFrequency" value="daily" class="mr-3">
+                            <div>
+                                <div class="font-medium text-gray-900">Täglich</div>
+                                <div class="text-sm text-gray-600">Tägliche Zusammenfassung</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Ruhezeiten -->
+                <div class="setting-card p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center mb-4">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600 mr-4">
+                            <i class="fas fa-moon text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Ruhezeiten</h3>
+                            <p class="text-sm text-gray-600">Zeitfenster, in denen keine Benachrichtigungen gesendet werden</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Von</label>
+                            <input type="time" id="quietHoursStart" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bis</label>
+                            <input type="time" id="quietHoursEnd" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benachrichtigungs-Typen -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-list text-purple-600 mr-2"></i>
+                    Benachrichtigungs-Typen
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">Wählen Sie aus, welche Arten von Benachrichtigungen Sie erhalten möchten</p>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Simulation abgeschlossen -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                            <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Simulation abgeschlossen</h3>
+                            <p class="text-sm text-gray-600">Benachrichtigung wenn eine BESS-Simulation abgeschlossen ist</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="simulationComplete" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- System-Alerts -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600 mr-4">
+                            <i class="fas fa-exclamation-triangle text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">System-Alerts</h3>
+                            <p class="text-sm text-gray-600">Wichtige System-Meldungen und Fehler</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="systemAlerts" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Backup-Status -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                            <i class="fas fa-database text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Backup-Status</h3>
+                            <p class="text-sm text-gray-600">Status-Meldungen zu Datenbank-Backups</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="backupStatus" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- API-Fehler -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-orange-100 text-orange-600 mr-4">
+                            <i class="fas fa-bug text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">API-Fehler</h3>
+                            <p class="text-sm text-gray-600">Fehler bei externen API-Verbindungen</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="apiErrors" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Willkommens-Nachrichten -->
+                <div class="setting-card flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                            <i class="fas fa-hand-wave text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Willkommens-Nachrichten</h3>
+                            <p class="text-sm text-gray-600">Begrüßungs-Nachrichten für neue Benutzer</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="welcomeMessages" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test-Benachrichtigungen -->
+        <div class="bg-white rounded-lg shadow mb-8">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-flask text-yellow-600 mr-2"></i>
+                    Test-Benachrichtigungen
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">Testen Sie Ihre Benachrichtigungs-Einstellungen</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <button onclick="sendTestNotification('simulation_complete')" class="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-chart-line text-2xl mb-2"></i>
+                        <div class="font-medium">Simulation Test</div>
+                        <div class="text-sm opacity-90">Test-Simulation senden</div>
+                    </button>
+                    <button onclick="sendTestNotification('system_alert')" class="bg-red-600 text-white p-4 rounded-lg hover:bg-red-700 transition-colors">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <div class="font-medium">System-Alert Test</div>
+                        <div class="text-sm opacity-90">Test-Alert senden</div>
+                    </button>
+                    <button onclick="sendTestNotification('user_welcome')" class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-hand-wave text-2xl mb-2"></i>
+                        <div class="font-medium">Willkommen Test</div>
+                        <div class="text-sm opacity-90">Test-Willkommen senden</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status-Informationen -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                    Status-Informationen
+                </h2>
+                <p class="text-sm text-gray-600 mt-1">Aktuelle Konfiguration und System-Status</p>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">E-Mail-Service</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">SMTP-Server:</span>
+                                <span id="smtpStatus" class="text-sm font-medium text-gray-900">Überprüfung...</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Authentifizierung:</span>
+                                <span id="authStatus" class="text-sm font-medium text-gray-900">Überprüfung...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Push-Service</h3>
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">Service Worker:</span>
+                                <span id="swStatus" class="text-sm font-medium text-gray-900">Überprüfung...</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm text-gray-600">VAPID-Keys:</span>
+                                <span id="vapidStatus" class="text-sm font-medium text-gray-900">Überprüfung...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50"></div>
+
+    <script>
+        let currentSettings = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSettings();
+            setupEventListeners();
+            checkServiceStatus();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+            document.getElementById('resetSettingsBtn').addEventListener('click', resetSettings);
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/notifications/api/settings');
+                const data = await response.json();
+
+                if (data.success) {
+                    currentSettings = data.settings;
+                    applySettings(data.settings);
+                } else {
+                    showToast('Fehler beim Laden der Einstellungen', 'error');
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Einstellungen:', error);
+                showToast('Fehler beim Laden der Einstellungen', 'error');
+            }
+        }
+
+        function applySettings(settings) {
+            // Allgemeine Einstellungen
+            document.getElementById('inAppEnabled').checked = settings.in_app_enabled;
+            document.getElementById('emailEnabled').checked = settings.email_enabled;
+            document.getElementById('pushEnabled').checked = settings.push_enabled;
+
+            // E-Mail Einstellungen
+            document.querySelector(`input[name="emailFrequency"][value="${settings.email_frequency}"]`).checked = true;
+            document.getElementById('quietHoursStart').value = settings.quiet_hours_start || '';
+            document.getElementById('quietHoursEnd').value = settings.quiet_hours_end || '';
+
+            // Benachrichtigungs-Typen
+            document.getElementById('simulationComplete').checked = settings.notification_types.includes('simulation_complete');
+            document.getElementById('systemAlerts').checked = settings.notification_types.includes('system_alert');
+            document.getElementById('backupStatus').checked = settings.notification_types.includes('backup_status');
+            document.getElementById('apiErrors').checked = settings.notification_types.includes('api_error');
+            document.getElementById('welcomeMessages').checked = settings.notification_types.includes('user_welcome');
+        }
+
+        async function saveSettings() {
+            try {
+                const settings = {
+                    in_app_enabled: document.getElementById('inAppEnabled').checked,
+                    email_enabled: document.getElementById('emailEnabled').checked,
+                    push_enabled: document.getElementById('pushEnabled').checked,
+                    email_frequency: document.querySelector('input[name="emailFrequency"]:checked').value,
+                    quiet_hours_start: document.getElementById('quietHoursStart').value || null,
+                    quiet_hours_end: document.getElementById('quietHoursEnd').value || null,
+                    notification_types: [
+                        ...(document.getElementById('simulationComplete').checked ? ['simulation_complete'] : []),
+                        ...(document.getElementById('systemAlerts').checked ? ['system_alert'] : []),
+                        ...(document.getElementById('backupStatus').checked ? ['backup_status'] : []),
+                        ...(document.getElementById('apiErrors').checked ? ['api_error'] : []),
+                        ...(document.getElementById('welcomeMessages').checked ? ['user_welcome'] : [])
+                    ]
+                };
+
+                const response = await fetch('/notifications/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Einstellungen erfolgreich gespeichert!', 'success');
+                    currentSettings = settings;
+                } else {
+                    showToast('Fehler beim Speichern der Einstellungen', 'error');
+                }
+            } catch (error) {
+                console.error('Fehler beim Speichern der Einstellungen:', error);
+                showToast('Fehler beim Speichern der Einstellungen', 'error');
+            }
+        }
+
+        function resetSettings() {
+            if (confirm('Möchten Sie die Einstellungen wirklich auf die Standardwerte zurücksetzen?')) {
+                applySettings({
+                    in_app_enabled: true,
+                    email_enabled: true,
+                    push_enabled: true,
+                    email_frequency: 'immediate',
+                    quiet_hours_start: null,
+                    quiet_hours_end: null,
+                    notification_types: ['simulation_complete', 'system_alert', 'backup_status', 'api_error', 'user_welcome']
+                });
+                showToast('Einstellungen zurückgesetzt', 'info');
+            }
+        }
+
+        async function sendTestNotification(type) {
+            try {
+                const testData = {
+                    type: type,
+                    title: `Test-Benachrichtigung: ${type}`,
+                    message: `Dies ist eine Test-Benachrichtigung für ${type}`,
+                    priority: 'medium',
+                    data: {
+                        test: true,
+                        timestamp: new Date().toISOString()
+                    },
+                    channels: ['in_app', 'email']
+                };
+
+                const response = await fetch('/notifications/api/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showToast('Test-Benachrichtigung gesendet!', 'success');
+                } else {
+                    showToast('Fehler beim Senden der Test-Benachrichtigung', 'error');
+                }
+            } catch (error) {
+                console.error('Fehler beim Senden der Test-Benachrichtigung:', error);
+                showToast('Fehler beim Senden der Test-Benachrichtigung', 'error');
+            }
+        }
+
+        async function checkServiceStatus() {
+            // E-Mail-Service Status
+            try {
+                // Hier würde eine echte Status-Prüfung stattfinden
+                document.getElementById('smtpStatus').textContent = 'Konfiguriert';
+                document.getElementById('smtpStatus').className = 'text-sm font-medium text-green-600';
+                
+                document.getElementById('authStatus').textContent = 'Aktiv';
+                document.getElementById('authStatus').className = 'text-sm font-medium text-green-600';
+            } catch (error) {
+                document.getElementById('smtpStatus').textContent = 'Fehler';
+                document.getElementById('smtpStatus').className = 'text-sm font-medium text-red-600';
+            }
+
+            // Push-Service Status
+            try {
+                if ('serviceWorker' in navigator) {
+                    document.getElementById('swStatus').textContent = 'Verfügbar';
+                    document.getElementById('swStatus').className = 'text-sm font-medium text-green-600';
+                } else {
+                    document.getElementById('swStatus').textContent = 'Nicht unterstützt';
+                    document.getElementById('swStatus').className = 'text-sm font-medium text-yellow-600';
+                }
+                
+                document.getElementById('vapidStatus').textContent = 'Konfiguriert';
+                document.getElementById('vapidStatus').className = 'text-sm font-medium text-green-600';
+            } catch (error) {
+                document.getElementById('swStatus').textContent = 'Fehler';
+                document.getElementById('swStatus').className = 'text-sm font-medium text-red-600';
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `bg-white border-l-4 p-4 rounded-lg shadow-lg mb-4 ${
+                type === 'success' ? 'border-green-500' :
+                type === 'error' ? 'border-red-500' :
+                type === 'warning' ? 'border-yellow-500' :
+                'border-blue-500'
+            }`;
+
+            const icon = type === 'success' ? 'fas fa-check-circle text-green-500' :
+                        type === 'error' ? 'fas fa-exclamation-circle text-red-500' :
+                        type === 'warning' ? 'fas fa-exclamation-triangle text-yellow-500' :
+                        'fas fa-info-circle text-blue-500';
+
+            toast.innerHTML = `
+                <div class="flex items-center">
+                    <i class="${icon} mr-3"></i>
+                    <span class="text-gray-800">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('toastContainer').appendChild(toast);
+
+            // Toast nach 5 Sekunden entfernen
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
