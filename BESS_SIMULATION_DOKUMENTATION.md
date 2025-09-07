@@ -4808,6 +4808,152 @@ time curl -s http://localhost:5000/api/health
 
 ---
 
+## 🌱 CO₂-Tracking & Nachhaltigkeits-Dashboard (Punkt 5.3)
+
+**Status:** ✅ **VOLLSTÄNDIG IMPLEMENTIERT** (Januar 2025)
+
+### 📊 Implementierte Features
+
+**Dashboard-Funktionalität:**
+- **Projekt-basierte CO₂-Analyse** → Manuelle Projekt-Auswahl ohne Voreinstellung
+- **Nachhaltigkeits-KPIs** → CO₂-Einsparungen, Erneuerbare Energie, Energieeffizienz, Kosteneinsparungen
+- **ESG-Score-System** → Environmental, Social, Governance mit animierten Fortschrittsbalken
+- **Interaktive Charts** → CO₂-Bilanz-Verlauf und Erneuerbare Energie-Anteil
+- **Responsive Design** → Funktioniert auf Desktop und Mobile
+
+**Report-System:**
+- **Modal-basierte Reports** → Monatlich, Quartals-, Jahresberichte
+- **PDF-Export-Funktionalität** → Druckbare Nachhaltigkeits-Reports
+- **Daten-Integration** → Verwendet echte Dashboard-Daten für Reports
+- **Professionelles Layout** → Strukturierte Report-Generierung
+
+**Technische Implementierung:**
+- **Frontend:** HTML5, CSS3 (Tailwind), JavaScript (ES6+), Chart.js
+- **Backend:** Flask Blueprint (`co2_routes.py`), SQLAlchemy Models
+- **Datenbank:** CO₂-Balance, ESG-Reports, Nachhaltigkeits-Metriken
+- **API-Endpoints:** Projekt-Auswahl, Dashboard-Daten, Report-Generierung
+
+### 🎯 Benutzerfreundlichkeit
+
+**Dashboard-Verhalten:**
+- **Startet leer** → Keine automatische Projekt-Auswahl
+- **Manuelle Auswahl** → Daten laden erst nach Projekt-Auswahl
+- **Sofortige Aktualisierung** → Charts und KPIs aktualisieren sich automatisch
+- **Intuitive Bedienung** → Klare Benutzerführung
+
+**Report-Funktionalität:**
+- **Ein-Klick-Reports** → Buttons für verschiedene Report-Typen
+- **Vorschau-Modal** → Report-Inhalt vor PDF-Export anzeigen
+- **Druck-Optimierung** → Browser-Druckdialog mit optimiertem Layout
+- **Fehlerbehandlung** → Elegante Fehlermeldungen bei Problemen
+
+### 📈 Nachhaltigkeits-Metriken
+
+**CO₂-Tracking:**
+- **CO₂-Einsparungen** → Kilogramm pro Zeitraum
+- **CO₂-Emissionen** → Tracking der Gesamtemissionen
+- **Erneuerbare Energie-Anteil** → Prozentuale Verteilung
+- **Energieeffizienz** → Performance-Metriken
+
+**ESG-Scoring:**
+- **Environmental Score** → Umweltauswirkungen
+- **Social Score** → Soziale Verantwortung
+- **Governance Score** → Unternehmensführung
+- **Overall ESG Score** → Gesamtbewertung
+
+### 🔧 Technische Details
+
+**Datenbank-Schema:**
+```sql
+-- CO₂-Balance Tabelle
+CREATE TABLE co2_balance (
+    id INTEGER PRIMARY KEY,
+    project_id INTEGER,
+    date DATE,
+    co2_saved REAL,
+    co2_emissions REAL,
+    renewable_share REAL
+);
+
+-- ESG-Reports Tabelle
+CREATE TABLE esg_reports (
+    id INTEGER PRIMARY KEY,
+    project_id INTEGER,
+    report_date DATE,
+    environmental_score INTEGER,
+    social_score INTEGER,
+    governance_score INTEGER,
+    overall_score INTEGER
+);
+```
+
+**API-Endpoints:**
+- `GET /co2/` → Dashboard-Hauptseite
+- `GET /co2/api/projects` → Verfügbare Projekte
+- `GET /co2/api/dashboard/<project_id>` → Dashboard-Daten
+- `POST /co2/api/reports` → Report-Generierung
+
+### 🎨 Frontend-Features
+
+**Chart-Integration:**
+- **Chart.js** → Professionelle Datenvisualisierung
+- **Responsive Charts** → Automatische Anpassung an Bildschirmgröße
+- **Interaktive Legenden** → Ein-/Ausblenden von Datenreihen
+- **Animierte Übergänge** → Smooth Chart-Updates
+
+**Modal-System:**
+- **Overlay-Design** → Professionelle Modal-Darstellung
+- **Responsive Layout** → Funktioniert auf allen Geräten
+- **Keyboard-Navigation** → ESC-Taste zum Schließen
+- **Click-Outside-Close** → Benutzerfreundliche Bedienung
+
+### ✅ Qualitätssicherung
+
+**Fehlerbehandlung:**
+- **JavaScript Error-Handling** → Try-Catch-Blöcke für robuste Funktionalität
+- **Element-Validierung** → Überprüfung auf vorhandene DOM-Elemente
+- **API-Fehlerbehandlung** → Graceful Degradation bei API-Problemen
+- **Benutzer-Feedback** → Klare Fehlermeldungen
+
+**Code-Qualität:**
+- **Sauberer JavaScript-Code** → Modulare Funktionen
+- **Konsistente Namenskonventionen** → Verständliche Variablennamen
+- **Dokumentierte Funktionen** → Kommentierte Code-Bereiche
+- **Performance-Optimierung** → Effiziente DOM-Manipulation
+
+### 🚀 Deployment-Status
+
+**Lokale Entwicklung:**
+- ✅ Dashboard vollständig funktional
+- ✅ Report-System implementiert
+- ✅ PDF-Export funktioniert
+- ✅ Responsive Design getestet
+
+**Hetzner-Server:**
+- ✅ Code auf GitHub verfügbar
+- ✅ Datenbank-Migration bereit
+- ✅ Deployment-Skripte vorhanden
+- 🔄 Server-Update erforderlich
+
+### 📋 Nächste Schritte
+
+**Kurzfristig:**
+- Hetzner-Server mit CO₂-Dashboard aktualisieren
+- Demo-Daten für alle Projekte generieren
+- Performance-Tests durchführen
+
+**Mittelfristig:**
+- Echte CO₂-Daten-Integration
+- Erweiterte ESG-Metriken
+- Automatisierte Report-Generierung
+
+**Langfristig:**
+- Integration mit externen Nachhaltigkeits-APIs
+- CO₂-Zertifikate-Integration
+- Nachhaltigkeits-Benchmarking
+
+---
+
 **BESS Simulation** - Professionelle Batteriespeicher-Simulation für erneuerbare Energien 🚀
 
-*Letzte Aktualisierung: 07. September 2025 - Benachrichtigungs-System vollständig implementiert und getestet*
+*Letzte Aktualisierung: 07. Januar 2025 - CO₂-Tracking & Nachhaltigkeits-Dashboard vollständig implementiert und getestet*

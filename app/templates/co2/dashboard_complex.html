@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+
+{% block title %}CO₂-Tracking & Nachhaltigkeit - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-leaf text-green-600 text-3xl mr-3"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">CO₂-Tracking & Nachhaltigkeit</h1>
+                        <p class="text-gray-600 mt-1">Detaillierte Nachhaltigkeits- und Performance-Analysen</p>
+                    </div>
+                </div>
+                <div class="flex space-x-3">
+                    <button id="refreshData" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Aktualisieren
+                    </button>
+                    <button id="loadDemoData" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <i class="fas fa-chart-bar mr-2"></i>Demo-Daten laden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Projekt-Auswahl -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Projekt auswählen</h2>
+            <div class="flex items-center space-x-4">
+                <select id="projectSelect" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Projekt auswählen...</option>
+                    <option value="1">BESS Hinterstoder</option>
+                    <option value="2">Solar-BESS Wien</option>
+                    <option value="3">BESS Tillysburg</option>
+                    <option value="4">Test Projekt Daily Cycles</option>
+                </select>
+                <select id="timeRangeSelect" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="30">Letzte 30 Tage</option>
+                    <option value="90">Letzte 3 Monate</option>
+                    <option value="365">Letztes Jahr</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- CO₂-Einsparungen -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-leaf text-green-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">CO₂-Einsparungen</p>
+                        <p class="text-2xl font-bold text-gray-900" id="co2Saved">0 kg</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Erneuerbare Energie -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-solar-panel text-yellow-500 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Erneuerbare Energie</p>
+                        <p class="text-2xl font-bold text-gray-900" id="renewableShare">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Energieeffizienz -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-bolt text-blue-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Energieeffizienz</p>
+                        <p class="text-2xl font-bold text-gray-900" id="energyEfficiency">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kosteneinsparungen -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-euro-sign text-green-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Kosteneinsparungen</p>
+                        <p class="text-2xl font-bold text-gray-900" id="costSavings">0 €</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- CO₂-Bilanz Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">CO₂-Bilanz Verlauf</h3>
+                <div class="h-64">
+                    <canvas id="co2BalanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Erneuerbare Energie Chart -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Erneuerbare Energie Anteil</h3>
+                <div class="h-64">
+                    <canvas id="renewableEnergyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- ESG Score Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">ESG-Score</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Environmental Score -->
+                <div class="text-center">
+                    <div class="relative w-24 h-24 mx-auto mb-2">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                            <circle cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" fill="none"
+                                    stroke-dasharray="251.2" stroke-dashoffset="251.2" id="envScoreCircle"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-lg font-bold text-gray-900" id="envScore">0</span>
+                        </div>
+                    </div>
+                    <p class="text-sm font-medium text-gray-600">Environmental</p>
+                </div>
+
+                <!-- Social Score -->
+                <div class="text-center">
+                    <div class="relative w-24 h-24 mx-auto mb-2">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                            <circle cx="50" cy="50" r="40" stroke="#3b82f6" stroke-width="8" fill="none"
+                                    stroke-dasharray="251.2" stroke-dashoffset="251.2" id="socialScoreCircle"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-lg font-bold text-gray-900" id="socialScore">0</span>
+                        </div>
+                    </div>
+                    <p class="text-sm font-medium text-gray-600">Social</p>
+                </div>
+
+                <!-- Governance Score -->
+                <div class="text-center">
+                    <div class="relative w-24 h-24 mx-auto mb-2">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                            <circle cx="50" cy="50" r="40" stroke="#8b5cf6" stroke-width="8" fill="none"
+                                    stroke-dasharray="251.2" stroke-dashoffset="251.2" id="govScoreCircle"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-lg font-bold text-gray-900" id="govScore">0</span>
+                        </div>
+                    </div>
+                    <p class="text-sm font-medium text-gray-600">Governance</p>
+                </div>
+
+                <!-- Overall ESG Score -->
+                <div class="text-center">
+                    <div class="relative w-24 h-24 mx-auto mb-2">
+                        <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" stroke="#e5e7eb" stroke-width="8" fill="none"/>
+                            <circle cx="50" cy="50" r="40" stroke="#f59e0b" stroke-width="8" fill="none"
+                                    stroke-dasharray="251.2" stroke-dashoffset="251.2" id="overallScoreCircle"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-lg font-bold text-gray-900" id="overallScore">0</span>
+                        </div>
+                    </div>
+                    <p class="text-sm font-medium text-gray-600">Overall ESG</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Nachhaltigkeits-Reports</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button id="monthlyReportBtn" class="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-calendar-alt mr-2"></i>Monatlicher Report
+                </button>
+                <button id="quarterlyReportBtn" class="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-chart-line mr-2"></i>Quartalsbericht
+                </button>
+                <button id="yearlyReportBtn" class="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-file-alt mr-2"></i>Jahresbericht
+                </button>
+            </div>
+            
+            <!-- Report Modal -->
+            <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-semibold text-gray-900" id="reportTitle">Nachhaltigkeits-Report</h3>
+                        <button id="closeReportModal" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div id="reportContent" class="space-y-6">
+                        <!-- Report content will be loaded here -->
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-3">
+                        <button id="downloadReportBtn" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-download mr-2"></i>Download PDF
+                        </button>
+                        <button id="closeReportModalBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                            Schließen
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// CO₂-Dashboard JavaScript - Komplett saubere Version
+class CO2Dashboard {
+    constructor() {
+        this.charts = {};
+        this.init();
+    }
+
+    init() {
+        console.log('CO₂-Dashboard wird initialisiert...');
+        this.setupEventListeners();
+        this.resetDashboard();
+        
+        // Automatisch Demo-Daten laden nach 2 Sekunden
+        setTimeout(() => {
+            console.log('Automatisches Laden der Demo-Daten...');
+            // Erstes Projekt automatisch auswählen
+            const select = document.getElementById('projectSelect');
+            if (select && select.options.length > 1) {
+                select.selectedIndex = 1; // BESS Hinterstoder
+                console.log('Projekt automatisch ausgewählt:', select.options[select.selectedIndex].text);
+            }
+            this.loadDemoData();
+        }, 2000);
+    }
+
+    setupEventListeners() {
+        // Projekt-Auswahl Event Listener
+        document.getElementById('projectSelect').addEventListener('change', (e) => {
+            const projectId = e.target.value;
+            console.log('Projekt ausgewählt:', projectId);
+            if (projectId) {
+                this.loadDemoData();
+            } else {
+                this.resetDashboard();
+            }
+        });
+
+        // Demo-Daten Button
+        document.getElementById('loadDemoData').addEventListener('click', () => {
+            const projectId = document.getElementById('projectSelect').value;
+            if (projectId) {
+                this.loadDemoData();
+            } else {
+                alert('Bitte wählen Sie zuerst ein Projekt aus!');
+            }
+        });
+
+        // Aktualisieren Button
+        document.getElementById('refreshData').addEventListener('click', () => {
+            const projectId = document.getElementById('projectSelect').value;
+            if (projectId) {
+                this.loadDemoData();
+            } else {
+                alert('Bitte wählen Sie zuerst ein Projekt aus!');
+            }
+        });
+
+        // Report Button Event Listeners
+        document.getElementById('monthlyReportBtn').addEventListener('click', () => {
+            this.generateReport('monthly');
+        });
+
+        document.getElementById('quarterlyReportBtn').addEventListener('click', () => {
+            this.generateReport('quarterly');
+        });
+
+        document.getElementById('yearlyReportBtn').addEventListener('click', () => {
+            this.generateReport('yearly');
+        });
+
+        // Modal Event Listeners
+        document.getElementById('closeReportModal').addEventListener('click', () => {
+            this.closeReportModal();
+        });
+
+        document.getElementById('closeReportModalBtn').addEventListener('click', () => {
+            this.closeReportModal();
+        });
+
+        document.getElementById('downloadReportBtn').addEventListener('click', () => {
+            this.downloadReport();
+        });
+    }
+
+    loadDemoData() {
+        console.log('Lade Demo-Daten...');
+        
+        // Aktuell ausgewähltes Projekt verwenden
+        const select = document.getElementById('projectSelect');
+        const selectedProject = select.options[select.selectedIndex].text;
+        console.log('Lade Daten für Projekt:', selectedProject);
+        
+        // KPIs setzen
+        document.getElementById('co2Saved').textContent = '13.006 kg';
+        document.getElementById('renewableShare').textContent = '55.9%';
+        document.getElementById('energyEfficiency').textContent = '46.9%';
+        document.getElementById('costSavings').textContent = '40.461 €';
+        
+        // ESG-Scores setzen
+        this.updateCircularProgress('envScore', 'envScoreCircle', 30);
+        this.updateCircularProgress('socialScore', 'socialScoreCircle', 43.5);
+        this.updateCircularProgress('govScore', 'govScoreCircle', 85);
+        this.updateCircularProgress('overallScore', 'overallScoreCircle', 50.5);
+        
+        // Charts erstellen
+        this.createCharts();
+        
+        console.log('Demo-Daten erfolgreich geladen!');
+    }
+
+    updateCircularProgress(elementId, circleId, score) {
+        document.getElementById(elementId).textContent = Math.round(score);
+        
+        const circle = document.getElementById(circleId);
+        const circumference = 2 * Math.PI * 40;
+        const offset = circumference - (score / 100) * circumference;
+        circle.style.strokeDashoffset = offset;
+    }
+
+    createCharts() {
+        // CO₂-Bilanz Chart
+        const co2Ctx = document.getElementById('co2BalanceChart').getContext('2d');
+        if (this.charts.co2Balance) {
+            this.charts.co2Balance.destroy();
+        }
+        
+        this.charts.co2Balance = new Chart(co2Ctx, {
+            type: 'line',
+            data: {
+                labels: ['1.9.', '2.9.', '3.9.', '4.9.', '5.9.', '6.9.', '7.9.'],
+                datasets: [{
+                    label: 'CO₂-Einsparungen (kg)',
+                    data: [450, 520, 380, 600, 480, 550, 420],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'CO₂-Emissionen (kg)',
+                    data: [320, 380, 290, 450, 350, 400, 310],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Erneuerbare Energie Chart
+        const renewableCtx = document.getElementById('renewableEnergyChart').getContext('2d');
+        if (this.charts.renewableEnergy) {
+            this.charts.renewableEnergy.destroy();
+        }
+        
+        this.charts.renewableEnergy = new Chart(renewableCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Juni', 'Juli', 'August'],
+                datasets: [{
+                    label: 'Erneuerbare Energie (%)',
+                    data: [55.2, 56.1, 55.9],
+                    backgroundColor: '#fbbf24',
+                    borderColor: '#f59e0b',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+        
+        console.log('Charts erstellt!');
+    }
+
+    resetDashboard() {
+        console.log('Dashboard wird zurückgesetzt...');
+        
+        // KPIs auf 0 setzen
+        document.getElementById('co2Saved').textContent = '0 kg';
+        document.getElementById('renewableShare').textContent = '0%';
+        document.getElementById('energyEfficiency').textContent = '0%';
+        document.getElementById('costSavings').textContent = '0 €';
+        
+        // ESG-Scores auf 0 setzen
+        this.updateCircularProgress('envScore', 'envScoreCircle', 0);
+        this.updateCircularProgress('socialScore', 'socialScoreCircle', 0);
+        this.updateCircularProgress('govScore', 'govScoreCircle', 0);
+        this.updateCircularProgress('overallScore', 'overallScoreCircle', 0);
+        
+        // Charts löschen
+        Object.values(this.charts).forEach(chart => {
+            if (chart) chart.destroy();
+        });
+        this.charts = {};
+        
+        console.log('Dashboard zurückgesetzt - warten auf Projekt-Auswahl');
+    }
+
+    generateReport(reportType) {
+        const projectId = document.getElementById('projectSelect').value;
+        if (!projectId) {
+            alert('Bitte wählen Sie zuerst ein Projekt aus!');
+            return;
+        }
+
+        console.log('Generiere Report:', reportType, 'für Projekt:', projectId);
+
+        try {
+            // Demo-Report-Daten generieren
+            const reportData = this.generateDemoReportData(reportType, projectId);
+            this.displayReport(reportType, reportData);
+
+        } catch (error) {
+            console.error('Fehler beim Generieren des Reports:', error);
+            alert('Fehler beim Generieren des Reports');
+        }
+    }
+
+    generateDemoReportData(reportType, projectId) {
+        const projectName = document.getElementById('projectSelect').options[document.getElementById('projectSelect').selectedIndex].text;
+        
+        return {
+            projectName: projectName,
+            reportType: reportType,
+            period: this.getReportPeriod(reportType),
+            esgScores: {
+                environmental: 30,
+                social: 44,
+                governance: 85,
+                overall: 51
+            },
+            metrics: {
+                co2Saved: 13006,
+                renewableShare: 55.9,
+                energyEfficiency: 46.9,
+                costSavings: 40461
+            },
+            trends: {
+                co2Reduction: '+12%',
+                renewableIncrease: '+3.2%',
+                efficiencyGain: '+1.8%'
+            }
+        };
+    }
+
+    getReportPeriod(reportType) {
+        const now = new Date();
+        switch (reportType) {
+            case 'monthly':
+                return now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+            case 'quarterly':
+                const quarter = Math.ceil((now.getMonth() + 1) / 3);
+                return 'Q' + quarter + ' ' + now.getFullYear();
+            case 'yearly':
+                return now.getFullYear().toString();
+            default:
+                return 'Unbekannt';
+        }
+    }
+
+    displayReport(reportType, reportData) {
+        const reportTitle = {
+            'monthly': 'Monatlicher Nachhaltigkeits-Report',
+            'quarterly': 'Quartalsbericht',
+            'yearly': 'Jahresbericht'
+        };
+
+        document.getElementById('reportTitle').textContent = reportTitle[reportType];
+        
+        // Report-Content generieren
+        const reportContent = this.generateReportHTML(reportData);
+        document.getElementById('reportContent').innerHTML = reportContent;
+        
+        // Modal anzeigen
+        document.getElementById('reportModal').classList.remove('hidden');
+    }
+
+    generateReportHTML(reportData) {
+        const currentDate = new Date().toLocaleDateString('de-DE');
+        
+        let html = '<div class="space-y-6">';
+        
+        // Header
+        html += '<div class="bg-gray-50 p-4 rounded-lg">';
+        html += '<h4 class="text-lg font-semibold text-gray-900">' + reportData.projectName + '</h4>';
+        html += '<p class="text-gray-600">' + reportData.period + ' - ' + currentDate + '</p>';
+        html += '</div>';
+        
+        // Executive Summary
+        html += '<div class="bg-blue-50 p-4 rounded-lg">';
+        html += '<h5 class="text-md font-semibold text-blue-900 mb-2">Executive Summary</h5>';
+        html += '<p class="text-blue-800">Das Projekt zeigt eine ' + reportData.esgScores.overall + '% ESG-Performance mit ' + 
+                reportData.metrics.renewableShare + '% erneuerbarer Energie und ' + 
+                reportData.metrics.co2Saved.toLocaleString() + ' kg CO₂-Einsparungen.</p>';
+        html += '</div>';
+        
+        // ESG Scores
+        html += '<div class="grid grid-cols-2 md:grid-cols-4 gap-4">';
+        html += '<div class="bg-green-50 p-4 rounded-lg text-center">';
+        html += '<div class="text-2xl font-bold text-green-600">' + reportData.esgScores.environmental + '</div>';
+        html += '<div class="text-sm text-green-800">Environmental</div>';
+        html += '</div>';
+        html += '<div class="bg-blue-50 p-4 rounded-lg text-center">';
+        html += '<div class="text-2xl font-bold text-blue-600">' + reportData.esgScores.social + '</div>';
+        html += '<div class="text-sm text-blue-800">Social</div>';
+        html += '</div>';
+        html += '<div class="bg-purple-50 p-4 rounded-lg text-center">';
+        html += '<div class="text-2xl font-bold text-purple-600">' + reportData.esgScores.governance + '</div>';
+        html += '<div class="text-sm text-purple-800">Governance</div>';
+        html += '</div>';
+        html += '<div class="bg-orange-50 p-4 rounded-lg text-center">';
+        html += '<div class="text-2xl font-bold text-orange-600">' + reportData.esgScores.overall + '</div>';
+        html += '<div class="text-sm text-orange-800">Overall ESG</div>';
+        html += '</div>';
+        html += '</div>';
+        
+        // Key Metrics
+        html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-6">';
+        html += '<div class="bg-white border border-gray-200 p-4 rounded-lg">';
+        html += '<h6 class="font-semibold text-gray-900 mb-3">Energie-Performance</h6>';
+        html += '<div class="space-y-2">';
+        html += '<div class="flex justify-between"><span class="text-gray-600">Erneuerbare Energie:</span><span class="font-medium">' + reportData.metrics.renewableShare + '%</span></div>';
+        html += '<div class="flex justify-between"><span class="text-gray-600">Energieeffizienz:</span><span class="font-medium">' + reportData.metrics.energyEfficiency + '%</span></div>';
+        html += '</div></div>';
+        html += '<div class="bg-white border border-gray-200 p-4 rounded-lg">';
+        html += '<h6 class="font-semibold text-gray-900 mb-3">Nachhaltigkeits-Impact</h6>';
+        html += '<div class="space-y-2">';
+        html += '<div class="flex justify-between"><span class="text-gray-600">CO₂-Einsparungen:</span><span class="font-medium text-green-600">' + reportData.metrics.co2Saved.toLocaleString() + ' kg</span></div>';
+        html += '<div class="flex justify-between"><span class="text-gray-600">Kosteneinsparungen:</span><span class="font-medium text-green-600">' + reportData.metrics.costSavings.toLocaleString() + ' €</span></div>';
+        html += '</div></div></div>';
+        
+        // Trends
+        html += '<div class="bg-white border border-gray-200 p-4 rounded-lg">';
+        html += '<h6 class="font-semibold text-gray-900 mb-3">Trend-Analyse</h6>';
+        html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+        html += '<div class="text-center"><div class="text-lg font-bold text-green-600">' + reportData.trends.co2Reduction + '</div><div class="text-sm text-gray-600">CO₂-Reduktion</div></div>';
+        html += '<div class="text-center"><div class="text-lg font-bold text-blue-600">' + reportData.trends.renewableIncrease + '</div><div class="text-sm text-gray-600">Erneuerbare Energie</div></div>';
+        html += '<div class="text-center"><div class="text-lg font-bold text-purple-600">' + reportData.trends.efficiencyGain + '</div><div class="text-sm text-gray-600">Effizienz-Steigerung</div></div>';
+        html += '</div></div>';
+        
+        // Recommendations
+        html += '<div class="bg-yellow-50 p-4 rounded-lg">';
+        html += '<h6 class="font-semibold text-yellow-900 mb-2">Empfehlungen</h6>';
+        html += '<ul class="text-yellow-800 space-y-1">';
+        html += '<li>• Erhöhung der erneuerbaren Energie auf über 60%</li>';
+        html += '<li>• Optimierung der Energieeffizienz durch besseres Lastmanagement</li>';
+        html += '<li>• Regelmäßige Überwachung der CO₂-Bilanz</li>';
+        html += '<li>• Kontinuierliche Verbesserung der ESG-Performance</li>';
+        html += '</ul></div>';
+        
+        html += '</div>';
+        return html;
+    }
+
+    closeReportModal() {
+        document.getElementById('reportModal').classList.add('hidden');
+    }
+
+    downloadReport() {
+        const reportContent = document.getElementById('reportContent').innerHTML;
+        const reportTitle = document.getElementById('reportTitle').textContent;
+        
+        // Neues Fenster mit Report-Inhalt öffnen
+        const printWindow = window.open('', '_blank');
+        const htmlContent = '<html><head><title>' + reportTitle + '</title>' +
+            '<style>' +
+            'body { font-family: Arial, sans-serif; margin: 20px; }' +
+            '.bg-gray-50 { background-color: #f9fafb; padding: 15px; border-radius: 8px; }' +
+            '.bg-blue-50 { background-color: #eff6ff; padding: 15px; border-radius: 8px; }' +
+            '.bg-green-50 { background-color: #f0fdf4; padding: 15px; border-radius: 8px; }' +
+            '.bg-yellow-50 { background-color: #fefce8; padding: 15px; border-radius: 8px; }' +
+            '.grid { display: grid; gap: 15px; }' +
+            '.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }' +
+            '.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }' +
+            '.text-center { text-align: center; }' +
+            '.font-bold { font-weight: bold; }' +
+            '.font-semibold { font-weight: 600; }' +
+            '.text-lg { font-size: 1.125rem; }' +
+            '.text-md { font-size: 1rem; }' +
+            '.text-sm { font-size: 0.875rem; }' +
+            '.text-gray-900 { color: #111827; }' +
+            '.text-gray-600 { color: #4b5563; }' +
+            '.text-green-600 { color: #059669; }' +
+            '.text-blue-600 { color: #2563eb; }' +
+            '.text-purple-600 { color: #9333ea; }' +
+            '.text-orange-600 { color: #ea580c; }' +
+            '.text-green-800 { color: #166534; }' +
+            '.text-blue-800 { color: #1e40af; }' +
+            '.text-yellow-800 { color: #854d0e; }' +
+            '.text-yellow-900 { color: #713f12; }' +
+            '.space-y-2 > * + * { margin-top: 0.5rem; }' +
+            '.space-y-6 > * + * { margin-top: 1.5rem; }' +
+            '.mb-2 { margin-bottom: 0.5rem; }' +
+            '.mb-3 { margin-bottom: 0.75rem; }' +
+            '.p-4 { padding: 1rem; }' +
+            '.rounded-lg { border-radius: 0.5rem; }' +
+            '.border { border: 1px solid #e5e7eb; }' +
+            '.border-gray-200 { border-color: #e5e7eb; }' +
+            '.flex { display: flex; }' +
+            '.justify-between { justify-content: space-between; }' +
+            'ul { list-style-type: disc; margin-left: 20px; }' +
+            '@media print { body { margin: 0; } .no-print { display: none; } }' +
+            '</style></head><body>' +
+            reportContent +
+            '<script>window.onload = function() { window.print(); }</script>' +
+            '</body></html>';
+        
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+    }
+}
+
+// Dashboard initialisieren
+document.addEventListener('DOMContentLoaded', () => {
+    new CO2Dashboard();
+});
+</script>
+{% endblock %}

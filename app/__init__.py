@@ -75,6 +75,10 @@ def create_app():
     from .notification_routes import notification_bp
     app.register_blueprint(notification_bp)
     
+    # CO₂-Tracking-Blueprint registrieren
+    from .co2_routes import co2_bp
+    app.register_blueprint(co2_bp)
+    
     # Monitoring & Logging Blueprint registrieren
     app.register_blueprint(monitoring_bp)
     
