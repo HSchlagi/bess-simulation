@@ -131,6 +131,12 @@
 
 
 
+                <!-- Benachrichtigungen -->
+                <a href="{{ url_for('notifications.notification_center') }}" class="relative hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                    <i class="fas fa-bell mr-2"></i>Benachrichtigungen
+                    <span id="notificationBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </a>
+
                 <!-- Benutzer-Dropdown -->
                 <div class="relative group">
                     <button class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors">
@@ -185,6 +191,12 @@
                     <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
                 </a>
                 
+                <!-- Benachrichtigungen -->
+                <a href="{{ url_for('notifications.notification_center') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700 relative">
+                    <i class="fas fa-bell mr-2"></i>Benachrichtigungen
+                    <span id="mobileNotificationBadge" class="absolute top-2 right-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+                </a>
+
                 <!-- Benutzer-Bereich -->
                 {% if session.get('user') %}
                     <div class="border-t border-blue-500 pt-2 mt-2">
