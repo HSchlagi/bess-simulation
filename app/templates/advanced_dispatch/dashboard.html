@@ -466,6 +466,12 @@
                 return;
             }
             
+            // Button deaktivieren während Optimierung
+            const btn = document.getElementById('standardOptimizeBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Optimierung läuft...';
+            
             try {
                 const response = await fetch('/advanced-dispatch/api/optimize', {
                     method: 'POST',
@@ -475,7 +481,7 @@
                     body: JSON.stringify({
                         project_id: projectId,
                         current_soc_pct: parseFloat(soc),
-                        market_conditions: {}
+                        type: 'standard'
                     })
                 });
                 
@@ -487,9 +493,19 @@
                     document.getElementById('gridServicesRevenue').textContent = (data.grid_services.frequency_regulation + data.grid_services.voltage_support).toFixed(2) + ' €';
                     document.getElementById('demandResponseRevenue').textContent = data.demand_response_revenue.toFixed(2) + ' €';
                     document.getElementById('totalRevenue').textContent = data.total_revenue_eur.toFixed(2) + ' €';
+                    
+                    // Erfolgsmeldung
+                    showNotification('Standard-Optimierung erfolgreich abgeschlossen!', 'success');
+                } else {
+                    showNotification('Fehler bei Optimierung: ' + data.error, 'error');
                 }
             } catch (error) {
                 console.error('Fehler bei Standard-Optimierung:', error);
+                showNotification('Fehler bei Optimierung: ' + error.message, 'error');
+            } finally {
+                // Button wieder aktivieren
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 
@@ -502,8 +518,14 @@
                 return;
             }
             
+            // Button deaktivieren während Optimierung
+            const btn = document.getElementById('advancedOptimizeBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Advanced Optimierung läuft...';
+            
             try {
-                const response = await fetch('/advanced-dispatch/api/advanced-optimization', {
+                const response = await fetch('/advanced-dispatch/api/optimize', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -511,8 +533,7 @@
                     body: JSON.stringify({
                         project_id: projectId,
                         current_soc_pct: parseFloat(soc),
-                        use_advanced_algorithms: true,
-                        market_conditions: {}
+                        type: 'advanced'
                     })
                 });
                 
@@ -524,10 +545,43 @@
                     document.getElementById('gridServicesRevenue').textContent = (data.grid_services.frequency_regulation + data.grid_services.voltage_support).toFixed(2) + ' €';
                     document.getElementById('demandResponseRevenue').textContent = data.demand_response_revenue.toFixed(2) + ' €';
                     document.getElementById('totalRevenue').textContent = data.total_revenue_eur.toFixed(2) + ' €';
+                    
+                    // Erfolgsmeldung
+                    showNotification('Advanced-Optimierung erfolgreich abgeschlossen!', 'success');
+                } else {
+                    showNotification('Fehler bei Optimierung: ' + data.error, 'error');
                 }
             } catch (error) {
                 console.error('Fehler bei Advanced-Optimierung:', error);
+                showNotification('Fehler bei Optimierung: ' + error.message, 'error');
+            } finally {
+                // Button wieder aktivieren
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
+        }
+
+        // Notification System
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' :
+                type === 'error' ? 'bg-red-500 text-white' :
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Nach 3 Sekunden entfernen
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
 
         // Mehrfache Initialisierung für bessere Kompatibilität

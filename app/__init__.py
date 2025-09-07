@@ -39,6 +39,9 @@ def create_app():
 
     db.init_app(app)
     csrf.init_app(app)
+    
+    # CSRF für API-Endpoints deaktivieren
+    csrf.exempt_blueprints = ['advanced_dispatch_bp']
 
     from .routes import main_bp
     app.register_blueprint(main_bp)
