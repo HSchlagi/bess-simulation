@@ -162,6 +162,12 @@ def mark_all_read():
         logger.error(f"Fehler beim Markieren aller Benachrichtigungen: {e}")
         return jsonify({'error': 'Fehler beim Markieren aller Benachrichtigungen'}), 500
 
+@notification_bp.route('/settings')
+@login_required
+def notification_settings_page():
+    """Benachrichtigungs-Einstellungen Seite"""
+    return render_template('notifications/settings.html')
+
 @notification_bp.route('/api/settings', methods=['GET', 'POST'])
 @login_required
 def notification_settings():
