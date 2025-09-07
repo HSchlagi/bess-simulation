@@ -35,6 +35,79 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+def get_user_email(user_id):
+    """E-Mail-Adresse des Benutzers abrufen"""
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT email FROM user WHERE id = ?', (user_id,))
+        result = cursor.fetchone()
+        conn.close()
+        return result['email'] if result else None
+    except Exception as e:
+        logger.error(f"Fehler beim Abrufen der E-Mail-Adresse: {e}")
+        return None
+
+def send_notification_email(user_id, subject, message, notification_type='info'):
+    """E-Mail-Benachrichtigung senden"""
+    try:
+        # E-Mail-Adresse des Benutzers abrufen
+        user_email = get_user_email(user_id)
+        if not user_email:
+            logger.warning(f"Keine E-Mail-Adresse für Benutzer {user_id} gefunden")
+            return False
+        
+        # E-Mail-Service importieren und verwenden
+        from .email_service import email_service
+        
+        # HTML-Body erstellen
+        html_body = f"""
+        <!DOCTYPE html>
+        <html lang="de">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>BESS-Simulation Benachrichtigung</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background-color: #3B82F6; color: white; padding: 20px; border-radius: 8px 8px 0 0; text-align: center; }}
+                .content {{ background-color: #f5f5f5; padding: 20px; border-radius: 0 0 8px 8px; }}
+                .footer {{ color: #666; font-size: 12px; margin-top: 30px; text-align: center; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>🔔 BESS-Simulation Benachrichtigung</h1>
+            </div>
+            <div class="content">
+                <p>{message}</p>
+            </div>
+            <div class="footer">
+                Diese E-Mail wurde automatisch von der BESS-Simulation generiert.
+            </div>
+        </body>
+        </html>
+        """
+        
+        # E-Mail senden
+        success = email_service.send_notification(
+            to_email=user_email,
+            subject=subject,
+            body=message,
+            html_body=html_body
+        )
+        
+        if success:
+            logger.info(f"E-Mail-Benachrichtigung erfolgreich gesendet an {user_email}")
+        else:
+            logger.error(f"Fehler beim Senden der E-Mail-Benachrichtigung an {user_email}")
+        
+        return success
+        
+    except Exception as e:
+        logger.error(f"Fehler beim Senden der E-Mail-Benachrichtigung: {e}")
+        return False
+
 @notification_bp.route('/')
 @login_required
 def notification_center():
@@ -469,3 +542,33 @@ def send_welcome_notification(user_id: int, user_name: str):
         data=data,
         channels=['in_app', 'email']
     )
+
+@notification_bp.route('/api/test-email', methods=['POST'])
+@login_required
+def test_email_notification():
+    """Test-E-Mail-Benachrichtigung senden"""
+    try:
+        data = request.get_json()
+        user_id = session['user_id']
+        
+        subject = data.get('subject', '🔔 Test-Benachrichtigung - BESS-Simulation')
+        message = data.get('message', 'Dies ist eine Test-E-Mail-Benachrichtigung von der BESS-Simulation.')
+        
+        # E-Mail senden
+        success = send_notification_email(user_id, subject, message)
+        
+        if success:
+            return jsonify({
+                'success': True, 
+                'message': 'Test-E-Mail erfolgreich gesendet',
+                'user_email': get_user_email(user_id)
+            })
+        else:
+            return jsonify({
+                'success': False, 
+                'message': 'Fehler beim Senden der Test-E-Mail'
+            }), 500
+        
+    except Exception as e:
+        logger.error(f"Fehler beim Senden der Test-E-Mail: {e}")
+        return jsonify({'error': 'Fehler beim Senden der Test-E-Mail'}), 500

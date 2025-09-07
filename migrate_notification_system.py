@@ -41,7 +41,7 @@ def migrate_notification_system():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 sent_at TIMESTAMP,
                 expires_at TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
+                FOREIGN KEY (user_id) REFERENCES user (id)
             )
         ''')
         
@@ -60,7 +60,7 @@ def migrate_notification_system():
                 notification_types TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
+                FOREIGN KEY (user_id) REFERENCES user (id)
             )
         ''')
         
@@ -94,7 +94,7 @@ def migrate_notification_system():
                 user_agent TEXT,
                 active BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES users (id)
+                FOREIGN KEY (user_id) REFERENCES user (id)
             )
         ''')
         
