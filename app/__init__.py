@@ -46,6 +46,10 @@ def create_app():
     from .routes import main_bp
     app.register_blueprint(main_bp)
     
+    # PWA Blueprint registrieren
+    from .pwa_routes import pwa_bp
+    app.register_blueprint(pwa_bp)
+    
     # Neues Konfigurations-Blueprint registrieren
     from .routes_config import config_bp
     app.register_blueprint(config_bp)

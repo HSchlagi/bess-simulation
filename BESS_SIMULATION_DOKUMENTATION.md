@@ -1,10 +1,10 @@
 # 📚 BESS Simulation - Vollständige Dokumentation
 
-**Version:** 2.1  
+**Version:** 2.2  
 **Datum:** September 2025  
 **Autor:** Ing. Heinz Schlagintweit  
 **Repository:** https://github.com/HSchlagi/bess-simulation  
-**Letzte Aktualisierung:** Smart Grid & IoT Integration, aWattar API Integration & ML & KI Dashboard
+**Letzte Aktualisierung:** Progressive Web App (PWA) Features, Advanced Dispatch & Grid Services, Smart Grid & IoT Integration
 
 ---
 
@@ -55,7 +55,8 @@
    - 5.5 ML & KI-API
    - 5.6 Datenimport-API
    - 5.7 Export-API
-   - 5.8 Fehlerbehandlung und Statuscodes
+   - 5.8 Progressive Web App (PWA) Features
+   - 5.9 Fehlerbehandlung und Statuscodes
 
 ### **Teil IV: Erweiterte Themen**
 6. [Troubleshooting](#troubleshooting)
@@ -4954,6 +4955,274 @@ CREATE TABLE esg_reports (
 
 ---
 
+## 5. Advanced Dispatch & Grid Services
+
+### 5.1 Übersicht
+
+Das **Advanced Dispatch & Grid Services** System erweitert die BESS-Simulation um professionelle Optimierungsalgorithmen und Grid-Services für den österreichischen Energiemarkt.
+
+**Hauptfunktionen:**
+- Multi-Markt-Arbitrage (Spot, Intraday, Regelreserve)
+- Grid-Services (Frequenzregelung, Spannungshaltung)
+- Virtuelles Kraftwerk Integration
+- Demand Response Management
+- Grid Code Compliance
+- Advanced Optimization Algorithms (MILP/SDP)
+
+### 5.2 Multi-Markt-Arbitrage
+
+**Spot-Markt Arbitrage:**
+- Automatische Erkennung von Preisunterschieden
+- Optimale Lade-/Entladezeiten basierend auf Spotpreisen
+- Integration mit APG und aWATTar Daten
+
+**Intraday-Markt:**
+- Kurzfristige Handelsmöglichkeiten
+- 5€/MWh Bonus für Intraday-Teilnahme
+- Real-time Preisverfolgung
+
+**Regelreserve:**
+- FCR (Frequency Containment Reserve)
+- aFRR (automatic Frequency Restoration Reserve)
+- 2€/MW/h Bonus für Reservebereitstellung
+
+### 5.3 Grid Services
+
+**Frequenzregelung:**
+- Standard: 15€/MW/h
+- Advanced: 25€/MW/h
+- Automatische Frequenzstabilisierung
+
+**Spannungsunterstützung:**
+- Standard: 8€/MW/h
+- Advanced: 12€/MW/h
+- Blindleistungsbereitstellung
+
+**Black Start Capability:**
+- Advanced: 5€/MW/h
+- Netzaufbau nach Blackout
+- Kritische Infrastruktur-Unterstützung
+
+### 5.4 Virtuelles Kraftwerk (VPP)
+
+**Portfolio-Management:**
+- Aggregation mehrerer BESS-Anlagen
+- Zentrale Steuerung und Optimierung
+- Skalierbare Architektur
+
+**Marktteilnahme:**
+- Pooling für größere Marktvolumina
+- Risikostreuung über mehrere Standorte
+- Optimierte Erlösmaximierung
+
+### 5.5 Demand Response Management
+
+**Automatisierte Events:**
+- Standard: 20€/MW/h
+- Advanced: 35€/MW/h
+- Real-time Laststeuerung
+
+**Event-Management:**
+- Automatische Erkennung von DR-Signalen
+- Intelligente Lastreduktion
+- Vergütungsoptimierung
+
+### 5.6 Grid Code Compliance
+
+**Österreichische Netzanschlussbedingungen:**
+- Frequenzbereich: 49.5-50.5 Hz
+- Spannungsbereich: ±10% Un
+- Blindleistungsbereich: ±0.4 Pn
+- Netzanschlusskapazität: 100% Pn
+- Netzanschlussenergie: 100% En
+
+**Compliance-Monitoring:**
+- Echtzeitüberwachung aller Parameter
+- Automatische Alarmierung bei Verletzungen
+- Compliance-Reporting
+
+### 5.7 Advanced Optimization Algorithms
+
+**Standard-Optimierung:**
+- Einfache Arbitrage-Algorithmen
+- Lineare Optimierung
+- Schnelle Berechnung (< 1 Sekunde)
+
+**Advanced-Optimierung:**
+- Mixed Integer Linear Programming (MILP)
+- Stochastic Dynamic Programming (SDP)
+- Multi-Objective Optimization
+- Erweiterte Berechnung (1-5 Sekunden)
+
+### 5.8 Progressive Web App (PWA) Features
+
+**Vollständige PWA-Implementierung für mobile und Desktop-Nutzung:**
+
+#### 5.8.1 PWA Manifest
+- **App-Konfiguration:** Vollständige PWA-Konfiguration mit Icons und Shortcuts
+- **Icon-Set:** 8 verschiedene Größen (72x72 bis 512x512)
+- **App-Shortcuts:** Schnellzugriff auf Advanced Dispatch, CO₂-Tracking, Simulation
+- **Screenshots:** Desktop und Mobile Screenshots für App-Store
+- **Edge Side Panel:** Support für Microsoft Edge
+
+#### 5.8.2 Service Worker
+- **Offline-Funktionalität:** Vollständige Simulationen ohne Internetverbindung
+- **Intelligentes Caching:** Cache-First/Network-First Strategien
+- **Background Sync:** Automatische Synchronisation im Hintergrund
+- **Push-Notifications:** Native Benachrichtigungen mit Action-Buttons
+- **Offline-Fallback:** Elegante Offline-Seite mit Funktionalität
+
+#### 5.8.3 Native Device Features
+- **Camera-Integration:** Foto-Aufnahme für BESS-Dokumentation
+- **GPS-Lokalisierung:** Standort-basierte Features für BESS-Standorte
+- **Biometric-Auth:** Fingerabdruck/Gesichtserkennung für sichere Anmeldung
+- **Push-Notifications:** Native Benachrichtigungen auf mobilen Geräten
+
+#### 5.8.4 PWA Dashboard
+- **Status-Monitoring:** Service Worker, Push-Notifications, Offline-Modus
+- **Cache-Management:** 3-Tier Cache-System (Static, Dynamic, API)
+- **Feature-Tests:** Camera, GPS, Biometric-Auth Buttons
+- **Install-Prompt:** Intelligente App-Installation
+
+#### 5.8.5 Offline-Funktionalität
+- **Offline-Simulationen:** Vollständige BESS-Simulationen ohne Internet
+- **Demo-Marktdaten:** Intelligente Offline-Daten-Generierung
+- **Cache-Status:** Echtzeitüberwachung der Cache-Größen
+- **Retry-Mechanismus:** Automatische Verbindungswiederherstellung
+
+#### 5.8.6 PWA API-Endpoints
+```
+GET /pwa/api/push-subscription     # Push-Notification Subscription
+POST /pwa/api/upload-photo         # Foto-Upload für Dokumentation
+GET /pwa/api/offline-data          # Offline-Daten bereitstellen
+POST /pwa/api/background-sync      # Background Sync auslösen
+GET /pwa/api/pwa-status            # PWA-Status abfragen
+POST /pwa/api/geolocation          # Geolocation-Daten speichern
+POST /pwa/api/biometric-auth       # Biometric Authentication
+GET /pwa/api/cache-status          # Cache-Status abfragen
+POST /pwa/api/clear-cache          # Cache leeren
+```
+
+#### 5.8.7 PWA-Installation
+- **Desktop:** Chrome/Edge "Installieren" Button, Firefox Adressleiste
+- **Mobile:** "Zur Startseite hinzufügen" Funktionalität
+- **App-Icon:** Erscheint auf Homescreen/Desktop
+- **Native App-Erfahrung:** Vollbild-Modus ohne Browser-UI
+
+#### 5.8.8 Cache-Management
+- **Static Cache:** 2.5 MB (HTML, CSS, JS, Icons)
+- **Dynamic Cache:** 1.2 MB (API-Responses, Marktdaten)
+- **API Cache:** 0.8 MB (Projektdaten, Simulationen)
+- **Intelligente Strategien:** Cache-First für statische Assets, Network-First für dynamische Daten
+
+#### 5.8.9 Live verfügbar unter:
+- **PWA Dashboard:** `/pwa/`
+- **PWA API:** `/pwa/api/*`
+- **Offline-Seite:** `/static/offline.html`
+- **Service Worker:** `/static/sw.js`
+- **PWA Manifest:** `/static/manifest.json`
+
+### 5.9 API-Endpoints
+
+**Optimierungs-API:**
+```
+POST /advanced-dispatch/api/optimize
+{
+  "project_id": 1,
+  "current_soc_pct": 50,
+  "type": "standard" | "advanced"
+}
+```
+
+**Marktdaten-API:**
+```
+GET /advanced-dispatch/api/market-data
+```
+
+**Projekt-API:**
+```
+GET /advanced-dispatch/api/projects
+```
+
+### 5.9 Optimierungsergebnisse
+
+**Standard-Optimierung (BESS Hinterstoder, 2 MW / 8 MWh, 50% SOC):**
+- Arbitrage-Erlös: 208.12 €
+- Grid Services: 46.00 €
+- Demand Response: 40.00 €
+- **Gesamterlös: 294.12 €**
+
+**Advanced-Optimierung (gleiche Parameter):**
+- Arbitrage-Erlös: 301.49 €
+- Grid Services: 84.00 €
+- Demand Response: 70.00 €
+- **Gesamterlös: 455.49 €**
+
+### 5.10 Frontend-Features
+
+**Dashboard:**
+- Projektauswahl mit echten BESS-Parametern
+- SOC-Slider für aktuelle Ladezustände
+- Real-time Marktdaten-Anzeige
+- Optimierungsergebnisse mit Charts
+
+**Benutzerfreundlichkeit:**
+- Button-Status mit Spinner während Optimierung
+- Benachrichtigungssystem für Erfolg/Fehler
+- Responsive Design mit Tailwind CSS
+- Intuitive Bedienung
+
+### 5.11 Technische Implementierung
+
+**Backend:**
+- Flask Blueprint: `advanced_dispatch_bp`
+- SQLite-Integration für Projektdaten
+- CSRF-Schutz für API-Endpoints deaktiviert
+- Fehlerbehandlung und Logging
+
+**Frontend:**
+- JavaScript mit async/await
+- Chart.js für Datenvisualisierung
+- Tailwind CSS für Styling
+- Font Awesome Icons
+
+**Datenbank:**
+- Projekte mit korrekten BESS-Parametern
+- Spotpreise und Marktdaten
+- Optimierungshistorie
+- Compliance-Logs
+
+### 5.12 Sicherheit & Backup
+
+**Git-Repository:**
+- Vollständige Versionskontrolle
+- Repository: https://github.com/HSchlagi/bess-simulation
+- Letzter Commit: "Advanced Dispatch Optimierungs-Buttons funktionsfähig gemacht"
+
+**Datenbank-Backup:**
+- SQL-Dump: `bess_backup_2025-09-07_22-29-30.sql` (140.24 MB)
+- Komprimiert: `bess_backup_2025-09-07_22-29-30.sql.zip` (7.8 MB)
+- Automatische Backup-Erstellung
+
+### 5.13 Roadmap
+
+**Kurzfristig:**
+- Erweiterte Optimierungsalgorithmen
+- Integration weiterer Marktdatenquellen
+- Performance-Optimierungen
+
+**Mittelfristig:**
+- Machine Learning Integration
+- Predictive Analytics
+- Automatische Parameteranpassung
+
+**Langfristig:**
+- Integration mit Blockchain-Technologie
+- Dezentrale Grid-Services
+- Internationale Marktteilnahme
+
+---
+
 **BESS Simulation** - Professionelle Batteriespeicher-Simulation für erneuerbare Energien 🚀
 
-*Letzte Aktualisierung: 07. Januar 2025 - CO₂-Tracking & Nachhaltigkeits-Dashboard vollständig implementiert und getestet*
+*Letzte Aktualisierung: 07. September 2025 - Advanced Dispatch & Grid Services vollständig implementiert und getestet*

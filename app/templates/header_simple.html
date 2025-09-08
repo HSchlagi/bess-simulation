@@ -12,6 +12,21 @@
 
             <!-- Desktop Navigation - Mit Dropdown-Menüs -->
             <div class="hidden md:flex items-center space-x-1">
+                <!-- PWA Install Button -->
+                <button id="pwa-install-button" class="hidden bg-green-600 hover:bg-green-700 px-3 py-2 rounded-md text-sm font-medium transition-colors" title="App installieren">
+                    <i class="fas fa-download mr-2"></i>Installieren
+                </button>
+                
+                <!-- PWA Status -->
+                <div id="pwa-status" class="flex items-center text-sm">
+                    <div class="flex items-center text-green-500">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        Online
+                    </div>
+                </div>
+                
                 <!-- Multi-User Dashboard (Hauptdashboard) -->
                 <a href="{{ url_for('multi_user.dashboard') }}" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-green-600">
                     <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
@@ -97,6 +112,9 @@
                         </a>
                         <a href="{{ url_for('advanced_dispatch.dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-microchip mr-2"></i>Advanced Dispatch & Grid Services
+                        </a>
+                        <a href="{{ url_for('pwa.pwa_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
+                            <i class="fas fa-mobile-alt mr-2"></i>PWA Dashboard
                         </a>
                         <a href="{{ url_for('main.bess_simulation_enhanced') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-play mr-2"></i>BESS-Simulation
