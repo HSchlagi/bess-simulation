@@ -301,6 +301,46 @@ class AWattarDataFetcher:
         except Exception as e:
             logger.error(f"Failed to get latest prices: {e}")
             return []
+    
+    def get_prices_for_range(self, start_date: str, end_date: str) -> List[Dict]:
+        """
+        Holt Preise für einen spezifischen Datumsbereich aus der Datenbank
+        
+        Args:
+            start_date: Startdatum (YYYY-MM-DD)
+            end_date: Enddatum (YYYY-MM-DD)
+            
+        Returns:
+            List[Dict]: Spot-Preise für den Zeitraum
+        """
+        try:
+            # Datumsstrings zu datetime-Objekten konvertieren
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # +1 Tag für Enddatum
+            
+            prices = SpotPrice.query.filter(
+                and_(
+                    SpotPrice.source == 'aWATTAR',
+                    SpotPrice.timestamp >= start_dt,
+                    SpotPrice.timestamp < end_dt
+                )
+            ).order_by(SpotPrice.timestamp.asc()).all()
+            
+            logger.info(f"Retrieved {len(prices)} prices for range {start_date} to {end_date}")
+            
+            return [{
+                'id': price.id,
+                'timestamp': price.timestamp.isoformat(),
+                'price_eur_mwh': price.price_eur_mwh,
+                'source': price.source,
+                'region': price.region,
+                'price_type': price.price_type,
+                'created_at': price.created_at.isoformat() if price.created_at else None
+            } for price in prices]
+            
+        except Exception as e:
+            logger.error(f"Failed to get prices for range {start_date} to {end_date}: {e}")
+            return []
 
 
 # Globale Instanz für einfache Verwendung

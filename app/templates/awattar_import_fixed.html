@@ -221,8 +221,8 @@ function awattarIntegration() {
             latest_price: 'N/A'
         },
         importForm: {
-            startDate: '2025-09-06',
-            endDate: '2025-09-07'
+            startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            endDate: new Date().toISOString().split('T')[0]
         },
 
         async init() {
@@ -254,8 +254,11 @@ function awattarIntegration() {
             this.importResult = null;
             
             try {
-                const startDate = this.importForm.startDate || '2025-09-06';
-                const endDate = this.importForm.endDate || '2025-09-07';
+                // Fallback-Daten wenn keine eingegeben - letzte 7 Tage
+                const today = new Date();
+                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const startDate = this.importForm.startDate || weekAgo.toISOString().split('T')[0];
+                const endDate = this.importForm.endDate || today.toISOString().split('T')[0];
                 
                 console.log('Starting import with dates:', startDate, 'to', endDate);
                 

@@ -368,6 +368,8 @@ function updateSpotPriceChart(prices) {
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
+            aspectRatio: 1.2, // Höhere Grafik für bessere Y-Achsen-Lesbarkeit
             plugins: {
                 legend: {
                     display: true
@@ -378,7 +380,26 @@ function updateSpotPriceChart(prices) {
                     beginAtZero: true,
                     title: {
                         display: true,
-                        text: 'Preis (€/MWh)'
+                        text: 'Preis (€/MWh)',
+                        font: {
+                            size: 14,
+                            weight: 'bold'
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        callback: function(value) {
+                            return value + ' €/MWh';
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 11
+                        }
                     }
                 }
             }
@@ -498,7 +519,17 @@ async function refreshAPGData() {
             
             // Datenquelle-Status aktualisieren
             const statusElement = document.getElementById('dataStatus');
-            statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten (Live)</span>';
+            if (result.source) {
+                if (result.source.includes('Live')) {
+                    statusElement.innerHTML = `Status: <span class="font-medium text-green-600">✅ ${result.source}</span>`;
+                } else if (result.source.includes('Demo')) {
+                    statusElement.innerHTML = `Status: <span class="font-medium text-yellow-600">⚠️ ${result.source}</span>`;
+                } else {
+                    statusElement.innerHTML = `Status: <span class="font-medium text-blue-600">📊 ${result.source}</span>`;
+                }
+            } else {
+                statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Daten aktualisiert</span>';
+            }
             
             // Daten neu laden
             loadSpotPrices();
@@ -592,12 +623,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Prüfe ob bereits Werte gesetzt sind
     if (!startDateInput.value || !endDateInput.value) {
-        // Standard-Datum auf 2024 setzen (wo echte APG-Daten verfügbar sind)
-        startDateInput.value = '2024-01-01';
-        endDateInput.value = '2024-12-31';
+        // Standard: Letzte 7 Tage (wo echte aWattar-Daten verfügbar sind)
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));
         
-        // Zeitraum auf "Dieses Jahr" setzen
-        timeRangeSelect.value = 'year';
+        startDateInput.value = weekAgo.toISOString().split('T')[0];
+        endDateInput.value = today.toISOString().split('T')[0];
+        
+        // Zeitraum auf "Diese Woche" setzen
+        timeRangeSelect.value = 'week';
         
         // Nur beim ersten Laden Daten laden
         loadSpotPrices();

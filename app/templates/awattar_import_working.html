@@ -107,12 +107,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Startdatum</label>
-                    <input type="date" id="start-date" value="2025-09-06"
+                    <input type="date" id="start-date" 
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
-                    <input type="date" id="end-date" value="2025-09-07"
+                    <input type="date" id="end-date"
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
             </div>
@@ -291,6 +291,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             if (data.success) {
                 showResult(true, data.message, data.data);
+                // Grafik für den importierten Datumsbereich aktualisieren
+                await loadChartForDateRange(startDate, endDate);
             } else {
                 showResult(false, data.error);
             }
@@ -335,35 +337,92 @@ document.addEventListener('DOMContentLoaded', async function() {
             const response = await fetch('/api/awattar/status');
             const data = await response.json();
             
+            console.log('Status response:', data);
+            
             if (data.success) {
-                document.getElementById('api-status').textContent = data.status.api_connection || 'OK';
-                document.getElementById('db-records').textContent = data.status.database_records || '24';
-                document.getElementById('last-24h').textContent = data.status.last_24h || '24';
-                document.getElementById('latest-price').textContent = data.status.latest_price || '45.67 €/MWh';
+                // Status-Elemente aktualisieren
+                const apiStatus = document.getElementById('api-status');
+                const dbRecords = document.getElementById('db-records');
+                const last24h = document.getElementById('last-24h');
+                const latestPrice = document.getElementById('latest-price');
+                
+                if (apiStatus) apiStatus.textContent = data.status.api_connection || 'OK';
+                if (dbRecords) dbRecords.textContent = data.status.database_records || '0';
+                if (last24h) last24h.textContent = data.status.last_24h || '0';
+                if (latestPrice) latestPrice.textContent = data.status.latest_price || 'N/A';
+                
+                console.log('Status updated successfully');
+            } else {
+                console.error('Status API returned error:', data.error);
+                // Status auf Fehler setzen
+                const apiStatus = document.getElementById('api-status');
+                const dbRecords = document.getElementById('db-records');
+                const last24h = document.getElementById('last-24h');
+                const latestPrice = document.getElementById('latest-price');
+                
+                if (apiStatus) apiStatus.textContent = 'Fehler';
+                if (dbRecords) dbRecords.textContent = 'N/A';
+                if (last24h) last24h.textContent = 'N/A';
+                if (latestPrice) latestPrice.textContent = 'N/A';
             }
         } catch (error) {
             console.error('Status error:', error);
             // Status auf Fehler setzen
-            document.getElementById('api-status').textContent = 'Fehler';
-            document.getElementById('db-records').textContent = 'N/A';
-            document.getElementById('last-24h').textContent = 'N/A';
-            document.getElementById('latest-price').textContent = 'N/A';
+            const apiStatus = document.getElementById('api-status');
+            const dbRecords = document.getElementById('db-records');
+            const last24h = document.getElementById('last-24h');
+            const latestPrice = document.getElementById('latest-price');
+            
+            if (apiStatus) apiStatus.textContent = 'Fehler';
+            if (dbRecords) dbRecords.textContent = 'N/A';
+            if (last24h) last24h.textContent = 'N/A';
+            if (latestPrice) latestPrice.textContent = 'N/A';
         }
     }
     
     async function loadRealChart() {
+        console.log('Loading real chart data...');
+        
         try {
             const response = await fetch('/api/awattar/latest?hours=24');
             const data = await response.json();
             
+            console.log('Chart data response:', data);
+            
             if (data.success && data.data && data.data.length > 0) {
+                console.log(`Creating chart with ${data.data.length} data points`);
                 createRealChart(data.data);
             } else {
+                console.log('No data available, creating empty chart');
                 createEmptyChart();
             }
         } catch (error) {
             console.error('Chart loading error:', error);
             createEmptyChart();
+        }
+    }
+    
+    async function loadChartForDateRange(startDate, endDate) {
+        console.log(`Loading chart data for range: ${startDate} to ${endDate}`);
+        
+        try {
+            // API-Endpunkt für spezifischen Datumsbereich erstellen
+            const response = await fetch(`/api/awattar/range?start_date=${startDate}&end_date=${endDate}`);
+            const data = await response.json();
+            
+            console.log('Range chart data response:', data);
+            
+            if (data.success && data.data && data.data.length > 0) {
+                console.log(`Creating chart with ${data.data.length} data points for range`);
+                createRealChart(data.data);
+            } else {
+                console.log('No data available for range, creating empty chart');
+                createEmptyChart();
+            }
+        } catch (error) {
+            console.error('Range chart loading error:', error);
+            // Fallback auf letzte 24h
+            await loadRealChart();
         }
     }
     
@@ -397,12 +456,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                aspectRatio: 1.2, // Höhere Grafik für bessere Y-Achsen-Lesbarkeit
                 scales: {
                     y: {
                         beginAtZero: false,
                         title: {
                             display: true,
-                            text: 'Preis (€/MWh)'
+                            text: 'Preis (€/MWh)',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return value + ' €/MWh';
+                            }
                         }
                     },
                     x: {
@@ -436,27 +508,49 @@ document.addEventListener('DOMContentLoaded', async function() {
                     tension: 0.1
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'Preis (€/MWh)'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            aspectRatio: 1.2, // Höhere Grafik für bessere Y-Achsen-Lesbarkeit
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Preis (€/MWh)',
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12
+                                        },
+                                        callback: function(value) {
+                                            return value + ' €/MWh';
+                                        }
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Zeit'
+                                    }
+                                }
+                            }
                         }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Zeit'
-                        }
-                    }
-                }
-            }
         });
     }
+    
+    // Standard-Daten setzen: Letzte 7 Tage
+    document.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        document.getElementById('start-date').value = weekAgo.toISOString().split('T')[0];
+        document.getElementById('end-date').value = today.toISOString().split('T')[0];
+    });
 });
 </script>
 {% endblock %}

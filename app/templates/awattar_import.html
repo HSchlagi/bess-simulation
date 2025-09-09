@@ -242,8 +242,8 @@
                     latest_price_timestamp: null
                 },
                 importForm: {
-                    startDate: new Date().toISOString().split('T')[0],
-                    endDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                    endDate: new Date().toISOString().split('T')[0]
                 },
                 importResult: null,
                 priceChart: null,
@@ -258,17 +258,29 @@
                 const response = await fetch('/api/awattar/status');
                 const data = await response.json();
                 
+                console.log('Status response:', data);
+                
                 if (data.success) {
                     this.status = data.status;
+                    console.log('Status updated successfully');
+                } else {
+                    console.error('Status API returned error:', data.error);
+                    // Fallback-Status für Demo
+                    this.status = {
+                        api_connection: 'Fehler',
+                        database_records: 'N/A',
+                        last_24h: 'N/A',
+                        latest_price: 'N/A'
+                    };
                 }
             } catch (error) {
                 console.error('Fehler beim Laden des Status:', error);
                 // Fallback-Status für Demo
                 this.status = {
-                    api_connection: 'OK',
-                    database_records: '24',
-                    last_24h: '24',
-                    latest_price: '45.67 €/MWh'
+                    api_connection: 'Fehler',
+                    database_records: 'N/A',
+                    last_24h: 'N/A',
+                    latest_price: 'N/A'
                 };
             }
         },
@@ -278,9 +290,11 @@
             this.importResult = null;
             
             try {
-                // Fallback-Daten wenn keine eingegeben
-                const startDate = this.importForm.startDate || '2025-09-06';
-                const endDate = this.importForm.endDate || '2025-09-07';
+                // Fallback-Daten wenn keine eingegeben - letzte 7 Tage
+                const today = new Date();
+                const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const startDate = this.importForm.startDate || weekAgo.toISOString().split('T')[0];
+                const endDate = this.importForm.endDate || today.toISOString().split('T')[0];
                 
                 console.log('Starting import with dates:', startDate, 'to', endDate);
                 
@@ -309,7 +323,8 @@
                 
                 if (data.success) {
                     await this.refreshStatus();
-                    await this.loadPriceChart();
+                    // Grafik für den importierten Datumsbereich aktualisieren
+                    await this.loadChartForDateRange(this.importForm.startDate, this.importForm.endDate);
                 }
             } catch (error) {
                 console.error('Import error:', error);
@@ -385,24 +400,24 @@
         },
 
                 async loadPriceChart() {
+                    console.log('Loading price chart data...');
+                    
                     try {
                         const response = await fetch('/api/awattar/latest?hours=24');
                         const data = await response.json();
                         
-                        if (data.success && data.data.length > 0) {
+                        console.log('Chart data response:', data);
+                        
+                        if (data.success && data.data && data.data.length > 0) {
+                            console.log(`Creating chart with ${data.data.length} data points`);
                             this.updatePriceChart(data.data);
+                        } else {
+                            console.log('No data available, creating empty chart');
+                            this.createEmptyChart();
                         }
                     } catch (error) {
                         console.error('Fehler beim Laden der Preisdaten:', error);
-                        // Demo-Chart-Daten
-                        const demoPrices = [];
-                        for (let i = 0; i < 24; i++) {
-                            demoPrices.push({
-                                timestamp: new Date(Date.now() - (23-i) * 60 * 60 * 1000).toISOString(),
-                                price_eur_mwh: 40 + Math.random() * 20
-                            });
-                        }
-                        this.updatePriceChart(demoPrices);
+                        this.createEmptyChart();
                     }
                 },
 
@@ -437,6 +452,7 @@
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
+                            aspectRatio: 1.2, // Höhere Grafik für bessere Y-Achsen-Lesbarkeit
                             plugins: {
                                 legend: {
                                     display: true,
@@ -448,7 +464,19 @@
                                     beginAtZero: false,
                                     title: {
                                         display: true,
-                                        text: 'Preis (€/MWh)'
+                                        text: 'Preis (€/MWh)',
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12
+                                        },
+                                        callback: function(value) {
+                                            return value + ' €/MWh';
+                                        }
                                     }
                                 },
                                 x: {
@@ -463,6 +491,85 @@
                             }
                         }
                     });
+                },
+                
+                createEmptyChart() {
+                    const ctx = document.getElementById('priceChart').getContext('2d');
+                    
+                    // Chart löschen falls vorhanden
+                    if (this.priceChart) {
+                        this.priceChart.destroy();
+                    }
+                    
+                    this.priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: ['Keine Daten'],
+                            datasets: [{
+                                label: 'Strompreis (€/MWh)',
+                                data: [0],
+                                borderColor: 'rgb(156, 163, 175)',
+                                backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                                tension: 0.1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            aspectRatio: 1.2, // Höhere Grafik für bessere Y-Achsen-Lesbarkeit
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Preis (€/MWh)',
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12
+                                        },
+                                        callback: function(value) {
+                                            return value + ' €/MWh';
+                                        }
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Zeit'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                },
+                
+                async loadChartForDateRange(startDate, endDate) {
+                    console.log(`Loading chart data for range: ${startDate} to ${endDate}`);
+                    
+                    try {
+                        // API-Endpunkt für spezifischen Datumsbereich
+                        const response = await fetch(`/api/awattar/range?start_date=${startDate}&end_date=${endDate}`);
+                        const data = await response.json();
+                        
+                        console.log('Range chart data response:', data);
+                        
+                        if (data.success && data.data && data.data.length > 0) {
+                            console.log(`Creating chart with ${data.data.length} data points for range`);
+                            this.updatePriceChart(data.data);
+                        } else {
+                            console.log('No data available for range, creating empty chart');
+                            this.createEmptyChart();
+                        }
+                    } catch (error) {
+                        console.error('Range chart loading error:', error);
+                        // Fallback auf letzte 24h
+                        await this.loadPriceChart();
+                    }
                 }
             }
         }
