@@ -1029,6 +1029,9 @@ function initializeDashboardCharts() {
     console.log('🔄 Initialisiere Dashboard-Charts...');
     
     try {
+        // Bestehende Charts zerstören
+        destroyExistingCharts();
+        
         // Chart.js Konfiguration
         Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
         Chart.defaults.color = '#7f8c8d';
@@ -1077,6 +1080,34 @@ function initializeDashboardCharts() {
     } catch (error) {
         console.error('❌ Fehler bei der Chart-Initialisierung:', error);
     }
+}
+
+// Bestehende Charts zerstören
+function destroyExistingCharts() {
+    console.log('🗑️ Zerstöre bestehende Charts...');
+    
+    if (dashboardCharts.monthly) {
+        dashboardCharts.monthly.destroy();
+        dashboardCharts.monthly = null;
+    }
+    if (dashboardCharts.co2) {
+        dashboardCharts.co2.destroy();
+        dashboardCharts.co2 = null;
+    }
+    if (dashboardCharts.seasonal) {
+        dashboardCharts.seasonal.destroy();
+        dashboardCharts.seasonal = null;
+    }
+    if (dashboardCharts.soc) {
+        dashboardCharts.soc.destroy();
+        dashboardCharts.soc = null;
+    }
+    if (dashboardCharts.revenue) {
+        dashboardCharts.revenue.destroy();
+        dashboardCharts.revenue = null;
+    }
+    
+    console.log('✅ Bestehende Charts zerstört');
 }
 
 // Monatliche Auswertung Chart
@@ -2263,16 +2294,15 @@ function generatePDF(projectId) {
         console.log('🔍 Dashboard-Daten verfügbar:', !!dashboardData);
         
         // Überprüfe ob Daten verfügbar sind
-        if (!simulationData) {
+        if (!simulationData && !dashboardData) {
             hideLoadingMessage();
             alert('Keine Simulationsdaten für den Export verfügbar. Bitte führen Sie zuerst eine Simulation durch.');
             return;
         }
         
-        if (!dashboardData) {
-            hideLoadingMessage();
-            alert('Keine Dashboard-Daten für den Export verfügbar. Bitte führen Sie zuerst eine Dashboard-Simulation durch.');
-            return;
+        // Für Dashboard-Export reichen Dashboard-Daten
+        if (!simulationData && dashboardData) {
+            console.log('📊 Verwende Dashboard-Daten für Export');
         }
         
         // Überprüfe ob Server erreichbar ist
@@ -2327,9 +2357,16 @@ function generatePDF(projectId) {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
             
+            // Lade-Animation sofort verstecken und Erfolgsmeldung anzeigen
             hideLoadingMessage();
             showSuccessMessage('PDF erfolgreich heruntergeladen!');
             console.log('✅ PDF erfolgreich heruntergeladen!');
+            
+            // Zusätzliche Sicherheit: Lade-Animation nach 1 Sekunde nochmal verstecken
+            setTimeout(() => {
+                hideLoadingMessage();
+                console.log('🔄 Zusätzliche Sicherheit: Lade-Animation versteckt');
+            }, 1000);
         })
         .catch(error => {
             console.error('❌ Fehler beim PDF-Download:', error);
@@ -2477,6 +2514,19 @@ function hideLoadingMessage() {
         loadingDiv.remove();
     }
 }
+
+// Notfall-Funktion um hängende Lade-Animation zu schließen
+function forceHideLoading() {
+    console.log('🚨 Force-Hide Loading aufgerufen');
+    hideLoadingMessage();
+    // Entferne alle möglichen Lade-Overlays
+    const overlays = document.querySelectorAll('[id*="loading"], [class*="loading"]');
+    overlays.forEach(overlay => overlay.remove());
+    console.log('✅ Alle Lade-Overlays entfernt');
+}
+
+// Globale Funktion für Browser-Console
+window.forceHideLoading = forceHideLoading;
 
 function showSuccessMessage(message) {
     // Erfolgsmeldung anzeigen
