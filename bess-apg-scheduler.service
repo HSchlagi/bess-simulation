@@ -1,0 +1,33 @@
+[Unit]
+Description=BESS APG Scheduler - Automatischer Import österreichischer Spot-Preise
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+User=bess
+Group=bess
+WorkingDirectory=/opt/bess
+ExecStart=/opt/bess/venv/bin/python /opt/bess/apg_scheduler_linux.py
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONPATH=/opt/bess
+Environment=PYTHONUNBUFFERED=1
+
+# Ressourcen-Limits
+MemoryMax=512M
+CPUQuota=50%
+
+# Restart-Policy
+Restart=on-failure
+RestartSec=300
+
+# Sicherheit
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/bess/instance /var/log/bess
+
+[Install]
+WantedBy=multi-user.target
