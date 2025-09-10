@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced ML Dashboard - BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    {% include 'header_simple.html' %}
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Page Title -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                🚀 Advanced ML Dashboard
+            </h1>
+            <p class="text-gray-600 mt-2">Revolutionäre BESS-Optimierung durch KI-gestützte Predictive Analytics</p>
+        </div>
+
+        <!-- Projekt auswählen - Ganz oben -->
+        <div class="bg-white rounded-xl shadow-lg p-6 card-hover mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">📁 Projekt auswählen</h2>
+                <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+                    <span class="w-2 h-2 bg-green-300 rounded-full inline-block mr-2"></span>
+                    Advanced ML Online
+                </span>
+            </div>
+            <div class="flex space-x-4">
+                <select id="project-select" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="bess-hinterstoder">BESS Hinterstoder</option>
+                    <option value="bess-salzburg">BESS Salzburg</option>
+                    <option value="bess-wien">BESS Wien</option>
+                </select>
+                <button onclick="loadProjectData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition">
+                    📊 Daten laden
+                </button>
+            </div>
+        </div>
+
+        <!-- Advanced Features Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            
+            <!-- Wetter-basierte PV-Prognosen -->
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">🌤️ Wetter-basierte PV-Prognosen</h2>
+                    <button onclick="startPVForecast()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        Prognose starten
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="h-64">
+                        <canvas id="pvForecastChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Erwartete PV-Leistung:</span>
+                            <span class="font-bold text-yellow-600" id="expected-pv">2.4 MW</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Wetter-Konfidenz:</span>
+                            <span class="font-bold text-green-600" id="weather-confidence">87%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Erweiterte Strompreis-Vorhersagen -->
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">📈 Erweiterte Preis-Prognosen</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="startLSTMForecast()" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                            LSTM
+                        </button>
+                        <button onclick="startXGBoostForecast()" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                            XGBoost
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="h-64">
+                        <canvas id="advancedPriceChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">LSTM Genauigkeit:</span>
+                            <span class="font-bold text-purple-600" id="lstm-accuracy">94.2%</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">XGBoost Genauigkeit:</span>
+                            <span class="font-bold text-orange-600" id="xgboost-accuracy">96.8%</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Ensemble Score:</span>
+                            <span class="font-bold text-green-600" id="ensemble-score">97.1%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anomalie-Erkennung -->
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">🔍 Anomalie-Erkennung</h2>
+                    <button onclick="analyzeAnomalies()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        Analysieren
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-600">Anomalie-Score:</span>
+                            <span class="font-bold text-red-600" id="anomaly-score">0.23</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-500 h-2 rounded-full" style="width: 23%"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="font-semibold text-gray-700">Erkannte Anomalien:</h4>
+                        <div class="space-y-2 text-sm">
+                            <div class="bg-red-50 p-2 rounded border-l-4 border-red-500">
+                                <span class="font-medium">9.9.2025, 14:30:15</span> - <span class="text-red-600">Ungewöhnliche Spannungsschwankung: 3.2σ</span>
+                            </div>
+                            <div class="bg-orange-50 p-2 rounded border-l-4 border-orange-500">
+                                <span class="font-medium">8.9.2025, 09:15:42</span> - <span class="text-orange-600">Temperatur-Anomalie: 2.8σ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predictive Maintenance -->
+            <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-800">🔧 Predictive Maintenance</h2>
+                    <button onclick="analyzeMaintenance()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        Analysieren
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Batterie-Gesundheit:</span>
+                            <span class="font-bold text-green-600" id="battery-health">94.2%</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Degradationsrate:</span>
+                            <span class="font-bold text-yellow-600" id="degradation-rate">0.8%/Jahr</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Verbleibende Zyklen:</span>
+                            <span class="font-bold text-blue-600" id="remaining-cycles">8,247</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Nächste Wartung:</span>
+                            <span class="font-bold text-purple-600" id="next-maintenance">45 Tage</span>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <span class="text-gray-600">Wartungsempfehlung:</span>
+                        <span class="font-bold text-blue-600" id="maintenance-recommendation">Routine-Inspektion in 45 Tagen empfohlen</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Lastprognosen -->
+        <div class="bg-white rounded-xl shadow-lg p-6 card-hover mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">📊 Lastprognosen</h2>
+                <div class="flex space-x-2">
+                    <button onclick="startLoadForecast('random_forest')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        Random Forest
+                    </button>
+                    <button onclick="startLoadForecast('xgboost')" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        XGBoost
+                    </button>
+                    <button onclick="startLoadForecast('arima')" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        ARIMA
+                    </button>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <div class="h-64">
+                    <canvas id="loadForecastChart"></canvas>
+                </div>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <span class="text-gray-600">Durchschnittslast:</span>
+                        <span class="font-bold text-blue-600" id="avg-load">1,247 MW</span>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <span class="text-gray-600">Maximallast:</span>
+                        <span class="font-bold text-red-600" id="max-load">1,456 MW</span>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <span class="text-gray-600">Minimallast:</span>
+                        <span class="font-bold text-green-600" id="min-load">892 MW</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saisonale Optimierung -->
+        <div class="bg-white rounded-xl shadow-lg p-6 card-hover mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">🍂 Saisonale Optimierung</h2>
+                <div class="flex space-x-2">
+                    <button onclick="getSeasonalOptimization('spring')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        Frühling
+                    </button>
+                    <button onclick="getSeasonalOptimization('summer')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        Sommer
+                    </button>
+                    <button onclick="getSeasonalOptimization('autumn')" class="bg-orange-600 hover:bg-orange-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        Herbst
+                    </button>
+                    <button onclick="getSeasonalOptimization('winter')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition">
+                        Winter
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-gray-700">Aktuelle Saison:</h3>
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-600">Optimierungsscore:</span>
+                            <span class="font-bold text-green-600" id="seasonal-score">87.3</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" style="width: 87%"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">PV-Effizienz:</span>
+                            <span class="font-bold text-yellow-600" id="pv-efficiency">85%</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Preisvolatilität:</span>
+                            <span class="font-bold text-red-600" id="price-volatility">1.1x</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Last-Multiplikator:</span>
+                            <span class="font-bold text-blue-600" id="load-multiplier">0.95x</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-gray-700">Empfohlene Strategie:</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-blue-800" id="recommended-strategy">
+                            Moderate Arbitrage mit Fokus auf PV-Integration
+                        </p>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <h4 class="font-semibold text-gray-700">Optimale Ladezeiten:</h4>
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <span class="text-green-800" id="charge-hours">06:00-10:00</span>
+                        </div>
+                        <h4 class="font-semibold text-gray-700">Optimale Entladezeiten:</h4>
+                        <div class="bg-red-50 p-3 rounded-lg">
+                            <span class="text-red-800" id="discharge-hours">17:00-21:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Optimierung -->
+        <div class="bg-white rounded-xl shadow-lg p-6 card-hover mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-800">⚡ Real-time Optimierung</h2>
+                <div class="flex space-x-2">
+                    <button onclick="startRealTimeOptimization()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        Optimierung starten
+                    </button>
+                    <button onclick="stopRealTimeOptimization()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                        Stoppen
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-gray-700">Aktuelle Optimierung:</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Optimierungsmodus:</span>
+                            <span class="font-bold text-green-600" id="optimization-mode">Arbitrage + Peak Shaving</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Erwartete Einsparungen:</span>
+                            <span class="font-bold text-green-600" id="expected-savings">€ 1,247/Tag</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-gray-700">Performance-Metriken:</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Optimierungsrate:</span>
+                            <span class="font-bold text-blue-600" id="optimization-rate">97.3%</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Response-Zeit:</span>
+                            <span class="font-bold text-blue-600" id="response-time">0.8s</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="font-semibold text-gray-700">Status:</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-green-50 p-3 rounded-lg">
+                            <span class="text-gray-600">System-Status:</span>
+                            <span class="font-bold text-green-600" id="system-status">Aktiv</span>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg">
+                            <span class="text-gray-600">Letzte Aktualisierung:</span>
+                            <span class="font-bold text-blue-600" id="last-update">vor 2 Min</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML-Modell-Status -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                🧠 Advanced ML-Modell-Status
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                    <div class="text-3xl mb-3">🌤️</div>
+                    <h3 class="font-semibold text-gray-800 mb-2">PV-Prognose</h3>
+                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Trainiert</span>
+                    <div class="mt-2 text-xs text-gray-600">Genauigkeit: 92.4%</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                    <div class="text-3xl mb-3">📈</div>
+                    <h3 class="font-semibold text-gray-800 mb-2">LSTM Preis</h3>
+                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Trainiert</span>
+                    <div class="mt-2 text-xs text-gray-600">Genauigkeit: 94.2%</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                    <div class="text-3xl mb-3">🔍</div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Anomalie-Detection</h3>
+                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Trainiert</span>
+                    <div class="mt-2 text-xs text-gray-600">F1-Score: 0.89</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                    <div class="text-3xl mb-3">🔧</div>
+                    <h3 class="font-semibold text-gray-800 mb-2">Maintenance</h3>
+                    <span class="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Trainiert</span>
+                    <div class="mt-2 text-xs text-gray-600">Genauigkeit: 91.7%</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Chart.js Konfiguration
+        let pvForecastChart, advancedPriceChart, loadForecastChart;
+
+        // Demo-Daten für PV-Prognosen
+        const demoPVData = {
+            labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+            datasets: [{
+                label: 'PV-Leistung (MW)',
+                data: [0, 0.8, 1.6, 2.4, 2.2, 1.8, 0.9, 0],
+                borderColor: 'rgb(255, 193, 7)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        // Demo-Daten für erweiterte Preis-Prognosen (nächster Tag)
+        function generateAdvancedPriceForecastLabels() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const labels = [];
+            
+            // 24 Stunden Prognose für morgen (alle 2 Stunden)
+            for (let hour = 0; hour < 24; hour += 2) {
+                const time = new Date(tomorrow);
+                time.setHours(hour, 0, 0, 0);
+                labels.push(time.toLocaleTimeString('de-DE', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit'
+                }));
+            }
+            return labels;
+        }
+
+        const demoAdvancedPriceData = {
+            labels: generateAdvancedPriceForecastLabels(),
+            datasets: [{
+                label: 'LSTM Prognose - Morgen',
+                data: [45.2, 52.8, 68.4, 72.6, 58.9, 42.1, 38.7, 41.3, 48.9, 55.2, 61.8, 58.4],
+                borderColor: 'rgb(147, 51, 234)',
+                backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                tension: 0.4,
+                fill: false
+            }, {
+                label: 'XGBoost Prognose - Morgen',
+                data: [44.8, 53.1, 67.9, 73.2, 59.4, 41.8, 39.2, 40.9, 49.1, 54.8, 62.3, 57.9],
+                borderColor: 'rgb(249, 115, 22)',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                tension: 0.4,
+                fill: false
+            }]
+        };
+
+        // Demo-Daten für Lastprognosen
+        function generateLoadForecastLabels() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const labels = [];
+            
+            // 24 Stunden Prognose für morgen (alle 2 Stunden)
+            for (let hour = 0; hour < 24; hour += 2) {
+                const time = new Date(tomorrow);
+                time.setHours(hour, 0, 0, 0);
+                labels.push(time.toLocaleTimeString('de-DE', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit'
+                }));
+            }
+            return labels;
+        }
+
+        const demoLoadData = {
+            labels: generateLoadForecastLabels(),
+            datasets: [{
+                label: 'Prognostizierte Last (MW) - Morgen',
+                data: [892, 945, 1023, 1156, 1247, 1289, 1345, 1456, 1323, 1187, 1056, 923],
+                borderColor: 'rgb(34, 197, 94)',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        };
+
+        // Charts initialisieren
+        function initCharts() {
+            // PV-Prognose Chart
+            const pvCtx = document.getElementById('pvForecastChart').getContext('2d');
+            pvForecastChart = new Chart(pvCtx, {
+                type: 'line',
+                data: demoPVData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'PV-Leistung (MW)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // Lastprognose Chart
+            const loadCtx = document.getElementById('loadForecastChart').getContext('2d');
+            loadForecastChart = new Chart(loadCtx, {
+                type: 'line',
+                data: demoLoadData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Last (MW)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // Erweiterte Preis-Prognose Chart
+            const priceCtx = document.getElementById('advancedPriceChart').getContext('2d');
+            advancedPriceChart = new Chart(priceCtx, {
+                type: 'line',
+                data: demoAdvancedPriceData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Preis (€/MWh)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Funktionen
+        function loadProjectData() {
+            const project = document.getElementById('project-select').value;
+            console.log('Lade Advanced Daten für Projekt:', project);
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Lade...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                alert(`Advanced ML-Daten für ${project} erfolgreich geladen!`);
+            }, 2000);
+        }
+
+        function startPVForecast() {
+            console.log('Starte PV-Prognose...');
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Berechne...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                // Simuliere PV-Prognose
+                const newData = demoPVData.datasets[0].data.map(val => val + (Math.random() - 0.5) * 0.2);
+                pvForecastChart.data.datasets[0].data = newData;
+                pvForecastChart.update();
+                
+                const maxPV = Math.max(...newData).toFixed(1);
+                const confidence = (Math.random() * 10 + 85).toFixed(0);
+                
+                document.getElementById('expected-pv').textContent = `${maxPV} MW`;
+                document.getElementById('weather-confidence').textContent = `${confidence}%`;
+                
+                alert('PV-Prognose erfolgreich erstellt!');
+            }, 3000);
+        }
+
+        function startLSTMForecast() {
+            console.log('Starte LSTM-Prognose...');
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ LSTM...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                const accuracy = (Math.random() * 3 + 93).toFixed(1);
+                document.getElementById('lstm-accuracy').textContent = `${accuracy}%`;
+                
+                alert('LSTM-Prognose erfolgreich erstellt!');
+            }, 2500);
+        }
+
+        function startXGBoostForecast() {
+            console.log('Starte XGBoost-Prognose...');
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ XGBoost...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                const accuracy = (Math.random() * 3 + 95).toFixed(1);
+                document.getElementById('xgboost-accuracy').textContent = `${accuracy}%`;
+                
+                alert('XGBoost-Prognose erfolgreich erstellt!');
+            }, 2000);
+        }
+
+        function analyzeAnomalies() {
+            console.log('Starte Anomalie-Analyse...');
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Analysiere...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                const score = (Math.random() * 0.3 + 0.1).toFixed(2);
+                document.getElementById('anomaly-score').textContent = score;
+                
+                const progressBar = document.querySelector('.bg-red-500');
+                progressBar.style.width = `${score * 100}%`;
+                
+                alert('Anomalie-Analyse erfolgreich abgeschlossen!');
+            }, 2000);
+        }
+
+        function analyzeMaintenance() {
+            console.log('Starte Predictive Maintenance...');
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Analysiere...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                const health = (Math.random() * 5 + 92).toFixed(1);
+                const degradation = (Math.random() * 0.5 + 0.5).toFixed(1);
+                const cycles = Math.floor(Math.random() * 2000 + 7000);
+                const maintenance = Math.floor(Math.random() * 30 + 30);
+                
+                document.getElementById('battery-health').textContent = `${health}%`;
+                document.getElementById('degradation-rate').textContent = `${degradation}%/Jahr`;
+                document.getElementById('remaining-cycles').textContent = cycles.toLocaleString();
+                document.getElementById('next-maintenance').textContent = `${maintenance} Tage`;
+                
+                alert('Predictive Maintenance-Analyse erfolgreich abgeschlossen!');
+            }, 2500);
+        }
+
+        function startLoadForecast(modelType) {
+            console.log(`Starte Lastprognose mit ${modelType}...`);
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Berechne...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                // Simuliere Lastprognose
+                const newData = demoLoadData.datasets[0].data.map(val => val + (Math.random() - 0.5) * 100);
+                loadForecastChart.data.datasets[0].data = newData;
+                loadForecastChart.update();
+                
+                const avgLoad = (newData.reduce((a, b) => a + b, 0) / newData.length).toFixed(0);
+                const maxLoad = Math.max(...newData).toFixed(0);
+                const minLoad = Math.min(...newData).toFixed(0);
+                
+                document.getElementById('avg-load').textContent = `${avgLoad} MW`;
+                document.getElementById('max-load').textContent = `${maxLoad} MW`;
+                document.getElementById('min-load').textContent = `${minLoad} MW`;
+                
+                alert(`${modelType} Lastprognose erfolgreich erstellt!`);
+            }, 2000);
+        }
+
+        function getSeasonalOptimization(season) {
+            console.log(`Lade saisonale Optimierung für ${season}...`);
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Lade...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                // Simuliere saisonale Parameter
+                const seasonalData = {
+                    spring: { score: 87.3, pv: 85, volatility: 1.1, load: 0.95, strategy: 'Moderate Arbitrage mit Fokus auf PV-Integration', charge: '06:00-10:00', discharge: '17:00-21:00' },
+                    summer: { score: 94.2, pv: 100, volatility: 1.2, load: 1.0, strategy: 'Aggressive Arbitrage und Peak Shaving', charge: '05:00-11:00', discharge: '18:00-22:00' },
+                    autumn: { score: 78.6, pv: 70, volatility: 1.3, load: 1.05, strategy: 'Konservative Strategie mit hoher Reserve', charge: '07:00-11:00', discharge: '16:00-20:00' },
+                    winter: { score: 72.1, pv: 50, volatility: 1.5, load: 1.15, strategy: 'Defensive Strategie mit Fokus auf Netzstabilität', charge: '08:00-12:00', discharge: '15:00-20:00' }
+                };
+                
+                const data = seasonalData[season] || seasonalData.spring;
+                
+                document.getElementById('seasonal-score').textContent = data.score;
+                document.getElementById('pv-efficiency').textContent = `${data.pv}%`;
+                document.getElementById('price-volatility').textContent = `${data.volatility}x`;
+                document.getElementById('load-multiplier').textContent = `${data.load}x`;
+                document.getElementById('recommended-strategy').textContent = data.strategy;
+                document.getElementById('charge-hours').textContent = data.charge;
+                document.getElementById('discharge-hours').textContent = data.discharge;
+                
+                // Progress Bar aktualisieren
+                const progressBar = document.querySelector('.bg-green-500');
+                progressBar.style.width = `${data.score}%`;
+                
+                alert(`Saisonale Optimierung für ${season} erfolgreich geladen!`);
+            }, 1500);
+        }
+
+        function startRealTimeOptimization() {
+            console.log('Starte Real-time Optimierung...');
+            
+            const button = event.target;
+            const originalText = button.textContent;
+            button.textContent = '⏳ Starte...';
+            button.disabled = true;
+            
+            setTimeout(() => {
+                button.textContent = originalText;
+                button.disabled = false;
+                
+                document.getElementById('system-status').textContent = 'Aktiv';
+                document.getElementById('system-status').className = 'font-bold text-green-600';
+                
+                // Simuliere kontinuierliche Updates
+                setInterval(() => {
+                    const savings = (Math.random() * 200 + 1200).toFixed(0);
+                    const rate = (Math.random() * 2 + 96).toFixed(1);
+                    const response = (Math.random() * 0.3 + 0.7).toFixed(1);
+                    
+                    document.getElementById('expected-savings').textContent = `€ ${savings}/Tag`;
+                    document.getElementById('optimization-rate').textContent = `${rate}%`;
+                    document.getElementById('response-time').textContent = `${response}s`;
+                    document.getElementById('last-update').textContent = 'vor 1 Min';
+                }, 5000);
+                
+                alert('Real-time Optimierung erfolgreich gestartet!');
+            }, 2000);
+        }
+
+        function stopRealTimeOptimization() {
+            console.log('Stoppe Real-time Optimierung...');
+            
+            document.getElementById('system-status').textContent = 'Gestoppt';
+            document.getElementById('system-status').className = 'font-bold text-red-600';
+            
+            alert('Real-time Optimierung gestoppt!');
+        }
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+        });
+    </script>
+
+    <!-- Footer -->
+    {% include 'footer.html' %}
+</body>
+</html>

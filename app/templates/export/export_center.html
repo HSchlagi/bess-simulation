@@ -283,6 +283,36 @@
                     <i class="fas fa-file-alt mr-2"></i>Bericht generieren
                 </a>
             </div>
+
+            <!-- n8n Automation -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-robot text-purple-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">n8n Automation</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Automatisierte Workflows und Integrationen mit n8n für erweiterte BESS-Prozesse.</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Webhook-Integration
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Automatisierte Berichte
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        Preis-Alerts
+                    </div>
+                    <div class="flex items-center text-sm">
+                        <i class="fas fa-check text-green-400 mr-2"></i>
+                        ML-Modell-Updates
+                    </div>
+                </div>
+                <a href="{{ url_for('export.n8n_automation') }}" class="inline-block bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-md transition">
+                    <i class="fas fa-cogs mr-2"></i>n8n konfigurieren
+                </a>
+            </div>
         </div>
 
         <!-- Status-Informationen -->
@@ -326,6 +356,10 @@
                     <div class="flex items-center">
                         <i class="fas fa-layer-group text-rose-400 mr-2"></i>
                         <span>Kombinierter Export: <span class="text-green-400">Verfügbar</span></span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-robot text-purple-400 mr-2"></i>
+                        <span>n8n Automation: <span class="text-green-400">Verfügbar</span></span>
                     </div>
                 </div>
             </div>

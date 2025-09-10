@@ -41,10 +41,14 @@ def create_app():
     csrf.init_app(app)
     
     # CSRF für API-Endpoints deaktivieren
-    csrf.exempt_blueprints = ['advanced_dispatch_bp']
+    csrf.exempt_blueprints = ['advanced_dispatch_bp', 'ml_analytics']
 
     from .routes import main_bp
     app.register_blueprint(main_bp)
+    
+    # ML Blueprint registrieren
+    from .ml_routes import ml_bp
+    app.register_blueprint(ml_bp)
     
     # PWA Blueprint registrieren
     from .pwa_routes import pwa_bp

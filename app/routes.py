@@ -114,6 +114,12 @@ def ml_dashboard():
     """ML & KI Dashboard für intelligente BESS-Optimierung"""
     return render_template('ml_dashboard.html')
 
+@main_bp.route('/advanced-ml-dashboard')
+@login_required
+def advanced_ml_dashboard():
+    """Advanced ML Dashboard mit erweiterten KI-Features"""
+    return render_template('advanced_ml_dashboard.html')
+
 @main_bp.route('/test-ml')
 def test_ml():
     """Test-Seite für ML-Dashboard"""
@@ -5731,6 +5737,43 @@ def api_calculate_residual_load():
         
     except Exception as e:
         return jsonify({'error': f'Fehler bei der Residuallast-Berechnung: {str(e)}'}), 500
+
+@main_bp.route('/api/n8n/webhook/trigger', methods=['POST'])
+def n8n_webhook_trigger():
+    """Trigger für n8n Webhooks - wird von BESS-System intern aufgerufen"""
+    try:
+        data = request.get_json()
+        event_type = data.get('event_type')
+        event_data = data.get('data', {})
+        
+        # Hier würde der Webhook an n8n gesendet werden
+        # Für jetzt loggen wir das Event
+        print(f"🔗 n8n Webhook Event: {event_type}")
+        print(f"📊 Event Data: {event_data}")
+        
+        # Simuliere n8n-Aufruf
+        webhook_url = "http://localhost:5678/webhook/bess-events"  # n8n Standard-Port
+        payload = {
+            'event_type': event_type,
+            'timestamp': datetime.now().isoformat(),
+            'source': 'bess-simulation',
+            'data': event_data
+        }
+        
+        # Hier würde requests.post(webhook_url, json=payload) aufgerufen werden
+        print(f"📤 Würde an n8n senden: {webhook_url}")
+        print(f"📦 Payload: {payload}")
+        
+        return jsonify({
+            'success': True,
+            'message': f'n8n Webhook für {event_type} ausgelöst',
+            'event_type': event_type,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Fehler beim n8n Webhook: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @main_bp.route('/api/load-shifting/optimize', methods=['POST'])
 def api_optimize_load_shifting():

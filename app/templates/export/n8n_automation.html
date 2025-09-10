@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>n8n Automation – BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="max-w-7xl mx-auto py-8 px-4">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-purple-400">🤖 n8n Automation</h1>
+            <div class="flex space-x-4">
+                <a href="{{ url_for('export.export_center') }}" class="text-purple-400 hover:underline">
+                    <i class="fas fa-arrow-left mr-2"></i>Zurück zum Export-Zentrum
+                </a>
+                <a href="{{ url_for('multi_user.dashboard') }}" class="text-green-400 hover:underline">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="mb-4 p-3 rounded-md {% if category == 'error' %}bg-red-500 text-white{% elif category == 'success' %}bg-green-500 text-white{% else %}bg-blue-500 text-white{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- n8n Konfiguration -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Webhook-Konfiguration -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-link text-blue-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Webhook-Konfiguration</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Konfigurieren Sie Webhooks für n8n-Integration mit BESS-System.</p>
+                
+                <form id="webhook-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">n8n Webhook URL</label>
+                        <input type="url" id="webhook-url" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" 
+                               placeholder="https://your-n8n-instance.com/webhook/bess-events">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">API-Schlüssel</label>
+                        <input type="password" id="api-key" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" 
+                               placeholder="Ihr n8n API-Schlüssel">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Event-Typen</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked> Simulation abgeschlossen
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2" checked> Preis-Alert
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2"> ML-Modell trainiert
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" class="mr-2"> Anomalie erkannt
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-md transition">
+                        <i class="fas fa-save mr-2"></i>Webhook speichern
+                    </button>
+                </form>
+            </div>
+
+            <!-- Workflow-Templates -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-project-diagram text-green-400 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold">Workflow-Templates</h2>
+                </div>
+                <p class="text-gray-300 mb-4">Vordefinierte n8n-Workflows für BESS-Automation.</p>
+                
+                <div class="space-y-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-green-400 mb-2">Tägliche BESS-Simulation</h3>
+                        <p class="text-sm text-gray-300 mb-3">Automatische Simulation um 06:00 Uhr mit E-Mail-Bericht.</p>
+                        <button class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm transition">
+                            <i class="fas fa-download mr-1"></i>Template laden
+                        </button>
+                    </div>
+                    
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-yellow-400 mb-2">Preis-Alert-System</h3>
+                        <p class="text-sm text-gray-300 mb-3">Benachrichtigung bei Strompreis > 100 €/MWh.</p>
+                        <button class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-sm transition">
+                            <i class="fas fa-download mr-1"></i>Template laden
+                        </button>
+                    </div>
+                    
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold text-purple-400 mb-2">ML-Modell-Retraining</h3>
+                        <p class="text-sm text-gray-300 mb-3">Wöchentliches Retraining der ML-Modelle.</p>
+                        <button class="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm transition">
+                            <i class="fas fa-download mr-1"></i>Template laden
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API-Endpoints -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-code text-orange-400 text-2xl mr-3"></i>
+                <h2 class="text-xl font-semibold">API-Endpoints für n8n</h2>
+            </div>
+            <p class="text-gray-300 mb-4">Verfügbare REST-APIs für n8n-Integration.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-semibold text-orange-400 mb-3">BESS-Simulation</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-green-400">POST</code> 
+                            <span class="text-gray-300">/api/simulation/run</span>
+                        </div>
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-blue-400">GET</code> 
+                            <span class="text-gray-300">/api/simulation/history</span>
+                        </div>
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-green-400">POST</code> 
+                            <span class="text-gray-300">/api/simulation/10-year-analysis</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="font-semibold text-orange-400 mb-3">ML & KI Services</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-blue-400">GET</code> 
+                            <span class="text-gray-300">/api/ml/status</span>
+                        </div>
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-green-400">POST</code> 
+                            <span class="text-gray-300">/api/ml/predict/price</span>
+                        </div>
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-green-400">POST</code> 
+                            <span class="text-gray-300">/api/ml/predict/load</span>
+                        </div>
+                        <div class="bg-gray-700 p-2 rounded">
+                            <code class="text-blue-400">GET</code> 
+                            <span class="text-gray-300">/api/ml/optimization/seasonal</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test-Integration -->
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-vial text-red-400 text-2xl mr-3"></i>
+                <h2 class="text-xl font-semibold">Integration testen</h2>
+            </div>
+            <p class="text-gray-300 mb-4">Testen Sie die n8n-Integration mit verschiedenen Events.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="testWebhook('simulation_complete')" class="bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-md transition">
+                    <i class="fas fa-play mr-2"></i>Simulation-Event testen
+                </button>
+                <button onclick="testWebhook('price_alert')" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-3 rounded-md transition">
+                    <i class="fas fa-bell mr-2"></i>Preis-Alert testen
+                </button>
+                <button onclick="testWebhook('ml_training')" class="bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-md transition">
+                    <i class="fas fa-brain mr-2"></i>ML-Training testen
+                </button>
+            </div>
+            
+            <div id="test-results" class="mt-4 hidden">
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="font-semibold text-green-400 mb-2">Test-Ergebnis:</h4>
+                    <pre id="test-output" class="text-sm text-gray-300"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Webhook-Formular verarbeiten
+        document.getElementById('webhook-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const webhookUrl = document.getElementById('webhook-url').value;
+            const apiKey = document.getElementById('api-key').value;
+            
+            if (!webhookUrl) {
+                alert('Bitte geben Sie eine Webhook-URL ein.');
+                return;
+            }
+            
+            // Webhook-Konfiguration speichern
+            fetch('/api/n8n/webhook/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    webhook_url: webhookUrl,
+                    api_key: apiKey
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Webhook-Konfiguration erfolgreich gespeichert!');
+                } else {
+                    alert('Fehler beim Speichern: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Fehler: ' + error.message);
+            });
+        });
+
+        // Webhook testen
+        function testWebhook(eventType) {
+            const testData = {
+                simulation_complete: {
+                    event_type: 'simulation_complete',
+                    project_id: 1,
+                    simulation_id: 'sim_123',
+                    timestamp: new Date().toISOString(),
+                    results: {
+                        total_revenue: 125000,
+                        roi: 8.5,
+                        payback_period: 12.3
+                    }
+                },
+                price_alert: {
+                    event_type: 'price_alert',
+                    timestamp: new Date().toISOString(),
+                    price: 125.50,
+                    threshold: 100.00,
+                    region: 'AT'
+                },
+                ml_training: {
+                    event_type: 'ml_training',
+                    timestamp: new Date().toISOString(),
+                    model_type: 'random_forest',
+                    accuracy: 94.2,
+                    training_duration: 45.5
+                }
+            };
+
+            fetch('/api/n8n/webhook/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    event_type: eventType,
+                    test_data: testData[eventType]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('test-results').classList.remove('hidden');
+                document.getElementById('test-output').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                document.getElementById('test-results').classList.remove('hidden');
+                document.getElementById('test-output').textContent = 'Fehler: ' + error.message;
+            });
+        }
+    </script>
+</body>
+</html>

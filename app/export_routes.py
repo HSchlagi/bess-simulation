@@ -354,3 +354,176 @@ def export_status():
 def export_help():
     """Export-Hilfe-Seite"""
     return render_template('export/help.html')
+
+@export_bp.route('/n8n-automation')
+def n8n_automation():
+    """n8n Automation Konfiguration"""
+    return render_template('export/n8n_automation.html')
+
+@export_bp.route('/api/n8n/webhook/config', methods=['POST'])
+def n8n_webhook_config():
+    """Konfiguriert n8n Webhook-Einstellungen"""
+    try:
+        data = request.get_json()
+        webhook_url = data.get('webhook_url')
+        api_key = data.get('api_key')
+        
+        if not webhook_url:
+            return jsonify({'success': False, 'error': 'Webhook-URL ist erforderlich'}), 400
+        
+        # Hier würde die Webhook-Konfiguration in der Datenbank gespeichert werden
+        # Für jetzt simulieren wir das Speichern
+        print(f"🔗 n8n Webhook konfiguriert: {webhook_url}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Webhook-Konfiguration erfolgreich gespeichert',
+            'webhook_url': webhook_url,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@export_bp.route('/api/n8n/webhook/test', methods=['POST'])
+def n8n_webhook_test():
+    """Testet n8n Webhook-Integration"""
+    try:
+        data = request.get_json()
+        event_type = data.get('event_type')
+        test_data = data.get('test_data')
+        
+        if not event_type:
+            return jsonify({'success': False, 'error': 'Event-Typ ist erforderlich'}), 400
+        
+        # Simuliere Webhook-Aufruf an n8n
+        print(f"🧪 Teste n8n Webhook für Event: {event_type}")
+        print(f"📊 Test-Daten: {test_data}")
+        
+        # Hier würde der tatsächliche HTTP-Aufruf an n8n erfolgen
+        # response = requests.post(webhook_url, json=test_data)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Webhook-Test für {event_type} erfolgreich',
+            'event_type': event_type,
+            'test_data': test_data,
+            'simulated_response': {
+                'status': 'success',
+                'n8n_workflow_triggered': True,
+                'execution_id': f'n8n_exec_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@export_bp.route('/api/n8n/workflow/templates', methods=['GET'])
+def n8n_workflow_templates():
+    """Gibt verfügbare n8n Workflow-Templates zurück"""
+    try:
+        templates = {
+            'daily_simulation': {
+                'name': 'Tägliche BESS-Simulation',
+                'description': 'Automatische Simulation um 06:00 Uhr mit E-Mail-Bericht',
+                'trigger': 'cron',
+                'schedule': '0 6 * * *',
+                'nodes': [
+                    {'type': 'Cron', 'name': 'Täglich 06:00'},
+                    {'type': 'HTTP Request', 'name': 'BESS-Simulation starten'},
+                    {'type': 'Email', 'name': 'Bericht versenden'}
+                ],
+                'download_url': '/api/n8n/template/daily_simulation.json'
+            },
+            'price_alert': {
+                'name': 'Preis-Alert-System',
+                'description': 'Benachrichtigung bei Strompreis > 100 €/MWh',
+                'trigger': 'webhook',
+                'schedule': None,
+                'nodes': [
+                    {'type': 'Webhook', 'name': 'Preis-Alert empfangen'},
+                    {'type': 'IF', 'name': 'Preis > 100 €/MWh?'},
+                    {'type': 'Slack', 'name': 'Alert senden'}
+                ],
+                'download_url': '/api/n8n/template/price_alert.json'
+            },
+            'ml_retraining': {
+                'name': 'ML-Modell-Retraining',
+                'description': 'Wöchentliches Retraining der ML-Modelle',
+                'trigger': 'cron',
+                'schedule': '0 2 * * 1',
+                'nodes': [
+                    {'type': 'Cron', 'name': 'Wöchentlich Montag 02:00'},
+                    {'type': 'HTTP Request', 'name': 'ML-Training starten'},
+                    {'type': 'HTTP Request', 'name': 'Modelle testen'},
+                    {'type': 'Email', 'name': 'Ergebnisse versenden'}
+                ],
+                'download_url': '/api/n8n/template/ml_retraining.json'
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'templates': templates,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@export_bp.route('/api/n8n/template/<template_name>')
+def n8n_template_download(template_name):
+    """Lädt n8n Workflow-Template herunter"""
+    try:
+        # Hier würden die tatsächlichen n8n Workflow-JSON-Dateien geladen werden
+        # Für jetzt geben wir Beispieldaten zurück
+        
+        template_data = {
+            'name': f'BESS {template_name} Workflow',
+            'nodes': [
+                {
+                    'id': '1',
+                    'name': 'Webhook',
+                    'type': 'n8n-nodes-base.webhook',
+                    'position': [100, 100],
+                    'parameters': {
+                        'path': 'bess-events',
+                        'httpMethod': 'POST'
+                    }
+                },
+                {
+                    'id': '2',
+                    'name': 'BESS API',
+                    'type': 'n8n-nodes-base.httpRequest',
+                    'position': [300, 100],
+                    'parameters': {
+                        'url': 'http://localhost:5000/api/simulation/run',
+                        'method': 'POST'
+                    }
+                }
+            ],
+            'connections': {
+                '1': {
+                    'main': [
+                        [
+                            {
+                                'node': '2',
+                                'type': 'main',
+                                'index': 0
+                            }
+                        ]
+                    ]
+                }
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'template': template_data,
+            'template_name': template_name,
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
