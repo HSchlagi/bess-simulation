@@ -5,13 +5,13 @@ Wants=network.target
 
 [Service]
 Type=oneshot
-User=bess
-Group=bess
-WorkingDirectory=/opt/bess
-ExecStart=/opt/bess/venv/bin/python /opt/bess/apg_scheduler_linux.py
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/bess-simulation
+ExecStart=/opt/bess-simulation/venv/bin/python /opt/bess-simulation/apg_scheduler_linux.py
 StandardOutput=journal
 StandardError=journal
-Environment=PYTHONPATH=/opt/bess
+Environment=PYTHONPATH=/opt/bess-simulation
 Environment=PYTHONUNBUFFERED=1
 
 # Ressourcen-Limits
@@ -27,7 +27,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/bess/instance /var/log/bess
+ReadWritePaths=/opt/bess-simulation/instance /var/log/bess
 
 [Install]
 WantedBy=multi-user.target
