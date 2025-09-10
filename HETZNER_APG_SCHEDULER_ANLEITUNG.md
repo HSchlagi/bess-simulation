@@ -256,3 +256,4 @@ Nach erfolgreicher Installation sollten Sie sehen:
 **Der APG Scheduler läuft jetzt automatisch auf Ihrem Hetzner Server und lädt täglich aktuelle österreichische Spot-Preise!** 🚀
 
 
+
