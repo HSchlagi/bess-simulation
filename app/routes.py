@@ -6685,7 +6685,8 @@ def api_run_dispatch():
         results = dispatch_integration.run_basic_dispatch_simulation(
             project_id=int(project_id),
             time_resolution_minutes=int(time_resolution),
-            year=int(year)
+            year=int(year),
+            dispatch_mode=dispatch_mode
         )
         
         if 'error' in results:

@@ -192,6 +192,9 @@
         checkDispatchStatus();
         loadProjects();
         setupEventListeners();
+        
+        // Demo-Charts beim Laden anzeigen
+        initializeDemoCharts();
     });
 
     // Dispatch-Status prüfen
@@ -258,6 +261,47 @@
     // Event-Listener einrichten
     function setupEventListeners() {
         // Weitere Event-Listener können hier hinzugefügt werden
+    }
+    
+    // Demo-Charts initialisieren
+    function initializeDemoCharts() {
+        console.log('Initialisiere Demo-Charts...');
+        
+        // Demo-SoC-Daten (realistische Kurve)
+        const demoSocData = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25];
+        
+        // Demo-Cashflow-Daten (realistische Werte)
+        const demoCashflowData = [50, -20, 80, -30, 120, -40, 90, -25, 150, -35, 70, -15, 110, -45, 130, -20, 95, -30, 160, -25, 85, -35, 140, -40];
+        
+        // Demo-KPI-Werte berechnen
+        const totalRevenue = demoCashflowData.filter(x => x > 0).reduce((sum, x) => sum + x, 0);
+        const totalCost = Math.abs(demoCashflowData.filter(x => x < 0).reduce((sum, x) => sum + x, 0));
+        const netCashflow = totalRevenue - totalCost;
+        
+        console.log('Demo-KPI berechnet:', { totalRevenue, totalCost, netCashflow });
+        
+        // KPI-Übersicht aktualisieren
+        const kpiElement = document.getElementById('kpiResults');
+        kpiElement.innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">€${totalRevenue.toFixed(2)}</div>
+                <div class="text-sm text-gray-600">Gesamteinnahmen</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-600">€${totalCost.toFixed(2)}</div>
+                <div class="text-sm text-gray-600">Gesamtkosten</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">€${netCashflow.toFixed(2)}</div>
+                <div class="text-sm text-gray-600">Netto-Cashflow</div>
+            </div>
+        `;
+        
+        // Demo-Charts erstellen
+        createDemoChart('socChart', 'line', 'SoC-Verlauf (%)', demoSocData);
+        createDemoChart('cashflowChart', 'bar', 'Cashflow (€)', demoCashflowData);
+        
+        console.log('Demo-Charts initialisiert');
     }
 
     // CSV-Upload verarbeiten
@@ -341,12 +385,18 @@
         
         // Debug: Alle verfügbaren Datenstrukturen prüfen
         console.log('Verfügbare Datenstrukturen:', Object.keys(data));
-        if (data.baseline) console.log('Baseline:', data.baseline);
-        if (data.settlement) console.log('Settlement:', data.settlement);
+        if (data.dispatch_results) console.log('Dispatch Results:', data.dispatch_results);
+        if (data.dispatch_results && data.dispatch_results.baseline) console.log('Baseline:', data.dispatch_results.baseline);
         
         // Flexibel verschiedene Datenstrukturen verarbeiten
         let settlementData = null;
-        if (data.baseline && data.baseline.settlement) {
+        
+        // Neue API-Struktur: data.dispatch_results.baseline.settlement
+        if (data.dispatch_results && data.dispatch_results.baseline && data.dispatch_results.baseline.settlement) {
+            settlementData = data.dispatch_results.baseline.settlement;
+        }
+        // Alte Strukturen für Rückwärtskompatibilität
+        else if (data.baseline && data.baseline.settlement) {
             settlementData = data.baseline.settlement;
         } else if (data.settlement) {
             settlementData = data.settlement;
@@ -381,7 +431,13 @@
         
         // SoC-Chart aktualisieren - robuster gemacht
         let simulationData = null;
-        if (data.baseline && data.baseline.simulation) {
+        
+        // Neue API-Struktur: data.dispatch_results.baseline.simulation
+        if (data.dispatch_results && data.dispatch_results.baseline && data.dispatch_results.baseline.simulation) {
+            simulationData = data.dispatch_results.baseline.simulation;
+        }
+        // Alte Strukturen für Rückwärtskompatibilität
+        else if (data.baseline && data.baseline.simulation) {
             simulationData = data.baseline.simulation;
         } else if (data.simulation) {
             simulationData = data.simulation;
@@ -668,7 +724,8 @@
         fetch(`/api/dispatch/history/${projectId}`)
             .then(response => response.json())
             .then(data => {
-                updateHistoryTable(data.simulations || []);
+                // API gibt dispatch_history zurück, nicht simulations
+                updateHistoryTable(data.dispatch_history || []);
             })
             .catch(error => {
                 console.error('Fehler beim Laden der Historie:', error);
@@ -686,10 +743,10 @@
         
         tbody.innerHTML = simulations.map(sim => `
             <tr>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(sim.simulation_date).toLocaleDateString('de-DE')}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sim.project_name || 'Unbekannt'}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sim.dispatch_mode}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">€${sim.total_revenue?.toFixed(2) || '0.00'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(sim.simulation_date || sim.created_at).toLocaleDateString('de-DE')}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Projekt ${sim.id || 'Unbekannt'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${sim.dispatch_mode || 'Arbitrage'}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">€${(sim.total_revenue || 0).toFixed(2)}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                         Abgeschlossen

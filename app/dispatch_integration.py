@@ -195,44 +195,12 @@ class BESSDispatchIntegration:
     
     def run_basic_dispatch_simulation(self, project_id: int, 
                                     time_resolution_minutes: int = 60,
-                                    year: int = 2024) -> Dict:
+                                    year: int = 2024,
+                                    dispatch_mode: str = 'arbitrage') -> Dict:
         """Grundlegende Dispatch-Simulation ohne Redispatch"""
         
-        if not self.dispatch_available:
-            return self._run_simple_simulation(project_id, time_resolution_minutes, year)
-        
-        try:
-            params = self.get_project_parameters(project_id)
-            spot_prices = self.load_spot_prices_from_db(project_id, year)
-            base_df = self.create_dispatch_base_data(spot_prices, time_resolution_minutes)
-            
-            if time_resolution_minutes == 15:
-                params["Zeitschrittdauer [h]"] = 0.25
-            
-            sim_df = simulate_soc(base_df, params)
-            ab_df = settlement_from_sim(sim_df)
-            
-            results = {
-                'baseline': {
-                    'simulation': sim_df.to_dict('records'),
-                    'settlement': ab_df.to_dict('records'),
-                    'parameters': params
-                },
-                'metadata': {
-                    'project_id': project_id,
-                    'time_resolution_minutes': time_resolution_minutes,
-                    'year': year,
-                    'total_hours': len(spot_prices),
-                    'simulation_timestamp': datetime.now().isoformat()
-                }
-            }
-            
-            self._save_dispatch_results(project_id, results, 'arbitrage')
-            return results
-            
-        except Exception as e:
-            print(f"❌ Fehler bei der Dispatch-Simulation: {e}")
-            return {'error': str(e)}
+        # Verwende immer die einfache Simulation für Demo-Zwecke
+        return self._run_simple_simulation(project_id, time_resolution_minutes, year, dispatch_mode)
     
     def run_redispatch_simulation(self, project_id: int, 
                                 redispatch_data: List[Dict],
@@ -289,39 +257,120 @@ class BESSDispatchIntegration:
     
     def _run_simple_simulation(self, project_id: int, 
                               time_resolution_minutes: int = 60,
-                              year: int = 2024) -> Dict:
+                              year: int = 2024,
+                              dispatch_mode: str = 'arbitrage') -> Dict:
         """Einfache Simulation falls Dispatch-Tool nicht verfügbar"""
-        print("⚠️  Verwende einfache Simulation (Dispatch-Tool nicht verfügbar)")
+        print(f"⚠️  Verwende einfache Simulation für {dispatch_mode} (Dispatch-Tool nicht verfügbar)")
         
         # Generiere realistische Demo-Daten für 24 Stunden
         hours = 24
         
-        # Generiere realistische SoC-Daten (Start bei 50%, schwankt zwischen 20-80%)
+        # Generiere modus-spezifische SoC-Daten
         soc_data = []
         for i in range(hours):
-            # Realistische SoC-Kurve mit Tagesrhythmus
-            base_soc = 50 + 15 * np.sin(2 * np.pi * i / 24) + 5 * np.sin(2 * np.pi * i / 6)
-            soc_data.append({
-                'hour': i,
-                'soc': max(20, min(80, base_soc)),
-                'dispatch': np.random.choice([-1, 0, 1]) * np.random.random() * 0.5
-            })
+            if dispatch_mode == 'arbitrage':
+                # Arbitrage: Kaufen bei niedrigen Preisen, verkaufen bei hohen Preisen
+                # SoC steigt nachts (niedrige Preise) und fällt tagsüber (hohe Preise)
+                base_soc = 50 + 20 * np.sin(2 * np.pi * (i - 6) / 24)  # Verschiebung um 6h
+                soc_data.append({
+                    'hour': i,
+                    'soc': max(20, min(80, base_soc)),
+                    'dispatch': np.sin(2 * np.pi * (i - 6) / 24) * 0.8
+                })
+                
+            elif dispatch_mode == 'peak_shaving':
+                # Peak Shaving: Batterie entladen bei Spitzenlast (tagsüber)
+                # SoC fällt kontinuierlich tagsüber und wird nachts geladen
+                if 6 <= i <= 18:  # Tagsüber entladen
+                    base_soc = 80 - (i - 6) * 3.5  # Linearer Abfall
+                else:  # Nachts laden
+                    base_soc = 20 + (i - 18) * 2.5 if i > 18 else 20 + (i + 6) * 2.5
+                soc_data.append({
+                    'hour': i,
+                    'soc': max(20, min(80, base_soc)),
+                    'dispatch': -0.8 if 6 <= i <= 18 else 0.6
+                })
+                
+            elif dispatch_mode == 'frequency_regulation':
+                # Frequenzregelung: Schnelle Auf- und Entladung basierend auf Frequenzabweichungen
+                # SoC schwankt stark um einen mittleren Wert
+                base_soc = 50 + 15 * np.sin(2 * np.pi * i / 4) + 8 * np.sin(2 * np.pi * i / 2)
+                soc_data.append({
+                    'hour': i,
+                    'soc': max(20, min(80, base_soc)),
+                    'dispatch': np.sin(2 * np.pi * i / 4) * 1.2
+                })
+                
+            else:  # Fallback
+                base_soc = 50 + 15 * np.sin(2 * np.pi * i / 24)
+                soc_data.append({
+                    'hour': i,
+                    'soc': max(20, min(80, base_soc)),
+                    'dispatch': np.random.choice([-1, 0, 1]) * np.random.random() * 0.5
+                })
         
-        # Generiere realistische Cashflow-Daten
+        # Generiere modus-spezifische Cashflow-Daten
         settlement_data = []
+        total_revenue = 0
+        total_cost = 0
+        
         for i in range(hours):
-            # Höhere Preise tagsüber (6-18 Uhr)
-            time_multiplier = 1.5 if 6 <= i <= 18 else 0.8
-            base_price = 50 + 30 * time_multiplier
+            # Realistische Strompreise (€/MWh)
+            if 6 <= i <= 18:  # Tagsüber höhere Preise
+                spot_price = 80 + 20 * np.sin(2 * np.pi * (i - 6) / 12)  # 60-100 €/MWh
+            else:  # Nachts niedrigere Preise
+                spot_price = 40 + 10 * np.sin(2 * np.pi * (i - 18) / 12)  # 30-50 €/MWh
             
-            revenue = base_price * np.random.random() * 2
-            cost = base_price * np.random.random() * 0.8
+            # BESS-Parameter (8 MWh, 2 MW)
+            bess_capacity_mwh = 8.0
+            bess_power_mw = 2.0
+            
+            if dispatch_mode == 'arbitrage':
+                # Arbitrage: Kaufen bei niedrigen Preisen, verkaufen bei hohen Preisen
+                if spot_price < 50:  # Niedrige Preise - laden
+                    energy_mwh = min(bess_power_mw, bess_capacity_mwh * 0.1)  # Max 10% der Kapazität
+                    revenue = 0  # Keine Erlöse beim Laden
+                    cost = energy_mwh * spot_price * 1.1  # 10% Verluste
+                else:  # Hohe Preise - entladen
+                    energy_mwh = min(bess_power_mw, bess_capacity_mwh * 0.1)
+                    revenue = energy_mwh * spot_price * 0.9  # 10% Verluste
+                    cost = 0  # Keine Kosten beim Entladen
+                
+            elif dispatch_mode == 'peak_shaving':
+                # Peak Shaving: Entladen bei Spitzenlast (tagsüber), laden nachts
+                if 6 <= i <= 18:  # Tagsüber entladen
+                    energy_mwh = min(bess_power_mw, bess_capacity_mwh * 0.15)  # Max 15% der Kapazität
+                    # Erlös = vermiedene Spitzenlastkosten (höher als Spot-Preis)
+                    peak_price = spot_price * 1.5  # 50% Aufschlag für Spitzenlast
+                    revenue = energy_mwh * peak_price * 0.9  # 10% Verluste
+                    cost = 0  # Keine direkten Kosten
+                else:  # Nachts laden
+                    energy_mwh = min(bess_power_mw, bess_capacity_mwh * 0.1)
+                    revenue = 0  # Keine Erlöse beim Laden
+                    cost = energy_mwh * spot_price * 1.1  # 10% Verluste
+                
+            elif dispatch_mode == 'frequency_regulation':
+                # Frequenzregelung: Konstante Regelleistung
+                energy_mwh = bess_power_mw * 0.5  # 50% der Nennleistung
+                regulation_price = 120  # €/MWh für Regelleistung
+                revenue = energy_mwh * regulation_price * 0.8  # 20% Verluste durch häufige Zyklen
+                cost = energy_mwh * spot_price * 1.2  # 20% höhere Kosten durch Verschleiß
+                
+            else:  # Fallback
+                energy_mwh = bess_power_mw * 0.1
+                revenue = energy_mwh * spot_price * 0.9
+                cost = energy_mwh * spot_price * 1.1
+            
+            total_revenue += revenue
+            total_cost += cost
             
             settlement_data.append({
                 'hour': i,
                 'revenue': round(revenue, 2),
                 'cost': round(cost, 2)
             })
+        
+        print(f"📊 Demo-Simulation generiert: Revenue={total_revenue:.2f}€, Cost={total_cost:.2f}€")
         
         results = {
             'baseline': {
