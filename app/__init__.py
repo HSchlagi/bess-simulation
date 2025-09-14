@@ -94,6 +94,14 @@ def create_app():
     except Exception as e:
         print(f"⚠️  CO₂-Tracking System nicht verfügbar: {e}")
     
+    # Climate Impact Dashboard-Blueprint registrieren
+    try:
+        from .climate_routes import climate_bp, register_climate_routes
+        register_climate_routes(app)
+        print("✅ Climate Impact Dashboard erfolgreich registriert")
+    except Exception as e:
+        print(f"⚠️  Climate Impact Dashboard nicht verfügbar: {e}")
+    
     # Advanced Dispatch-Blueprint registrieren
     try:
         from .advanced_dispatch_routes import advanced_dispatch_bp

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Dropdown</title>
+</head>
+<body>
+    <h1>Test Dropdown</h1>
+    <select id="projectSelect">
+        <option value="">Projekt auswählen...</option>
+    </select>
+    
+    <div id="debug"></div>
+
+    <script>
+    console.log('🔄 Test Dropdown Script startet...');
+    
+    async function loadProjects() {
+        try {
+            console.log('🔄 Lade Projekte...');
+            const response = await fetch('/climate/api/climate/projects');
+            const data = await response.json();
+            
+            console.log('📊 API Response:', data);
+            
+            if (data.success && data.projects) {
+                const select = document.getElementById('projectSelect');
+                console.log('🔍 Dropdown-Element gefunden:', select);
+                
+                if (!select) {
+                    console.error('❌ Dropdown-Element nicht gefunden!');
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Projekt auswählen...</option>';
+                console.log('🧹 Dropdown geleert');
+                
+                console.log(`📋 Füge ${data.projects.length} Projekte hinzu:`);
+                data.projects.forEach(project => {
+                    console.log(`  - ${project.name} (ID: ${project.id})`);
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = `${project.name} (${project.location})`;
+                    select.appendChild(option);
+                });
+                
+                console.log('🔍 Dropdown nach Befüllung:', select.innerHTML);
+                
+                // CSS-Debug: Dropdown sichtbarer machen
+                select.style.backgroundColor = 'white';
+                select.style.color = 'black';
+                select.style.border = '2px solid blue';
+                select.style.minHeight = '40px';
+                select.style.fontSize = '14px';
+                select.style.width = '300px';
+                select.style.zIndex = '9999';
+                
+                // Force re-render
+                select.style.display = 'none';
+                select.offsetHeight; // Trigger reflow
+                select.style.display = 'block';
+                
+                console.log('🎨 Dropdown-Styling angepasst und neu gerendert');
+                console.log('📊 Anzahl Optionen im Dropdown:', select.options.length);
+                console.log(`✅ ${data.projects.length} Projekte geladen, Dropdown leer gelassen`);
+                
+                // Debug-Info anzeigen
+                document.getElementById('debug').innerHTML = `
+                    <h3>Debug Info:</h3>
+                    <p>Projekte geladen: ${data.projects.length}</p>
+                    <p>Dropdown Optionen: ${select.options.length}</p>
+                    <p>HTML: ${select.innerHTML}</p>
+                `;
+            } else {
+                console.error('❌ API Response hat keine Projekte:', data);
+            }
+        } catch (error) {
+            console.error('❌ Fehler beim Laden der Projekte:', error);
+        }
+    }
+    
+    // Sofort laden wenn Seite geladen ist
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 DOM Content Loaded');
+        loadProjects();
+    });
+    </script>
+</body>
+</html>

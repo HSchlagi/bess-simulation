@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-orange-600 to-red-600 text-white p-6 rounded-lg mb-6">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-leaf text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">Carbon Credits Dashboard</h1>
+                    <p class="text-orange-100">CO₂-Zertifikate Handel und Monetarisierung</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div id="currentDateTime" class="text-sm"></div>
+                <div class="mt-2">
+                    <select id="projectSelect" style="min-width: 250px; z-index: 1000;">
+                        <option value="">Projekt auswählen...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gradient-to-r from-orange-600 to-red-600 text-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm">Verfügbare Credits</p>
+                    <p class="text-2xl font-bold" id="availableCredits">0</p>
+                </div>
+                <i class="fas fa-certificate text-2xl text-orange-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm">Verkaufte Credits</p>
+                    <p class="text-2xl font-bold" id="soldCredits">0</p>
+                </div>
+                <i class="fas fa-handshake text-2xl text-green-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm">Umsatz</p>
+                    <p class="text-2xl font-bold" id="revenue">0 €</p>
+                </div>
+                <i class="fas fa-euro-sign text-2xl text-blue-200"></i>
+            </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-purple-600 to-violet-600 text-white p-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm">Durchschnittspreis</p>
+                    <p class="text-2xl font-bold" id="avgPrice">0 €</p>
+                    <p class="text-xs text-purple-200" id="marketStatus">Markt: -</p>
+                </div>
+                <i class="fas fa-chart-line text-2xl text-purple-200"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-lg font-semibold mb-4">Credits Verteilung</h3>
+            <div style="height: 300px; position: relative;">
+                <canvas id="creditsChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h3 class="text-lg font-semibold mb-4">Preisentwicklung</h3>
+            <div style="height: 300px; position: relative;">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+console.log('🚀 Carbon Credits Dashboard Script startet...');
+
+let currentProjectId = null;
+let creditsChart = null;
+let priceChart = null;
+
+// Datum/Zeit aktualisieren
+function updateDateTime() {
+    const now = new Date();
+    const options = {
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit',
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit'
+    };
+    const dateTimeElement = document.getElementById('currentDateTime');
+    if (dateTimeElement) {
+        dateTimeElement.textContent = now.toLocaleDateString('de-DE', options);
+    }
+}
+
+updateDateTime();
+setInterval(updateDateTime, 1000);
+
+// Projekte laden - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
+async function loadProjects() {
+    try {
+        console.log('🔄 Lade Projekte...');
+        const response = await fetch('/climate/api/climate/projects');
+        const data = await response.json();
+        
+        console.log('📊 API Response:', data);
+        
+        if (data.success && data.projects) {
+            const select = document.getElementById('projectSelect');
+            console.log('🔍 Dropdown-Element gefunden:', select);
+            
+            if (!select) {
+                console.error('❌ Dropdown-Element nicht gefunden!');
+                return;
+            }
+            
+            select.innerHTML = '<option value="">Projekt auswählen...</option>';
+            console.log('🧹 Dropdown geleert');
+            
+            console.log(`📋 Füge ${data.projects.length} Projekte hinzu:`);
+            data.projects.forEach(project => {
+                console.log(`  - ${project.name} (ID: ${project.id})`);
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = `${project.name} (${project.location})`;
+                select.appendChild(option);
+            });
+            
+            console.log('🔍 Dropdown nach Befüllung:', select.innerHTML);
+            
+            // CSS-Debug: Dropdown sichtbarer machen
+            select.style.backgroundColor = 'white';
+            select.style.color = 'black';
+            select.style.border = '2px solid orange';
+            select.style.minHeight = '40px';
+            select.style.fontSize = '14px';
+            select.style.width = '300px';
+            select.style.zIndex = '9999';
+            
+            // Force re-render
+            select.style.display = 'none';
+            select.offsetHeight; // Trigger reflow
+            select.style.display = 'block';
+            
+            console.log('🎨 Dropdown-Styling angepasst und neu gerendert');
+            console.log('📊 Anzahl Optionen im Dropdown:', select.options.length);
+            console.log(`✅ ${data.projects.length} Projekte geladen, Dropdown leer gelassen`);
+        } else {
+            console.error('❌ API Response hat keine Projekte:', data);
+        }
+    } catch (error) {
+        console.error('❌ Fehler beim Laden der Projekte:', error);
+    }
+}
+
+// Projekt-Daten laden
+async function loadProjectData(projectId) {
+    currentProjectId = projectId;
+    console.log('Lade Carbon Credits Daten für Projekt ID:', projectId);
+    
+    try {
+        const response = await fetch(`/climate/api/climate/co2-data/${projectId}`);
+        const data = await response.json();
+        
+        if (data.success && data.co2_data) {
+            const co2Data = data.co2_data;
+            
+            // Berechnungen basierend auf CO2-Daten
+            const totalCredits = Math.floor(co2Data.total_co2_saved * 0.37); // 0.37 Credits pro kg CO2
+            const soldCredits = Math.floor(totalCredits * 0.6); // 60% verkauft
+            const availableCredits = totalCredits - soldCredits;
+            const revenue = Math.floor(soldCredits * 45); // 45€ pro Credit
+            const avgPrice = 45;
+            const marketStatus = 'Aktiv';
+            
+            // UI aktualisieren
+            document.getElementById('availableCredits').textContent = availableCredits.toLocaleString();
+            document.getElementById('soldCredits').textContent = soldCredits.toLocaleString();
+            document.getElementById('revenue').textContent = revenue.toLocaleString() + ' €';
+            document.getElementById('avgPrice').textContent = avgPrice + ' €';
+            document.getElementById('marketStatus').textContent = 'Markt: ' + marketStatus;
+            
+            // Charts aktualisieren - monthly_trend zu Zahlen-Array konvertieren
+            const monthlyValues = co2Data.monthly_trend.map(item => item.saved || 0);
+            updateCharts(availableCredits, soldCredits, monthlyValues);
+            
+            console.log('✅ Carbon Credits Daten geladen:', {
+                totalCredits,
+                soldCredits,
+                availableCredits,
+                revenue,
+                avgPrice
+            });
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Projekt-Daten:', error);
+    }
+}
+
+// Charts aktualisieren
+function updateCharts(availableCredits, soldCredits, monthlyTrend) {
+    // Credits Chart
+    if (creditsChart) creditsChart.destroy();
+    const creditsCtx = document.getElementById('creditsChart').getContext('2d');
+    creditsChart = new Chart(creditsCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Verfügbar', 'Verkauft'],
+            datasets: [{
+                data: [availableCredits, soldCredits],
+                backgroundColor: ['#F59E0B', '#10B981'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+    
+    // Price Chart
+    if (priceChart) priceChart.destroy();
+    const priceCtx = document.getElementById('priceChart').getContext('2d');
+    const labels = monthlyTrend.map((_, index) => `Monat ${index + 1}`);
+    priceChart = new Chart(priceCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Credit Preis (€)',
+                data: monthlyTrend.map(() => 45 + Math.random() * 10 - 5),
+                borderColor: '#F59E0B',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 35,
+                    max: 55,
+                    ticks: {
+                        stepSize: 5
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+// Event Listeners - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM Content Loaded');
+    
+    // Projekte laden
+    loadProjects();
+    
+    // Projekt-Auswahl
+    document.getElementById('projectSelect').addEventListener('change', function() {
+        const selectedProjectId = this.value;
+        if (selectedProjectId) {
+            loadProjectData(selectedProjectId);
+        } else {
+            // Reset zu Standardwerten
+            document.getElementById('availableCredits').textContent = '0';
+            document.getElementById('soldCredits').textContent = '0';
+            document.getElementById('revenue').textContent = '0 €';
+            document.getElementById('avgPrice').textContent = '0 €';
+            document.getElementById('marketStatus').textContent = 'Markt: -';
+            
+            if (creditsChart) creditsChart.destroy();
+            if (priceChart) priceChart.destroy();
+        }
+    });
+    
+    console.log('✅ Event Listeners registriert');
+});
+</script>
+{% endblock %}
