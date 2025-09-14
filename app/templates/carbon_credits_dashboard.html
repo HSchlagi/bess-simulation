@@ -73,19 +73,141 @@
         </div>
     </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Credits Verteilung</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="creditsChart"></canvas>
+    <!-- Tab Navigation -->
+    <div class="mb-6">
+        <nav class="flex space-x-8 border-b border-gray-200">
+            <button id="creditsTab" onclick="switchTab('credits')" class="tab-button active py-2 px-1 border-b-2 border-orange-500 text-sm font-medium text-orange-600">
+                <i class="fas fa-certificate mr-2"></i>Credits
+            </button>
+            <button id="tradingTab" onclick="switchTab('trading')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-exchange-alt mr-2"></i>Handel
+            </button>
+            <button id="marketTab" onclick="switchTab('market')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-chart-line mr-2"></i>Markt
+            </button>
+            <button id="reportsTab" onclick="switchTab('reports')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-file-alt mr-2"></i>Berichte
+            </button>
+        </nav>
+    </div>
+
+    <!-- Credits Tab Content -->
+    <div id="creditsContent" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Credits Verteilung</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="creditsChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Preisentwicklung</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="priceChart"></canvas>
+                </div>
             </div>
         </div>
-        
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Preisentwicklung</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="priceChart"></canvas>
+    </div>
+
+    <!-- Trading Tab Content -->
+    <div id="tradingContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Carbon Credits Handel</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-4 bg-orange-50 rounded-lg">
+                        <span class="font-medium">Verfügbare Credits</span>
+                        <span class="text-orange-600 font-bold" id="availableCreditsValue">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+                        <span class="font-medium">Verkaufte Credits</span>
+                        <span class="text-green-600 font-bold" id="soldCreditsValue">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+                        <span class="font-medium">Aktueller Preis</span>
+                        <span class="text-blue-600 font-bold" id="currentPriceValue">45 €</span>
+                    </div>
+                    <button class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700">
+                        <i class="fas fa-handshake mr-2"></i>Credits verkaufen
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Handelshistorie</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="tradingHistoryChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Tab Content -->
+    <div id="marketContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Marktpreis-Trend</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="marketTrendChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Markt-Übersicht</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Durchschnittspreis</span>
+                        <span class="font-bold text-orange-600" id="avgPriceValue">45 €</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Marktvolumen</span>
+                        <span class="font-bold text-blue-600" id="marketVolume">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Marktstatus</span>
+                        <span class="font-bold text-green-600" id="marketStatusValue">Aktiv</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Umsatz gesamt</span>
+                        <span class="font-bold text-purple-600" id="totalRevenueValue">0 €</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Tab Content -->
+    <div id="reportsContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Carbon Credits Berichte</h3>
+                <div class="space-y-3">
+                    <button class="w-full text-left p-3 bg-orange-50 rounded-lg hover:bg-orange-100">
+                        <i class="fas fa-file-pdf mr-2 text-red-600"></i>September 2025 - Credits Report
+                    </button>
+                    <button class="w-full text-left p-3 bg-orange-50 rounded-lg hover:bg-orange-100">
+                        <i class="fas fa-file-excel mr-2 text-green-600"></i>August 2025 - Trading Analyse
+                    </button>
+                    <button class="w-full text-left p-3 bg-orange-50 rounded-lg hover:bg-orange-100">
+                        <i class="fas fa-file-pdf mr-2 text-red-600"></i>Juli 2025 - Marktbericht
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Berichte generieren</h3>
+                <div class="space-y-4">
+                    <button class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700">
+                        <i class="fas fa-download mr-2"></i>Credits Report PDF
+                    </button>
+                    <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-table mr-2"></i>Excel Export
+                    </button>
+                    <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-chart-bar mr-2"></i>Markt Dashboard
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -97,6 +219,8 @@ console.log('🚀 Carbon Credits Dashboard Script startet...');
 let currentProjectId = null;
 let creditsChart = null;
 let priceChart = null;
+let tradingHistoryChart = null;
+let marketTrendChart = null;
 
 // Datum/Zeit aktualisieren
 function updateDateTime() {
@@ -117,6 +241,128 @@ function updateDateTime() {
 
 updateDateTime();
 setInterval(updateDateTime, 1000);
+
+// Tab Navigation
+function switchTab(tabName) {
+    // Alle Tabs verstecken
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Alle Tab-Buttons deaktivieren
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active', 'border-orange-500', 'text-orange-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById(tabName + 'Content').classList.remove('hidden');
+    document.getElementById(tabName + 'Tab').classList.add('active', 'border-orange-500', 'text-orange-600');
+    document.getElementById(tabName + 'Tab').classList.remove('border-transparent', 'text-gray-500');
+    
+    // Market Trend Chart aktualisieren wenn Market Tab aktiviert wird
+    if (tabName === 'market' && currentProjectId) {
+        console.log('🔄 Aktualisiere Market Trend Chart...');
+        console.log('🎯 Tab gewechselt zu:', tabName);
+        console.log('🎯 Aktuelle Projekt ID:', currentProjectId);
+        
+        // Demo-Daten für Market Trend
+        const monthlyData = [
+            { month: 'Jan', saved: 95.2 },
+            { month: 'Feb', saved: 108.7 },
+            { month: 'Mär', saved: 142.3 },
+            { month: 'Apr', saved: 156.8 },
+            { month: 'Mai', saved: 178.9 },
+            { month: 'Jun', saved: 195.6 }
+        ];
+        
+        console.log('📊 Rufe updateMarketTrendChart auf mit:', monthlyData);
+        updateMarketTrendChart(monthlyData);
+        console.log('✅ updateMarketTrendChart aufgerufen');
+    }
+    
+    // Trading History Chart aktualisieren wenn Handel Tab aktiviert wird
+    if (tabName === 'trading' && currentProjectId) {
+        console.log('🔄 Aktualisiere Trading History Chart...');
+        console.log('🎯 Tab gewechselt zu:', tabName);
+        console.log('🎯 Aktuelle Projekt ID:', currentProjectId);
+        
+        // Demo-Daten für Trading History
+        const availableCredits = 954;
+        const soldCredits = 400;
+        const monthlyValues = [95.2, 108.7, 142.3, 156.8, 178.9, 195.6];
+        const revenue = 18000;
+        
+        console.log('📊 Rufe updateTabCharts auf mit:', { availableCredits, soldCredits, monthlyValues, revenue });
+        updateTabCharts(availableCredits, soldCredits, monthlyValues, revenue);
+        console.log('✅ updateTabCharts aufgerufen');
+    }
+}
+
+// Market Trend Chart aktualisieren - GLOBALE FUNKTION
+function updateMarketTrendChart(monthlyData) {
+    console.log('🎨 updateMarketTrendChart aufgerufen mit:', monthlyData);
+    
+    const canvas = document.getElementById('marketTrendChart');
+    console.log('🔍 Market Trend Canvas gefunden:', canvas);
+    
+    if (!canvas) {
+        console.error('❌ Market Trend Canvas nicht gefunden!');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    console.log('🎯 Market Trend Context:', ctx);
+    
+    if (marketTrendChart) {
+        console.log('🗑️ Zerstöre altes Market Trend Chart');
+        marketTrendChart.destroy();
+    }
+    
+    // Demo-Daten für Marktpreis-Trend (€ pro t CO2)
+    const marketPrices = [42, 44, 45, 47, 46, 45];
+    const labels = monthlyData.map((_, index) => `Monat ${index + 1}`);
+    
+    marketTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Marktpreis (€/t CO₂)',
+                data: marketPrices,
+                borderColor: '#F59E0B',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: false,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: 40,
+                    max: 50,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' €';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log('✅ Market Trend Chart erstellt:', marketTrendChart);
+}
 
 // Projekte laden - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
 async function loadProjects() {
@@ -206,6 +452,17 @@ async function loadProjectData(projectId) {
             const monthlyValues = co2Data.monthly_trend.map(item => item.saved || 0);
             updateCharts(availableCredits, soldCredits, monthlyValues);
             
+            // Tab-Daten aktualisieren
+            document.getElementById('availableCreditsValue').textContent = availableCredits.toLocaleString();
+            document.getElementById('soldCreditsValue').textContent = soldCredits.toLocaleString();
+            document.getElementById('avgPriceValue').textContent = avgPrice + ' €';
+            document.getElementById('marketStatusValue').textContent = marketStatus;
+            document.getElementById('totalRevenueValue').textContent = revenue.toLocaleString() + ' €';
+            document.getElementById('marketVolume').textContent = soldCredits.toLocaleString();
+            
+            // Zusätzliche Charts für Tabs aktualisieren
+            updateTabCharts(availableCredits, soldCredits, monthlyValues, revenue);
+            
             console.log('✅ Carbon Credits Daten geladen:', {
                 totalCredits,
                 soldCredits,
@@ -289,6 +546,74 @@ function updateCharts(availableCredits, soldCredits, monthlyTrend) {
     });
 }
 
+// Tab-Charts aktualisieren
+function updateTabCharts(availableCredits, soldCredits, monthlyValues, revenue) {
+    // Trading History Chart
+    if (tradingHistoryChart) tradingHistoryChart.destroy();
+    const tradingHistoryCtx = document.getElementById('tradingHistoryChart');
+    if (tradingHistoryCtx) {
+        tradingHistoryChart = new Chart(tradingHistoryCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun'],
+                datasets: [{
+                    label: 'Verkaufte Credits',
+                    data: monthlyValues.slice(0, 6).map(value => Math.floor(value * 0.37)),
+                    backgroundColor: '#10B981',
+                    borderColor: '#059669',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 100
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Market Trend Chart
+    if (marketTrendChart) marketTrendChart.destroy();
+    const marketTrendCtx = document.getElementById('marketTrendChart');
+    if (marketTrendCtx) {
+        marketTrendChart = new Chart(marketTrendCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun'],
+                datasets: [{
+                    label: 'Credits Preis (€)',
+                    data: [42, 44, 45, 46, 45, 45],
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 35,
+                        max: 55,
+                        ticks: {
+                            stepSize: 5
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
 // Event Listeners - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📄 DOM Content Loaded');
@@ -311,10 +636,272 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (creditsChart) creditsChart.destroy();
             if (priceChart) priceChart.destroy();
+            if (tradingHistoryChart) tradingHistoryChart.destroy();
+            if (marketTrendChart) marketTrendChart.destroy();
         }
     });
     
     console.log('✅ Event Listeners registriert');
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentProjectId = 1;
+    let co2TrendChart = null;
+    let creditsChart = null;
+
+    // Aktuelle Zeit anzeigen
+    function updateDateTime() {
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit'
+        };
+        document.getElementById('currentDateTime').textContent = now.toLocaleDateString('de-DE', options);
+    }
+    
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    // Projekte laden
+    async function loadProjects() {
+        try {
+            console.log('🔄 Lade Projekte...');
+            const response = await fetch('/climate/api/climate/projects');
+            const data = await response.json();
+            
+            console.log('📊 API Response:', data);
+            
+            if (data.success && data.projects) {
+                const select = document.getElementById('projectSelect');
+                console.log('🔍 Dropdown-Element gefunden:', select);
+                
+                if (!select) {
+                    console.error('❌ Dropdown-Element nicht gefunden!');
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Projekt auswählen...</option>';
+                console.log('🧹 Dropdown geleert');
+                
+                console.log(`📋 Füge ${data.projects.length} Projekte hinzu:`);
+                data.projects.forEach(project => {
+                    console.log(`  - ${project.name} (ID: ${project.id})`);
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = `${project.name} (${project.location})`;
+                    select.appendChild(option);
+                });
+                
+                console.log('🔍 Dropdown nach Befüllung:', select.innerHTML);
+                
+                // CSS-Debug: Dropdown sichtbarer machen
+                select.style.backgroundColor = 'white';
+                select.style.color = 'black';
+                select.style.border = '2px solid blue';
+                select.style.minHeight = '40px';
+                select.style.fontSize = '14px';
+                select.style.width = '300px';
+                select.style.zIndex = '9999';
+                
+                // Force re-render
+                select.style.display = 'none';
+                select.offsetHeight; // Trigger reflow
+                select.style.display = 'block';
+                
+                console.log('🎨 Dropdown-Styling angepasst und neu gerendert');
+                console.log('📊 Anzahl Optionen im Dropdown:', select.options.length);
+                console.log(`✅ ${data.projects.length} Projekte geladen, Dropdown leer gelassen`);
+            } else {
+                console.error('❌ API Response hat keine Projekte:', data);
+                loadDemoData();
+            }
+        } catch (error) {
+            console.error('❌ Fehler beim Laden der Projekte:', error);
+            loadDemoData();
+        }
+    }
+
+    // CO2-Daten laden
+    async function loadCO2Data(projectId) {
+        try {
+            const response = await fetch(`/climate/api/climate/co2-data/${projectId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                updateCO2Metrics(result.data);
+                updateCO2TrendChart(result.data.monthly_trend);
+                updateCarbonCreditsChart(result.data);
+            } else {
+                console.error('API-Fehler:', result.error);
+                loadDemoData();
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der CO2-Daten:', error);
+            loadDemoData();
+        }
+    }
+
+    // Demo-Daten als Fallback
+    function loadDemoData() {
+        const data = {
+            total_co2_saved: 1161.3,
+            total_co2_emitted: 89.2,
+            net_co2_balance: 1072.1,
+            monthly_trend: [
+                { month: 'Jan', saved: 95.2, emitted: 7.1 },
+                { month: 'Feb', saved: 108.7, emitted: 8.3 },
+                { month: 'Mär', saved: 142.3, emitted: 9.8 },
+                { month: 'Apr', saved: 156.8, emitted: 11.2 },
+                { month: 'Mai', saved: 178.9, emitted: 12.4 },
+                { month: 'Jun', saved: 195.6, emitted: 13.7 },
+                { month: 'Jul', saved: 201.3, emitted: 14.2 },
+                { month: 'Aug', saved: 189.4, emitted: 13.9 },
+                { month: 'Sep', saved: 175.2, emitted: 12.8 },
+                { month: 'Okt', saved: 158.7, emitted: 11.5 },
+                { month: 'Nov', saved: 132.4, emitted: 9.8 },
+                { month: 'Dez', saved: 112.9, emitted: 8.4 }
+            ]
+        };
+        
+        updateCO2Metrics(data);
+        updateCO2TrendChart(data.monthly_trend);
+        updateCarbonCreditsChart(data);
+    }
+
+    // CO2-Metriken aktualisieren
+    function updateCO2Metrics(data) {
+        const availableCredits = Math.floor(data.total_co2_saved * 0.37);
+        const soldCredits = Math.floor(availableCredits * 0.42);
+        const revenue = Math.floor(soldCredits * 45); // 45€ pro Credit
+        const avgPrice = 45;
+        
+        document.getElementById('availableCredits').textContent = availableCredits;
+        document.getElementById('soldCredits').textContent = soldCredits;
+        document.getElementById('revenue').textContent = revenue.toLocaleString() + ' €';
+        document.getElementById('avgPrice').textContent = avgPrice + ' €';
+        
+        document.getElementById('availableCreditsValue').textContent = availableCredits;
+        document.getElementById('soldCreditsValue').textContent = soldCredits;
+    }
+
+    // CO2-Trend Chart aktualisieren
+    function updateCO2TrendChart(monthlyData) {
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        
+        if (co2TrendChart) {
+            co2TrendChart.destroy();
+        }
+        
+        co2TrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: 'CO₂-Einsparungen (kg)',
+                    data: monthlyData.map(d => d.saved),
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'CO₂-Einsparungen (kg)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Monate'
+                        }
+                    }
+                },
+                layout: {
+                    padding: {
+                        top: 10,
+                        bottom: 10,
+                        left: 10,
+                        right: 10
+                    }
+                }
+            }
+        });
+    }
+
+    // Carbon Credits Chart aktualisieren
+    function updateCarbonCreditsChart(data) {
+        const ctx = document.getElementById('creditsChart').getContext('2d');
+        
+        if (creditsChart) {
+            creditsChart.destroy();
+        }
+        
+        const totalCredits = Math.floor(data.total_co2_saved * 0.37);
+        const soldCredits = Math.floor(totalCredits * 0.42);
+        const availableCredits = totalCredits - soldCredits;
+        
+        creditsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Generiert', 'Verkauft', 'Verfügbar'],
+                datasets: [{
+                    data: [totalCredits, soldCredits, availableCredits],
+                    backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 10
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+
+    // Event-Listener für Projektauswahl
+    document.getElementById('projectSelect').addEventListener('change', function(e) {
+        console.log('🔄 Projekt ausgewählt:', e.target.value);
+        if (e.target.value) {
+            currentProjectId = parseInt(e.target.value);
+            console.log(`✅ Lade Daten für Projekt ID: ${currentProjectId}`);
+            loadCO2Data(currentProjectId);
+        } else {
+            console.log('❌ Kein Projekt ausgewählt');
+            loadDemoData();
+        }
+    });
+
+    // Initialisierung
+    loadProjects();
 });
 </script>
 {% endblock %}

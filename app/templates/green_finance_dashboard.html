@@ -73,19 +73,133 @@
         </div>
     </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Portfolio Verteilung</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="portfolioChart"></canvas>
+    <!-- Tab Navigation -->
+    <div class="mb-6">
+        <nav class="flex space-x-8 border-b border-gray-200">
+            <button id="portfolioTab" onclick="switchTab('portfolio')" class="tab-button active py-2 px-1 border-b-2 border-green-500 text-sm font-medium text-green-600">
+                <i class="fas fa-chart-pie mr-2"></i>Portfolio
+            </button>
+            <button id="tradingTab" onclick="switchTab('trading')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-exchange-alt mr-2"></i>Handel
+            </button>
+            <button id="analyticsTab" onclick="switchTab('analytics')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-chart-line mr-2"></i>Analytics
+            </button>
+            <button id="reportsTab" onclick="switchTab('reports')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-file-alt mr-2"></i>Berichte
+            </button>
+        </nav>
+    </div>
+
+    <!-- Portfolio Tab Content -->
+    <div id="portfolioContent" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Portfolio Verteilung</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="portfolioChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Performance Entwicklung</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="performanceChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
             </div>
         </div>
-        
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Performance Entwicklung</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="performanceChart"></canvas>
+    </div>
+
+    <!-- Trading Tab Content -->
+    <div id="tradingContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Green Bonds Handel</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+                        <span class="font-medium">Green Bond Portfolio</span>
+                        <span class="text-green-600 font-bold" id="greenBondsValue">0 €</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+                        <span class="font-medium">Sustainability Bonds</span>
+                        <span class="text-blue-600 font-bold" id="sustainabilityBondsValue">0 €</span>
+                    </div>
+                    <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-shopping-cart mr-2"></i>Neue Investition
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Handelshistorie</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="tradingChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Tab Content -->
+    <div id="analyticsContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">ESG Score Analyse</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="esgChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Nachhaltigkeits-Metriken</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>CO₂-Reduktion</span>
+                        <span class="font-bold text-green-600" id="co2Reduction">0 kg</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Erneuerbare Energie</span>
+                        <span class="font-bold text-blue-600" id="renewableEnergy">0%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>ESG Rating</span>
+                        <span class="font-bold text-purple-600" id="esgRatingValue">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Tab Content -->
+    <div id="reportsContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Monatliche Berichte</h3>
+                <div class="space-y-3">
+                    <button class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100">
+                        <i class="fas fa-file-pdf mr-2 text-red-600"></i>September 2025 - Green Finance Report
+                    </button>
+                    <button class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100">
+                        <i class="fas fa-file-excel mr-2 text-green-600"></i>August 2025 - Portfolio Analyse
+                    </button>
+                    <button class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100">
+                        <i class="fas fa-file-pdf mr-2 text-red-600"></i>Juli 2025 - ESG Compliance Report
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Berichte generieren</h3>
+                <div class="space-y-4">
+                    <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-download mr-2"></i>Portfolio Report PDF
+                    </button>
+                    <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-table mr-2"></i>Excel Export
+                    </button>
+                    <button class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-chart-bar mr-2"></i>ESG Dashboard
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -97,6 +211,8 @@ console.log('🚀 Green Finance Dashboard Script startet...');
 let currentProjectId = null;
 let portfolioChart = null;
 let performanceChart = null;
+let tradingChart = null;
+let esgChart = null;
 
 // Datum/Zeit aktualisieren
 function updateDateTime() {
@@ -118,8 +234,28 @@ function updateDateTime() {
 updateDateTime();
 setInterval(updateDateTime, 1000);
 
+// Tab Navigation
+function switchTab(tabName) {
+    // Alle Tabs verstecken
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Alle Tab-Buttons deaktivieren
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active', 'border-green-500', 'text-green-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById(tabName + 'Content').classList.remove('hidden');
+    document.getElementById(tabName + 'Tab').classList.add('active', 'border-green-500', 'text-green-600');
+    document.getElementById(tabName + 'Tab').classList.remove('border-transparent', 'text-gray-500');
+}
+
 // Projekte laden - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
 async function loadProjects() {
+    console.log('🚀 loadProjects() aufgerufen - Green Finance Dashboard');
     try {
         console.log('🔄 Lade Projekte...');
         const response = await fetch('/climate/api/climate/projects');
@@ -184,26 +320,71 @@ async function loadProjectData(projectId) {
         const response = await fetch(`/climate/api/climate/co2-data/${projectId}`);
         const data = await response.json();
         
-        if (data.success && data.co2_data) {
-            const co2Data = data.co2_data;
+        console.log('API Response:', data);
+        console.log('data.success:', data.success);
+        console.log('data.data:', data.data);
+        console.log('data.co2_data:', data.co2_data);
+        console.log('typeof data.data:', typeof data.data);
+        
+        if (data.success && (data.data || data.co2_data)) {
+            console.log('✅ Daten gefunden, verarbeite...');
+            const co2Data = data.data || data.co2_data;
+            console.log('📊 CO2-Daten erhalten:', co2Data);
             
             // Berechnungen basierend auf CO2-Daten
+            console.log('🧮 Berechne Portfolio-Werte...');
             const portfolioValue = Math.floor(co2Data.total_co2_saved * 25); // 25€ pro t CO2
+            console.log('💰 Portfolio-Wert:', portfolioValue);
             const greenBondsValue = Math.floor(portfolioValue * 0.68);
+            console.log('💚 Green Bonds Wert:', greenBondsValue);
             const sustainabilityBondsValue = Math.floor(portfolioValue * 0.32);
+            console.log('💜 Sustainability Bonds Wert:', sustainabilityBondsValue);
             const annualReturn = (co2Data.avg_efficiency * 0.1).toFixed(1);
+            console.log('📈 Annual Return:', annualReturn);
             const esgRating = co2Data.avg_efficiency > 80 ? 'AA' : co2Data.avg_efficiency > 60 ? 'A' : 'BBB';
+            console.log('⭐ ESG Rating:', esgRating);
+            const efficiency = co2Data.avg_efficiency || 87.5;
+            console.log('⚡ Efficiency:', efficiency);
             
             // UI aktualisieren
+            console.log('🖥️ Aktualisiere UI-Elemente...');
             document.getElementById('totalPortfolio').textContent = portfolioValue.toLocaleString() + ' €';
             document.getElementById('greenBonds').textContent = greenBondsValue.toLocaleString() + ' €';
             document.getElementById('sustainabilityBonds').textContent = sustainabilityBondsValue.toLocaleString() + ' €';
             document.getElementById('annualReturn').textContent = annualReturn + '%';
             document.getElementById('esgRating').textContent = 'ESG Rating: ' + esgRating;
+            console.log('✅ UI-Elemente aktualisiert');
+            
+            // Tab-Daten aktualisieren
+            console.log('📑 Aktualisiere Tab-Daten...');
+            document.getElementById('greenBondsValue').textContent = greenBondsValue.toLocaleString() + ' €';
+            document.getElementById('sustainabilityBondsValue').textContent = sustainabilityBondsValue.toLocaleString() + ' €';
+            document.getElementById('co2Reduction').textContent = co2Data.total_co2_saved.toLocaleString() + ' kg';
+            document.getElementById('renewableEnergy').textContent = efficiency + '%';
+            document.getElementById('esgRatingValue').textContent = esgRating;
+            console.log('✅ Tab-Daten aktualisiert');
             
             // Charts aktualisieren - monthly_trend zu Zahlen-Array konvertieren
+            console.log('📈 Bereite Chart-Daten vor...');
+            console.log('📊 monthly_trend:', co2Data.monthly_trend);
             const monthlyValues = co2Data.monthly_trend.map(item => item.saved || 0);
-            updateCharts(greenBondsValue, sustainabilityBondsValue, monthlyValues);
+            console.log('📈 Monthly Values:', monthlyValues);
+            
+            try {
+                console.log('🔄 Rufe updateCharts auf mit:', { greenBondsValue, sustainabilityBondsValue, monthlyValues });
+                updateCharts(greenBondsValue, sustainabilityBondsValue, monthlyValues);
+                console.log('✅ updateCharts erfolgreich aufgerufen');
+                
+                // Zusätzliche Charts für Tabs aktualisieren
+                console.log('🔄 Rufe updateTabCharts auf mit:', { greenBondsValue, sustainabilityBondsValue, monthlyValues, efficiency });
+                updateTabCharts(greenBondsValue, sustainabilityBondsValue, monthlyValues, efficiency);
+                console.log('✅ updateTabCharts erfolgreich aufgerufen');
+            } catch (error) {
+                console.error('❌ Fehler beim Erstellen der Charts:', error);
+            }
+            
+            // Carbon Credits Chart (nicht vorhanden in Green Finance, aber wird aufgerufen)
+            // updateCarbonCreditsChart(co2Data); // Deaktiviert da nicht benötigt
             
             console.log('✅ Green Finance Daten geladen:', {
                 portfolioValue,
@@ -220,67 +401,276 @@ async function loadProjectData(projectId) {
 
 // Charts aktualisieren
 function updateCharts(greenBonds, sustainabilityBonds, monthlyTrend) {
+    console.log('🎨 updateCharts aufgerufen mit:', { greenBonds, sustainabilityBonds, monthlyTrend });
+    
+    // Test ob Charts funktionieren
+    console.log('🧪 Teste Chart-Erstellung...');
+    
     // Portfolio Chart
-    if (portfolioChart) portfolioChart.destroy();
-    const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
-    portfolioChart = new Chart(portfolioCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Green Bonds', 'Sustainability Bonds'],
-            datasets: [{
-                data: [greenBonds, sustainabilityBonds],
-                backgroundColor: ['#10B981', '#8B5CF6'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    console.log('📊 Erstelle Portfolio Chart...');
+    if (portfolioChart) {
+        console.log('🗑️ Zerstöre altes Portfolio Chart');
+        portfolioChart.destroy();
+    }
+    
+    const portfolioCanvas = document.getElementById('portfolioChart');
+    console.log('🔍 Portfolio Canvas gefunden:', portfolioCanvas);
+    
+    if (portfolioCanvas) {
+        const portfolioCtx = portfolioCanvas.getContext('2d');
+        console.log('🎯 Portfolio Context:', portfolioCtx);
+        
+        portfolioChart = new Chart(portfolioCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Green Bonds', 'Sustainability Bonds'],
+                datasets: [{
+                    data: [greenBonds, sustainabilityBonds],
+                    backgroundColor: ['#10B981', '#8B5CF6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                devicePixelRatio: 1,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 10,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                cutout: '60%',
+                animation: {
+                    animateRotate: true,
+                    animateScale: true
                 }
             }
-        }
-    });
+        });
+        console.log('✅ Portfolio Chart erstellt:', portfolioChart);
+    } else {
+        console.error('❌ Portfolio Canvas nicht gefunden!');
+    }
     
     // Performance Chart
-    if (performanceChart) performanceChart.destroy();
-    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-    const labels = monthlyTrend.map((_, index) => `Monat ${index + 1}`);
-    performanceChart = new Chart(performanceCtx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Portfolio Performance',
-                data: monthlyTrend.map(value => value * 1000),
-                borderColor: '#10B981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' €';
+    console.log('📈 Erstelle Performance Chart...');
+    if (performanceChart) {
+        console.log('🗑️ Zerstöre altes Performance Chart');
+        performanceChart.destroy();
+    }
+    
+    const performanceCanvas = document.getElementById('performanceChart');
+    console.log('🔍 Performance Canvas gefunden:', performanceCanvas);
+    
+    if (performanceCanvas) {
+        const performanceCtx = performanceCanvas.getContext('2d');
+        console.log('🎯 Performance Context:', performanceCtx);
+        
+        const labels = monthlyTrend.map((_, index) => `Monat ${index + 1}`);
+        console.log('📅 Chart Labels:', labels);
+        console.log('📊 Chart Data:', monthlyTrend.map(value => value * 1000));
+        
+        performanceChart = new Chart(performanceCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Portfolio Performance',
+                    data: monthlyTrend.map(value => value * 1000),
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                devicePixelRatio: 1,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' €';
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeInOutQuart'
+                }
+            }
+        });
+        console.log('✅ Performance Chart erstellt:', performanceChart);
+    } else {
+        console.error('❌ Performance Canvas nicht gefunden!');
+    }
+}
+
+// Tab-Charts aktualisieren
+function updateTabCharts(greenBonds, sustainabilityBonds, monthlyValues, efficiency) {
+    // Trading Chart
+    if (tradingChart) tradingChart.destroy();
+    const tradingCtx = document.getElementById('tradingChart');
+    if (tradingCtx) {
+        tradingChart = new Chart(tradingCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun'],
+                datasets: [{
+                    label: 'Handelsvolumen (€)',
+                    data: monthlyValues.slice(0, 6).map(value => value * 100),
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' €';
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+    }
+    
+    // ESG Chart
+    if (esgChart) esgChart.destroy();
+    const esgCtx = document.getElementById('esgChart');
+    if (esgCtx) {
+        esgChart = new Chart(esgCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Environmental', 'Social', 'Governance'],
+                datasets: [{
+                    data: [efficiency, efficiency * 0.8, efficiency * 0.9],
+                    backgroundColor: ['#10B981', '#3B82F6', '#8B5CF6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Tab-Charts aktualisieren
+function updateTabCharts(greenBonds, sustainabilityBonds, monthlyValues, efficiency) {
+    // Trading Chart
+    if (tradingChart) tradingChart.destroy();
+    const tradingCtx = document.getElementById('tradingChart');
+    if (tradingCtx) {
+        tradingChart = new Chart(tradingCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun'],
+                datasets: [{
+                    label: 'Handelsvolumen (€)',
+                    data: monthlyValues.slice(0, 6).map(value => value * 100),
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString() + ' €';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // ESG Chart
+    if (esgChart) esgChart.destroy();
+    const esgCtx = document.getElementById('esgChart');
+    if (esgCtx) {
+        esgChart = new Chart(esgCtx.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Environmental', 'Social', 'Governance'],
+                datasets: [{
+                    data: [efficiency, efficiency * 0.8, efficiency * 0.9],
+                    backgroundColor: ['#10B981', '#3B82F6', '#8B5CF6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Event Listeners - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('📄 DOM Content Loaded');
+    console.log('📄 DOM Content Loaded - Green Finance Dashboard');
+    console.log('🔍 Prüfe ob alle Elemente vorhanden sind...');
+    
+    // Test ob alle wichtigen Elemente vorhanden sind
+    const projectSelect = document.getElementById('projectSelect');
+    const portfolioCanvasElement = document.getElementById('portfolioChart');
+    const performanceCanvasElement = document.getElementById('performanceChart');
+    
+    console.log('📋 projectSelect gefunden:', projectSelect);
+    console.log('📊 portfolioCanvas gefunden:', portfolioCanvasElement);
+    console.log('📈 performanceCanvas gefunden:', performanceCanvasElement);
+    
+    // Test ob JavaScript funktioniert
+    console.log('✅ JavaScript läuft! Green Finance Dashboard initialisiert.');
     
     // Projekte laden
     loadProjects();
@@ -288,10 +678,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Projekt-Auswahl
     document.getElementById('projectSelect').addEventListener('change', function() {
         const selectedProjectId = this.value;
+        console.log('🎯 Projekt ausgewählt - ID:', selectedProjectId);
+        console.log('🎯 Projekt ausgewählt - Name:', this.options[this.selectedIndex].text);
         if (selectedProjectId) {
+            console.log('🚀 Lade Projekt-Daten...');
             loadProjectData(selectedProjectId);
         } else {
             // Reset zu Standardwerten
+            console.log('🔄 Reset Projekt-Daten...');
             document.getElementById('totalPortfolio').textContent = '0 €';
             document.getElementById('greenBonds').textContent = '0 €';
             document.getElementById('sustainabilityBonds').textContent = '0 €';
@@ -300,10 +694,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (portfolioChart) portfolioChart.destroy();
             if (performanceChart) performanceChart.destroy();
+            if (tradingChart) tradingChart.destroy();
+            if (esgChart) esgChart.destroy();
+            console.log('✅ Reset abgeschlossen');
         }
     });
     
     console.log('✅ Event Listeners registriert');
 });
+
 </script>
 {% endblock %}

@@ -73,18 +73,149 @@
         </div>
     </div>
 
-    <!-- Charts -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">CO₂-Trend</h3>
-            <div style="height: 300px; position: relative;">
-                <canvas id="co2TrendChart"></canvas>
+    <!-- Tab Navigation -->
+    <div class="mb-6">
+        <nav class="flex space-x-8 border-b border-gray-200">
+            <button id="optimizationTab" onclick="switchTab('optimization')" class="tab-button active py-2 px-1 border-b-2 border-green-500 text-sm font-medium text-green-600">
+                <i class="fas fa-leaf mr-2"></i>Optimierung
+            </button>
+            <button id="analysisTab" onclick="switchTab('analysis')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-chart-line mr-2"></i>Analyse
+            </button>
+            <button id="efficiencyTab" onclick="switchTab('efficiency')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-cogs mr-2"></i>Effizienz
+            </button>
+            <button id="reportsTab" onclick="switchTab('reports')" class="tab-button py-2 px-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700">
+                <i class="fas fa-file-alt mr-2"></i>Berichte
+            </button>
+        </nav>
+    </div>
+
+    <!-- Optimization Tab Content -->
+    <div id="optimizationContent" class="tab-content">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">CO₂-Trend</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="co2TrendChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Optimierungs-Potential</h3>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="optimizationChart"></canvas>
+                </div>
             </div>
         </div>
-        
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h3 class="text-lg font-semibold mb-4">Optimierungs-Potential</h3>
-            <canvas id="optimizationChart" style="height: 300px;"></canvas>
+    </div>
+
+    <!-- Analysis Tab Content -->
+    <div id="analysisContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">CO₂-Emissionen Analyse</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="emissionsAnalysisChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Optimierungs-Empfehlungen</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-4 bg-green-50 rounded-lg">
+                        <span class="font-medium">Aktuelle CO₂-Einsparung</span>
+                        <span class="text-green-600 font-bold" id="currentSavings">0 kg</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
+                        <span class="font-medium">Optimierungs-Potential</span>
+                        <span class="text-blue-600 font-bold" id="optimizationPotential">0 kg</span>
+                    </div>
+                    <div class="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
+                        <span class="font-medium">Effizienz-Score</span>
+                        <span class="text-purple-600 font-bold" id="efficiencyScore">0</span>
+                    </div>
+                    <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-lightbulb mr-2"></i>Optimierung starten
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Efficiency Tab Content -->
+    <div id="efficiencyContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Effizienz-Trend</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="efficiencyTrendChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Performance-Metriken</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Batterie-Effizienz</span>
+                        <span class="font-bold text-green-600" id="batteryEfficiency">0%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Lade-Effizienz</span>
+                        <span class="font-bold text-blue-600" id="chargingEfficiency">0%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Entlade-Effizienz</span>
+                        <span class="font-bold text-purple-600" id="dischargingEfficiency">0%</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <span>Gesamt-Effizienz</span>
+                        <span class="font-bold text-orange-600" id="totalEfficiency">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Tab Content -->
+    <div id="reportsContent" class="tab-content hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Monatlicher Bericht</h3>
+                <div style="height: 300px; position: relative; background-color: #f8f9fa;">
+                    <canvas id="monthlyReportChart" width="400" height="300" style="display: block !important; width: 400px !important; height: 300px !important; position: absolute !important; top: 0 !important; left: 0 !important;"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">CO₂-Optimierung Berichte</h3>
+                <div class="space-y-3">
+                    <button class="w-full text-left p-3 bg-green-50 rounded-lg hover:bg-green-100">
+                        <i class="fas fa-file-pdf mr-2 text-red-600"></i>September 2025 - CO₂ Report
+                    </button>
+                    <button class="w-full text-left p-3 bg-green-50 rounded-lg hover:bg-green-100">
+                        <i class="fas fa-file-excel mr-2 text-green-600"></i>August 2025 - Effizienz Analyse
+                    </button>
+                    <button class="w-full text-left p-3 bg-green-50 rounded-lg hover:bg-green-100">
+                        <i class="fas fa-file-pdf mr-2 text-red-600"></i>Juli 2025 - Optimierungsbericht
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-lg font-semibold mb-4">Berichte generieren</h3>
+                <div class="space-y-4">
+                    <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-download mr-2"></i>CO₂ Report PDF
+                    </button>
+                    <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-table mr-2"></i>Excel Export
+                    </button>
+                    <button class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700">
+                        <i class="fas fa-chart-bar mr-2"></i>Optimierung Dashboard
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -95,6 +226,9 @@ console.log('🚀 CO₂-Optimierung Dashboard Script startet...');
 let currentProjectId = null;
 let co2TrendChart = null;
 let optimizationChart = null;
+let emissionsAnalysisChart = null;
+let efficiencyTrendChart = null;
+let monthlyReportChart = null;
 
 // Datum/Zeit aktualisieren
 function updateDateTime() {
@@ -115,6 +249,51 @@ function updateDateTime() {
 
 updateDateTime();
 setInterval(updateDateTime, 1000);
+
+// Tab Navigation
+function switchTab(tabName) {
+    // Alle Tabs verstecken
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Alle Tab-Buttons deaktivieren
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active', 'border-green-500', 'text-green-600');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById(tabName + 'Content').classList.remove('hidden');
+    document.getElementById(tabName + 'Tab').classList.add('active', 'border-green-500', 'text-green-600');
+    document.getElementById(tabName + 'Tab').classList.remove('border-transparent', 'text-gray-500');
+    
+    // Charts aktualisieren je nach Tab
+    if (currentProjectId) {
+        console.log('🔄 Tab gewechselt zu:', tabName);
+        
+        // Demo-Daten für alle Tabs
+        const monthlyData = [
+            { month: 'Jan', saved: 215, emitted: 15.4 },
+            { month: 'Feb', saved: 238, emitted: 17.2 },
+            { month: 'Mär', saved: 280, emitted: 19.8 },
+            { month: 'Apr', saved: 310, emitted: 22.1 },
+            { month: 'Mai', saved: 335, emitted: 24.5 },
+            { month: 'Jun', saved: 356, emitted: 26.3 }
+        ];
+        
+        if (tabName === 'analysis') {
+            console.log('📊 Aktualisiere Analyse Charts...');
+            updateAnalysisCharts(monthlyData);
+        } else if (tabName === 'efficiency') {
+            console.log('📊 Aktualisiere Effizienz Charts...');
+            updateEfficiencyCharts(monthlyData);
+        } else if (tabName === 'reports') {
+            console.log('📊 Aktualisiere Berichte Charts...');
+            updateReportsCharts(monthlyData);
+        }
+    }
+}
 
 // Projekte laden - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
 async function loadProjects() {
@@ -269,11 +448,137 @@ function updateCharts(monthlyTrend, efficiency, potentialSavings) {
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true
+                    }
                 }
             }
         }
     });
+}
+
+// Analysis Charts aktualisieren
+function updateAnalysisCharts(monthlyData) {
+    // Emissions Analysis Chart
+    const emissionsCtx = document.getElementById('emissionsAnalysisChart');
+    if (emissionsCtx) {
+        if (emissionsAnalysisChart) emissionsAnalysisChart.destroy();
+        
+        emissionsAnalysisChart = new Chart(emissionsCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: 'CO₂ Emissionen (kg)',
+                    data: monthlyData.map(d => d.emitted),
+                    backgroundColor: '#EF4444',
+                    borderColor: '#DC2626',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' kg';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Efficiency Charts aktualisieren
+function updateEfficiencyCharts(monthlyData) {
+    // Efficiency Trend Chart
+    const efficiencyCtx = document.getElementById('efficiencyTrendChart');
+    if (efficiencyCtx) {
+        if (efficiencyTrendChart) efficiencyTrendChart.destroy();
+        
+        const efficiencyData = [85, 87, 89, 91, 88, 87.5];
+        
+        efficiencyTrendChart = new Chart(efficiencyCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: 'Effizienz (%)',
+                    data: efficiencyData,
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 80,
+                        max: 95,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Reports Charts aktualisieren
+function updateReportsCharts(monthlyData) {
+    // Monthly Report Chart
+    const reportCtx = document.getElementById('monthlyReportChart');
+    if (reportCtx) {
+        if (monthlyReportChart) monthlyReportChart.destroy();
+        
+        monthlyReportChart = new Chart(reportCtx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: 'CO₂ Einsparungen (kg)',
+                    data: monthlyData.map(d => d.saved),
+                    backgroundColor: '#10B981',
+                    borderColor: '#059669',
+                    borderWidth: 1
+                }, {
+                    label: 'CO₂ Emissionen (kg)',
+                    data: monthlyData.map(d => d.emitted),
+                    backgroundColor: '#EF4444',
+                    borderColor: '#DC2626',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' kg';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Event Listeners - KOPIERT VOM ERFOLGREICHEN CLIMATE IMPACT DASHBOARD
@@ -302,6 +607,263 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     console.log('✅ Event Listeners registriert');
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentProjectId = 1;
+    let co2TrendChart = null;
+    let creditsChart = null;
+
+    // Aktuelle Zeit anzeigen
+    function updateDateTime() {
+        const now = new Date();
+        const options = { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit',
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit'
+        };
+        document.getElementById('currentDateTime').textContent = now.toLocaleDateString('de-DE', options);
+    }
+    
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+    // Projekte laden
+    async function loadProjects() {
+        try {
+            console.log('🔄 Lade Projekte...');
+            const response = await fetch('/climate/api/climate/projects');
+            const data = await response.json();
+            
+            console.log('📊 API Response:', data);
+            
+            if (data.success && data.projects) {
+                const select = document.getElementById('projectSelect');
+                console.log('🔍 Dropdown-Element gefunden:', select);
+                
+                if (!select) {
+                    console.error('❌ Dropdown-Element nicht gefunden!');
+                    return;
+                }
+                
+                select.innerHTML = '<option value="">Projekt auswählen...</option>';
+                console.log('🧹 Dropdown geleert');
+                
+                console.log(`📋 Füge ${data.projects.length} Projekte hinzu:`);
+                data.projects.forEach(project => {
+                    console.log(`  - ${project.name} (ID: ${project.id})`);
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = `${project.name} (${project.location})`;
+                    select.appendChild(option);
+                });
+                
+                console.log('🔍 Dropdown nach Befüllung:', select.innerHTML);
+                
+                // CSS-Debug: Dropdown sichtbarer machen
+                select.style.backgroundColor = 'white';
+                select.style.color = 'black';
+                select.style.border = '2px solid blue';
+                select.style.minHeight = '40px';
+                select.style.fontSize = '14px';
+                select.style.width = '300px';
+                select.style.zIndex = '9999';
+                
+                // Force re-render
+                select.style.display = 'none';
+                select.offsetHeight; // Trigger reflow
+                select.style.display = 'block';
+                
+                console.log('🎨 Dropdown-Styling angepasst und neu gerendert');
+                console.log('📊 Anzahl Optionen im Dropdown:', select.options.length);
+                console.log(`✅ ${data.projects.length} Projekte geladen, Dropdown leer gelassen`);
+            } else {
+                console.error('❌ API Response hat keine Projekte:', data);
+                loadDemoData();
+            }
+        } catch (error) {
+            console.error('❌ Fehler beim Laden der Projekte:', error);
+            loadDemoData();
+        }
+    }
+
+    // CO2-Daten laden
+    async function loadCO2Data(projectId) {
+        try {
+            const response = await fetch(`/climate/api/climate/co2-data/${projectId}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                updateCO2Metrics(result.data);
+                updateCO2TrendChart(result.data.monthly_trend);
+                updateCarbonCreditsChart(result.data);
+            } else {
+                console.error('API-Fehler:', result.error);
+                loadDemoData();
+            }
+        } catch (error) {
+            console.error('Fehler beim Laden der CO2-Daten:', error);
+            loadDemoData();
+        }
+    }
+
+    // Demo-Daten als Fallback
+    function loadDemoData() {
+        const data = {
+            total_co2_saved: 1161.3,
+            total_co2_emitted: 89.2,
+            net_co2_balance: 1072.1,
+            monthly_trend: [
+                { month: 'Jan', saved: 95.2, emitted: 7.1 },
+                { month: 'Feb', saved: 108.7, emitted: 8.3 },
+                { month: 'Mär', saved: 142.3, emitted: 9.8 },
+                { month: 'Apr', saved: 156.8, emitted: 11.2 },
+                { month: 'Mai', saved: 178.9, emitted: 12.4 },
+                { month: 'Jun', saved: 195.6, emitted: 13.7 },
+                { month: 'Jul', saved: 201.3, emitted: 14.2 },
+                { month: 'Aug', saved: 189.4, emitted: 13.9 },
+                { month: 'Sep', saved: 175.2, emitted: 12.8 },
+                { month: 'Okt', saved: 158.7, emitted: 11.5 },
+                { month: 'Nov', saved: 132.4, emitted: 9.8 },
+                { month: 'Dez', saved: 112.9, emitted: 8.4 }
+            ]
+        };
+        
+        updateCO2Metrics(data);
+        updateCO2TrendChart(data.monthly_trend);
+        updateCarbonCreditsChart(data);
+    }
+
+    // CO2-Metriken aktualisieren
+    function updateCO2Metrics(data) {
+        const co2Savings = data.total_co2_saved;
+        const efficiency = data.avg_efficiency || 87.5;
+        const potentialSavings = Math.floor(co2Savings * 1.15); // 15% mehr möglich
+        const optimizationScore = Math.min(99, Math.floor(efficiency * 1.1));
+        
+        document.getElementById('co2Savings').textContent = co2Savings.toFixed(1) + ' kg';
+        document.getElementById('efficiency').textContent = efficiency.toFixed(1) + '%';
+        document.getElementById('potentialSavings').textContent = potentialSavings.toFixed(1) + ' kg';
+        document.getElementById('optimizationScore').textContent = optimizationScore;
+        document.getElementById('status').textContent = 'Status: Optimiert';
+    }
+
+    // CO2-Trend Chart aktualisieren
+    function updateCO2TrendChart(monthlyData) {
+        const ctx = document.getElementById('co2TrendChart').getContext('2d');
+        
+        if (co2TrendChart) {
+            co2TrendChart.destroy();
+        }
+        
+        co2TrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: monthlyData.map(d => d.month),
+                datasets: [{
+                    label: 'CO₂-Einsparungen (kg)',
+                    data: monthlyData.map(d => d.saved),
+                    borderColor: '#8B5CF6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'CO₂-Einsparungen (kg)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Monate'
+                        }
+                    }
+                },
+                layout: {
+                    padding: {
+                        top: 10,
+                        bottom: 10,
+                        left: 10,
+                        right: 10
+                    }
+                }
+            }
+        });
+    }
+
+    // Optimization Chart aktualisieren
+    function updateCarbonCreditsChart(data) {
+        const ctx = document.getElementById('optimizationChart').getContext('2d');
+        
+        if (creditsChart) {
+            creditsChart.destroy();
+        }
+        
+        const totalCredits = Math.floor(data.total_co2_saved * 0.37);
+        const soldCredits = Math.floor(totalCredits * 0.42);
+        const availableCredits = totalCredits - soldCredits;
+        
+        creditsChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Aktuell', 'Potenzial', 'Optimiert'],
+                datasets: [{
+                    data: [data.total_co2_saved, data.total_co2_saved * 0.15, data.total_co2_saved * 1.15],
+                    backgroundColor: ['#10B981', '#F59E0B', '#8B5CF6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            padding: 10
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        });
+    }
+
+    // Event-Listener für Projektauswahl
+    document.getElementById('projectSelect').addEventListener('change', function(e) {
+        console.log('🔄 Projekt ausgewählt:', e.target.value);
+        if (e.target.value) {
+            currentProjectId = parseInt(e.target.value);
+            console.log(`✅ Lade Daten für Projekt ID: ${currentProjectId}`);
+            loadCO2Data(currentProjectId);
+        } else {
+            console.log('❌ Kein Projekt ausgewählt');
+            loadDemoData();
+        }
+    });
+
+    // Initialisierung
+    loadProjects();
 });
 </script>
 {% endblock %}

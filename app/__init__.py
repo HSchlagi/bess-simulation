@@ -96,8 +96,8 @@ def create_app():
     
     # Climate Impact Dashboard-Blueprint registrieren
     try:
-        from .climate_routes import climate_bp, register_climate_routes
-        register_climate_routes(app)
+        from .climate_routes import climate_bp
+        app.register_blueprint(climate_bp, url_prefix='/climate')
         print("✅ Climate Impact Dashboard erfolgreich registriert")
     except Exception as e:
         print(f"⚠️  Climate Impact Dashboard nicht verfügbar: {e}")

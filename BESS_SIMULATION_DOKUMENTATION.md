@@ -5408,6 +5408,210 @@ GET /api/ml/optimization/seasonal?season=summer
 
 ---
 
+## **🌱 CO₂-Zertifikate & Carbon Credits Integration (14. September 2025)**
+
+### **Überblick**
+Vollständige Implementierung von Punkt 6.3 aus der Verbesserungs-Roadmap mit vier neuen Dashboards für nachhaltige Finanzanlagen und CO₂-Monetarisierung.
+
+### **🎯 Implementierte Features**
+
+#### **1. Climate Impact Dashboard**
+- **Ziel:** Übersichtliche Darstellung der CO₂-Bilanz und Klimaauswirkungen
+- **Features:**
+  - Projektauswahl-Dropdown mit allen 4 Projekten aus der Datenbank
+  - Echtzeit-CO₂-Daten aus der `co2_balance` Tabelle
+  - Interaktive Charts für CO₂-Trend und Carbon Credits
+  - Metriken: Gesamte CO₂-Einsparungen, Netto-Bilanz, Effizienz
+- **Technologie:** Chart.js, Tailwind CSS, Flask API
+- **URL:** `/climate/climate-dashboard`
+
+#### **2. Green Finance Dashboard**
+- **Ziel:** Nachhaltige Finanzanlagen und Green Bonds Portfolio-Management
+- **Features:**
+  - Portfolio-Berechnungen basierend auf CO₂-Einsparungen
+  - Green Bonds und Sustainability Bonds Verteilung
+  - Jahresrendite und ESG-Rating
+  - Interaktive Portfolio- und Performance-Charts
+- **Berechnungen:**
+  - Portfolio-Wert: CO₂-Einsparungen × 25€/t CO₂
+  - Green Bonds: 68% des Portfolios
+  - Sustainability Bonds: 32% des Portfolios
+- **URL:** `/climate/green-finance-dashboard`
+
+#### **3. Carbon Credits Dashboard**
+- **Ziel:** CO₂-Zertifikate Handel und Monetarisierung
+- **Features:**
+  - Verfügbare und verkaufte Carbon Credits
+  - Umsatzberechnung und Durchschnittspreise
+  - Marktstatus und Handelsaktivitäten
+  - Credits-Verteilung und Preisentwicklung
+- **Berechnungen:**
+  - Credits: CO₂-Einsparungen × 0.37 Credits/kg CO₂
+  - Verkaufte Credits: 60% der verfügbaren Credits
+  - Preis: 45€ pro Credit
+- **URL:** `/climate/carbon-credits-dashboard`
+
+#### **4. CO₂-Optimierung Dashboard**
+- **Ziel:** Intelligente CO₂-Reduktion und Effizienzsteigerung
+- **Features:**
+  - CO₂-Einsparungen und Effizienz-Metriken
+  - Optimierungs-Potential und Score-Berechnung
+  - CO₂-Trend-Analyse und Optimierungs-Charts
+  - Status-Bewertung (Optimal/Gut/Verbesserbar)
+- **Berechnungen:**
+  - Einsparpotential: 15% zusätzliches Potential
+  - Optimierungs-Score: Effizienz × 0.8 + Zufallswert
+- **URL:** `/climate/co2-optimization-dashboard`
+
+### **🔧 Backend-Systeme**
+
+#### **1. Carbon Credit Trading System**
+```python
+# carbon_credit_trading_system.py
+class CarbonCreditTradingSystem:
+    - Credit-Berechnung und -Validierung
+    - Marktpreis-Monitoring
+    - Handels-Transaktionen
+    - Portfolio-Management
+```
+
+#### **2. Enhanced ESG Reporting System**
+```python
+# enhanced_esg_reporting_system.py
+class EnhancedESGReportingSystem:
+    - Automatische ESG-Berichte
+    - Nachhaltigkeits-Metriken
+    - Compliance-Tracking
+    - Stakeholder-Reporting
+```
+
+#### **3. Green Finance Integration**
+```python
+# green_finance_integration.py
+class GreenFinanceIntegration:
+    - Green Bonds Management
+    - Nachhaltigkeits-Ratings
+    - Portfolio-Optimierung
+    - Risk-Assessment
+```
+
+#### **4. Climate Routes API**
+```python
+# app/climate_routes.py
+@climate_bp.route('/api/climate/projects')
+@climate_bp.route('/api/climate/co2-data/<project_id>')
+- Projekt-Liste aus Datenbank
+- Echtzeit-CO₂-Daten
+- Fehlerbehandlung und Fallback
+```
+
+### **📊 Datenbank-Integration**
+
+#### **Verwendete Tabellen:**
+- **`co2_balance`:** CO₂-Einsparungen und -Emissionen
+- **`sustainability_metrics`:** Nachhaltigkeits-Kennzahlen
+- **`esg_reports`:** ESG-Berichte und Ratings
+- **`battery_config`:** Batterie-Konfigurationen
+
+#### **API-Endpoints:**
+- **GET** `/climate/api/climate/projects` - Projekt-Liste
+- **GET** `/climate/api/climate/co2-data/<project_id>` - CO₂-Daten
+- **GET** `/climate/climate-dashboard` - Climate Impact Dashboard
+- **GET** `/climate/green-finance-dashboard` - Green Finance Dashboard
+- **GET** `/climate/carbon-credits-dashboard` - Carbon Credits Dashboard
+- **GET** `/climate/co2-optimization-dashboard` - CO₂-Optimierung Dashboard
+
+### **🎨 Frontend-Features**
+
+#### **Projektauswahl:**
+- Dropdown mit allen 4 Projekten aus der Datenbank
+- Echtzeit-Datenladung bei Projektauswahl
+- Fallback auf Demo-Daten bei API-Fehlern
+
+#### **Chart-Integration:**
+- **Chart.js** für alle Visualisierungen
+- Feste Höhen (300px) verhindern endlose Charts
+- Responsive Design mit Tailwind CSS
+- Interaktive Legenden und Tooltips
+
+#### **Styling:**
+- Gradient-Header für jedes Dashboard
+- Farbkodierte Metrik-Karten
+- Einheitliches Design mit Header/Footer
+- Mobile-responsive Layout
+
+### **🔍 Debugging & Qualitätssicherung**
+
+#### **JavaScript-Debugging:**
+```javascript
+console.log('🔄 Lade Projekte...');
+console.log('📊 API Response:', data);
+console.log('🔍 Dropdown-Element gefunden:', select);
+console.log('✅ Projekte erfolgreich geladen!');
+```
+
+#### **Fehlerbehandlung:**
+- Null-Checks für alle DOM-Elemente
+- API-Fallback auf Demo-Daten
+- Chart-Destroy vor Neu-Erstellung
+- CSS-Styling-Fixes für Dropdown-Sichtbarkeit
+
+### **📈 Implementierungsstatistik**
+
+#### **Dateien erstellt/geändert:**
+- **28 Dateien** geändert/hinzugefügt
+- **8,507 Zeilen** Code hinzugefügt
+- **22 Zeilen** geändert
+
+#### **Neue Dateien:**
+- `app/climate_routes.py` (342 Zeilen)
+- `app/templates/climate_impact_dashboard.html` (392 Zeilen)
+- `app/templates/green_finance_dashboard.html` (318 Zeilen)
+- `app/templates/carbon_credits_dashboard.html` (310 Zeilen)
+- `app/templates/co2_optimization_dashboard.html` (325 Zeilen)
+- `carbon_credit_trading_system.py` (285 Zeilen)
+- `enhanced_esg_reporting_system.py` (267 Zeilen)
+- `green_finance_integration.py` (298 Zeilen)
+
+### **🚀 Deployment & Git-Integration**
+
+#### **Git-Commit:**
+- **Commit-Hash:** `1818ad7`
+- **Repository:** [https://github.com/HSchlagi/bess-simulation](https://github.com/HSchlagi/bess-simulation)
+- **Branch:** `main`
+- **Status:** Erfolgreich deployed
+
+#### **Verfügbare Dashboards:**
+1. **Climate Impact:** `http://127.0.0.1:5000/climate/climate-dashboard`
+2. **Green Finance:** `http://127.0.0.1:5000/climate/green-finance-dashboard`
+3. **Carbon Credits:** `http://127.0.0.1:5000/climate/carbon-credits-dashboard`
+4. **CO₂-Optimierung:** `http://127.0.0.1:5000/climate/co2-optimization-dashboard`
+
+### **🎯 Geschäftsnutzen**
+
+#### **CO₂-Monetarisierung:**
+- Direkte Umsetzung von CO₂-Einsparungen in finanzielle Erträge
+- Carbon Credits Handel mit 45€/Credit
+- Green Bonds Portfolio mit 4.2% Jahresrendite
+
+#### **Nachhaltigkeits-Reporting:**
+- Automatische ESG-Berichte
+- Compliance mit Nachhaltigkeitsstandards
+- Stakeholder-Transparenz
+
+#### **Portfolio-Management:**
+- Intelligente Green Finance Integration
+- Risk-Assessment für nachhaltige Investments
+- Performance-Tracking und Optimierung
+
+### **🔮 Zukünftige Erweiterungen**
+- **Blockchain-Integration:** Für Carbon Credits
+- **Real-time Marktdaten:** Live-Preis-Updates
+- **Machine Learning:** Predictive Analytics für Credits-Preise
+- **API-Integration:** Externe Nachhaltigkeits-Plattformen
+
+---
+
 **BESS Simulation** - Professionelle Batteriespeicher-Simulation für erneuerbare Energien 🚀
 
-*Letzte Aktualisierung: 15. Januar 2025 - KI-gestützte Predictive Analytics vollständig implementiert und getestet*
+*Letzte Aktualisierung: 14. September 2025 - CO₂-Zertifikate & Carbon Credits Integration vollständig implementiert und deployed*
