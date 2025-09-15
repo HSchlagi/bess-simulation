@@ -175,13 +175,13 @@
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h3 class="text-lg font-semibold mb-4">Monatliche Berichte</h3>
                 <div class="space-y-3">
-                    <button class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100">
+                    <button onclick="downloadReport('green-finance-report', 'pdf')" class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                         <i class="fas fa-file-pdf mr-2 text-red-600"></i>September 2025 - Green Finance Report
                     </button>
-                    <button class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100">
+                    <button onclick="downloadReport('portfolio-analysis', 'excel')" class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                         <i class="fas fa-file-excel mr-2 text-green-600"></i>August 2025 - Portfolio Analyse
                     </button>
-                    <button class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100">
+                    <button onclick="downloadReport('esg-compliance', 'pdf')" class="w-full text-left p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors duration-200">
                         <i class="fas fa-file-pdf mr-2 text-red-600"></i>Juli 2025 - ESG Compliance Report
                     </button>
                 </div>
@@ -190,13 +190,13 @@
             <div class="bg-white p-6 rounded-lg shadow-lg">
                 <h3 class="text-lg font-semibold mb-4">Berichte generieren</h3>
                 <div class="space-y-4">
-                    <button class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
+                    <button onclick="generateReport('portfolio-pdf')" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105">
                         <i class="fas fa-download mr-2"></i>Portfolio Report PDF
                     </button>
-                    <button class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700">
+                    <button onclick="generateReport('excel-export')" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105">
                         <i class="fas fa-table mr-2"></i>Excel Export
                     </button>
-                    <button class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700">
+                    <button onclick="generateReport('esg-dashboard')" class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-all duration-200 transform hover:scale-105">
                         <i class="fas fa-chart-bar mr-2"></i>ESG Dashboard
                     </button>
                 </div>
@@ -702,6 +702,215 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('✅ Event Listeners registriert');
 });
+
+// Berichtswesen Funktionen für Green Finance Dashboard
+function downloadReport(reportType, format) {
+    console.log(`📄 Lade Green Finance Bericht herunter: ${reportType} (${format})`);
+    
+    showReportNotification(`Bericht wird heruntergeladen...`, 'info');
+    
+    setTimeout(() => {
+        const fileExtension = format === 'pdf' ? 'txt' : 'csv';
+        const fileName = `green-finance-${reportType}-${new Date().toISOString().split('T')[0]}.${fileExtension}`;
+        const content = generateGreenFinanceReportContent(reportType, format);
+        
+        const blob = new Blob([content], { type: format === 'pdf' ? 'text/plain' : 'text/csv;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showReportNotification(`${fileName} erfolgreich heruntergeladen!`, 'success');
+    }, 1500);
+}
+
+function generateReport(reportType) {
+    console.log(`📊 Generiere Green Finance Bericht: ${reportType}`);
+    
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generiere...';
+    button.classList.add('opacity-75', 'cursor-not-allowed');
+    
+    setTimeout(async () => {
+        try {
+            const fileName = generateGreenFinanceFileName(reportType);
+            
+            // Prüfe ob es ein Excel-Export ist
+            if (fileName.endsWith('.xlsx')) {
+                // Excel-Datei über Server-API erstellen
+                const totalPortfolio = document.getElementById('totalPortfolio').textContent;
+                const greenBonds = document.getElementById('greenBonds').textContent;
+                const sustainabilityBonds = document.getElementById('sustainabilityBonds').textContent;
+                const annualReturn = document.getElementById('annualReturn').textContent;
+                const esgRating = document.getElementById('esgRating').textContent;
+                
+                const data = {
+                    totalPortfolio: totalPortfolio,
+                    greenBonds: greenBonds,
+                    sustainabilityBonds: sustainabilityBonds,
+                    annualReturn: annualReturn,
+                    esgRating: esgRating
+                };
+                
+                const response = await fetch('/climate/api/green-finance/export-excel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    // Excel-Datei direkt als Blob herunterladen
+                    const excelBlob = await response.blob();
+                    const url = window.URL.createObjectURL(excelBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `green_finance_${new Date().toISOString().slice(0,10)}.xlsx`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showReportNotification('Excel-Bericht erfolgreich erstellt!', 'success');
+                } else {
+                    throw new Error('Server-Export fehlgeschlagen');
+                }
+            } else {
+                // PDF oder andere Formate - Fallback auf alte Methode
+                const content = generateGreenFinanceReportContent(reportType, 'pdf');
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showReportNotification(`${fileName} erfolgreich generiert!`, 'success');
+            }
+        } catch (error) {
+            console.error('Export Fehler:', error);
+            showReportNotification('Export fehlgeschlagen. Verwende Fallback.', 'warning');
+            
+            // Fallback: Einfache CSV-Datei
+            const content = generateGreenFinanceReportContent(reportType, 'excel');
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = generateGreenFinanceFileName(reportType);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showReportNotification('Fallback-Export erfolgreich!', 'warning');
+        }
+        
+        button.disabled = false;
+        button.innerHTML = originalText;
+        button.classList.remove('opacity-75', 'cursor-not-allowed');
+        
+    }, 2000);
+}
+
+function generateGreenFinanceReportContent(reportType, format) {
+    const currentDate = new Date().toLocaleDateString('de-DE');
+    const totalPortfolio = document.getElementById('totalPortfolio').textContent;
+    const greenBonds = document.getElementById('greenBonds').textContent;
+    const sustainabilityBonds = document.getElementById('sustainabilityBonds').textContent;
+    const annualReturn = document.getElementById('annualReturn').textContent;
+    const esgRating = document.getElementById('esgRating').textContent;
+    
+    let content = '';
+    
+    if (format === 'pdf') {
+        // Erstelle einfachen Text-Content für PDF (wird als Text-PDF erkannt)
+        content = `GREEN FINANCE DASHBOARD BERICHT
+=================================
+
+Generiert am: ${currentDate}
+
+ZUSAMMENFASSUNG:
+---------------
+Gesamt Portfolio: ${totalPortfolio}
+Green Bonds: ${greenBonds}
+Sustainability Bonds: ${sustainabilityBonds}
+Jahresrendite: ${annualReturn}
+ESG Rating: ${esgRating}
+
+DETAILANALYSE:
+--------------
+Dieser Bericht wurde automatisch vom BESS Simulation System generiert.
+Alle Daten basieren auf den aktuellen Green Finance Metriken und werden kontinuierlich aktualisiert.
+
+Kontakt: office@instanet.at
+© 2025 BESS Simulation - Entwickelt für professionelle Energiespeicher-Simulationen`;
+    } else {
+        // Excel-Content mit UTF-8 BOM für korrekte Zeichenkodierung
+        content = `\uFEFFDatum,Gesamt_Portfolio,Green_Bonds,Sustainability_Bonds,Jahresrendite,ESG_Rating\n${currentDate},${totalPortfolio},${greenBonds},${sustainabilityBonds},${annualReturn},${esgRating}`;
+    }
+    
+    return content;
+}
+
+function generateGreenFinanceFileName(reportType) {
+    const date = new Date().toISOString().split('T')[0];
+    const typeMap = {
+        'portfolio-pdf': `green-finance-portfolio-${date}.txt`,
+        'excel-export': `green-finance-daten-${date}.xlsx`,
+        'esg-dashboard': `green-finance-esg-${date}.txt`
+    };
+    return typeMap[reportType] || `green-finance-${date}.txt`;
+}
+
+function showReportNotification(message, type) {
+    const colors = {
+        'info': 'bg-blue-500',
+        'success': 'bg-green-500',
+        'error': 'bg-red-500'
+    };
+    
+    const icons = {
+        'info': 'fa-info-circle',
+        'success': 'fa-check-circle',
+        'error': 'fa-exclamation-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${icons[type]} mr-2"></i>
+            <div class="font-semibold">${message}</div>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.remove('translate-x-full');
+    }, 100);
+    
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (document.body.contains(toast)) {
+                document.body.removeChild(toast);
+            }
+        }, 300);
+    }, 3000);
+}
 
 </script>
 {% endblock %}

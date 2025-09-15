@@ -1,6 +1,10 @@
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request, send_file
 import sqlite3
 import json
+import os
+import tempfile
+from datetime import datetime
+from io import BytesIO
 
 # Optional imports für erweiterte Systeme
 try:
@@ -153,6 +157,303 @@ def carbon_credits_dashboard():
 def co2_optimization_dashboard():
     """Zeigt das CO₂-Optimierung Dashboard"""
     return render_template('co2_optimization_dashboard.html')
+
+# ============================================================================
+# EXCEL EXPORT ENDPOINTS - Einheitlich wie in Wirtschaftlichkeitsanalyse
+# ============================================================================
+
+@climate_bp.route('/api/co2-optimization/export-excel', methods=['POST'])
+def export_co2_optimization_excel():
+    """Exportiert CO2-Optimierung Dashboard als Excel"""
+    try:
+        # Demo-Daten für CO2-Optimierung
+        data = request.get_json() or {}
+        
+        # Excel generieren
+        excel_content = generate_co2_optimization_excel(data)
+        
+        if excel_content is None:
+            return jsonify({'error': 'Excel-Generierung fehlgeschlagen'}), 400
+        
+        # Excel-Datei direkt als Response senden (wie in Wirtschaftlichkeitsanalyse)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"co2_optimization_{timestamp}.xlsx"
+        
+        # Excel-Datei direkt als BytesIO senden
+        from flask import make_response
+        response = make_response(excel_content)
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Fehler beim CO2-Optimierung Excel-Export: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@climate_bp.route('/api/carbon-credits/export-excel', methods=['POST'])
+def export_carbon_credits_excel():
+    """Exportiert Carbon Credits Dashboard als Excel"""
+    try:
+        # Demo-Daten für Carbon Credits
+        data = request.get_json() or {}
+        
+        # Excel generieren
+        excel_content = generate_carbon_credits_excel(data)
+        
+        if excel_content is None:
+            return jsonify({'error': 'Excel-Generierung fehlgeschlagen'}), 400
+        
+        # Excel-Datei direkt als Response senden
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"carbon_credits_{timestamp}.xlsx"
+        
+        # Excel-Datei direkt als BytesIO senden
+        from flask import make_response
+        response = make_response(excel_content)
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Fehler beim Carbon Credits Excel-Export: {e}")
+        return jsonify({'error': str(e)}), 400
+
+@climate_bp.route('/api/green-finance/export-excel', methods=['POST'])
+def export_green_finance_excel():
+    """Exportiert Green Finance Dashboard als Excel"""
+    try:
+        # Demo-Daten für Green Finance
+        data = request.get_json() or {}
+        
+        # Excel generieren
+        excel_content = generate_green_finance_excel(data)
+        
+        if excel_content is None:
+            return jsonify({'error': 'Excel-Generierung fehlgeschlagen'}), 400
+        
+        # Excel-Datei direkt als Response senden
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"green_finance_{timestamp}.xlsx"
+        
+        # Excel-Datei direkt als BytesIO senden
+        from flask import make_response
+        response = make_response(excel_content)
+        response.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"Fehler beim Green Finance Excel-Export: {e}")
+        return jsonify({'error': str(e)}), 400
+
+# ============================================================================
+# EXCEL GENERATOR FUNCTIONS - Einheitlich wie in Wirtschaftlichkeitsanalyse
+# ============================================================================
+
+def generate_co2_optimization_excel(data):
+    """Generiert Excel-Bericht für CO2-Optimierung Dashboard"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        
+        # Excel-Workbook erstellen
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "CO2-Optimierung"
+        
+        # Styles definieren
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        subheader_font = Font(bold=True, color="FFFFFF")
+        subheader_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                       top=Side(style='thin'), bottom=Side(style='thin'))
+        
+        # Titel
+        ws.merge_cells('A1:F1')
+        ws['A1'] = "CO2-Optimierung Dashboard Bericht"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws['A1'].alignment = center_alignment
+        
+        # Datum
+        ws['A2'] = f"Generiert am: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        ws['A2'].font = Font(italic=True)
+        
+        # CO2-Metriken
+        ws['A4'] = "CO2-Metriken"
+        ws['A4'].font = Font(bold=True, size=14)
+        ws['A4'].fill = subheader_fill
+        ws['A4'].font = subheader_font
+        
+        # Metriken-Daten
+        metrics = [
+            ['CO2-Einsparung', data.get('co2Savings', '2.5 t CO2/Jahr')],
+            ['Effizienz', data.get('efficiency', '87.5%')],
+            ['Einsparpotential', data.get('potentialSavings', '15.2 t CO2/Jahr')],
+            ['Optimierungsstatus', data.get('status', 'Aktiv')]
+        ]
+        
+        for i, (key, value) in enumerate(metrics, start=5):
+            ws[f'A{i}'] = key
+            ws[f'B{i}'] = value
+            ws[f'A{i}'].font = Font(bold=True)
+            ws[f'A{i}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            ws[f'A{i}'].border = border
+            ws[f'B{i}'].border = border
+        
+        # Spaltenbreite anpassen
+        ws.column_dimensions['A'].width = 20
+        ws.column_dimensions['B'].width = 25
+        
+        # Excel-Datei in BytesIO speichern
+        excel_buffer = BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        return excel_buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Fehler bei Excel-Generierung (CO2-Optimierung): {e}")
+        return None
+
+def generate_carbon_credits_excel(data):
+    """Generiert Excel-Bericht für Carbon Credits Dashboard"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        
+        # Excel-Workbook erstellen
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Carbon Credits"
+        
+        # Styles definieren
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        subheader_font = Font(bold=True, color="FFFFFF")
+        subheader_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                       top=Side(style='thin'), bottom=Side(style='thin'))
+        
+        # Titel
+        ws.merge_cells('A1:F1')
+        ws['A1'] = "Carbon Credits Dashboard Bericht"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws['A1'].alignment = center_alignment
+        
+        # Datum
+        ws['A2'] = f"Generiert am: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        ws['A2'].font = Font(italic=True)
+        
+        # Carbon Credits Metriken
+        ws['A4'] = "Carbon Credits Metriken"
+        ws['A4'].font = Font(bold=True, size=14)
+        ws['A4'].fill = subheader_fill
+        ws['A4'].font = subheader_font
+        
+        # Metriken-Daten
+        metrics = [
+            ['Verfügbare Credits', data.get('availableCredits', '125 Credits')],
+            ['Verkaufte Credits', data.get('soldCredits', '45 Credits')],
+            ['Credit-Preis', data.get('creditPrice', '€25/Credit')],
+            ['Gesamtwert', data.get('totalValue', '€3,125')]
+        ]
+        
+        for i, (key, value) in enumerate(metrics, start=5):
+            ws[f'A{i}'] = key
+            ws[f'B{i}'] = value
+            ws[f'A{i}'].font = Font(bold=True)
+            ws[f'A{i}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            ws[f'A{i}'].border = border
+            ws[f'B{i}'].border = border
+        
+        # Spaltenbreite anpassen
+        ws.column_dimensions['A'].width = 20
+        ws.column_dimensions['B'].width = 25
+        
+        # Excel-Datei in BytesIO speichern
+        excel_buffer = BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        return excel_buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Fehler bei Excel-Generierung (Carbon Credits): {e}")
+        return None
+
+def generate_green_finance_excel(data):
+    """Generiert Excel-Bericht für Green Finance Dashboard"""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        
+        # Excel-Workbook erstellen
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Green Finance"
+        
+        # Styles definieren
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        subheader_font = Font(bold=True, color="FFFFFF")
+        subheader_fill = PatternFill(start_color="70AD47", end_color="70AD47", fill_type="solid")
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        border = Border(left=Side(style='thin'), right=Side(style='thin'), 
+                       top=Side(style='thin'), bottom=Side(style='thin'))
+        
+        # Titel
+        ws.merge_cells('A1:F1')
+        ws['A1'] = "Green Finance Dashboard Bericht"
+        ws['A1'].font = Font(size=16, bold=True)
+        ws['A1'].alignment = center_alignment
+        
+        # Datum
+        ws['A2'] = f"Generiert am: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}"
+        ws['A2'].font = Font(italic=True)
+        
+        # Green Finance Metriken
+        ws['A4'] = "Green Finance Metriken"
+        ws['A4'].font = Font(bold=True, size=14)
+        ws['A4'].fill = subheader_fill
+        ws['A4'].font = subheader_font
+        
+        # Metriken-Daten
+        metrics = [
+            ['ESG-Score', data.get('esgScore', 'A+')],
+            ['Nachhaltigkeitsrating', data.get('sustainabilityRating', 'Sehr gut')],
+            ['Green Bond Volumen', data.get('greenBondVolume', '€2.5M')],
+            ['Impact Investment', data.get('impactInvestment', '€1.8M')]
+        ]
+        
+        for i, (key, value) in enumerate(metrics, start=5):
+            ws[f'A{i}'] = key
+            ws[f'B{i}'] = value
+            ws[f'A{i}'].font = Font(bold=True)
+            ws[f'A{i}'].fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+            ws[f'A{i}'].border = border
+            ws[f'B{i}'].border = border
+        
+        # Spaltenbreite anpassen
+        ws.column_dimensions['A'].width = 20
+        ws.column_dimensions['B'].width = 25
+        
+        # Excel-Datei in BytesIO speichern
+        excel_buffer = BytesIO()
+        wb.save(excel_buffer)
+        excel_buffer.seek(0)
+        
+        return excel_buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Fehler bei Excel-Generierung (Green Finance): {e}")
+        return None
 
 @climate_bp.route('/test-dropdown')
 def test_dropdown():
