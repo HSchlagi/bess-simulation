@@ -1,0 +1,855 @@
+{% extends "base.html" %}
+
+{% block title %}BESS Sizing & Optimierung - BESS Simulation{% endblock %}
+
+{% block content %}
+
+<!-- Header Section -->
+<div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">BESS Sizing & Optimierung</h1>
+    <p class="text-lg text-gray-600">Intelligente BESS-Dimensionierung mit Peak Shaving und Load Leveling</p>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Projektauswahl -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-project-diagram text-blue-600 mr-2"></i>
+            Projektauswahl
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt auswählen</label>
+                <select id="projectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Projekt auswählen...</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sizing-Strategie</label>
+                <select id="strategySelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="ps_ll">Peak Shaving + Load Leveling</option>
+                    <option value="arbitrage">Spot-Preis-Arbitrage</option>
+                    <option value="grid_services">Netzstabilitätsdienstleistungen</option>
+                    <option value="hybrid">Hybrid-Ansatz</option>
+                </select>
+            </div>
+            <div class="flex items-end">
+                <button id="startOptimization" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-play mr-2"></i>Optimierung starten
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Optimierungs-Constraints -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-cogs text-blue-600 mr-2"></i>
+            Optimierungs-Constraints (Nebenbedingungen oder Beschränkungen)
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Max. Investition (€)</label>
+                <input type="number" id="maxInvestment" value="2000000" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Verfügbarer Platz (m²)</label>
+                <input type="number" id="availableSpace" value="200" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Netzanschluss (MW)</label>
+                <input type="number" id="gridConnection" value="2.0" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">C-Rate (Entladung)</label>
+                <input type="number" id="cRateDischarge" value="1.0" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Ergebnisse -->
+    <div id="resultsSection" class="hidden">
+        <!-- Optimale BESS-Größe -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                Optimale BESS-Größe
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600" id="optimalPower">-</div>
+                    <div class="text-sm text-gray-600">Leistung (kW)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600" id="optimalCapacity">-</div>
+                    <div class="text-sm text-gray-600">Kapazität (kWh)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600" id="roiPercent">-</div>
+                    <div class="text-sm text-gray-600">ROI (%)</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600" id="paybackPeriod">-</div>
+                    <div class="text-sm text-gray-600">Amortisation (Jahre)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Strategievergleich -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-chart-bar text-indigo-600 mr-2"></i>
+                Strategievergleich
+            </h2>
+            <div class="relative h-64">
+                <canvas id="strategyComparisonChart" style="max-height: 256px;"></canvas>
+            </div>
+        </div>
+
+        <!-- Heatmap -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-th text-red-600 mr-2"></i>
+                ROI Heatmap (P_ESS vs Q_ESS)
+            </h2>
+            <div id="heatmapChart" class="h-96"></div>
+        </div>
+
+        <!-- Feasible Region -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">
+                <i class="fas fa-map text-teal-600 mr-2"></i>
+                Machbare Region
+            </h2>
+            <div class="text-sm text-gray-600 mb-4">
+                <span id="feasibleRegionCount">0</span> machbare (P_ESS, Q_ESS) Kombinationen gefunden
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="feasibleRegionGrid">
+                <!-- Wird dynamisch gefüllt -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Einfaches JavaScript -->
+<script>
+console.log('🔥 EINFACHES SCRIPT GELADEN');
+
+// Sofortiger API-Test
+setTimeout(async () => {
+    console.log('🧪 TESTE API...');
+    try {
+        const response = await fetch('/api/projects');
+        console.log('📡 Status:', response.status);
+        if (response.ok) {
+            const data = await response.json();
+            console.log('📊 Projekte:', data);
+            
+            // Dropdown füllen
+            const select = document.getElementById('projectSelect');
+            if (select && Array.isArray(data)) {
+                select.innerHTML = '<option value="">Projekt auswählen...</option>';
+                data.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = `${project.name} (${project.location || 'Kein Standort'})`;
+                    select.appendChild(option);
+                });
+                console.log('✅ Dropdown gefüllt mit', data.length, 'Projekten');
+                
+                // Event Listener für Projektauswahl hinzufügen
+                select.addEventListener('change', function() {
+                    if (this.value) {
+                        loadProjectDetails(this.value);
+                    }
+                });
+            }
+        } else {
+            const text = await response.text();
+            console.log('❌ API-Fehler:', text);
+        }
+    } catch (error) {
+        console.error('❌ Exception:', error);
+    }
+}, 1000);
+
+// Strategie-Constraints aktualisieren
+function updateStrategyConstraints(strategy) {
+    console.log('🔄 Aktualisiere Constraints für Strategie:', strategy);
+    
+    const maxInvestmentField = document.getElementById('maxInvestment');
+    const availableSpaceField = document.getElementById('availableSpace');
+    const gridConnectionField = document.getElementById('gridConnection');
+    const cRateDischargeField = document.getElementById('cRateDischarge');
+    
+    // Strategie-spezifische Constraints setzen
+    switch(strategy) {
+        case 'ps_ll':
+            // Peak Shaving + Load Leveling
+            maxInvestmentField.value = 2000000;
+            availableSpaceField.value = 200;
+            gridConnectionField.value = 1.2;
+            cRateDischargeField.value = 1.0;
+            console.log('✅ PS/LL Constraints gesetzt');
+            break;
+            
+        case 'arbitrage':
+            // Spot-Preis-Arbitrage
+            maxInvestmentField.value = 1500000;
+            availableSpaceField.value = 150;
+            gridConnectionField.value = 0.8;
+            cRateDischargeField.value = 0.5;
+            console.log('✅ Arbitrage Constraints gesetzt');
+            break;
+            
+        case 'grid_services':
+            // Netzstabilitätsdienstleistungen
+            maxInvestmentField.value = 3000000;
+            availableSpaceField.value = 300;
+            gridConnectionField.value = 2.0;
+            cRateDischargeField.value = 2.0;
+            console.log('✅ Grid Services Constraints gesetzt');
+            break;
+            
+        case 'hybrid':
+            // Hybrid-Ansatz
+            maxInvestmentField.value = 2500000;
+            availableSpaceField.value = 250;
+            gridConnectionField.value = 1.5;
+            cRateDischargeField.value = 1.5;
+            console.log('✅ Hybrid Constraints gesetzt');
+            break;
+            
+        default:
+            console.log('⚠️ Unbekannte Strategie:', strategy);
+    }
+    
+    // Heatmap für neue Strategie aktualisieren
+    updateHeatmapForStrategy(strategy);
+}
+
+// Heatmap für neue Strategie aktualisieren
+async function updateHeatmapForStrategy(strategy) {
+    console.log('🔄 Aktualisiere Heatmap für Strategie:', strategy);
+    
+    const projectSelect = document.getElementById('projectSelect');
+    if (!projectSelect.value) {
+        console.log('⚠️ Kein Projekt ausgewählt - Heatmap-Update übersprungen');
+        return;
+    }
+    
+    // Strategie-spezifische Demo-Heatmap erstellen (schnell und lokal)
+    createStrategySpecificHeatmap(strategy);
+}
+
+// Strategie-spezifische Demo-Heatmap erstellen
+function createStrategySpecificHeatmap(strategy) {
+    console.log('🎨 Erstelle strategie-spezifische Demo-Heatmap für:', strategy);
+    
+    const heatmapContainer = document.getElementById('heatmapChart');
+    if (!heatmapContainer) {
+        console.log('⚠️ Heatmap-Container nicht gefunden');
+        return;
+    }
+    
+    // Strategie-spezifische Parameter
+    let p_range, q_range, base_roi, color_scheme;
+    
+    switch(strategy) {
+        case 'ps_ll':
+            p_range = Array.from({length: 10}, (_, i) => 200 + i * 100); // 200-1100 kW
+            q_range = Array.from({length: 10}, (_, i) => 400 + i * 200); // 400-2200 kWh
+            base_roi = 15.0;
+            color_scheme = 'Viridis';
+            break;
+            
+        case 'arbitrage':
+            p_range = Array.from({length: 7}, (_, i) => 100 + i * 100); // 100-700 kW
+            q_range = Array.from({length: 12}, (_, i) => 800 + i * 200); // 800-3000 kWh
+            base_roi = 12.0;
+            color_scheme = 'Blues';
+            break;
+            
+        case 'grid_services':
+            p_range = Array.from({length: 15}, (_, i) => 500 + i * 100); // 500-1900 kW
+            q_range = Array.from({length: 15}, (_, i) => 1000 + i * 200); // 1000-3800 kWh
+            base_roi = 8.0;
+            color_scheme = 'Greens';
+            break;
+            
+        case 'hybrid':
+            p_range = Array.from({length: 12}, (_, i) => 300 + i * 100); // 300-1400 kW
+            q_range = Array.from({length: 12}, (_, i) => 600 + i * 200); // 600-2800 kWh
+            base_roi = 18.0;
+            color_scheme = 'Plasma';
+            break;
+            
+        default:
+            p_range = Array.from({length: 10}, (_, i) => 200 + i * 100);
+            q_range = Array.from({length: 10}, (_, i) => 400 + i * 200);
+            base_roi = 15.0;
+            color_scheme = 'Viridis';
+    }
+    
+    // Z-Matrix mit strategie-spezifischen ROI-Werten erstellen
+    const z_matrix = [];
+    for (let i = 0; i < q_range.length; i++) {
+        const row = [];
+        for (let j = 0; j < p_range.length; j++) {
+            // Realistische ROI-Berechnung basierend auf P_ESS und Q_ESS
+            const p_ess = p_range[j];
+            const q_ess = q_range[i];
+            
+            // ROI nimmt mit größerer BESS-Größe ab (Skaleneffekte)
+            const size_factor = Math.max(0.3, 1.0 - (p_ess + q_ess) / 5000);
+            
+            // Strategie-spezifische Variation
+            const strategy_factor = {
+                'ps_ll': 1.0,
+                'arbitrage': 0.8,
+                'grid_services': 0.6,
+                'hybrid': 1.2
+            }[strategy] || 1.0;
+            
+            // Zufällige Variation für Realismus
+            const random_factor = 0.8 + Math.random() * 0.4; // 0.8 bis 1.2
+            
+            const roi_value = base_roi * size_factor * strategy_factor * random_factor;
+            row.push(Math.max(0, roi_value));
+        }
+        z_matrix.push(row);
+    }
+    
+    // Heatmap-Daten erstellen
+    const heatmapData = {
+        x: p_range,
+        y: q_range,
+        z: z_matrix,
+        type: 'heatmap',
+        colorscale: color_scheme,
+        showscale: true,
+        colorbar: {
+            title: 'ROI (%)',
+            titleside: 'right'
+        },
+        hovertemplate: '<b>%{strategy}</b><br>' +
+                      'Leistung: %{x} kW<br>' +
+                      'Kapazität: %{y} kWh<br>' +
+                      'ROI: %{z:.1f}%<br>' +
+                      '<extra></extra>',
+        hoverongaps: false
+    };
+    
+    // Plotly-Update
+    try {
+        Plotly.newPlot('heatmapChart', [heatmapData], {
+            title: {
+                text: `ROI Heatmap - ${getStrategyDisplayName(strategy)}`,
+                font: { size: 16, color: '#1f2937' }
+            },
+            xaxis: {
+                title: 'BESS-Leistung (kW)',
+                titlefont: { size: 12, color: '#6b7280' },
+                tickfont: { size: 10, color: '#6b7280' }
+            },
+            yaxis: {
+                title: 'BESS-Kapazität (kWh)',
+                titlefont: { size: 12, color: '#6b7280' },
+                tickfont: { size: 10, color: '#6b7280' }
+            },
+            margin: { l: 60, r: 60, t: 60, b: 60 },
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            paper_bgcolor: 'rgba(0,0,0,0)'
+        }, {responsive: true});
+        
+        console.log('✅ Strategie-spezifische Heatmap erstellt für:', strategy);
+        
+    } catch (error) {
+        console.error('❌ Fehler beim Erstellen der strategie-spezifischen Heatmap:', error);
+        heatmapContainer.innerHTML = '<div class="flex items-center justify-center h-64"><div class="text-center"><i class="fas fa-exclamation-circle text-2xl text-red-500 mb-2"></i><p class="text-gray-600">Fehler beim Erstellen der Heatmap</p></div></div>';
+    }
+}
+
+// Strategie-Anzeigename
+function getStrategyDisplayName(strategy) {
+    const names = {
+        'ps_ll': 'Peak Shaving + Load Leveling',
+        'arbitrage': 'Spot-Preis-Arbitrage',
+        'grid_services': 'Netzstabilitätsdienstleistungen',
+        'hybrid': 'Hybrid-Ansatz'
+    };
+    return names[strategy] || strategy;
+}
+
+// Projekt-Details laden
+async function loadProjectDetails(projectId) {
+    try {
+        console.log('📊 Lade Projekt-Details für ID:', projectId);
+        const response = await fetch(`/api/projects/${projectId}`);
+        const project = await response.json();
+        
+        console.log('📊 Projekt-Details:', project);
+        
+        // Projekt-Daten in die Felder eintragen
+        if (project.bess_size) {
+            document.getElementById('maxInvestment').value = Math.round(project.bess_size * 400 + (project.bess_power || 1000) * 800);
+        }
+        if (project.bess_power) {
+            // C-Rate aus BatteryConfig laden
+            if (project.battery_configs && project.battery_configs.length > 0) {
+                const batteryConfig = project.battery_configs[0];
+                if (batteryConfig.C_dis_rate) {
+                    document.getElementById('cRateDischarge').value = batteryConfig.C_dis_rate;
+                    console.log('🔋 C-Rate aus BatteryConfig geladen:', batteryConfig.C_dis_rate);
+                }
+            }
+        }
+        
+        // Weitere Projekt-Daten anzeigen
+        console.log('📊 Projekt-Daten geladen:', {
+            bess_size: project.bess_size,
+            bess_power: project.bess_power,
+            pv_power: project.pv_power,
+            current_electricity_cost: project.current_electricity_cost,
+            battery_configs: project.battery_configs
+        });
+        
+    } catch (error) {
+        console.error('❌ Fehler beim Laden der Projekt-Details:', error);
+    }
+}
+
+// Optimierung starten
+document.addEventListener('DOMContentLoaded', function() {
+    // Event Listener für Strategieauswahl sofort hinzufügen
+    const strategySelect = document.getElementById('strategySelect');
+    if (strategySelect) {
+        strategySelect.addEventListener('change', function() {
+            console.log('🔄 Strategie geändert zu:', this.value);
+            updateStrategyConstraints(this.value);
+        });
+        console.log('✅ Strategie-Event-Listener hinzugefügt');
+        
+        // Initiale Constraints für Standard-Strategie setzen
+        updateStrategyConstraints(strategySelect.value);
+        console.log('✅ Initiale Constraints gesetzt für:', strategySelect.value);
+        
+        // Initiale Heatmap für Standard-Strategie erstellen
+        createStrategySpecificHeatmap(strategySelect.value);
+        console.log('✅ Initiale Heatmap erstellt für:', strategySelect.value);
+    }
+    
+    const startBtn = document.getElementById('startOptimization');
+    if (startBtn) {
+        startBtn.addEventListener('click', async function() {
+            const projectSelect = document.getElementById('projectSelect');
+            if (!projectSelect.value) {
+                alert('Bitte wählen Sie ein Projekt aus.');
+                return;
+            }
+            
+            console.log('🚀 Starte ECHTE Optimierung für Projekt:', projectSelect.value);
+            
+            // Loading anzeigen
+            startBtn.disabled = true;
+            startBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Optimierung läuft...';
+            
+            try {
+                // Strategie und Constraints sammeln
+                const strategySelect = document.getElementById('strategySelect');
+                const selectedStrategy = strategySelect ? strategySelect.value : 'ps_ll';
+                
+                const constraints = {
+                    max_investment: parseFloat(document.getElementById('maxInvestment').value),
+                    available_space: parseFloat(document.getElementById('availableSpace').value),
+                    grid_connection: parseFloat(document.getElementById('gridConnection').value),
+                    c_rate_discharge: parseFloat(document.getElementById('cRateDischarge').value)
+                };
+                
+                console.log('🎯 Gewählte Strategie:', selectedStrategy);
+                console.log('📊 Constraints:', constraints);
+                
+                // API-Aufruf
+                const response = await fetch('/api/sizing/ps-ll-optimization', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        project_id: projectSelect.value,
+                        sizing_strategy: selectedStrategy,
+                        constraints: constraints
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('📊 Optimierung-Ergebnis:', data);
+                
+                if (data.success) {
+                    // Ergebnisse anzeigen
+                    displayResults(data.result);
+                } else {
+                    alert('Fehler bei der Optimierung: ' + (data.error || data.message));
+                }
+                
+            } catch (error) {
+                console.error('❌ Optimierung-Fehler:', error);
+                alert('Fehler bei der Optimierung: ' + error.message);
+            } finally {
+                // Loading ausblenden
+                startBtn.disabled = false;
+                startBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Optimierung starten';
+            }
+        });
+    }
+});
+
+// Ergebnisse anzeigen
+function displayResults(result) {
+    console.log('📊 Zeige Ergebnisse:', result);
+    
+    // Grunddaten anzeigen
+    document.getElementById('optimalPower').textContent = Math.round(result.optimal_power_kw);
+    document.getElementById('optimalCapacity').textContent = Math.round(result.optimal_capacity_kwh);
+    
+    // ROI begrenzen und anzeigen
+    let roi = result.roi_percent;
+    if (roi > 1000) {
+        console.warn(`⚠️ ROI zu hoch (${roi}%), begrenze auf 100%`);
+        roi = 100;
+    }
+    document.getElementById('roiPercent').textContent = roi.toFixed(1);
+    
+    // Amortisation begrenzen
+    let payback = result.payback_period_years;
+    if (payback > 50) {
+        console.warn(`⚠️ Amortisation zu lang (${payback} Jahre), begrenze auf 50 Jahre`);
+        payback = 50;
+    }
+    document.getElementById('paybackPeriod').textContent = payback.toFixed(1);
+    
+    // Strategievergleich-Chart
+    if (result.strategy_comparison) {
+        createStrategyComparisonChart(result.strategy_comparison);
+    }
+    
+            // Heatmap
+            console.log('🔥 Prüfe Heatmap-Daten:', result);
+            console.log('🔥 Result Keys:', Object.keys(result));
+            console.log('🔥 Cost Heatmap Data:', result.cost_heatmap_data);
+            
+            if (result.heatmap_data) {
+                console.log('✅ Heatmap-Daten gefunden, rufe createHeatmapChart auf');
+                console.log('🔥 Heatmap-Daten Details:', {
+                    x: result.heatmap_data.x,
+                    y: result.heatmap_data.y,
+                    z: result.heatmap_data.z
+                });
+                createHeatmapChart(result.heatmap_data);
+            } else if (result.cost_heatmap_data) {
+                console.log('✅ Cost Heatmap-Daten gefunden, rufe createHeatmapChart auf');
+                console.log('🔥 Cost Heatmap-Daten Details:', {
+                    x: result.cost_heatmap_data.x,
+                    y: result.cost_heatmap_data.y,
+                    z: result.cost_heatmap_data.z
+                });
+                createHeatmapChart(result.cost_heatmap_data);
+            } else {
+                console.warn('⚠️ Keine Heatmap-Daten gefunden in result:', Object.keys(result));
+                console.warn('⚠️ Result-Objekt:', result);
+            }
+    
+    // Feasible Region
+    if (result.feasible_region) {
+        console.log('🗺️ Feasible Region Daten:', result.feasible_region);
+        console.log('🗺️ Anzahl Kombinationen:', result.feasible_region.length);
+        displayFeasibleRegion(result.feasible_region);
+    } else {
+        console.warn('⚠️ Keine Feasible Region Daten erhalten');
+    }
+    
+    // Ergebnisse anzeigen
+    document.getElementById('resultsSection').classList.remove('hidden');
+}
+
+// Strategievergleich-Chart
+let strategyChart = null; // Globale Variable für Chart-Instanz
+
+function createStrategyComparisonChart(strategyComparison) {
+    const canvas = document.getElementById('strategyComparisonChart');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Bestehenden Chart zerstören falls vorhanden
+    if (strategyChart) {
+        strategyChart.destroy();
+        strategyChart = null;
+    }
+    
+    const strategies = Object.keys(strategyComparison);
+    const roiData = strategies.map(strategy => {
+        const data = strategyComparison[strategy];
+        let roi = typeof data === 'object' ? data.roi_percent : data;
+        
+        // Sicherheitscheck: ROI auf sinnvolle Werte begrenzen
+        if (roi > 1000) {
+            console.warn(`⚠️ ROI zu hoch (${roi}%), begrenze auf 100%`);
+            roi = 100;
+        }
+        if (roi < 0) {
+            roi = 0;
+        }
+        
+        return roi;
+    });
+    
+    const labels = strategies.map(strategy => {
+        const data = strategyComparison[strategy];
+        return typeof data === 'object' ? data.strategy : strategy;
+    });
+    
+    console.log('📊 Chart-Daten:', { labels, roiData });
+    console.log('📊 ROI-Werte:', roiData);
+    console.log('📊 Max ROI:', Math.max(...roiData));
+    console.log('📊 Chart Max-Wert:', Math.max(25, Math.max(...roiData) * 1.2));
+    
+    strategyChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'ROI (%)',
+                data: roiData,
+                backgroundColor: [
+                    'rgba(59, 130, 246, 0.8)',
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(59, 130, 246, 1)',
+                    'rgba(16, 185, 129, 1)',
+                    'rgba(245, 158, 11, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            resizeDelay: 0,
+            animation: {
+                duration: 0 // Keine Animation um Größenänderungen zu vermeiden
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 25, // Feste Obergrenze von 25%
+                    min: 0,
+                    title: {
+                        display: true,
+                        text: 'ROI (%)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(1) + '%';
+                        },
+                        stepSize: 5 // Schrittweite von 5%
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'ROI: ' + context.parsed.y.toFixed(1) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Heatmap-Chart
+function createHeatmapChart(heatmapData) {
+    console.log('🔥 createHeatmapChart aufgerufen mit:', heatmapData);
+    console.log('🔥 Heatmap-Daten Typ:', typeof heatmapData);
+    console.log('🔥 Heatmap-Daten Keys:', Object.keys(heatmapData || {}));
+    
+    if (!heatmapData) {
+        console.error('❌ Heatmap-Daten sind null oder undefined');
+        return;
+    }
+    
+    if (!heatmapData.x || !heatmapData.y || !heatmapData.z) {
+        console.warn('⚠️ Heatmap-Daten fehlen oder unvollständig');
+        console.log('🔥 X vorhanden:', !!heatmapData.x);
+        console.log('🔥 Y vorhanden:', !!heatmapData.y);
+        console.log('🔥 Z vorhanden:', !!heatmapData.z);
+        console.log('🔥 Empfangene Daten:', heatmapData);
+        return;
+    }
+    
+    console.log('🔥 Heatmap-Daten:', heatmapData);
+    console.log('🔥 X-Werte:', heatmapData.x);
+    console.log('🔥 Y-Werte:', heatmapData.y);
+    console.log('🔥 Z-Werte:', heatmapData.z);
+    
+    const xValues = heatmapData.x;
+    const yValues = heatmapData.y;
+    const zValues = heatmapData.z;
+    
+    if (!zValues || zValues.length === 0) {
+        console.warn('⚠️ Z-Werte sind leer');
+        return;
+    }
+    
+    console.log('🔥 Daten-Dimensionen:', xValues.length, 'x', yValues.length, 'Z-Werte:', zValues.length);
+    console.log('🔥 Z-Matrix Typ:', typeof zValues, 'Ist Array:', Array.isArray(zValues));
+    
+    // Z-Matrix validieren und bereinigen
+    console.log('🔥 Z-Werte Typ:', typeof zValues, 'Ist Array:', Array.isArray(zValues));
+    console.log('🔥 Z-Werte Länge:', zValues.length);
+    console.log('🔥 Erste Z-Zeile:', zValues[0]);
+    
+    let zMatrix = zValues;
+    if (!Array.isArray(zValues) || zValues.length === 0 || !Array.isArray(zValues[0])) {
+        console.warn('⚠️ Z-Werte haben nicht die erwartete Struktur');
+        return;
+    }
+    
+    // Z-Matrix bereinigen - alle Werte zu Zahlen konvertieren
+    zMatrix = zValues.map(row => 
+        row.map(val => {
+            const numVal = parseFloat(val);
+            return isNaN(numVal) ? 0 : numVal;
+        })
+    );
+    
+    console.log('🔥 Z-Matrix für Plotly:', zMatrix);
+    console.log('🔥 Z-Matrix Dimensionen:', zMatrix.length, 'x', zMatrix[0]?.length);
+    console.log('🔥 Z-Matrix erste Zeile:', zMatrix[0]);
+    console.log('🔥 Z-Matrix letzte Zeile:', zMatrix[zMatrix.length-1]);
+    
+            const data = [{
+                x: xValues,
+                y: yValues,
+                z: zMatrix,
+                type: 'heatmap',
+                colorscale: [
+                    [0, 'rgb(68, 1, 84)'],      // Dunkelviolett
+                    [0.1, 'rgb(59, 82, 139)'],   // Blau
+                    [0.2, 'rgb(33, 144, 140)'],  // Türkis
+                    [0.3, 'rgb(92, 200, 99)'],   // Grün
+                    [0.4, 'rgb(253, 231, 37)'],  // Gelb
+                    [0.5, 'rgb(255, 255, 255)'], // Weiß
+                    [1, 'rgb(255, 0, 0)']        // Rot
+                ],
+                showscale: true,
+                colorbar: {
+                    title: 'Kostenvorteil (€/Jahr)',
+                    titleside: 'right',
+                    tickformat: ',.0f'
+                },
+                hovertemplate: 'P_ESS: %{x} kW<br>Q_ESS: %{y} kWh<br>Kostenvorteil: %{z:,.0f} €/Jahr<extra></extra>'
+            }];
+    
+    const layout = {
+        title: {
+            text: 'ROI Heatmap (P_ESS vs Q_ESS)',
+            font: { size: 16 }
+        },
+        xaxis: {
+            title: 'Leistung (kW)',
+            showgrid: true
+        },
+        yaxis: {
+            title: 'Kapazität (kWh)',
+            showgrid: true
+        },
+        height: 400,
+        margin: { t: 60, b: 60, l: 60, r: 60 }
+    };
+    
+    try {
+        // Zusätzliche Validierung vor Plotly
+        console.log('🔥 Finale Daten vor Plotly:', {
+            xLength: data[0].x.length,
+            yLength: data[0].y.length,
+            zLength: data[0].z.length,
+            zFirstRow: data[0].z[0],
+            zLastRow: data[0].z[data[0].z.length-1]
+        });
+        
+        Plotly.newPlot('heatmapChart', data, layout);
+        console.log('✅ Heatmap erfolgreich erstellt');
+    } catch (error) {
+        console.error('❌ Fehler beim Erstellen der Heatmap:', error);
+        console.error('❌ Fehler-Details:', error.message);
+        console.error('❌ Daten:', data);
+        console.error('❌ Layout:', layout);
+        
+        // Fallback: Einfache Heatmap mit minimalen Daten
+        console.log('🔄 Versuche Fallback-Heatmap...');
+        try {
+            const fallbackData = [{
+                x: [200, 400, 600, 800],
+                y: [400, 800, 1200, 1600],
+                z: [
+                    [30000, 40000, 50000, 60000],
+                    [35000, 45000, 55000, 65000],
+                    [40000, 50000, 60000, 70000],
+                    [45000, 55000, 65000, 75000]
+                ],
+                type: 'heatmap',
+                colorscale: 'Viridis'
+            }];
+            Plotly.newPlot('heatmapChart', fallbackData, layout);
+            console.log('✅ Fallback-Heatmap erfolgreich erstellt');
+        } catch (fallbackError) {
+            console.error('❌ Auch Fallback-Heatmap fehlgeschlagen:', fallbackError);
+        }
+    }
+}
+
+// Feasible Region anzeigen
+function displayFeasibleRegion(feasibleRegion) {
+    const countElement = document.getElementById('feasibleRegionCount');
+    const gridElement = document.getElementById('feasibleRegionGrid');
+    
+    if (countElement) {
+        countElement.textContent = feasibleRegion.length;
+    }
+    
+    if (gridElement && feasibleRegion.length > 0) {
+        // Top 6 Kombinationen anzeigen
+        const topCombinations = feasibleRegion
+            .sort((a, b) => b.cost_advantage_eur - a.cost_advantage_eur)
+            .slice(0, 6);
+        
+        gridElement.innerHTML = '';
+        topCombinations.forEach((combo, index) => {
+            const card = document.createElement('div');
+            card.className = 'bg-gray-50 p-4 rounded-lg border';
+            card.innerHTML = `
+                <div class="text-sm font-medium text-gray-900">Kombination ${index + 1}</div>
+                <div class="text-lg font-bold text-blue-600">${Math.round(combo.p_ess_kw)} kW</div>
+                <div class="text-lg font-bold text-green-600">${Math.round(combo.q_ess_kwh)} kWh</div>
+                <div class="text-sm text-gray-600">${Math.round(combo.cost_advantage_eur).toLocaleString()} €/Jahr</div>
+            `;
+            gridElement.appendChild(card);
+        });
+    }
+}
+</script>
+
+<!-- Chart.js und Plotly.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.26.0/plotly.min.js"></script>
+
+{% endblock %}

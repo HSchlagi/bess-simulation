@@ -293,6 +293,75 @@
             "net_benefit": "float (EUR)"
           }
         }
+      },
+      
+      "ps_ll_sizing_optimization": {
+        "method": "POST",
+        "path": "/api/sizing/ps-ll-optimization",
+        "description": "PS/LL-Sizing mit ZHAW-Exhaustionsmethode",
+        "request_body": {
+          "project_id": "integer",
+          "sizing_strategy": "string (ps_ll|arbitrage|hybrid)",
+          "constraints": {
+            "max_investment_eur": "float",
+            "available_space_m2": "float",
+            "grid_connection_mw": "float",
+            "min_soc_percent": "float",
+            "max_soc_percent": "float",
+            "efficiency_charge": "float",
+            "efficiency_discharge": "float",
+            "c_rate_charge": "float",
+            "c_rate_discharge": "float"
+          }
+        },
+        "response": {
+          "success": "boolean",
+          "result": {
+            "optimal_power_kw": "float",
+            "optimal_capacity_kwh": "float",
+            "total_investment_eur": "float",
+            "annual_savings_eur": "float",
+            "payback_period_years": "float",
+            "roi_percent": "float",
+            "feasible_region_count": "integer",
+            "heatmap_data": "object",
+            "strategy_comparison": "object"
+          }
+        }
+      },
+      
+      "sizing_strategy_comparison": {
+        "method": "POST",
+        "path": "/api/sizing/strategy-comparison",
+        "description": "Vergleicht verschiedene Sizing-Strategien",
+        "request_body": {
+          "project_id": "integer"
+        },
+        "response": {
+          "success": "boolean",
+          "strategies": {
+            "ps_ll": "object",
+            "arbitrage": "object",
+            "grid_services": "object",
+            "hybrid": "object"
+          },
+          "recommendation": "string"
+        }
+      },
+      
+      "sizing_heatmap_data": {
+        "method": "POST",
+        "path": "/api/sizing/heatmap-data",
+        "description": "Liefert Heatmap-Daten für BESS-Sizing-Visualisierung",
+        "request_body": {
+          "project_id": "integer"
+        },
+        "response": {
+          "success": "boolean",
+          "heatmap_data": "array of {p_ess_kw: float, q_ess_kwh: float, roi_percent: float}",
+          "p_ess_range": "array of float",
+          "q_ess_range": "array of float"
+        }
       }
     },
     

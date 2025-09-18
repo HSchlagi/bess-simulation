@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Heatmap Test</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Heatmap Test</h1>
+    <div id="heatmapChart" style="width:800px;height:600px;"></div>
+    
+    <script>
+        // Test-Daten
+        const testData = {
+            x: [200, 300, 400, 500, 600, 700, 800],
+            y: [400, 600, 800, 1000, 1200, 1400, 1600],
+            z: [
+                [30000, 35000, 40000, 45000, 50000, 55000, 60000],
+                [35000, 40000, 45000, 50000, 55000, 60000, 65000],
+                [40000, 45000, 50000, 55000, 60000, 65000, 70000],
+                [45000, 50000, 55000, 60000, 65000, 70000, 75000],
+                [50000, 55000, 60000, 65000, 70000, 75000, 80000],
+                [55000, 60000, 65000, 70000, 75000, 80000, 85000],
+                [60000, 65000, 70000, 75000, 80000, 85000, 90000]
+            ]
+        };
+        
+        console.log('🔥 Test-Daten:', testData);
+        
+        const data = [{
+            x: testData.x,
+            y: testData.y,
+            z: testData.z,
+            type: 'heatmap',
+            colorscale: 'Viridis',
+            showscale: true,
+            colorbar: {
+                title: 'Kostenvorteil (€/Jahr)'
+            },
+            hovertemplate: 'P_ESS: %{x} kW<br>Q_ESS: %{y} kWh<br>Kostenvorteil: %{z} €/Jahr<extra></extra>'
+        }];
+        
+        const layout = {
+            title: {
+                text: 'ROI Heatmap (P_ESS vs Q_ESS)',
+                font: { size: 16 }
+            },
+            xaxis: {
+                title: 'Leistung (kW)',
+                showgrid: true
+            },
+            yaxis: {
+                title: 'Kapazität (kWh)',
+                showgrid: true
+            },
+            height: 500,
+            margin: { t: 60, b: 60, l: 60, r: 60 }
+        };
+        
+        Plotly.newPlot('heatmapChart', data, layout);
+        console.log('✅ Heatmap erstellt');
+    </script>
+</body>
+</html>

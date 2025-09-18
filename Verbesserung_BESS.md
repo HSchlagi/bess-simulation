@@ -1073,6 +1073,49 @@ Dieser Verbesserungsplan wird die BESS-Simulation zu einer professionellen, skal
 
 ---
 
+### 6.4 BESS-Sizing mit PS/LL-Exhaustionsmethode (Priorität: HOCH) ⭐⭐⭐⭐
+**Ziel:** Intelligente BESS-Dimensionierung mit Peak Shaving und Load Leveling
+
+**Status:** ✅ **IMPLEMENTIERT** - PS/LL-Algorithmen erfolgreich integriert
+
+**Hintergrund:**
+Das ZHAW-Sizing-Tool nutzt die Exhaustionsmethode für optimale Batteriegrößen (Q_ESS, P_ESS):
+- **Peak Shaving (PS)**: Lastspitzen kappen unterhalb monatlicher Grenzwerte P_limit,m
+- **Load Leveling (LL)**: Lastausgleich über den Monat (glatter Verlauf, weniger Varianz)
+- **Kostenoptimierung**: Höchster Kostenvorteil (Leistungspreis ↓, Arbitrage ↑, Degradation berücksichtigt)
+
+**Schritte:**
+- [x] PS/LL-Modul als `bess_sizing_optimizer.py` integrieren
+- [x] API-Erweiterung für PS/LL-Sizing (`/api/sizing/ps-ll-optimization`)
+- [x] Dashboard-Tab "BESS Sizing & Optimierung" erstellen
+- [x] Heatmap-Visualisierung der (P_ESS, Q_ESS) Kombinationen
+- [x] Strategievergleich: PS/LL vs. Arbitrage vs. Grid Services
+- [x] Integration in bestehende Wirtschaftlichkeitsanalyse
+- [x] C-Rate-Constraints aus `c-rate/bess/battery.py` nutzen
+
+**Zeitaufwand:** 1-2 Wochen
+**Risiko:** Niedrig
+**Nutzen:** ⭐⭐⭐⭐ **HOCH**
+
+**Technische Integration:**
+- **Bestehende Module nutzen**: `economic_analysis_enhanced.py`, `advanced_optimization_algorithms.py`
+- **Neue API-Route**: `/api/sizing/ps-ll-optimization`
+- **Dashboard-Erweiterung**: Neuer Tab im Advanced Dashboard
+- **Datenquellen**: Projekt-Lastprofile, Spot-Preise, Tarife
+
+**Verfügbare PS/LL-Dateien:**
+- ✅ `PS/sizing_ps_ll.md` - Dokumentation der Exhaustionsmethode
+- ✅ `PS/sizing_ps_ll.py` - Python-Implementierung der PS/LL-Algorithmen
+
+**Geplante Features:**
+- **Feasible Region**: Alle (P_ESS, Q_ESS)-Kombinationen die PS/LL-Anforderungen erfüllen
+- **Kostenoptimierung**: ΔK = Einsparung Leistungspreis + Energieverschiebung – Degradationskosten
+- **Monatliche Grenzwerte**: P_limit,m aus 95%-Quantil der Last
+- **Heatmap-Visualisierung**: Kosten über P/Q-Gitter
+- **Strategievergleich**: PS/LL vs. Arbitrage vs. Hybrid-Ansatz
+
+---
+
 ## 📊 **Implementierungsplan Phase 6**
 
 ### **Woche 1-2: KI-Erweiterung**

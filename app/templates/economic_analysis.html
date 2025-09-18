@@ -33,23 +33,38 @@
                 </select>
             </div>
             
-            <!-- Analysis Type -->
+            <!-- Use Case Selection -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Analyse-Typ</label>
-                <select id="analysisType" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="comprehensive">Vollständige Analyse</option>
-                    <option value="quick">Schnellanalyse</option>
-                    <option value="detailed">Detaillierte Analyse</option>
+                <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Anwendungsfall</label>
+                <select id="useCaseSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="hybrid">Hybrid-Ansatz (Alle Anwendungen)</option>
+                    <option value="peak_shaving">Peak Shaving & Load Leveling</option>
+                    <option value="arbitrage">Spot-Preis-Arbitrage</option>
+                    <option value="grid_services">Netzstabilitätsdienstleistungen</option>
+                    <option value="self_consumption">Eigenverbrauchsoptimierung</option>
                 </select>
             </div>
         </div>
         
-        <!-- Intelligente Analyse Checkbox -->
+        <!-- Use Case Description -->
         <div class="mt-4">
-            <label class="flex items-center">
-                <input type="checkbox" id="intelligentAnalysis" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
-                <span class="ml-2 text-sm text-gray-700">Intelligente Analyse (inkl. erneuerbare Energien & BESS-Anwendungen)</span>
-            </label>
+            <div id="useCaseDescription" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 mr-3 mt-1"></i>
+                    <div>
+                        <h4 class="text-sm font-semibold text-blue-900 mb-1">Hybrid-Ansatz (Alle Anwendungen)</h4>
+                        <p class="text-sm text-blue-700">Kombiniert Peak Shaving, Arbitrage, Netzstabilitätsdienstleistungen und Eigenverbrauchsoptimierung für maximale Wirtschaftlichkeit.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Intelligente Analyse - Immer aktiv -->
+        <div class="mt-4">
+            <div class="flex items-center bg-green-50 border border-green-200 rounded-lg p-3">
+                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                <span class="text-sm text-green-800 font-medium">Intelligente Analyse aktiviert (inkl. erneuerbare Energien & BESS-Anwendungen)</span>
+            </div>
         </div>
         
         <div class="mt-6">
@@ -417,7 +432,7 @@ function loadProjects() {
 function setupEventListeners() {
     document.getElementById('runAnalysis').addEventListener('click', runAnalysis);
     document.getElementById('projectSelect').addEventListener('change', onProjectChange);
-    document.getElementById('analysisType').addEventListener('change', onAnalysisTypeChange);
+    document.getElementById('useCaseSelect').addEventListener('change', onUseCaseChange);
     
     // Sensitivity analysis
     document.getElementById('priceVariation').addEventListener('input', updateSensitivityAnalysis);
@@ -440,33 +455,61 @@ function onProjectChange() {
     }
 }
 
-function onAnalysisTypeChange() {
-    const analysisType = document.getElementById('analysisType').value;
-    const intelligentCheckbox = document.getElementById('intelligentAnalysis');
+// Use Case-spezifische Beschreibungen
+function onUseCaseChange() {
+    const useCase = document.getElementById('useCaseSelect').value;
+    const descriptionDiv = document.getElementById('useCaseDescription');
     
-    // Analysetyp-spezifische Einstellungen
-    switch(analysisType) {
-        case 'quick':
-            // Schnellanalyse: Nur grundlegende Metriken, keine intelligenten Erlöse
-            intelligentCheckbox.checked = false;
-            intelligentCheckbox.disabled = true;
-            showNotification('Schnellanalyse: Grundlegende Wirtschaftlichkeitsberechnung', 'info');
-            break;
-            
-        case 'comprehensive':
-            // Vollständige Analyse: Alle Features aktiviert
-            intelligentCheckbox.checked = true;
-            intelligentCheckbox.disabled = false;
-            showNotification('Vollständige Analyse: Alle Berechnungen inkl. intelligente Erlöse', 'info');
-            break;
-            
-        case 'detailed':
-            // Detaillierte Analyse: Alle Features + erweiterte Details
-            intelligentCheckbox.checked = true;
-            intelligentCheckbox.disabled = false;
-            showNotification('Detaillierte Analyse: Erweiterte Analyse mit allen Details', 'info');
-            break;
-    }
+    const descriptions = {
+        'hybrid': {
+            title: 'Hybrid-Ansatz (Alle Anwendungen)',
+            description: 'Kombiniert Peak Shaving, Arbitrage, Netzstabilitätsdienstleistungen und Eigenverbrauchsoptimierung für maximale Wirtschaftlichkeit.',
+            color: 'blue'
+        },
+        'peak_shaving': {
+            title: 'Peak Shaving & Load Leveling',
+            description: 'Reduziert Lastspitzen und glättet den Lastverlauf. Ideal für Industrieanlagen mit hohen Leistungsspitzen.',
+            color: 'orange'
+        },
+        'arbitrage': {
+            title: 'Spot-Preis-Arbitrage',
+            description: 'Kauft Strom bei niedrigen Preisen und verkauft bei hohen Preisen. Nutzt Preisschwankungen am Strommarkt.',
+            color: 'green'
+        },
+        'grid_services': {
+            title: 'Netzstabilitätsdienstleistungen',
+            description: 'Bietet Primär- und Sekundärregelung für das Stromnetz. Zusätzliche Erlöse durch Systemdienstleistungen.',
+            color: 'purple'
+        },
+        'self_consumption': {
+            title: 'Eigenverbrauchsoptimierung',
+            description: 'Maximiert den Eigenverbrauch von PV-Strom. Reduziert Strombezug aus dem Netz.',
+            color: 'yellow'
+        }
+    };
+    
+    const desc = descriptions[useCase];
+    const colorClasses = {
+        'blue': 'bg-blue-50 border-blue-200 text-blue-900 text-blue-700',
+        'orange': 'bg-orange-50 border-orange-200 text-orange-900 text-orange-700',
+        'green': 'bg-green-50 border-green-200 text-green-900 text-green-700',
+        'purple': 'bg-purple-50 border-purple-200 text-purple-900 text-purple-700',
+        'yellow': 'bg-yellow-50 border-yellow-200 text-yellow-900 text-yellow-700'
+    };
+    
+    const classes = colorClasses[desc.color];
+    descriptionDiv.className = `border rounded-lg p-4 ${classes}`;
+    descriptionDiv.innerHTML = `
+        <div class="flex items-start">
+            <i class="fas fa-info-circle mr-3 mt-1"></i>
+            <div>
+                <h4 class="text-sm font-semibold mb-1">${desc.title}</h4>
+                <p class="text-sm">${desc.description}</p>
+            </div>
+        </div>
+    `;
+    
+    showNotification(`${desc.title} ausgewählt`, 'info');
 }
 
 function runAnalysis() {
@@ -475,15 +518,19 @@ function runAnalysis() {
         return;
     }
 
-    const analysisType = document.getElementById('analysisType').value;
-    const intelligentAnalysis = document.getElementById('intelligentAnalysis').checked;
+    // Use Case-basierte Analyse
+    const useCase = document.getElementById('useCaseSelect').value;
+    const analysisType = 'detailed';
+    const intelligentAnalysis = true;
     
     showLoading(true);
     
-    // API-Endpunkt mit Analysetyp-Parameter
-    const url = `/api/economic-analysis/${currentProjectId}?analysis_type=${analysisType}&intelligent=${intelligentAnalysis}`;
+    // API-Endpunkt mit Use Case
+    const url = `/api/economic-analysis/${currentProjectId}?analysis_type=${analysisType}&intelligent=${intelligentAnalysis}&use_case=${useCase}`;
     
-    console.log(`🚀 Starte ${analysisType} Analyse für Projekt ${currentProjectId}`);
+    console.log(`🚀 Starte ${useCase} Analyse für Projekt ${currentProjectId}`);
+    console.log(`📊 Intelligente Analyse: ${intelligentAnalysis}`);
+    console.log(`🔗 API URL: ${url}`);
     
     fetch(url)
         .then(response => {
@@ -515,31 +562,25 @@ function runAnalysis() {
 function displayAnalysisResults(data, analysisType) {
     document.getElementById('analysisResults').classList.remove('hidden');
     
-    // Analysetyp-spezifische Anzeige
+    // VEREINFACHT: Immer alle Sektionen anzeigen (detaillierte Analyse)
     const intelligentSection = document.getElementById('intelligentRevenueSection');
     const detailedSections = document.querySelectorAll('.detailed-analysis-section');
     const chartsSection = document.getElementById('chartsSection');
     const sensitivitySection = document.getElementById('sensitivitySection');
     
-    // Schnellanalyse: Nur grundlegende Metriken
-    if (analysisType === 'quick') {
-        intelligentSection.style.display = 'none';
-        detailedSections.forEach(section => section.style.display = 'none');
-        chartsSection.style.display = 'none';
-        sensitivitySection.style.display = 'none';
-        document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500').textContent = 'Jährliche Einsparungen';
-    } else {
-        intelligentSection.style.display = 'block';
-        detailedSections.forEach(section => section.style.display = 'block');
-        chartsSection.style.display = 'block';
-        sensitivitySection.style.display = 'block';
-        if (data.total_annual_benefit) {
-            document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500').textContent = 'Jährlicher Gesamtnutzen';
-        }
+    // Alle Sektionen immer anzeigen
+    intelligentSection.style.display = 'block';
+    detailedSections.forEach(section => section.style.display = 'block');
+    chartsSection.style.display = 'block';
+    sensitivitySection.style.display = 'block';
+    
+    // Immer "Jährlicher Gesamtnutzen" anzeigen
+    if (data.total_annual_benefit) {
+        document.getElementById('annualSavings').parentElement.querySelector('p.text-sm.font-medium.text-gray-500').textContent = 'Jährlicher Gesamtnutzen';
     }
-    // Update key metrics
+    // Update key metrics - VEREINFACHT
     document.getElementById('totalInvestment').textContent = data.total_investment !== undefined ? formatCurrency(data.total_investment) : '-';
-    if (data.total_annual_benefit && analysisType !== 'quick') {
+    if (data.total_annual_benefit !== undefined) {
         document.getElementById('annualSavings').textContent = formatCurrency(data.total_annual_benefit);
     } else if (data.annual_savings !== undefined) {
         document.getElementById('annualSavings').textContent = formatCurrency(data.annual_savings);

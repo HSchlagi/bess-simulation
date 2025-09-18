@@ -40,12 +40,13 @@
 
 ### **Teil III: Technische Dokumentation**
 4. [Technische Dokumentation](#technische-dokumentation)
-   - 4.1 Architektur und Systemdesign
-   - 4.2 Datenmodell und Datenbankstruktur
-   - 4.3 Performance-Optimierung
-   - 4.4 Sicherheit und Datenschutz
-   - 4.5 Monitoring und Logging
-   - 4.6 Backup und Wiederherstellung
+   - 4.1 BESS Sizing & Optimierung - Machbare Region
+   - 4.2 Architektur und Systemdesign
+   - 4.3 Datenmodell und Datenbankstruktur
+   - 4.4 Performance-Optimierung
+   - 4.5 Sicherheit und Datenschutz
+   - 4.6 Monitoring und Logging
+   - 4.7 Backup und Wiederherstellung
 
 5. [API-Referenz](#api-referenz) (inkl. aWattar API, Smart Grid & IoT)
    - 5.1 Authentifizierung und Autorisierung
@@ -1357,6 +1358,499 @@ sudo systemctl enable bess
 ---
 
 ## 🔧 Technische Dokumentation
+
+### BESS Sizing & Optimierung - Vollständige Dokumentation
+
+#### Übersicht
+
+Das **BESS Sizing & Optimierung** System ist ein intelligentes Tool zur **automatischen Dimensionierung** von Batterie-Energiespeichersystemen basierend auf verschiedenen **Betriebsstrategien** und **wirtschaftlichen Kriterien**.
+
+#### Kernfunktionalitäten
+
+**1. Strategie-basierte Optimierung:**
+- **Peak Shaving + Load Leveling (PS/LL)**
+- **Spot-Preis-Arbitrage**
+- **Netzstabilitätsdienstleistungen**
+- **Hybrid-Ansatz**
+
+**2. Exhaustionsmethode:**
+- **2-Schritt-Algorithmus** für optimale Ergebnisse
+- **Systematische Parameterraum-Suche**
+- **Wirtschaftlichkeitsoptimierung**
+
+**3. Visualisierung:**
+- **ROI Heatmap** für Kostenvorteile
+- **Machbare Region** mit allen realisierbaren Kombinationen
+- **Strategievergleich** mit Kennzahlen
+
+#### Was ist die "Machbare Region"?
+
+Die **"Machbare Region"** ist ein zentrales Konzept der BESS-Sizing-Optimierung und zeigt alle **technisch und wirtschaftlich realisierbaren** BESS-Kombinationen aus **Leistung (P_ESS)** und **Kapazität (Q_ESS)**, die bestimmte **Anforderungen erfüllen**.
+
+#### Funktionsweise der Exhaustionsmethode
+
+Das System arbeitet mit einem **2-Schritt-Algorithmus**:
+
+**Schritt 1: Feasible Region (Machbare Region)**
+- Alle Kombinationen aus P_ESS und Q_ESS werden systematisch getestet
+- Nur diejenigen, die die Strategie-Anforderungen erfüllen, werden als "machbar" markiert
+- Ergebnis: Eine definierte Anzahl machbarer Kombinationen (z.B. 25 Kombinationen)
+
+**Schritt 2: Optimum finden**
+- Innerhalb der machbaren Kombinationen wird die **wirtschaftlichste** gesucht
+- Kriterium: Höchster Kostenvorteil (Einsparungen - Investitionskosten)
+- Ergebnis: Eine optimale Kombination wird ausgewählt
+
+#### Strategie-spezifische Kriterien
+
+**1. Peak Shaving + Load Leveling (PS/LL):**
+```python
+def _check_ps_ll_requirements(load_df, p_ess, q_ess):
+    max_load = load_df['load_kw'].max()
+    avg_load = load_df['load_kw'].mean()
+    
+    # Peak Shaving: Mindestens 30% der Maximalleistung
+    ps_feasible = p_ess >= max_load * 0.3
+    
+    # Load Leveling: Mindestens 50% der täglichen Energievariation
+    daily_energy_variation = (max_load - avg_load) * 24
+    ll_feasible = q_ess >= daily_energy_variation * 0.5
+    
+    return ps_feasible and ll_feasible
+```
+
+**2. Spot-Preis-Arbitrage:**
+```python
+def _check_arbitrage_requirements(load_df, p_ess, q_ess):
+    # Mindestleistung für Arbitrage
+    power_feasible = p_ess >= 100  # Mindestens 100 kW
+    
+    # Hohe Kapazität für längere Arbitrage-Zyklen
+    capacity_feasible = q_ess >= 800  # Mindestens 800 kWh
+    
+    return power_feasible and capacity_feasible
+```
+
+**3. Netzstabilitätsdienstleistungen:**
+```python
+def _check_grid_services_requirements(load_df, p_ess, q_ess):
+    # Hohe Leistung für Primärregelleistung
+    power_feasible = p_ess >= 500  # Mindestens 500 kW
+    
+    # Hohe Kapazität für längere Dienstleistungen
+    capacity_feasible = q_ess >= 1000  # Mindestens 1000 kWh
+    
+    return power_feasible and capacity_feasible
+```
+
+**4. Hybrid-Ansatz:**
+```python
+def _check_hybrid_requirements(load_df, p_ess, q_ess):
+    max_load = load_df['load_kw'].max()
+    avg_load = load_df['load_kw'].mean()
+    
+    # Moderate Leistung für PS/LL
+    ps_feasible = p_ess >= max_load * 0.2  # Mindestens 20% der Maximalleistung
+    
+    # Moderate Kapazität für Arbitrage
+    daily_energy_variation = (max_load - avg_load) * 24
+    ll_feasible = q_ess >= daily_energy_variation * 0.3  # Mindestens 30% der täglichen Variation
+    
+    return ps_feasible and ll_feasible
+```
+
+#### Benutzeroberfläche
+
+**1. Projektauswahl:**
+- Dropdown mit verfügbaren Projekten
+- Automatisches Laden der Projektparameter
+- Integration mit bestehenden Lastprofilen
+
+**2. Strategieauswahl:**
+- **Peak Shaving + Load Leveling**: Für Lastspitzen-Reduktion
+- **Spot-Preis-Arbitrage**: Für Marktoptimierung
+- **Netzstabilitätsdienstleistungen**: Für Grid Services
+- **Hybrid-Ansatz**: Kombinierte Strategie
+
+**3. Optimierungs-Constraints:**
+- **Max. Investition (€)**: Budget-Limit
+- **Verfügbarer Platz (m²)**: Raum-Beschränkung
+- **Netzanschluss (MW)**: Anschlussleistung
+- **C-Rate (Entladung)**: Batterie-Technologie
+
+**4. Ergebnisse:**
+- **Optimale BESS-Größe**: Leistung und Kapazität
+- **Wirtschaftlichkeits-KPIs**: ROI, Amortisation
+- **ROI Heatmap**: Visualisierung der Kostenvorteile
+- **Machbare Region**: Alle realisierbaren Kombinationen
+- **Strategievergleich**: Vergleich verschiedener Ansätze
+
+#### Praktisches Beispiel
+
+**Eingabe:** "25 machbare (P_ESS, Q_ESS) Kombinationen gefunden"
+
+**Beispiel-Kombinationen:**
+| Kombination | Leistung (kW) | Kapazität (kWh) | Jahreskosten (€) |
+|-------------|---------------|-----------------|------------------|
+| 1 | 750 | 1500 | 270.000 |
+| 2 | 625 | 1500 | 225.000 |
+| 3 | 750 | 1250 | 225.000 |
+| 4 | 625 | 1250 | 187.500 |
+| 5 | 500 | 1500 | 180.000 |
+| 6 | 750 | 1000 | 180.000 |
+
+#### ROI Heatmap
+
+Die **ROI Heatmap** visualisiert die **Kostenvorteile** über verschiedene BESS-Kombinationen:
+
+**Funktionen:**
+- **X-Achse**: BESS-Leistung (P_ESS) in kW
+- **Y-Achse**: BESS-Kapazität (Q_ESS) in kWh
+- **Farben**: Kostenvorteil in €/Jahr
+- **Hover-Effekt**: Detaillierte Informationen bei Mauszeiger
+
+**Interpretation:**
+- **Grün**: Hohe Kostenvorteile
+- **Gelb**: Moderate Kostenvorteile
+- **Rot**: Niedrige Kostenvorteile
+- **Weiß**: Nicht machbare Kombinationen
+
+#### Strategievergleich
+
+Der **Strategievergleich** zeigt die **Wirtschaftlichkeit** verschiedener Ansätze:
+
+**Verglichene Metriken:**
+- **ROI (%)**: Return on Investment
+- **Amortisation (Jahre)**: Payback Period
+- **Jährliche Einsparungen (€)**: Annual Savings
+- **Investitionskosten (€)**: Total Investment
+
+**Visualisierung:**
+- **Balkendiagramm** für direkten Vergleich
+- **Farbkodierung** nach Performance
+- **Sortierung** nach ROI
+
+#### Warum ist die "Machbare Region" wichtig?
+
+1. **Technische Machbarkeit**: BESS muss die gewünschten Funktionen erfüllen können
+2. **Wirtschaftliche Machbarkeit**: Investition muss sich lohnen
+3. **Systemstabilität**: BESS muss zuverlässig funktionieren
+4. **Regulatorische Anforderungen**: Muss gesetzliche Vorgaben erfüllen
+
+#### Technische Implementierung
+
+**Backend (Python/Flask):**
+```python
+@main_bp.route('/api/sizing/ps-ll-optimization', methods=['POST'])
+def ps_ll_sizing_optimization():
+    data = request.get_json()
+    project_id = data.get('project_id')
+    sizing_strategy = data.get('sizing_strategy', 'ps_ll')
+    constraints = data.get('constraints', {})
+    
+    # ECHTE BESS-Sizing-Optimierung mit Exhaustionsmethode
+    print(f"🔄 Führe {sizing_strategy.upper()}-Optimierung durch...")
+    
+    # Strategie-spezifische Parameter
+    if sizing_strategy == 'ps_ll':
+        p_range = np.arange(200, 1200, 100)  # 200-1100 kW
+        q_range = np.arange(400, 2400, 200)  # 400-2200 kWh
+        check_function = _check_ps_ll_requirements
+    elif sizing_strategy == 'arbitrage':
+        p_range = np.arange(100, 800, 100)   # 100-700 kW
+        q_range = np.arange(800, 3200, 200)  # 800-3000 kWh
+        check_function = _check_arbitrage_requirements
+    elif sizing_strategy == 'grid_services':
+        p_range = np.arange(500, 2000, 100)  # 500-1900 kW
+        q_range = np.arange(1000, 4000, 200) # 1000-3800 kWh
+        check_function = _check_grid_services_requirements
+    elif sizing_strategy == 'hybrid':
+        p_range = np.arange(300, 1500, 100)  # 300-1400 kW
+        q_range = np.arange(600, 3000, 200)  # 600-2800 kWh
+        check_function = _check_hybrid_requirements
+    
+    # Schritt 1: Machbarer Parameterraum
+    feasible_combinations = []
+    for p_ess in p_range:
+        for q_ess in q_range:
+            if check_function(load_df_sample, p_ess, q_ess):
+                feasible_combinations.append((p_ess, q_ess))
+    
+    # Schritt 2: Optimum finden
+    optimal_combination = None
+    best_cost_advantage = -float('inf')
+    
+    for p_ess, q_ess in feasible_combinations:
+        cost_advantage = _calculate_cost_advantage(
+            load_df_sample, market_df_sample, p_ess, q_ess, electricity_cost
+        )
+        if cost_advantage > best_cost_advantage:
+            best_cost_advantage = cost_advantage
+            optimal_combination = (p_ess, q_ess)
+    
+    return jsonify({
+        'success': True,
+        'result': SizingResult(
+            optimal_power_kw=optimal_combination[0],
+            optimal_capacity_kwh=optimal_combination[1],
+            total_investment_eur=total_investment,
+            annual_savings_eur=annual_savings,
+            payback_period_years=payback_period,
+            roi_percent=roi_percent,
+            feasible_region=feasible_region,
+            cost_heatmap_data=cost_heatmap_data,
+            strategy_comparison=strategy_comparison
+        )
+    })
+```
+
+**Frontend (JavaScript/HTML):**
+```javascript
+// Strategie-Constraints aktualisieren
+function updateStrategyConstraints(strategy) {
+    console.log('🔄 Aktualisiere Constraints für Strategie:', strategy);
+    
+    const maxInvestmentField = document.getElementById('maxInvestment');
+    const availableSpaceField = document.getElementById('availableSpace');
+    const gridConnectionField = document.getElementById('gridConnection');
+    const cRateDischargeField = document.getElementById('cRateDischarge');
+    
+    // Strategie-spezifische Constraints setzen
+    switch(strategy) {
+        case 'ps_ll':
+            maxInvestmentField.value = 2000000;
+            availableSpaceField.value = 200;
+            gridConnectionField.value = 1.2;
+            cRateDischargeField.value = 1.0;
+            break;
+        case 'arbitrage':
+            maxInvestmentField.value = 1500000;
+            availableSpaceField.value = 150;
+            gridConnectionField.value = 0.8;
+            cRateDischargeField.value = 0.5;
+            break;
+        case 'grid_services':
+            maxInvestmentField.value = 3000000;
+            availableSpaceField.value = 300;
+            gridConnectionField.value = 2.0;
+            cRateDischargeField.value = 2.0;
+            break;
+        case 'hybrid':
+            maxInvestmentField.value = 2500000;
+            availableSpaceField.value = 250;
+            gridConnectionField.value = 1.5;
+            cRateDischargeField.value = 1.5;
+            break;
+    }
+}
+
+// Heatmap erstellen
+function createHeatmapChart(heatmapData) {
+    try {
+        const zMatrix = heatmapData.z_matrix;
+        const xValues = heatmapData.x_values;
+        const yValues = heatmapData.y_values;
+        
+        const data = [{
+            z: zMatrix,
+            x: xValues,
+            y: yValues,
+            type: 'heatmap',
+            colorscale: 'RdYlGn',
+            showscale: true,
+            colorbar: {
+                title: 'Kostenvorteil (€/Jahr)',
+                titleside: 'right'
+            }
+        }];
+        
+        const layout = {
+            title: 'ROI Heatmap - BESS Kostenvorteile',
+            xaxis: { title: 'BESS-Leistung (kW)' },
+            yaxis: { title: 'BESS-Kapazität (kWh)' },
+            width: 800,
+            height: 600
+        };
+        
+        Plotly.newPlot('heatmapChart', data, layout);
+        console.log('✅ Heatmap erfolgreich erstellt');
+    } catch (error) {
+        console.error('❌ Fehler beim Erstellen der Heatmap:', error);
+    }
+}
+```
+
+#### API-Integration
+
+**Endpoint:** `POST /api/sizing/ps-ll-optimization`
+
+**Request:**
+```json
+{
+    "project_id": 1,
+    "sizing_strategy": "ps_ll|arbitrage|grid_services|hybrid",
+    "constraints": {
+        "max_investment": 2000000,
+        "available_space": 200,
+        "grid_connection": 2.0,
+        "c_rate_discharge": 1.0
+    }
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "result": {
+        "optimal_power_kw": 750,
+        "optimal_capacity_kwh": 1500,
+        "total_investment_eur": 1800000,
+        "annual_savings_eur": 270000,
+        "payback_period_years": 6.7,
+        "roi_percent": 15.0,
+        "feasible_region": [
+            {
+                "power_kw": 750,
+                "capacity_kwh": 1500,
+                "annual_cost_eur": 270000
+            }
+        ],
+        "cost_heatmap_data": {
+            "x_values": [200, 300, 400, 500, 600, 700, 800],
+            "y_values": [400, 600, 800, 1000, 1200, 1400, 1600],
+            "z_matrix": [[...], [...], ...]
+        },
+        "strategy_comparison": {
+            "ps_ll": {
+                "roi_percent": 15.0,
+                "payback_period_years": 6.7,
+                "annual_savings_eur": 270000
+            },
+            "arbitrage": {
+                "roi_percent": 12.5,
+                "payback_period_years": 8.0,
+                "annual_savings_eur": 225000
+            }
+        }
+    }
+}
+```
+
+#### Fehlerbehandlung
+
+**Häufige Probleme und Lösungen:**
+
+1. **Leere Heatmap:**
+   - **Ursache**: Falsche Datenstruktur oder Plotly-Fehler
+   - **Lösung**: Debug-Ausgaben und Fallback-Heatmap
+
+2. **Strategie-Constraints ändern sich nicht:**
+   - **Ursache**: Falsche HTML-Element-IDs
+   - **Lösung**: Korrekte ID-Zuordnung
+
+3. **JavaScript-Fehler:**
+   - **Ursache**: Event Listener nicht korrekt initialisiert
+   - **Lösung**: DOMContentLoaded Event verwenden
+
+#### Performance-Optimierung
+
+**Backend:**
+- **Numpy-Arrays** für schnelle Berechnungen
+- **Pandas DataFrames** für effiziente Datenverarbeitung
+- **Caching** für wiederholte Berechnungen
+
+**Frontend:**
+- **Plotly.js** für performante Visualisierung
+- **Event Delegation** für effiziente Event-Behandlung
+- **Lazy Loading** für große Datensätze
+
+#### Erweiterte Funktionen
+
+**1. Sensitivitätsanalyse:**
+- Variation der Eingabeparameter
+- Auswirkung auf Optimierungsergebnisse
+- Risikobewertung
+
+**2. Szenario-Vergleich:**
+- Verschiedene Marktbedingungen
+- Technologie-Szenarien
+- Regulatorische Änderungen
+
+**3. Export-Funktionen:**
+- PDF-Berichte
+- Excel-Export
+- JSON-Daten
+
+#### Best Practices
+
+**1. Projektauswahl:**
+- Verwenden Sie realistische Lastprofile
+- Berücksichtigen Sie saisonale Schwankungen
+- Validieren Sie Eingabedaten
+
+**2. Strategieauswahl:**
+- Wählen Sie die passende Strategie für Ihr Anwendungsfall
+- Vergleichen Sie verschiedene Ansätze
+- Berücksichtigen Sie Marktbedingungen
+
+**3. Constraint-Einstellung:**
+- Setzen Sie realistische Budget-Limits
+- Berücksichtigen Sie räumliche Beschränkungen
+- Validieren Sie technische Parameter
+
+**4. Ergebnis-Interpretation:**
+- Analysieren Sie die ROI Heatmap
+- Vergleichen Sie verschiedene Strategien
+- Berücksichtigen Sie Unsicherheiten
+
+#### Schritt-für-Schritt Anleitung
+
+**1. BESS Sizing & Optimierung öffnen:**
+- Navigieren Sie zu `/bess-sizing-simple`
+- Wählen Sie ein Projekt aus dem Dropdown
+- Warten Sie auf das Laden der Projektparameter
+
+**2. Strategie auswählen:**
+- **Peak Shaving + Load Leveling**: Für Lastspitzen-Reduktion
+- **Spot-Preis-Arbitrage**: Für Marktoptimierung  
+- **Netzstabilitätsdienstleistungen**: Für Grid Services
+- **Hybrid-Ansatz**: Kombinierte Strategie
+
+**3. Constraints anpassen:**
+- Die Constraints werden automatisch basierend auf der Strategie gesetzt
+- Sie können die Werte manuell anpassen
+- Berücksichtigen Sie Ihre spezifischen Anforderungen
+
+**4. Optimierung starten:**
+- Klicken Sie auf "Optimierung starten"
+- Warten Sie auf die Berechnung (5-10 Sekunden)
+- Die Ergebnisse werden automatisch angezeigt
+
+**5. Ergebnisse analysieren:**
+- **Optimale BESS-Größe**: Prüfen Sie Leistung und Kapazität
+- **ROI Heatmap**: Analysieren Sie die Kostenvorteile
+- **Machbare Region**: Überprüfen Sie alternative Kombinationen
+- **Strategievergleich**: Vergleichen Sie verschiedene Ansätze
+
+#### Troubleshooting
+
+**Problem: Optimierung läuft nicht**
+- **Lösung**: Überprüfen Sie die Projektauswahl
+- **Lösung**: Stellen Sie sicher, dass Lastprofile vorhanden sind
+
+**Problem: Heatmap ist leer**
+- **Lösung**: Laden Sie die Seite neu (F5)
+- **Lösung**: Überprüfen Sie die Browser-Konsole auf Fehler
+
+**Problem: Strategie-Constraints ändern sich nicht**
+- **Lösung**: Wählen Sie eine andere Strategie und zurück
+- **Lösung**: Laden Sie die Seite neu (F5)
+
+**Problem: JavaScript-Fehler**
+- **Lösung**: Öffnen Sie die Browser-Konsole (F12)
+- **Lösung**: Überprüfen Sie die Fehlermeldungen
+- **Lösung**: Laden Sie die Seite neu (F5)
 
 ### Architektur
 
