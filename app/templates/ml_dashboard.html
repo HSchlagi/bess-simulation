@@ -369,8 +369,18 @@
             
             // Lade Projekt-Daten und prüfe Spot-Preise
             Promise.all([
-                // Projekt-Details laden
-                fetch(`/api/projects/${projectId}`).then(r => r.json()),
+                // Projekt-Details laden mit besserer Fehlerbehandlung
+                fetch(`/api/projects/${projectId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error('Fehler beim Laden der Projekt-Details:', error);
+                        return null; // Fallback für Projekt-Daten
+                    }),
                 // Spot-Preise prüfen
                 fetch('/api/spot-prices', {
                     method: 'POST',
@@ -379,11 +389,29 @@
                         start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
                         end_date: new Date().toISOString()
                     })
-                }).then(r => r.json())
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Spot-Preise:', error);
+                    return { success: false, error: error.message };
+                })
             ])
             .then(([projectData, spotPriceData]) => {
                 button.textContent = originalText;
                 button.disabled = false;
+                
+                // Prüfe ob Projekt-Daten geladen wurden
+                if (!projectData) {
+                    alert(`❌ Fehler beim Laden der Projekt-Daten für ${projectName}.\n\nMögliche Ursachen:\n- Projekt existiert nicht (ID: ${projectId})\n- Keine Berechtigung\n- Server-Fehler\n\nBitte wählen Sie ein anderes Projekt oder kontaktieren Sie den Administrator.`);
+                    return;
+                }
+                
+                console.log('✅ Projekt-Daten geladen:', projectData);
                 
                 // Charts mit Projekt-spezifischen Daten laden
                 initCharts();
@@ -395,10 +423,11 @@
                 enableAllButtons();
                 
                 // Prüfe ob Spot-Preise verfügbar sind
-                if (spotPriceData.success && spotPriceData.data && spotPriceData.data.length > 0) {
+                if (spotPriceData && spotPriceData.success && spotPriceData.data && spotPriceData.data.length > 0) {
                     alert(`✅ Daten für ${projectName} erfolgreich geladen!\n\n📊 ${spotPriceData.data.length} Spot-Preise verfügbar\n🔮 Preis-Prognose bereit`);
                 } else {
-                    alert(`⚠️ Daten für ${projectName} geladen, aber keine Spot-Preise verfügbar.\n\nBitte importieren Sie zuerst Spot-Preise für Preis-Prognosen.`);
+                    const spotError = spotPriceData && spotPriceData.error ? `\n\nSpot-Preis Fehler: ${spotPriceData.error}` : '';
+                    alert(`⚠️ Daten für ${projectName} geladen, aber keine Spot-Preise verfügbar.${spotError}\n\nBitte importieren Sie zuerst Spot-Preise für Preis-Prognosen.`);
                 }
             })
             .catch(error => {
@@ -645,12 +674,28 @@
             try {
                 console.log('🔄 Lade Projekte aus der Datenbank...');
                 const response = await fetch('/api/projects');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const projects = await response.json();
                 
                 console.log('📊 Geladene Projekte:', projects.length);
+                console.log('📋 Projekt-Details:', projects);
                 
                 const select = document.getElementById('project-select');
                 select.innerHTML = '<option value="">-- Projekt auswählen --</option>';
+                
+                if (projects.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'Keine Projekte verfügbar';
+                    option.disabled = true;
+                    select.appendChild(option);
+                    console.warn('⚠️ Keine Projekte in der Datenbank gefunden');
+                    return;
+                }
                 
                 projects.forEach(project => {
                     const option = document.createElement('option');
@@ -663,6 +708,8 @@
                 console.log('✅ Projekte erfolgreich geladen:', projects.length);
             } catch (error) {
                 console.error('❌ Fehler beim Laden der Projekte:', error);
+                const select = document.getElementById('project-select');
+                select.innerHTML = '<option value="">Fehler beim Laden der Projekte</option>';
             }
         }
 
