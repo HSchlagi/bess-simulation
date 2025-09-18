@@ -1486,13 +1486,26 @@ def api_spot_prices():
         start_date_str = data.get('start_date')
         end_date_str = data.get('end_date')
         
-        # Datum-Parsing
-        if start_date_str and end_date_str:
-            start_date = datetime.fromisoformat(start_date_str)
-            end_date = datetime.fromisoformat(end_date_str)
-        else:
-            start_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-            end_date = start_date + timedelta(days=1)
+        # Datum-Parsing mit besserer Fehlerbehandlung
+        try:
+            if start_date_str and end_date_str:
+                # Entferne 'Z' am Ende falls vorhanden (ISO-Format)
+                start_date_str = start_date_str.replace('Z', '')
+                end_date_str = end_date_str.replace('Z', '')
+                
+                start_date = datetime.fromisoformat(start_date_str)
+                end_date = datetime.fromisoformat(end_date_str)
+            else:
+                # Fallback: Letzte 7 Tage
+                end_date = datetime.now()
+                start_date = end_date - timedelta(days=7)
+        except ValueError as e:
+            print(f"❌ Datum-Parsing Fehler: {e}")
+            return jsonify({
+                'success': False, 
+                'error': f'Ungültiges Datumsformat: {str(e)}',
+                'message': 'Bitte verwenden Sie das Format: YYYY-MM-DDTHH:MM:SS'
+            }), 400
         
         print(f"🔍 Lade Spot-Preise für {start_date} bis {end_date}")
         
