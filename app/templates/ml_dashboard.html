@@ -36,14 +36,18 @@
         <div class="bg-white rounded-xl shadow-lg p-6 card-hover mb-8">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-gray-800">📁 Projekt auswählen</h2>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                    <span class="text-sm text-yellow-800">⚠️ Wählen Sie ein Projekt aus, um Berechnungen zu starten</span>
+                </div>
             </div>
             <div class="flex space-x-4">
                 <select id="project-select" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Projekt auswählen --</option>
                     <option value="bess-hinterstoder">BESS Hinterstoder</option>
                     <option value="bess-salzburg">BESS Salzburg</option>
                     <option value="bess-wien">BESS Wien</option>
             </select>
-                <button onclick="loadProjectData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition">
+                <button onclick="loadProjectData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition" disabled id="load-data-btn">
                     📊 Daten laden
             </button>
         </div>
@@ -56,7 +60,7 @@
             <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
             <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-gray-800">📈 Preis-Prognosen</h2>
-                    <button onclick="startPriceForecast()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                    <button onclick="startPriceForecast()" class="bg-gray-400 cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition" disabled id="price-forecast-btn">
                     Prognose starten
                 </button>
             </div>
@@ -67,11 +71,11 @@
                 <div class="grid grid-cols-2 gap-4 text-sm">
                         <div class="bg-gray-50 p-3 rounded-lg">
                         <span class="text-gray-600">Durchschnittspreis:</span>
-                            <span class="font-bold text-green-600" id="avg-price">52.05 €/MWh</span>
+                            <span class="font-bold text-gray-400" id="avg-price">- €/MWh</span>
                     </div>
                         <div class="bg-gray-50 p-3 rounded-lg">
                         <span class="text-gray-600">Maximaler Preis:</span>
-                            <span class="font-bold text-red-600" id="max-price">72.58 €/MWh</span>
+                            <span class="font-bold text-gray-400" id="max-price">- €/MWh</span>
                         </div>
                     </div>
             </div>
@@ -81,7 +85,7 @@
             <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
             <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-gray-800">⚙️ BESS-Optimierung</h2>
-                    <button onclick="optimizeBESS()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                    <button onclick="optimizeBESS()" class="bg-gray-400 cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition" disabled id="optimize-bess-btn">
                     Optimieren
                 </button>
             </div>
@@ -89,15 +93,15 @@
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <span class="text-gray-600">Lade-Wirkungsgrad:</span>
-                            <span class="font-bold text-blue-600" id="charge-efficiency">95.0%</span>
+                            <span class="font-bold text-gray-400" id="charge-efficiency">- %</span>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <span class="text-gray-600">Max. SoC:</span>
-                            <span class="font-bold text-blue-600" id="max-soc">95.0%</span>
+                            <span class="font-bold text-gray-400" id="max-soc">- %</span>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <span class="text-gray-600">Entlade-Wirkungsgrad:</span>
-                            <span class="font-bold text-blue-600" id="discharge-efficiency">95.0%</span>
+                            <span class="font-bold text-gray-400" id="discharge-efficiency">- %</span>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <span class="text-gray-600">Min. SoC:</span>
@@ -123,7 +127,7 @@
             <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
             <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-gray-800">🔍 Anomalie-Erkennung</h2>
-                    <button onclick="analyzeAnomalies()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                    <button onclick="analyzeAnomalies()" class="bg-gray-400 cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition" disabled id="anomaly-analyze-btn">
                     Analysieren
                 </button>
             </div>
@@ -155,7 +159,7 @@
             <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
             <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-gray-800">🔧 Predictive Maintenance</h2>
-                    <button onclick="analyzeMaintenance()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition">
+                    <button onclick="analyzeMaintenance()" class="bg-gray-400 cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm transition" disabled id="maintenance-analyze-btn">
                     Analysieren
                 </button>
             </div>
@@ -233,7 +237,7 @@
         // Chart.js Konfiguration
         let priceForecastChart;
 
-        // Demo-Daten für Preis-Prognosen (nächster Tag)
+        // Demo-Daten werden nur nach Projektauswahl generiert
         function generatePriceForecastLabels() {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -253,41 +257,89 @@
             return labels;
         }
 
-        const demoPriceData = {
-            labels: generatePriceForecastLabels(),
-            datasets: [{
-                label: 'Prognostizierter Preis (€/MWh) - Morgen',
-                data: [45.2, 52.8, 68.4, 72.6, 58.9, 42.1, 38.7, 41.3, 48.9, 55.2, 61.8, 58.4],
-                borderColor: 'rgb(59, 130, 246)',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.4,
-                fill: true
-            }]
-        };
+        // Demo-Daten werden nur nach Projektauswahl erstellt
+        function createDemoPriceData() {
+            return {
+                labels: generatePriceForecastLabels(),
+                datasets: [{
+                    label: 'Prognostizierter Preis (€/MWh) - Morgen',
+                    data: [45.2, 52.8, 68.4, 72.6, 58.9, 42.1, 38.7, 41.3, 48.9, 55.2, 61.8, 58.4],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            };
+        }
 
-        // Chart initialisieren
-        function initCharts() {
+        // Leere Charts initialisieren (ohne Demo-Daten)
+        function initEmptyCharts() {
             const ctx = document.getElementById('priceForecastChart').getContext('2d');
-        priceForecastChart = new Chart(ctx, {
-            type: 'line',
-                data: demoPriceData,
-                    options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
+            priceForecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Wählen Sie ein Projekt aus',
+                        data: [],
+                        borderColor: 'rgb(156, 163, 175)',
+                        backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
                             beginAtZero: false,
-                        title: {
-                            display: true,
-                            text: 'Preis (€/MWh)'
+                            title: {
+                                display: true,
+                                text: 'Preis (€/MWh)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
                         }
                     },
-                    x: {
-                        title: {
+                    plugins: {
+                        legend: {
                             display: true,
-                            text: 'Zeit'
+                            position: 'top'
                         }
                     }
+                }
+            });
+        }
+
+        // Chart mit Demo-Daten initialisieren (nur nach Projektauswahl)
+        function initCharts() {
+            const ctx = document.getElementById('priceForecastChart').getContext('2d');
+            const demoData = createDemoPriceData();
+            priceForecastChart = new Chart(ctx, {
+                type: 'line',
+                data: demoData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Preis (€/MWh)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
                     },
                     plugins: {
                         legend: {
@@ -302,6 +354,13 @@
         // Funktionen
         function loadProjectData() {
             const project = document.getElementById('project-select').value;
+            
+            // Prüfen ob Projekt ausgewählt wurde
+            if (!project) {
+                alert('⚠️ Bitte wählen Sie zuerst ein Projekt aus!');
+                return;
+            }
+            
             console.log('Lade Daten für Projekt:', project);
             
             // Simuliere Ladevorgang
@@ -313,8 +372,74 @@
             setTimeout(() => {
                 button.textContent = originalText;
                 button.disabled = false;
+                
+                // Charts mit Projekt-spezifischen Daten laden
+                initCharts();
+                
+                // Projekt-spezifische Daten anzeigen
+                updateProjectSpecificData(project);
+                
+                // Alle Buttons aktivieren
+                enableAllButtons();
+                
                 alert(`Daten für ${project} erfolgreich geladen!`);
             }, 2000);
+        }
+
+        // Projekt-spezifische Daten aktualisieren
+        function updateProjectSpecificData(project) {
+            // Statistiken basierend auf Projekt aktualisieren
+            const projectData = {
+                'bess-hinterstoder': {
+                    avgPrice: '52.05',
+                    maxPrice: '72.58',
+                    chargeEfficiency: '95.0',
+                    maxSoc: '95.0',
+                    dischargeEfficiency: '95.0'
+                },
+                'bess-salzburg': {
+                    avgPrice: '48.32',
+                    maxPrice: '68.45',
+                    chargeEfficiency: '94.5',
+                    maxSoc: '94.0',
+                    dischargeEfficiency: '94.5'
+                },
+                'bess-wien': {
+                    avgPrice: '55.78',
+                    maxPrice: '78.92',
+                    chargeEfficiency: '95.5',
+                    maxSoc: '96.0',
+                    dischargeEfficiency: '95.5'
+                }
+            };
+            
+            const data = projectData[project] || projectData['bess-hinterstoder'];
+            
+            // Statistiken aktualisieren
+            document.getElementById('avg-price').textContent = `${data.avgPrice} €/MWh`;
+            document.getElementById('max-price').textContent = `${data.maxPrice} €/MWh`;
+            document.getElementById('charge-efficiency').textContent = `${data.chargeEfficiency}%`;
+            document.getElementById('max-soc').textContent = `${data.maxSoc}%`;
+            document.getElementById('discharge-efficiency').textContent = `${data.dischargeEfficiency}%`;
+        }
+
+        // Alle Buttons aktivieren
+        function enableAllButtons() {
+            const buttons = [
+                'price-forecast-btn',
+                'optimize-bess-btn',
+                'anomaly-analyze-btn',
+                'maintenance-analyze-btn'
+            ];
+            
+            buttons.forEach(buttonId => {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    button.disabled = false;
+                    button.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    button.classList.add('bg-green-600', 'hover:bg-green-700');
+                }
+            });
         }
 
         function startPriceForecast() {
@@ -331,7 +456,8 @@
                 button.disabled = false;
                 
                 // Aktualisiere Chart mit neuen Daten
-                const newData = demoPriceData.datasets[0].data.map(val => val + (Math.random() - 0.5) * 10);
+                const demoData = createDemoPriceData();
+                const newData = demoData.datasets[0].data.map(val => val + (Math.random() - 0.5) * 10);
                 priceForecastChart.data.datasets[0].data = newData;
                 priceForecastChart.update();
                 
@@ -416,9 +542,26 @@
             }, 2500);
         }
 
-        // Initialisierung
+        // Initialisierung - KEINE automatischen Charts beim Laden
         document.addEventListener('DOMContentLoaded', function() {
-            initCharts();
+            // Nur leere Charts initialisieren, keine Demo-Daten
+            initEmptyCharts();
+            
+            // Projekt-Auswahl Event Listener
+            document.getElementById('project-select').addEventListener('change', function() {
+                const selectedProject = this.value;
+                const loadButton = document.getElementById('load-data-btn');
+                
+                if (selectedProject) {
+                    loadButton.disabled = false;
+                    loadButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    loadButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                } else {
+                    loadButton.disabled = true;
+                    loadButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    loadButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                }
+            });
         });
 </script>
 
