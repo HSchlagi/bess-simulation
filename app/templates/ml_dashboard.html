@@ -362,13 +362,26 @@
             
             console.log('Lade Daten für Projekt:', projectName, '(ID:', projectId, ')');
             
-            // Simuliere Ladevorgang
             const button = event.target;
             const originalText = button.textContent;
             button.textContent = '⏳ Lade...';
             button.disabled = true;
             
-            setTimeout(() => {
+            // Lade Projekt-Daten und prüfe Spot-Preise
+            Promise.all([
+                // Projekt-Details laden
+                fetch(`/api/projects/${projectId}`).then(r => r.json()),
+                // Spot-Preise prüfen
+                fetch('/api/spot-prices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        end_date: new Date().toISOString()
+                    })
+                }).then(r => r.json())
+            ])
+            .then(([projectData, spotPriceData]) => {
                 button.textContent = originalText;
                 button.disabled = false;
                 
@@ -376,57 +389,90 @@
                 initCharts();
                 
                 // Projekt-spezifische Daten anzeigen
-                updateProjectSpecificData(projectId);
+                updateProjectSpecificData(projectId, projectData);
                 
                 // Alle Buttons aktivieren
                 enableAllButtons();
                 
-                alert(`Daten für ${projectName} erfolgreich geladen!`);
-            }, 2000);
+                // Prüfe ob Spot-Preise verfügbar sind
+                if (spotPriceData.success && spotPriceData.data && spotPriceData.data.length > 0) {
+                    alert(`✅ Daten für ${projectName} erfolgreich geladen!\n\n📊 ${spotPriceData.data.length} Spot-Preise verfügbar\n🔮 Preis-Prognose bereit`);
+                } else {
+                    alert(`⚠️ Daten für ${projectName} geladen, aber keine Spot-Preise verfügbar.\n\nBitte importieren Sie zuerst Spot-Preise für Preis-Prognosen.`);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler beim Laden der Projekt-Daten:', error);
+                button.textContent = originalText;
+                button.disabled = false;
+                alert('❌ Fehler beim Laden der Projekt-Daten. Bitte versuchen Sie es erneut.');
+            });
         }
 
         // Projekt-spezifische Daten aktualisieren
-        function updateProjectSpecificData(projectId) {
-            // Demo-Daten für verschiedene Projekte (später durch echte API-Daten ersetzen)
-            const projectData = {
-                '1': { // BESS Hinterstoder
-                    avgPrice: '52.05',
-                    maxPrice: '72.58',
-                    chargeEfficiency: '95.0',
-                    maxSoc: '95.0',
-                    dischargeEfficiency: '95.0'
-                },
-                '2': { // BESS Salzburg
-                    avgPrice: '48.32',
-                    maxPrice: '68.45',
-                    chargeEfficiency: '94.5',
-                    maxSoc: '94.0',
-                    dischargeEfficiency: '94.5'
-                },
-                '3': { // BESS Wien
-                    avgPrice: '55.78',
-                    maxPrice: '78.92',
-                    chargeEfficiency: '95.5',
-                    maxSoc: '96.0',
-                    dischargeEfficiency: '95.5'
-                },
-                '4': { // BESS Graz
-                    avgPrice: '49.15',
-                    maxPrice: '69.23',
-                    chargeEfficiency: '94.8',
-                    maxSoc: '94.5',
-                    dischargeEfficiency: '94.8'
-                }
-            };
-            
-            const data = projectData[projectId] || projectData['1'];
-            
-            // Statistiken aktualisieren
-            document.getElementById('avg-price').textContent = `${data.avgPrice} €/MWh`;
-            document.getElementById('max-price').textContent = `${data.maxPrice} €/MWh`;
-            document.getElementById('charge-efficiency').textContent = `${data.chargeEfficiency}%`;
-            document.getElementById('max-soc').textContent = `${data.maxSoc}%`;
-            document.getElementById('discharge-efficiency').textContent = `${data.dischargeEfficiency}%`;
+        function updateProjectSpecificData(projectId, projectData = null) {
+            // Verwende echte Projekt-Daten falls verfügbar
+            if (projectData && projectData.bess_size) {
+                // BESS-spezifische Parameter basierend auf Projekt-Daten
+                const bessSize = projectData.bess_size;
+                const bessPower = projectData.bess_power || bessSize * 0.5; // Standard: 2h Entladezeit
+                
+                // Berechne realistische Effizienz-Werte basierend auf BESS-Größe
+                const baseEfficiency = 94.0;
+                const sizeBonus = Math.min(2.0, (bessSize / 1000) * 0.5); // Bis zu 2% Bonus für große Systeme
+                const efficiency = baseEfficiency + sizeBonus;
+                
+                // Statistiken aktualisieren mit Projekt-Daten
+                document.getElementById('charge-efficiency').textContent = `${efficiency.toFixed(1)}%`;
+                document.getElementById('max-soc').textContent = `${(efficiency + 1).toFixed(1)}%`;
+                document.getElementById('discharge-efficiency').textContent = `${efficiency.toFixed(1)}%`;
+                
+                // Zeige Projekt-Info
+                console.log(`📊 Projekt geladen: ${projectData.name}`);
+                console.log(`🔋 BESS-Größe: ${bessSize} kWh`);
+                console.log(`⚡ BESS-Leistung: ${bessPower} kW`);
+            } else {
+                // Fallback: Demo-Daten für verschiedene Projekte
+                const projectData = {
+                    '1': { // BESS Hinterstoder
+                        avgPrice: '52.05',
+                        maxPrice: '72.58',
+                        chargeEfficiency: '95.0',
+                        maxSoc: '95.0',
+                        dischargeEfficiency: '95.0'
+                    },
+                    '2': { // BESS Salzburg
+                        avgPrice: '48.32',
+                        maxPrice: '68.45',
+                        chargeEfficiency: '94.5',
+                        maxSoc: '94.0',
+                        dischargeEfficiency: '94.5'
+                    },
+                    '3': { // BESS Wien
+                        avgPrice: '55.78',
+                        maxPrice: '78.92',
+                        chargeEfficiency: '95.5',
+                        maxSoc: '96.0',
+                        dischargeEfficiency: '95.5'
+                    },
+                    '4': { // BESS Graz
+                        avgPrice: '49.15',
+                        maxPrice: '69.23',
+                        chargeEfficiency: '94.8',
+                        maxSoc: '94.5',
+                        dischargeEfficiency: '94.8'
+                    }
+                };
+                
+                const data = projectData[projectId] || projectData['1'];
+                
+                // Statistiken aktualisieren
+                document.getElementById('avg-price').textContent = `${data.avgPrice} €/MWh`;
+                document.getElementById('max-price').textContent = `${data.maxPrice} €/MWh`;
+                document.getElementById('charge-efficiency').textContent = `${data.chargeEfficiency}%`;
+                document.getElementById('max-soc').textContent = `${data.maxSoc}%`;
+                document.getElementById('discharge-efficiency').textContent = `${data.dischargeEfficiency}%`;
+            }
         }
 
         // Alle Buttons aktivieren
@@ -451,31 +497,77 @@
         function startPriceForecast() {
             console.log('Starte Preis-Prognose...');
             
-            // Simuliere Prognose-Berechnung
+            const projectSelect = document.getElementById('project-select');
+            const projectId = projectSelect.value;
+            
+            if (!projectId) {
+                alert('⚠️ Bitte wählen Sie zuerst ein Projekt aus!');
+                return;
+            }
+            
             const button = event.target;
             const originalText = button.textContent;
             button.textContent = '⏳ Berechne...';
             button.disabled = true;
             
-            setTimeout(() => {
+            // API-Aufruf für echte Preis-Prognose
+            fetch('/api/ml/price-forecast', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    project_id: projectId,
+                    forecast_hours: 24
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
                 button.textContent = originalText;
                 button.disabled = false;
                 
-                // Aktualisiere Chart mit neuen Daten
-                const demoData = createDemoPriceData();
-                const newData = demoData.datasets[0].data.map(val => val + (Math.random() - 0.5) * 10);
-                priceForecastChart.data.datasets[0].data = newData;
-                priceForecastChart.update();
-                
-                // Aktualisiere Statistiken
-                const avgPrice = (newData.reduce((a, b) => a + b, 0) / newData.length).toFixed(2);
-                const maxPrice = Math.max(...newData).toFixed(2);
-                
-                document.getElementById('avg-price').textContent = `${avgPrice} €/MWh`;
-                document.getElementById('max-price').textContent = `${maxPrice} €/MWh`;
-                
-                alert('Preis-Prognose erfolgreich erstellt!');
-            }, 3000);
+                if (result.success) {
+                    // Chart mit echten Prognose-Daten aktualisieren
+                    updatePriceForecastChart(result.data);
+                    
+                    // Statistiken aktualisieren
+                    document.getElementById('avg-price').textContent = `${result.statistics.avg_price} €/MWh`;
+                    document.getElementById('max-price').textContent = `${result.statistics.max_price} €/MWh`;
+                    
+                    alert(`✅ Preis-Prognose erfolgreich erstellt!\n\nDurchschnittspreis: ${result.statistics.avg_price} €/MWh\nMaximaler Preis: ${result.statistics.max_price} €/MWh\n\nQuelle: ${result.source}`);
+                } else {
+                    alert(`❌ Fehler bei Preis-Prognose: ${result.error}\n\n${result.message || ''}`);
+                }
+            })
+            .catch(error => {
+                console.error('Fehler bei Preis-Prognose:', error);
+                button.textContent = originalText;
+                button.disabled = false;
+                alert('❌ Fehler beim Laden der Preis-Prognose. Bitte versuchen Sie es erneut.');
+            });
+        }
+        
+        function updatePriceForecastChart(forecastData) {
+            // Labels und Daten aus API-Response extrahieren
+            const labels = forecastData.map(point => {
+                const date = new Date(point.timestamp);
+                return date.toLocaleTimeString('de-DE', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    day: '2-digit',
+                    month: '2-digit'
+                });
+            });
+            
+            const prices = forecastData.map(point => point.price);
+            
+            // Chart aktualisieren
+            priceForecastChart.data.labels = labels;
+            priceForecastChart.data.datasets[0].data = prices;
+            priceForecastChart.data.datasets[0].label = 'Prognostizierter Preis (€/MWh) - ML-basiert';
+            priceForecastChart.data.datasets[0].borderColor = 'rgb(34, 197, 94)'; // Grün für ML-Prognose
+            priceForecastChart.data.datasets[0].backgroundColor = 'rgba(34, 197, 94, 0.1)';
+            priceForecastChart.update();
         }
 
         function optimizeBESS() {
