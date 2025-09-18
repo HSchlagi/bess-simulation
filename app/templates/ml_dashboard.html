@@ -271,6 +271,12 @@
 
         // Leere Charts initialisieren (ohne Demo-Daten)
         function initEmptyCharts() {
+            // Zerstöre existierendes Chart falls vorhanden
+            if (priceForecastChart) {
+                priceForecastChart.destroy();
+                priceForecastChart = null;
+            }
+            
             const ctx = document.getElementById('priceForecastChart').getContext('2d');
             priceForecastChart = new Chart(ctx, {
                 type: 'line',
@@ -315,6 +321,12 @@
 
         // Chart mit Demo-Daten initialisieren (nur nach Projektauswahl)
         function initCharts() {
+            // Zerstöre existierendes Chart falls vorhanden
+            if (priceForecastChart) {
+                priceForecastChart.destroy();
+                priceForecastChart = null;
+            }
+            
             const ctx = document.getElementById('priceForecastChart').getContext('2d');
             const demoData = createDemoPriceData();
             priceForecastChart = new Chart(ctx, {
@@ -381,11 +393,12 @@
                         console.error('Fehler beim Laden der Projekt-Details:', error);
                         return null; // Fallback für Projekt-Daten
                     }),
-                // Spot-Preise prüfen
+                // Spot-Preise prüfen - verwende korrekte Parameter
                 fetch('/api/spot-prices', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        time_range: 'week',
                         start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
                         end_date: new Date().toISOString()
                     })
