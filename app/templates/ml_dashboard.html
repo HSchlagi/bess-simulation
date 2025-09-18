@@ -43,9 +43,6 @@
             <div class="flex space-x-4">
                 <select id="project-select" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">-- Projekt auswählen --</option>
-                    <option value="bess-hinterstoder">BESS Hinterstoder</option>
-                    <option value="bess-salzburg">BESS Salzburg</option>
-                    <option value="bess-wien">BESS Wien</option>
             </select>
                 <button onclick="loadProjectData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition" disabled id="load-data-btn">
                     📊 Daten laden
@@ -353,15 +350,17 @@
 
         // Funktionen
         function loadProjectData() {
-            const project = document.getElementById('project-select').value;
+            const projectSelect = document.getElementById('project-select');
+            const projectId = projectSelect.value;
+            const projectName = projectSelect.options[projectSelect.selectedIndex].text;
             
             // Prüfen ob Projekt ausgewählt wurde
-            if (!project) {
+            if (!projectId) {
                 alert('⚠️ Bitte wählen Sie zuerst ein Projekt aus!');
                 return;
             }
             
-            console.log('Lade Daten für Projekt:', project);
+            console.log('Lade Daten für Projekt:', projectName, '(ID:', projectId, ')');
             
             // Simuliere Ladevorgang
             const button = event.target;
@@ -377,43 +376,50 @@
                 initCharts();
                 
                 // Projekt-spezifische Daten anzeigen
-                updateProjectSpecificData(project);
+                updateProjectSpecificData(projectId);
                 
                 // Alle Buttons aktivieren
                 enableAllButtons();
                 
-                alert(`Daten für ${project} erfolgreich geladen!`);
+                alert(`Daten für ${projectName} erfolgreich geladen!`);
             }, 2000);
         }
 
         // Projekt-spezifische Daten aktualisieren
-        function updateProjectSpecificData(project) {
-            // Statistiken basierend auf Projekt aktualisieren
+        function updateProjectSpecificData(projectId) {
+            // Demo-Daten für verschiedene Projekte (später durch echte API-Daten ersetzen)
             const projectData = {
-                'bess-hinterstoder': {
+                '1': { // BESS Hinterstoder
                     avgPrice: '52.05',
                     maxPrice: '72.58',
                     chargeEfficiency: '95.0',
                     maxSoc: '95.0',
                     dischargeEfficiency: '95.0'
                 },
-                'bess-salzburg': {
+                '2': { // BESS Salzburg
                     avgPrice: '48.32',
                     maxPrice: '68.45',
                     chargeEfficiency: '94.5',
                     maxSoc: '94.0',
                     dischargeEfficiency: '94.5'
                 },
-                'bess-wien': {
+                '3': { // BESS Wien
                     avgPrice: '55.78',
                     maxPrice: '78.92',
                     chargeEfficiency: '95.5',
                     maxSoc: '96.0',
                     dischargeEfficiency: '95.5'
+                },
+                '4': { // BESS Graz
+                    avgPrice: '49.15',
+                    maxPrice: '69.23',
+                    chargeEfficiency: '94.8',
+                    maxSoc: '94.5',
+                    dischargeEfficiency: '94.8'
                 }
             };
             
-            const data = projectData[project] || projectData['bess-hinterstoder'];
+            const data = projectData[projectId] || projectData['1'];
             
             // Statistiken aktualisieren
             document.getElementById('avg-price').textContent = `${data.avgPrice} €/MWh`;
@@ -542,8 +548,37 @@
             }, 2500);
         }
 
+        // Projekte aus der Datenbank laden
+        async function loadProjectsFromDatabase() {
+            try {
+                console.log('🔄 Lade Projekte aus der Datenbank...');
+                const response = await fetch('/api/projects');
+                const projects = await response.json();
+                
+                console.log('📊 Geladene Projekte:', projects.length);
+                
+                const select = document.getElementById('project-select');
+                select.innerHTML = '<option value="">-- Projekt auswählen --</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    const customerName = project.customer_name || 'Kein Kunde zugeordnet';
+                    option.textContent = `${project.name}${project.location ? ' - ' + project.location : ''} (${customerName})`;
+                    select.appendChild(option);
+                });
+                
+                console.log('✅ Projekte erfolgreich geladen:', projects.length);
+            } catch (error) {
+                console.error('❌ Fehler beim Laden der Projekte:', error);
+            }
+        }
+
         // Initialisierung - KEINE automatischen Charts beim Laden
         document.addEventListener('DOMContentLoaded', function() {
+            // Projekte aus der Datenbank laden
+            loadProjectsFromDatabase();
+            
             // Nur leere Charts initialisieren, keine Demo-Daten
             initEmptyCharts();
             

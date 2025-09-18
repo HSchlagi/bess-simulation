@@ -53,11 +53,9 @@
             </div>
             <div class="flex space-x-4">
                 <select id="project-select" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="bess-hinterstoder">BESS Hinterstoder</option>
-                    <option value="bess-salzburg">BESS Salzburg</option>
-                    <option value="bess-wien">BESS Wien</option>
+                    <option value="">-- Projekt auswählen --</option>
                 </select>
-                <button onclick="loadProjectData()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition">
+                <button onclick="loadProjectData()" class="bg-gray-400 cursor-not-allowed text-white font-medium py-3 px-6 rounded-lg transition" disabled id="load-data-btn">
                     📊 Daten laden
                 </button>
             </div>
@@ -390,7 +388,7 @@
 
     <script>
         // Chart.js Konfiguration
-        let pvForecastChart, advancedPriceChart, loadForecastChart;
+        let pvForecastChart, priceForecastChart, loadForecastChart;
 
         // Demo-Daten für PV-Prognosen
         const demoPVData = {
@@ -476,8 +474,121 @@
             }]
         };
 
-        // Charts initialisieren
+        // Leere Charts initialisieren (ohne Demo-Daten)
+        function initEmptyCharts() {
+            // Bestehende Charts zerstören falls vorhanden
+            if (pvForecastChart) {
+                pvForecastChart.destroy();
+            }
+            if (priceForecastChart) {
+                priceForecastChart.destroy();
+            }
+            
+            // PV-Prognose Chart - leer
+            const pvElement = document.getElementById('pvForecastChart');
+            if (!pvElement) {
+                console.error('PV Chart Element nicht gefunden');
+                return;
+            }
+            const pvCtx = pvElement.getContext('2d');
+            pvForecastChart = new Chart(pvCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Wählen Sie ein Projekt aus',
+                        data: [],
+                        borderColor: 'rgb(156, 163, 175)',
+                        backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'PV-Leistung (MW)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+
+            // Preis-Prognose Chart - leer
+            const priceElement = document.getElementById('advancedPriceChart');
+            if (!priceElement) {
+                console.error('Price Chart Element nicht gefunden');
+                return;
+            }
+            const priceCtx = priceElement.getContext('2d');
+            priceForecastChart = new Chart(priceCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Wählen Sie ein Projekt aus',
+                        data: [],
+                        borderColor: 'rgb(156, 163, 175)',
+                        backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Preis (€/MWh)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Zeit'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Charts mit Demo-Daten initialisieren (nur nach Projektauswahl)
         function initCharts() {
+            // Bestehende Charts zerstören falls vorhanden
+            if (pvForecastChart) {
+                pvForecastChart.destroy();
+            }
+            if (priceForecastChart) {
+                priceForecastChart.destroy();
+            }
+            
             // PV-Prognose Chart
             const pvCtx = document.getElementById('pvForecastChart').getContext('2d');
             pvForecastChart = new Chart(pvCtx, {
@@ -577,8 +688,17 @@
 
         // Funktionen
         function loadProjectData() {
-            const project = document.getElementById('project-select').value;
-            console.log('Lade Advanced Daten für Projekt:', project);
+            const projectSelect = document.getElementById('project-select');
+            const projectId = projectSelect.value;
+            const projectName = projectSelect.options[projectSelect.selectedIndex].text;
+            
+            // Prüfen ob Projekt ausgewählt wurde
+            if (!projectId) {
+                alert('⚠️ Bitte wählen Sie zuerst ein Projekt aus!');
+                return;
+            }
+            
+            console.log('Lade Advanced Daten für Projekt:', projectName, '(ID:', projectId, ')');
             
             const button = event.target;
             const originalText = button.textContent;
@@ -588,7 +708,11 @@
             setTimeout(() => {
                 button.textContent = originalText;
                 button.disabled = false;
-                alert(`Advanced ML-Daten für ${project} erfolgreich geladen!`);
+                
+                // Charts mit Projekt-spezifischen Daten laden
+                initCharts();
+                
+                alert(`Advanced ML-Daten für ${projectName} erfolgreich geladen!`);
             }, 2000);
         }
 
@@ -812,9 +936,55 @@
             alert('Real-time Optimierung gestoppt!');
         }
 
-        // Initialisierung
+        // Projekte aus der Datenbank laden
+        async function loadProjectsFromDatabase() {
+            try {
+                console.log('🔄 Lade Projekte aus der Datenbank...');
+                const response = await fetch('/api/projects');
+                const projects = await response.json();
+                
+                console.log('📊 Geladene Projekte:', projects.length);
+                
+                const select = document.getElementById('project-select');
+                select.innerHTML = '<option value="">-- Projekt auswählen --</option>';
+                
+                projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    const customerName = project.customer_name || 'Kein Kunde zugeordnet';
+                    option.textContent = `${project.name}${project.location ? ' - ' + project.location : ''} (${customerName})`;
+                    select.appendChild(option);
+                });
+                
+                console.log('✅ Projekte erfolgreich geladen:', projects.length);
+            } catch (error) {
+                console.error('❌ Fehler beim Laden der Projekte:', error);
+            }
+        }
+
+        // Initialisierung - KEINE automatischen Charts beim Laden
         document.addEventListener('DOMContentLoaded', function() {
-            initCharts();
+            // Projekte aus der Datenbank laden
+            loadProjectsFromDatabase();
+            
+            // Nur leere Charts initialisieren, keine Demo-Daten
+            initEmptyCharts();
+            
+            // Projekt-Auswahl Event Listener
+            document.getElementById('project-select').addEventListener('change', function() {
+                const selectedProject = this.value;
+                const loadButton = document.getElementById('load-data-btn');
+                
+                if (selectedProject) {
+                    loadButton.disabled = false;
+                    loadButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    loadButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                } else {
+                    loadButton.disabled = true;
+                    loadButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    loadButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                }
+            });
         });
     </script>
 
