@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BESS-Projekt-Zuordnung</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6">BESS-Projekt-Zuordnung</h1>
+        <p class="text-gray-600 mb-6">Verwalten Sie die Zuordnung von Live-BESS-Systemen zu Projekten</p>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-semibold mb-4">Neue Zuordnung erstellen</h2>
+            <button onclick="createMapping()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                + Neue Zuordnung
+            </button>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6 mt-6">
+            <h2 class="text-xl font-semibold mb-4">Bestehende Zuordnungen</h2>
+            <div id="mappings-list">
+                <p>Lade Zuordnungen...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Lade Mappings beim Seitenaufruf
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMappings();
+        });
+
+        function loadMappings() {
+            fetch('/api/admin/bess-mappings')
+                .then(response => response.json())
+                .then(data => {
+                    displayMappings(data);
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Mappings:', error);
+                    document.getElementById('mappings-list').innerHTML = '<p class="text-red-500">Fehler beim Laden der Daten</p>';
+                });
+        }
+
+        function displayMappings(mappings) {
+            const container = document.getElementById('mappings-list');
+            
+            if (mappings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">Keine Zuordnungen gefunden.</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-4">';
+            mappings.forEach(mapping => {
+                html += `
+                    <div class="border rounded-lg p-4">
+                        <h3 class="font-semibold">${mapping.bess_name || 'Unbenannt'}</h3>
+                        <p class="text-sm text-gray-600">Projekt ID: ${mapping.project_id}</p>
+                        <p class="text-sm text-gray-600">Site: ${mapping.site} | Device: ${mapping.device}</p>
+                        <div class="mt-2">
+                            <button onclick="editMapping(${mapping.id})" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm mr-2">Bearbeiten</button>
+                            <button onclick="deleteMapping(${mapping.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">Löschen</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+        }
+
+        function createMapping() {
+            alert('Neue Zuordnung erstellen - Feature kommt bald!');
+        }
+
+        function editMapping(id) {
+            alert('Zuordnung bearbeiten - Feature kommt bald!');
+        }
+
+        function deleteMapping(id) {
+            if (confirm('Möchten Sie diese Zuordnung wirklich löschen?')) {
+                fetch(`/api/admin/bess-mappings/${id}`, {
+                    method: 'DELETE'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        loadMappings(); // Neu laden
+                    } else {
+                        alert('Fehler beim Löschen');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler:', error);
+                    alert('Fehler beim Löschen');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
+from flask_login import LoginManager
 from config import Config
 import sqlite3
 import os
@@ -12,6 +13,7 @@ from .monitoring_routes import monitoring_bp
 
 db = SQLAlchemy()
 csrf = CSRFProtect()
+login_manager = LoginManager()
 
 def get_db():
     """Datenbankverbindung für SQLite"""
@@ -39,6 +41,17 @@ def create_app():
 
     db.init_app(app)
     csrf.init_app(app)
+    login_manager.init_app(app)
+    
+    # Flask-Login Konfiguration
+    login_manager.login_view = 'auth_local.login'
+    login_manager.login_message = 'Bitte loggen Sie sich ein, um auf diese Seite zuzugreifen.'
+    login_manager.login_message_category = 'info'
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        from models import User
+        return User.query.get(int(user_id))
     
     # CSRF für API-Endpoints deaktivieren
     csrf.exempt_blueprints = ['advanced_dispatch_bp', 'ml_analytics']

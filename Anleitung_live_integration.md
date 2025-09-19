@@ -492,6 +492,307 @@ CREATE INDEX idx_telemetry_site_device ON telemetry(site, device);
 CREATE INDEX idx_telemetry_recent ON telemetry(ts DESC);
 ```
 
+## 🎯 BESS-Projekt-Zuordnung
+
+### Übersicht
+
+Die BESS-Projekt-Zuordnung ermöglicht es, mehrere Live-BESS-Systeme mit bestehenden Simulation-Projekten zu verknüpfen. Dies ermöglicht:
+
+- **Multi-Projekt-Monitoring:** Verschiedene BESS-Systeme verschiedenen Projekten zuordnen
+- **Automatische Synchronisation:** Live-Daten automatisch in Projekte integrieren
+- **Technische Parameter:** BESS-spezifische Konfiguration pro Projekt
+- **Zentrale Verwaltung:** Alle Zuordnungen über Admin-Interface verwalten
+
+### Zugriff auf BESS-Zuordnung
+
+#### 1. Über das Hauptmenü:
+```
+Admin-Dashboard → BESS-Zuordnung
+```
+
+#### 2. Direkte URL:
+```
+http://localhost:5000/admin/bess-mappings
+```
+
+### Neue BESS-Zuordnung erstellen
+
+#### Schritt-für-Schritt Anleitung:
+
+**1. Admin-Dashboard öffnen:**
+- Klicken Sie auf **"Admin-Dashboard"** in der oberen Navigationsleiste
+- Wählen Sie **"BESS-Zuordnung"** aus dem Dropdown-Menü
+
+**2. "Neue Zuordnung" klicken:**
+- Klicken Sie auf den **"+ Neue Zuordnung"** Button
+- Das Zuordnungsformular wird geöffnet
+
+**3. Projekt auswählen:**
+- **Projekt:** Wählen Sie das gewünschte Projekt aus dem Dropdown
+- Nur aktive Projekte werden angezeigt
+
+**4. BESS-System konfigurieren:**
+- **Site:** Standort-ID des BESS (z.B. "site1", "standort_a")
+- **Device:** Geräte-ID des BESS (z.B. "bess1", "speicher_01")
+- **BESS-Name:** Beschreibender Name (z.B. "Hauptspeicher Standort A")
+
+**5. Technische Parameter eingeben:**
+- **Standort:** Physische Adresse oder Beschreibung
+- **Hersteller:** BESS-Hersteller (z.B. "Tesla", "Samsung")
+- **Modell:** BESS-Modell (z.B. "Powerpack 2", "SDI E3")
+- **Nennleistung (kW):** Maximale Lade-/Entladeleistung
+- **Nennenergie (kWh):** Gesamtspeicherkapazität
+- **Max. SOC (%):** Oberer SOC-Limit (Standard: 100%)
+- **Min. SOC (%):** Unterer SOC-Limit (Standard: 0%)
+
+**6. Synchronisation konfigurieren:**
+- **Auto-Sync aktivieren:** Automatische Datensynchronisation
+- **Sync-Intervall (Minuten):** Häufigkeit der Synchronisation (Standard: 5 Min)
+- **Beschreibung:** Zusätzliche Notizen zur Zuordnung
+
+**7. Speichern:**
+- Klicken Sie auf **"Zuordnung erstellen"**
+- Die Zuordnung wird in der Datenbank gespeichert
+
+### BESS-Zuordnung bearbeiten
+
+**1. Zuordnung auswählen:**
+- Klicken Sie auf die gewünschte Zuordnung in der Liste
+- Oder verwenden Sie den **"Bearbeiten"** Button
+
+**2. Parameter ändern:**
+- Alle Felder können nachträglich geändert werden
+- Technische Parameter werden sofort aktualisiert
+
+**3. Speichern:**
+- Klicken Sie auf **"Änderungen speichern"**
+
+### BESS-Zuordnung löschen
+
+**1. Zuordnung auswählen:**
+- Klicken Sie auf die gewünschte Zuordnung
+- Klicken Sie auf **"Löschen"**
+
+**2. Bestätigen:**
+- Bestätigen Sie die Löschung
+- **Achtung:** Alle zugehörigen Telemetrie-Daten werden ebenfalls gelöscht
+
+### Projekt-spezifische Live-Daten
+
+#### Zugriff über Projektliste:
+
+**1. Projekte öffnen:**
+- Navigieren Sie zu **"Projekte"** im Hauptmenü
+- Klicken Sie auf ein Projekt
+
+**2. Live-Daten auswählen:**
+- Klicken Sie auf das **Drei-Punkte-Menü** (⋮) des Projekts
+- Wählen Sie **"Live BESS Daten"**
+
+#### Direkte URL:
+```
+http://localhost:5000/live-data/project/[PROJEKT-ID]
+```
+
+#### Dashboard-Features:
+
+**1. Projekt-Informationen:**
+- Projektname und -beschreibung
+- Anzahl zugeordneter BESS-Systeme
+- Letzte Synchronisation
+
+**2. BESS-Systeme:**
+- Liste aller zugeordneten BESS-Systeme
+- Status jedes Systems (Online/Offline)
+- Technische Parameter
+
+**3. Live-Telemetrie:**
+- Aktuelle SOC-Werte
+- Lade-/Entladeleistung
+- Temperatur-Status
+- Alarm-Status
+
+**4. Synchronisation:**
+- Manuelle Synchronisation starten
+- Auto-Sync-Status
+- Letzte Datenaktualisierung
+
+### MQTT-Topic-Generierung
+
+Das System generiert automatisch MQTT-Topics basierend auf der Zuordnung:
+
+```
+bess/{site}/{device}/telemetry
+```
+
+**Beispiele:**
+- Projekt "Hinterstoder": `bess/hinterstoder/bess1/telemetry`
+- Projekt "Wien": `bess/wien/speicher_01/telemetry`
+- Projekt "Salzburg": `bess/salzburg/main_bess/telemetry`
+
+### API-Endpunkte für Zuordnungen
+
+#### 1. Alle Zuordnungen abrufen:
+```http
+GET /api/admin/bess-mappings
+Authorization: Bearer [TOKEN]
+```
+
+#### 2. Projekt-spezifische Zuordnungen:
+```http
+GET /api/admin/bess-mappings?project_id=1
+Authorization: Bearer [TOKEN]
+```
+
+#### 3. Neue Zuordnung erstellen:
+```http
+POST /api/admin/bess-mappings
+Authorization: Bearer [TOKEN]
+Content-Type: application/json
+
+{
+  "project_id": 1,
+  "site": "site1",
+  "device": "bess1",
+  "bess_name": "Hauptspeicher",
+  "location": "Standort A",
+  "manufacturer": "Tesla",
+  "model": "Powerpack 2",
+  "rated_power_kw": 250.0,
+  "rated_energy_kwh": 500.0,
+  "auto_sync": true,
+  "sync_interval_minutes": 5
+}
+```
+
+#### 4. Zuordnung aktualisieren:
+```http
+PUT /api/admin/bess-mappings/[ID]
+Authorization: Bearer [TOKEN]
+Content-Type: application/json
+
+{
+  "bess_name": "Neuer Name",
+  "auto_sync": false
+}
+```
+
+#### 5. Zuordnung löschen:
+```http
+DELETE /api/admin/bess-mappings/[ID]
+Authorization: Bearer [TOKEN]
+```
+
+### Datenbank-Schema
+
+#### BESSProjectMapping Tabelle:
+```sql
+CREATE TABLE bess_project_mapping (
+    id INTEGER PRIMARY KEY,
+    project_id INTEGER NOT NULL,
+    site VARCHAR(50) NOT NULL,
+    device VARCHAR(50) NOT NULL,
+    bess_name VARCHAR(100),
+    is_active BOOLEAN DEFAULT 1,
+    auto_sync BOOLEAN DEFAULT 1,
+    sync_interval_minutes INTEGER DEFAULT 5,
+    description TEXT,
+    location VARCHAR(200),
+    manufacturer VARCHAR(100),
+    model VARCHAR(100),
+    rated_power_kw FLOAT,
+    rated_energy_kwh FLOAT,
+    max_soc_percent FLOAT DEFAULT 100.0,
+    min_soc_percent FLOAT DEFAULT 0.0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_sync DATETIME,
+    UNIQUE(site, device)
+);
+```
+
+#### BESSTelemetryData Tabelle:
+```sql
+CREATE TABLE bess_telemetry_data (
+    id INTEGER PRIMARY KEY,
+    bess_mapping_id INTEGER NOT NULL,
+    timestamp DATETIME NOT NULL,
+    soc_percent FLOAT,
+    power_kw FLOAT,
+    power_charge_kw FLOAT,
+    power_discharge_kw FLOAT,
+    voltage_dc_v FLOAT,
+    current_dc_a FLOAT,
+    temperature_max_c FLOAT,
+    soh_percent FLOAT,
+    alarms TEXT,
+    data_quality VARCHAR(20) DEFAULT 'good',
+    source VARCHAR(20) DEFAULT 'mqtt',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Best Practices
+
+#### 1. Namenskonventionen:
+- **Site:** Verwenden Sie konsistente Standort-IDs (z.B. "hinterstoder", "wien_zentrum")
+- **Device:** Eindeutige Geräte-IDs (z.B. "bess_01", "speicher_haupt")
+- **BESS-Name:** Beschreibende Namen für bessere Übersicht
+
+#### 2. Technische Parameter:
+- **Nennleistung:** Reale maximale Lade-/Entladeleistung
+- **Nennenergie:** Reale Gesamtspeicherkapazität
+- **SOC-Limits:** Hersteller-spezifische Limits beachten
+
+#### 3. Synchronisation:
+- **Auto-Sync:** Aktivieren für kontinuierliche Überwachung
+- **Sync-Intervall:** An Datenqualität anpassen (1-15 Minuten)
+- **Manuelle Sync:** Bei Bedarf für sofortige Aktualisierung
+
+#### 4. Monitoring:
+- **Regelmäßige Überprüfung:** BESS-Status regelmäßig kontrollieren
+- **Alarm-Überwachung:** Alarm-Status im Dashboard verfolgen
+- **Datenqualität:** Auf "data_quality" Status achten
+
+### Troubleshooting BESS-Zuordnung
+
+#### 1. Keine Zuordnungen sichtbar:
+```bash
+# Datenbank prüfen
+sqlite3 instance/bess.db "SELECT COUNT(*) FROM bess_project_mapping;"
+
+# Migration ausführen
+python migrate_bess_project_mapping.py
+```
+
+#### 2. Zuordnung kann nicht erstellt werden:
+```bash
+# Eindeutigkeit prüfen
+sqlite3 instance/bess.db "SELECT site, device FROM bess_project_mapping;"
+
+# Projekt-ID prüfen
+sqlite3 instance/bess.db "SELECT id, name FROM project;"
+```
+
+#### 3. Auto-Sync funktioniert nicht:
+```bash
+# MQTT-Verbindung prüfen
+grep "MQTT" logs/app.log
+
+# FastAPI-Status prüfen
+curl -H "Authorization: Bearer changeme_token_123" \
+     http://localhost:8080/healthz
+```
+
+#### 4. Projekt-spezifische Daten fehlen:
+```bash
+# Zuordnung prüfen
+sqlite3 instance/bess.db "SELECT * FROM bess_project_mapping WHERE project_id=1;"
+
+# Telemetrie-Daten prüfen
+sqlite3 instance/bess.db "SELECT COUNT(*) FROM bess_telemetry_data WHERE bess_mapping_id=1;"
+```
+
 ## 📞 Support
 
 ### Logs sammeln für Support

@@ -49,6 +49,16 @@ class User(db.Model):
         permissions = json.loads(self.role.permissions)
         return permission in permissions
     
+    # Flask-Login Methoden
+    def is_authenticated(self):
+        return True
+    
+    def is_anonymous(self):
+        return False
+    
+    def get_id(self):
+        return str(self.id)
+    
     def is_admin(self):
         """Prüfen ob Benutzer Admin ist"""
         return self.role.name == 'admin' if self.role else False
@@ -385,3 +395,95 @@ class BatteryConfig(db.Model):
     
     def __repr__(self):
         return f'<BatteryConfig {self.project.name}: C_chg={self.C_chg_rate}, C_dis={self.C_dis_rate}>'
+
+# === LIVE BESS INTEGRATION ===
+
+class BESSProjectMapping(db.Model):
+    """Zuordnung von Live-BESS-Systemen zu Simulation-Projekten"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='bess_mappings')
+    
+    # BESS-System Identifikation
+    site = db.Column(db.String(50), nullable=False)  # MQTT Site-ID
+    device = db.Column(db.String(50), nullable=False)  # MQTT Device-ID
+    bess_name = db.Column(db.String(100))  # Anzeigename für das BESS-System
+    
+    # Konfiguration
+    is_active = db.Column(db.Boolean, default=True)  # Aktiv/Inaktiv
+    auto_sync = db.Column(db.Boolean, default=True)  # Automatische Synchronisation
+    sync_interval_minutes = db.Column(db.Integer, default=5)  # Sync-Intervall
+    
+    # Metadaten
+    description = db.Column(db.Text)  # Beschreibung des BESS-Systems
+    location = db.Column(db.String(200))  # Standort
+    manufacturer = db.Column(db.String(100))  # Hersteller
+    model = db.Column(db.String(100))  # Modell
+    
+    # Technische Parameter (für Validierung)
+    rated_power_kw = db.Column(db.Float)  # Nennleistung
+    rated_energy_kwh = db.Column(db.Float)  # Nennenergie
+    max_soc_percent = db.Column(db.Float, default=100.0)  # Max SOC
+    min_soc_percent = db.Column(db.Float, default=0.0)  # Min SOC
+    
+    # Zeitstempel
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_sync = db.Column(db.DateTime)  # Letzte Synchronisation
+    
+    # Eindeutige Kombination aus Site und Device
+    __table_args__ = (db.UniqueConstraint('site', 'device', name='unique_site_device'),)
+    
+    def __repr__(self):
+        return f'<BESSProjectMapping {self.project.name}: {self.site}/{self.device}>'
+    
+    @property
+    def mqtt_topic(self):
+        """MQTT Topic für dieses BESS-System"""
+        return f"bess/{self.site}/{self.device}/telemetry"
+    
+    @property
+    def display_name(self):
+        """Anzeigename für das BESS-System"""
+        return self.bess_name or f"{self.site}/{self.device}"
+
+class BESSTelemetryData(db.Model):
+    """Live-Telemetrie-Daten von BESS-Systemen"""
+    id = db.Column(db.Integer, primary_key=True)
+    bess_mapping_id = db.Column(db.Integer, db.ForeignKey('bess_project_mapping.id'), nullable=False)
+    bess_mapping = db.relationship('BESSProjectMapping', backref='telemetry_data')
+    
+    # Zeitstempel
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
+    
+    # Batterie-Parameter
+    soc_percent = db.Column(db.Float)  # State of Charge
+    power_kw = db.Column(db.Float)  # Gesamtleistung (negativ = Laden)
+    power_charge_kw = db.Column(db.Float)  # Ladeleistung
+    power_discharge_kw = db.Column(db.Float)  # Entladeleistung
+    
+    # Elektrische Parameter
+    voltage_dc_v = db.Column(db.Float)  # DC-Spannung
+    current_dc_a = db.Column(db.Float)  # DC-Strom
+    
+    # Temperatur und Zustand
+    temperature_max_c = db.Column(db.Float)  # Max. Zelltemperatur
+    soh_percent = db.Column(db.Float)  # State of Health
+    
+    # Alarme
+    alarms = db.Column(db.Text)  # JSON-String mit Alarmen
+    
+    # Metadaten
+    data_quality = db.Column(db.String(20), default='good')  # good, warning, error
+    source = db.Column(db.String(20), default='mqtt')  # mqtt, fastapi, manual
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Indizes für Performance
+    __table_args__ = (
+        db.Index('idx_telemetry_timestamp', 'timestamp'),
+        db.Index('idx_telemetry_mapping_timestamp', 'bess_mapping_id', 'timestamp'),
+    )
+    
+    def __repr__(self):
+        return f'<BESSTelemetryData {self.bess_mapping}: {self.timestamp}>'

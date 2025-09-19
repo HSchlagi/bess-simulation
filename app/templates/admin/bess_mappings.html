@@ -1,0 +1,500 @@
+{% extends "base.html" %}
+
+{% block title %}BESS-Projekt-Zuordnung - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">BESS-Projekt-Zuordnung</h1>
+            <p class="text-gray-600 mt-1">Verwalten Sie die Zuordnung von Live-BESS-Systemen zu Projekten</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="showAddMappingModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                <i class="fas fa-plus mr-2"></i>Neue Zuordnung
+            </button>
+            <a href="{{ url_for('main.admin_dashboard') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md">
+                <i class="fas fa-arrow-left mr-2"></i>Zurück
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiken -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg">
+                    <i class="fas fa-link text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Gesamt-Zuordnungen</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalMappings">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Aktive Zuordnungen</p>
+                    <p class="text-2xl font-bold text-gray-900" id="activeMappings">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-yellow-100 rounded-lg">
+                    <i class="fas fa-microchip text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">BESS-Geräte</p>
+                    <p class="text-2xl font-bold text-gray-900" id="totalDevices">-</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg">
+                    <i class="fas fa-sync-alt text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Auto-Sync</p>
+                    <p class="text-2xl font-bold text-gray-900" id="autoSyncCount">-</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter und Suche -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt</label>
+                <select id="projectFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Alle Projekte</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Alle Status</option>
+                    <option value="active">Aktiv</option>
+                    <option value="inactive">Inaktiv</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Site</label>
+                <input type="text" id="siteFilter" placeholder="Site-ID..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Suche</label>
+                <input type="text" id="searchFilter" placeholder="Gerätename..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Zuordnungen Tabelle -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">BESS-Projekt-Zuordnungen</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Projekt</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BESS-System</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Site/Device</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technische Daten</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Letzte Sync</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody id="mappingsTable" class="bg-white divide-y divide-gray-200">
+                    <!-- Wird dynamisch gefüllt -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Keine Daten -->
+    <div id="noDataMessage" class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center" style="display: none;">
+        <i class="fas fa-microchip text-gray-400 text-4xl mb-4"></i>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">Keine BESS-Zuordnungen vorhanden</h3>
+        <p class="text-gray-600 mb-6">Erstellen Sie Ihre erste BESS-Projekt-Zuordnung</p>
+        <button onclick="showAddMappingModal()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-plus mr-2"></i>Erste Zuordnung erstellen
+        </button>
+    </div>
+</div>
+
+<!-- Add/Edit Mapping Modal -->
+<div id="mappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900" id="modalTitle">Neue BESS-Zuordnung</h3>
+            </div>
+            <form id="mappingForm" class="p-6">
+                <input type="hidden" id="mappingId" name="id">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Projekt -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Projekt *</label>
+                        <select id="projectSelect" name="project_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Projekt auswählen...</option>
+                        </select>
+                    </div>
+
+                    <!-- BESS-Name -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Name *</label>
+                        <input type="text" id="bessName" name="bess_name" required placeholder="z.B. Hauptspeicher" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Site -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Site-ID *</label>
+                        <input type="text" id="site" name="site" required placeholder="z.B. site1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Device -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Device-ID *</label>
+                        <input type="text" id="device" name="device" required placeholder="z.B. bess1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Standort -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Standort</label>
+                        <input type="text" id="location" name="location" placeholder="z.B. Wien, Österreich" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Hersteller -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Hersteller</label>
+                        <input type="text" id="manufacturer" name="manufacturer" placeholder="z.B. Tesla" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Modell -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Modell</label>
+                        <input type="text" id="model" name="model" placeholder="z.B. Powerpack 2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Nennleistung -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nennleistung (kW)</label>
+                        <input type="number" id="ratedPower" name="rated_power_kw" step="0.1" placeholder="100.0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Nennenergie -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nennenergie (kWh)</label>
+                        <input type="number" id="ratedEnergy" name="rated_energy_kwh" step="0.1" placeholder="200.0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Max SOC -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Max. SOC (%)</label>
+                        <input type="number" id="maxSoc" name="max_soc_percent" step="0.1" value="100.0" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Min SOC -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Min. SOC (%)</label>
+                        <input type="number" id="minSoc" name="min_soc_percent" step="0.1" value="0.0" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Sync-Intervall -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sync-Intervall (Minuten)</label>
+                        <input type="number" id="syncInterval" name="sync_interval_minutes" value="5" min="1" max="60" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Beschreibung -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
+                        <textarea id="description" name="description" rows="3" placeholder="Beschreibung des BESS-Systems..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <!-- Checkboxen -->
+                    <div class="md:col-span-2 space-y-4">
+                        <div class="flex items-center">
+                            <input type="checkbox" id="isActive" name="is_active" checked class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="isActive" class="ml-2 block text-sm text-gray-900">Aktiv</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="autoSync" name="auto_sync" checked class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="autoSync" class="ml-2 block text-sm text-gray-900">Automatische Synchronisation</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+                    <button type="button" onclick="hideMappingModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                        <i class="fas fa-save mr-2"></i>Speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let mappings = [];
+let projects = [];
+
+// Lade Daten beim Start
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    loadMappings();
+    setupFilters();
+});
+
+// Lade Projekte
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        projects = await response.json();
+        
+        // Fülle Projekt-Dropdowns
+        const projectSelects = ['projectFilter', 'projectSelect'];
+        projectSelects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            select.innerHTML = selectId === 'projectSelect' ? '<option value="">Projekt auswählen...</option>' : '<option value="">Alle Projekte</option>';
+            
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                select.appendChild(option);
+            });
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der Projekte:', error);
+    }
+}
+
+// Lade Mappings
+async function loadMappings() {
+    try {
+        const response = await fetch('/api/admin/bess-mappings');
+        mappings = await response.json();
+        updateStatistics();
+        renderMappings();
+    } catch (error) {
+        console.error('Fehler beim Laden der Mappings:', error);
+    }
+}
+
+// Aktualisiere Statistiken
+function updateStatistics() {
+    document.getElementById('totalMappings').textContent = mappings.length;
+    document.getElementById('activeMappings').textContent = mappings.filter(m => m.is_active).length;
+    document.getElementById('totalDevices').textContent = new Set(mappings.map(m => `${m.site}/${m.device}`)).size;
+    document.getElementById('autoSyncCount').textContent = mappings.filter(m => m.auto_sync).length;
+}
+
+// Rendere Mappings
+function renderMappings() {
+    const tableBody = document.getElementById('mappingsTable');
+    const noDataMessage = document.getElementById('noDataMessage');
+    
+    if (mappings.length === 0) {
+        tableBody.innerHTML = '';
+        noDataMessage.style.display = 'block';
+        return;
+    }
+    
+    noDataMessage.style.display = 'none';
+    
+    tableBody.innerHTML = mappings.map(mapping => `
+        <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${mapping.project_name}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${mapping.bess_name || mapping.display_name}</div>
+                <div class="text-sm text-gray-500">${mapping.location || 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${mapping.site}/${mapping.device}</div>
+                <div class="text-sm text-gray-500">${mapping.mqtt_topic}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <div>${mapping.rated_power_kw ? mapping.rated_power_kw + ' kW' : 'N/A'}</div>
+                <div>${mapping.rated_energy_kwh ? mapping.rated_energy_kwh + ' kWh' : 'N/A'}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex space-x-2">
+                    ${mapping.is_active ? 
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Aktiv</span>' :
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">Inaktiv</span>'
+                    }
+                    ${mapping.auto_sync ? 
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Auto-Sync</span>' :
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Manual</span>'
+                    }
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${mapping.last_sync ? new Date(mapping.last_sync).toLocaleString() : 'Nie'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <div class="flex space-x-2">
+                    <button onclick="editMapping(${mapping.id})" class="text-blue-600 hover:text-blue-900">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button onclick="deleteMapping(${mapping.id})" class="text-red-600 hover:text-red-900">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <a href="/live-data/project/${mapping.project_id}" class="text-green-600 hover:text-green-900">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Filter Setup
+function setupFilters() {
+    const filters = ['projectFilter', 'statusFilter', 'siteFilter', 'searchFilter'];
+    filters.forEach(filterId => {
+        document.getElementById(filterId).addEventListener('input', applyFilters);
+    });
+}
+
+// Filter anwenden
+function applyFilters() {
+    const projectFilter = document.getElementById('projectFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    const siteFilter = document.getElementById('siteFilter').value.toLowerCase();
+    const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
+    
+    const filteredMappings = mappings.filter(mapping => {
+        const matchesProject = !projectFilter || mapping.project_id == projectFilter;
+        const matchesStatus = !statusFilter || 
+            (statusFilter === 'active' && mapping.is_active) ||
+            (statusFilter === 'inactive' && !mapping.is_active);
+        const matchesSite = !siteFilter || mapping.site.toLowerCase().includes(siteFilter);
+        const matchesSearch = !searchFilter || 
+            mapping.bess_name?.toLowerCase().includes(searchFilter) ||
+            mapping.display_name?.toLowerCase().includes(searchFilter);
+        
+        return matchesProject && matchesStatus && matchesSite && matchesSearch;
+    });
+    
+    // Temporär die gefilterten Mappings anzeigen
+    const originalMappings = mappings;
+    mappings = filteredMappings;
+    renderMappings();
+    mappings = originalMappings;
+}
+
+// Modal Funktionen
+function showAddMappingModal() {
+    document.getElementById('modalTitle').textContent = 'Neue BESS-Zuordnung';
+    document.getElementById('mappingForm').reset();
+    document.getElementById('mappingId').value = '';
+    document.getElementById('mappingModal').classList.remove('hidden');
+}
+
+function hideMappingModal() {
+    document.getElementById('mappingModal').classList.add('hidden');
+}
+
+function editMapping(id) {
+    const mapping = mappings.find(m => m.id === id);
+    if (!mapping) return;
+    
+    document.getElementById('modalTitle').textContent = 'BESS-Zuordnung bearbeiten';
+    document.getElementById('mappingId').value = mapping.id;
+    document.getElementById('projectSelect').value = mapping.project_id;
+    document.getElementById('bessName').value = mapping.bess_name || '';
+    document.getElementById('site').value = mapping.site;
+    document.getElementById('device').value = mapping.device;
+    document.getElementById('location').value = mapping.location || '';
+    document.getElementById('manufacturer').value = mapping.manufacturer || '';
+    document.getElementById('model').value = mapping.model || '';
+    document.getElementById('ratedPower').value = mapping.rated_power_kw || '';
+    document.getElementById('ratedEnergy').value = mapping.rated_energy_kwh || '';
+    document.getElementById('maxSoc').value = mapping.max_soc_percent || 100;
+    document.getElementById('minSoc').value = mapping.min_soc_percent || 0;
+    document.getElementById('syncInterval').value = mapping.sync_interval_minutes || 5;
+    document.getElementById('description').value = mapping.description || '';
+    document.getElementById('isActive').checked = mapping.is_active;
+    document.getElementById('autoSync').checked = mapping.auto_sync;
+    
+    document.getElementById('mappingModal').classList.remove('hidden');
+}
+
+// Form Submit
+document.getElementById('mappingForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Konvertiere Checkboxen
+    data.is_active = document.getElementById('isActive').checked;
+    data.auto_sync = document.getElementById('autoSync').checked;
+    
+    try {
+        const url = data.id ? `/api/admin/bess-mappings/${data.id}` : '/api/admin/bess-mappings';
+        const method = data.id ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            hideMappingModal();
+            loadMappings();
+        } else {
+            const error = await response.json();
+            alert('Fehler: ' + (error.error || 'Unbekannter Fehler'));
+        }
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error);
+        alert('Fehler beim Speichern der Zuordnung');
+    }
+});
+
+// Mapping löschen
+async function deleteMapping(id) {
+    if (!confirm('Möchten Sie diese BESS-Zuordnung wirklich löschen?')) return;
+    
+    try {
+        const response = await fetch(`/api/admin/bess-mappings/${id}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            loadMappings();
+        } else {
+            const error = await response.json();
+            alert('Fehler: ' + (error.error || 'Löschen fehlgeschlagen'));
+        }
+    } catch (error) {
+        console.error('Fehler beim Löschen:', error);
+        alert('Fehler beim Löschen der Zuordnung');
+    }
+}
+</script>
+{% endblock %}

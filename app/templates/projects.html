@@ -377,8 +377,11 @@ function displayProjects(projects) {
                             <a href="/reference_prices?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50">
                                 <i class="fas fa-cog mr-2"></i>Referenzpreise
                             </a>
-                            <a href="/economic_analysis?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 rounded-b-md">
+                            <a href="/economic_analysis?project_id=${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50">
                                 <i class="fas fa-chart-line mr-2"></i>Analyse
+                            </a>
+                            <a href="/live-data/project/${project.id}" class="block px-4 py-2 text-gray-800 hover:bg-purple-50 rounded-b-md">
+                                <i class="fas fa-satellite-dish mr-2"></i>Live BESS Daten
                             </a>
                         </div>
                     </div>

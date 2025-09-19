@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, session
+from flask_login import login_required, current_user
 from app import db, get_db
 import sys
 import os
@@ -9526,3 +9527,247 @@ def live_data_dashboard_advanced():
                              system_status={'status': 'error', 'error': str(e)},
                              device_summary={'error': str(e)},
                              chart_data={'error': str(e)})
+
+# ============================================================================
+# PROJEKT-SPEZIFISCHE LIVE BESS INTEGRATION
+# ============================================================================
+
+@main_bp.route('/live-data/project/<int:project_id>')
+@login_required
+def live_data_project_dashboard(project_id):
+    """Projekt-spezifisches Live BESS Dashboard"""
+    try:
+        from models import Project
+        
+        # Prüfe ob Projekt existiert
+        project = Project.query.get_or_404(project_id)
+        
+        # Hole Projekt-spezifische Daten
+        project_mappings = live_bess_service.get_project_mappings(project_id)
+        project_live_data = live_bess_service.get_project_live_data(project_id, limit=20)
+        project_device_summary = live_bess_service.get_project_device_summary(project_id)
+        
+        # Hole Chart-Daten für das Projekt
+        chart_data = live_bess_service.get_chart_data(hours=24)
+        
+        return render_template('live_data_project_dashboard.html',
+                             project=project,
+                             project_mappings=project_mappings,
+                             project_live_data=project_live_data,
+                             project_device_summary=project_device_summary,
+                             chart_data=chart_data)
+    except Exception as e:
+        flash(f'Fehler beim Laden des Projekt-Live-Dashboards: {str(e)}', 'error')
+        return redirect(url_for('main.projects'))
+
+@main_bp.route('/api/live-data/project/<int:project_id>/mappings')
+@login_required
+def api_project_mappings(project_id):
+    """API Endpoint für Projekt-Mappings"""
+    try:
+        mappings = live_bess_service.get_project_mappings(project_id)
+        return jsonify(mappings)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/live-data/project/<int:project_id>/data')
+@login_required
+def api_project_live_data(project_id):
+    """API Endpoint für Projekt-Live-Daten"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        data = live_bess_service.get_project_live_data(project_id, limit=limit)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/live-data/project/<int:project_id>/summary')
+@login_required
+def api_project_device_summary(project_id):
+    """API Endpoint für Projekt-Device-Summary"""
+    try:
+        summary = live_bess_service.get_project_device_summary(project_id)
+        return jsonify(summary)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/live-data/project/<int:project_id>/sync', methods=['POST'])
+@login_required
+def api_project_sync(project_id):
+    """API Endpoint für Projekt-Daten-Synchronisation"""
+    try:
+        result = live_bess_service.sync_project_data(project_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ============================================================================
+# ADMIN BESS MAPPING MANAGEMENT
+# ============================================================================
+
+@main_bp.route('/admin/bess-mappings')
+def admin_bess_mappings():
+    """Admin-Interface für BESS-Projekt-Zuordnung"""
+    # Demo-Modus: BESS-Zuordnung für alle Benutzer zugänglich
+    # Keine Login-Prüfung für Demo-Zwecke
+    
+    return render_template('admin/bess_mappings_simple.html')
+
+@main_bp.route('/api/admin/bess-mappings')
+def api_admin_bess_mappings():
+    """API Endpoint für alle BESS-Mappings (Admin)"""
+    # Demo-Modus: BESS-Zuordnung für alle Benutzer zugänglich
+    # Keine Login-Prüfung für Demo-Zwecke
+    
+    try:
+        mappings = live_bess_service.get_project_mappings()
+        return jsonify(mappings)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/admin/bess-mappings', methods=['POST'])
+def api_create_bess_mapping():
+    """API Endpoint für neue BESS-Mapping (Admin)"""
+    # Demo-Modus: BESS-Zuordnung für alle Benutzer zugänglich
+    # Keine Login-Prüfung für Demo-Zwecke
+    
+    try:
+        from models import BESSProjectMapping, Project
+        
+        data = request.get_json()
+        
+        # Validierung
+        required_fields = ['project_id', 'site', 'device', 'bess_name']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({'error': f'Feld {field} ist erforderlich'}), 400
+        
+        # Prüfe ob Projekt existiert
+        project = Project.query.get(data['project_id'])
+        if not project:
+            return jsonify({'error': 'Projekt nicht gefunden'}), 404
+        
+        # Prüfe ob Site/Device Kombination bereits existiert
+        existing = BESSProjectMapping.query.filter_by(
+            site=data['site'],
+            device=data['device']
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Site/Device Kombination bereits vorhanden'}), 400
+        
+        # Erstelle neue Mapping
+        mapping = BESSProjectMapping(
+            project_id=data['project_id'],
+            site=data['site'],
+            device=data['device'],
+            bess_name=data['bess_name'],
+            description=data.get('description'),
+            location=data.get('location'),
+            manufacturer=data.get('manufacturer'),
+            model=data.get('model'),
+            rated_power_kw=data.get('rated_power_kw'),
+            rated_energy_kwh=data.get('rated_energy_kwh'),
+            max_soc_percent=data.get('max_soc_percent', 100.0),
+            min_soc_percent=data.get('min_soc_percent', 0.0),
+            is_active=data.get('is_active', True),
+            auto_sync=data.get('auto_sync', True),
+            sync_interval_minutes=data.get('sync_interval_minutes', 5)
+        )
+        
+        db.session.add(mapping)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'BESS-Mapping erfolgreich erstellt',
+            'mapping_id': mapping.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/admin/bess-mappings/<int:mapping_id>', methods=['PUT'])
+def api_update_bess_mapping(mapping_id):
+    """API Endpoint für BESS-Mapping aktualisieren (Admin)"""
+    # Demo-Modus: BESS-Zuordnung für alle Benutzer zugänglich
+    # Keine Login-Prüfung für Demo-Zwecke
+    
+    try:
+        from models import BESSProjectMapping, Project
+        
+        mapping = BESSProjectMapping.query.get_or_404(mapping_id)
+        data = request.get_json()
+        
+        # Aktualisiere Felder
+        if 'project_id' in data:
+            project = Project.query.get(data['project_id'])
+            if not project:
+                return jsonify({'error': 'Projekt nicht gefunden'}), 404
+            mapping.project_id = data['project_id']
+        
+        if 'site' in data:
+            mapping.site = data['site']
+        if 'device' in data:
+            mapping.device = data['device']
+        
+        # Prüfe Site/Device Eindeutigkeit (außer für sich selbst)
+        if 'site' in data or 'device' in data:
+            site = data.get('site', mapping.site)
+            device = data.get('device', mapping.device)
+            
+            existing = BESSProjectMapping.query.filter(
+                BESSProjectMapping.site == site,
+                BESSProjectMapping.device == device,
+                BESSProjectMapping.id != mapping_id
+            ).first()
+            
+            if existing:
+                return jsonify({'error': 'Site/Device Kombination bereits vorhanden'}), 400
+        
+        # Aktualisiere andere Felder
+        mapping.bess_name = data.get('bess_name', mapping.bess_name)
+        mapping.description = data.get('description', mapping.description)
+        mapping.location = data.get('location', mapping.location)
+        mapping.manufacturer = data.get('manufacturer', mapping.manufacturer)
+        mapping.model = data.get('model', mapping.model)
+        mapping.rated_power_kw = data.get('rated_power_kw', mapping.rated_power_kw)
+        mapping.rated_energy_kwh = data.get('rated_energy_kwh', mapping.rated_energy_kwh)
+        mapping.max_soc_percent = data.get('max_soc_percent', mapping.max_soc_percent)
+        mapping.min_soc_percent = data.get('min_soc_percent', mapping.min_soc_percent)
+        mapping.is_active = data.get('is_active', mapping.is_active)
+        mapping.auto_sync = data.get('auto_sync', mapping.auto_sync)
+        mapping.sync_interval_minutes = data.get('sync_interval_minutes', mapping.sync_interval_minutes)
+        
+        db.session.commit()
+        
+        return jsonify({'message': 'BESS-Mapping erfolgreich aktualisiert'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/admin/bess-mappings/<int:mapping_id>', methods=['DELETE'])
+def api_delete_bess_mapping(mapping_id):
+    """API Endpoint für BESS-Mapping löschen (Admin)"""
+    # Demo-Modus: BESS-Zuordnung für alle Benutzer zugänglich
+    # Keine Login-Prüfung für Demo-Zwecke
+    
+    try:
+        from models import BESSProjectMapping
+        
+        mapping = BESSProjectMapping.query.get_or_404(mapping_id)
+        
+        # Lösche zugehörige Telemetrie-Daten
+        from models import BESSTelemetryData
+        BESSTelemetryData.query.filter_by(bess_mapping_id=mapping_id).delete()
+        
+        # Lösche Mapping
+        db.session.delete(mapping)
+        db.session.commit()
+        
+        return jsonify({'message': 'BESS-Mapping erfolgreich gelöscht'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
