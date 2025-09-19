@@ -59,6 +59,7 @@ from awattar_data_fetcher import awattar_fetcher
 # Auth-Module importieren
 from auth_module import bess_auth, auth_optional
 from permissions import login_required
+from .live_data_service import live_bess_service
 
 # Dispatch-Integration importieren
 try:
@@ -2680,7 +2681,7 @@ def run_economic_simulation(project, use_case='hybrid'):
         peak_shaving_savings = calculate_peak_shaving_savings(project) if use_case in ['hybrid', 'peak_shaving'] else 0
         arbitrage_savings = calculate_arbitrage_savings(project) if use_case in ['hybrid', 'arbitrage'] else 0
         grid_stability_bonus = calculate_grid_stability_bonus(project) if use_case in ['hybrid', 'grid_services'] else 0
-        self_consumption_savings = calculate_self_consumption_savings(project) if use_case in ['hybrid', 'self_consumption'] else 0
+        self_consumption_savings = calculate_pv_self_consumption_savings(project) if use_case in ['hybrid', 'self_consumption'] else 0
         
         annual_savings = peak_shaving_savings + arbitrage_savings + grid_stability_bonus + self_consumption_savings
         payback_years = total_investment / annual_savings if annual_savings > 0 else 0
@@ -9427,3 +9428,101 @@ def _calculate_cost_advantage(load_df, market_df, p_ess, q_ess, electricity_cost
     except Exception as e:
         print(f"⚠️ Fehler bei Kostenvorteil-Berechnung: {e}")
         return 0.0
+
+# ============================================================================
+# LIVE BESS DATEN INTEGRATION
+# ============================================================================
+
+@main_bp.route('/live-data')
+@login_required
+def live_data_dashboard():
+    """Live BESS Daten Dashboard"""
+    try:
+        # Hole System-Status
+        system_status = live_bess_service.get_system_status()
+        
+        # Hole Gerätezusammenfassung
+        device_summary = live_bess_service.get_device_summary()
+        
+        # Hole Chart-Daten für die letzten 24 Stunden
+        chart_data = live_bess_service.get_chart_data(hours=24)
+        
+        return render_template('live_data_dashboard.html',
+                             system_status=system_status,
+                             device_summary=device_summary,
+                             chart_data=chart_data)
+    except Exception as e:
+        flash(f'Fehler beim Laden der Live-Daten: {str(e)}', 'error')
+        return render_template('live_data_dashboard.html',
+                             system_status={'status': 'error', 'error': str(e)},
+                             device_summary={'error': str(e)},
+                             chart_data={'error': str(e)})
+
+@main_bp.route('/api/live-data/status')
+@login_required
+def api_live_data_status():
+    """API Endpoint für System-Status"""
+    try:
+        status = live_bess_service.get_system_status()
+        return jsonify(status)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/live-data/latest')
+@login_required
+def api_live_data_latest():
+    """API Endpoint für neueste Daten"""
+    try:
+        limit = request.args.get('limit', 10, type=int)
+        data = live_bess_service.get_live_data(limit=limit)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/live-data/summary')
+@login_required
+def api_live_data_summary():
+    """API Endpoint für Gerätezusammenfassung"""
+    try:
+        site = request.args.get('site')
+        device = request.args.get('device')
+        summary = live_bess_service.get_device_summary(site=site, device=device)
+        return jsonify(summary)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/api/live-data/chart')
+@login_required
+def api_live_data_chart():
+    """API Endpoint für Chart-Daten"""
+    try:
+        hours = request.args.get('hours', 24, type=int)
+        chart_data = live_bess_service.get_chart_data(hours=hours)
+        return jsonify(chart_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route('/live-data/advanced')
+@login_required
+def live_data_dashboard_advanced():
+    """Erweiterte Live BESS Daten Dashboard mit Real-time Updates"""
+    try:
+        # Hole System-Status
+        system_status = live_bess_service.get_system_status()
+        
+        # Hole Gerätezusammenfassung
+        device_summary = live_bess_service.get_device_summary()
+        
+        # Hole Chart-Daten für die letzten 24 Stunden
+        chart_data = live_bess_service.get_chart_data(hours=24)
+        
+        return render_template('live_data_dashboard_advanced.html',
+                             system_status=system_status,
+                             device_summary=device_summary,
+                             chart_data=chart_data)
+    except Exception as e:
+        flash(f'Fehler beim Laden des erweiterten Live-Dashboards: {str(e)}', 'error')
+        return render_template('live_data_dashboard_advanced.html',
+                             system_status={'status': 'error', 'error': str(e)},
+                             device_summary={'error': str(e)},
+                             chart_data={'error': str(e)})

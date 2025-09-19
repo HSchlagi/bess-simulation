@@ -4981,6 +4981,16 @@ time curl -s http://localhost:5000/api/health
 - Strukturierte Datenübertragung
 - Standard für moderne Web-APIs
 
+**Live BESS Integration**
+- Echtzeit-Monitoring von BESS-Speichersystemen
+- MQTT-Bridge für direkte Speicherverbindung
+- FastAPI-Service für Datenverarbeitung
+- Real-time Dashboard mit interaktiven Charts
+- Alarm-Management und System-Health-Monitoring
+- Automatische Fallback-Mechanismen
+- Unterstützt sowohl MQTT als auch HTTP-APIs
+- Konfigurierbare Update-Intervalle und Datenquellen
+
 ### 🔒 Sicherheit & Compliance
 
 **CSRF (Cross-Site Request Forgery)**
@@ -5356,6 +5366,36 @@ time curl -s http://localhost:5000/api/health
 - **Governance Score** → Unternehmensführung
 - **Overall ESG Score** → Gesamtbewertung
 
+### 🚀 Live BESS Integration
+
+**Real-time Monitoring:**
+- **Echtzeit-Dashboard** → Live-Monitoring von BESS-Speichersystemen
+- **MQTT-Bridge** → Direkte Verbindung zu BESS-Speichern über MQTT-Protokoll
+- **FastAPI-Service** → RESTful API für Datenverarbeitung und -speicherung
+- **WebSocket-Updates** → Real-time Datenübertragung ohne Polling
+- **Interaktive Charts** → SOC, Leistung, Spannung, Temperatur in Echtzeit
+- **Alarm-Management** → Automatische Überwachung kritischer Parameter
+
+**Datenquellen:**
+- **MQTT-Integration** → Prioritäre Datenquelle für Live-Systeme
+- **FastAPI-Fallback** → Robuste Fallback-Mechanismen
+- **SQLite-Speicherung** → Lokale Datenspeicherung für Offline-Analyse
+- **Datenkonvertierung** → Nahtlose Integration verschiedener Formate
+
+**Dashboard-Features:**
+- **Standard Dashboard** → Grundlegendes Live-Monitoring (`/live-data`)
+- **Advanced Dashboard** → Erweiterte Features mit Auto-Refresh (`/live-data/advanced`)
+- **System-Status** → Verbindungsmonitoring (MQTT + FastAPI)
+- **Geräte-Tabelle** → Live-Status aller BESS-Geräte
+- **Konfigurations-Interface** → Einfache Systemkonfiguration
+
+**Technische Implementierung:**
+- **Frontend:** HTML5, Tailwind CSS, Chart.js, Socket.IO
+- **Backend:** Flask Blueprint, MQTT Client, FastAPI Integration
+- **Datenbank:** SQLite mit optimierten Indizes für Live-Daten
+- **API-Endpoints:** Status, Daten, Charts, Geräte-Info
+- **Konfiguration:** Umgebungsvariablen für flexible Anpassung
+
 ### 🔧 Technische Details
 
 **Datenbank-Schema:**
@@ -5615,6 +5655,70 @@ POST /pwa/api/clear-cache          # Cache leeren
 - **Offline-Seite:** `/static/offline.html`
 - **Service Worker:** `/static/sw.js`
 - **PWA Manifest:** `/static/manifest.json`
+
+### 5.8.10 Live BESS Integration Konfiguration
+
+**Umgebungsvariablen:**
+```bash
+# FastAPI Service Konfiguration
+LIVE_BESS_API_URL=http://localhost:8080
+LIVE_BESS_API_TOKEN=changeme_token_123
+
+# MQTT Bridge Konfiguration
+USE_MQTT_BRIDGE=false
+MQTT_BROKER_HOST=localhost
+MQTT_BROKER_PORT=1883
+MQTT_USERNAME=bessuser
+MQTT_PASSWORD=besspass
+MQTT_BASE_TOPIC=bess
+
+# Datenbank Konfiguration
+LIVE_BESS_DB_PATH=live/data/bess.db
+```
+
+**Installation:**
+```bash
+# MQTT-Abhängigkeiten installieren
+pip install paho-mqtt
+
+# Live-System starten
+cd live
+docker-compose up -d
+
+# MQTT-Integration aktivieren
+export USE_MQTT_BRIDGE=true
+```
+
+**Verfügbare Endpoints:**
+- **Standard Dashboard:** `/live-data`
+- **Advanced Dashboard:** `/live-data/advanced`
+- **API Status:** `/api/live-data/status`
+- **Live Daten:** `/api/live-data/latest`
+- **Chart Daten:** `/api/live-data/chart`
+- **Geräte-Info:** `/api/live-data/summary`
+
+**MQTT Topic Structure:**
+```
+bess/{site}/{device}/telemetry
+```
+
+**Datenformat:**
+```json
+{
+  "ts": "2025-01-01T00:00:00Z",
+  "site": "site1",
+  "device": "bess1",
+  "soc": 57.1,
+  "p": -120.0,
+  "p_ch": 0.0,
+  "p_dis": 120.0,
+  "v_dc": 780.5,
+  "i_dc": 160.2,
+  "t_cell_max": 31.5,
+  "soh": 98.6,
+  "alarms": []
+}
+```
 
 ### 5.9 API-Endpoints
 

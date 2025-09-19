@@ -1,0 +1,56 @@
+{
+  "name": "MQTT \u2192 HTTP Ingest (BESS, SQLite)",
+  "nodes": [
+    {
+      "parameters": {
+        "broker": "mqtt://localhost",
+        "topic": "bess/+/+/telemetry",
+        "qos": 1
+      },
+      "name": "MQTT Trigger",
+      "type": "n8n-nodes-base.mqttTrigger"
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{ json: JSON.parse(items[0].json.message) }];"
+      },
+      "name": "Parse JSON",
+      "type": "n8n-nodes-base.function"
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8080/api/ingest",
+        "jsonParameters": true,
+        "options": {},
+        "sendHeaders": true,
+        "headerParametersJson": "{\"Authorization\": \"Bearer changeme_token_123\"}"
+      },
+      "name": "POST Ingest",
+      "type": "n8n-nodes-base.httpRequest"
+    }
+  ],
+  "connections": {
+    "MQTT Trigger": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON": {
+      "main": [
+        [
+          {
+            "node": "POST Ingest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

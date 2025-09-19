@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: bess_mosquitto
+    ports:
+      - "1883:1883"
+      # - "8883:8883" # TLS (aktivieren, wenn Zertifikate vorhanden)
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/passwords:/mosquitto/config/passwords
+      - ./mosquitto/certs:/mosquitto/config/certs
+    restart: unless-stopped
+
+  app:
+    build: ./app
+    container_name: bess_app
+    env_file:
+      - ./app/.env
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+# optional: n8n kann außerhalb laufen und http://localhost:8080 verwenden

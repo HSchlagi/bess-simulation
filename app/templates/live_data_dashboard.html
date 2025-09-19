@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live BESS Daten - BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    {% include 'header_simple.html' %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-satellite-dish mr-3 text-blue-600"></i>
+                        Live BESS Daten
+                    </h1>
+                    <p class="text-gray-600 mt-2">Echtzeit-Monitoring von BESS-Speichersystemen</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>Aktualisieren
+                    </button>
+                    <div id="lastUpdate" class="text-sm text-gray-500"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Connection Status -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">System Status</h3>
+                        <p class="text-sm text-gray-600 mt-1">Live-BESS API Verbindung</p>
+                    </div>
+                    <div id="connectionStatus" class="flex items-center">
+                        {% if system_status.status == 'online' %}
+                            <div class="flex items-center text-green-600">
+                                <i class="fas fa-circle text-xs mr-2 animate-pulse"></i>
+                                <span class="text-sm font-medium">Online</span>
+                            </div>
+                        {% elif system_status.status == 'offline' %}
+                            <div class="flex items-center text-red-600">
+                                <i class="fas fa-circle text-xs mr-2"></i>
+                                <span class="text-sm font-medium">Offline</span>
+                            </div>
+                        {% else %}
+                            <div class="flex items-center text-yellow-600">
+                                <i class="fas fa-exclamation-triangle text-xs mr-2"></i>
+                                <span class="text-sm font-medium">Fehler</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500">
+                        API: {{ system_status.get('api_url', 'N/A') }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Letzte Prüfung: {{ system_status.get('last_check', 'N/A') }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Data Records -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Datenpunkte</h3>
+                        <p class="text-sm text-gray-600 mt-1">Verfügbare Messwerte</p>
+                    </div>
+                    <div class="text-2xl font-bold text-blue-600">
+                        {% if device_summary.total_records %}
+                            {{ device_summary.total_records }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500">
+                        Geräte: {{ device_summary.devices|length if device_summary.devices else 0 }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Standorte: {{ device_summary.sites|length if device_summary.sites else 0 }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Last Update -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Letzter Wert</h3>
+                        <p class="text-sm text-gray-600 mt-1">Neuester Datensatz</p>
+                    </div>
+                    <div class="text-right">
+                        {% if device_summary.date_range and device_summary.date_range.newest %}
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ device_summary.date_range.newest[:16] }}
+                            </div>
+                        {% else %}
+                            <div class="text-sm text-gray-500">Keine Daten</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mt-4">
+                    {% if device_summary.soc_stats and device_summary.soc_stats.current %}
+                        <p class="text-xs text-gray-500">
+                            SOC: {{ "%.1f"|format(device_summary.soc_stats.current) }}%
+                        </p>
+                    {% endif %}
+                    {% if device_summary.power_stats and device_summary.power_stats.current %}
+                        <p class="text-xs text-gray-500">
+                            Leistung: {{ "%.1f"|format(device_summary.power_stats.current) }} kW
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        {% if system_status.status == 'error' or system_status.status == 'offline' %}
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                <div>
+                    <h4 class="text-red-800 font-medium">Verbindungsfehler</h4>
+                    <p class="text-red-700 text-sm mt-1">
+                        {% if system_status.error %}
+                            {{ system_status.error }}
+                        {% else %}
+                            Die Live-BESS API ist nicht erreichbar. Bitte prüfen Sie die Konfiguration.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Charts Section -->
+        {% if chart_data and not chart_data.error %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- SOC Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-battery-half mr-2 text-green-600"></i>
+                    State of Charge (SOC)
+                </h3>
+                <div class="relative">
+                    <canvas id="socChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Power Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-bolt mr-2 text-yellow-600"></i>
+                    Leistung
+                </h3>
+                <div class="relative">
+                    <canvas id="powerChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voltage and Temperature Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Voltage Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-plug mr-2 text-purple-600"></i>
+                    Spannung
+                </h3>
+                <div class="relative">
+                    <canvas id="voltageChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Temperature Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-thermometer-half mr-2 text-red-600"></i>
+                    Temperatur
+                </h3>
+                <div class="relative">
+                    <canvas id="temperatureChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Statistics Cards -->
+        {% if device_summary and not device_summary.error %}
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- SOC Statistics -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">SOC Statistiken</h4>
+                {% if device_summary.soc_stats %}
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Aktuell:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.soc_stats.current) }}%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Min:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.soc_stats.min) }}%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Max:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.soc_stats.max) }}%</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Ø:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.soc_stats.avg) }}%</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Power Statistics -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Leistung (kW)</h4>
+                {% if device_summary.power_stats %}
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Aktuell:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.power_stats.current) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Min:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.power_stats.min) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Max:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.power_stats.max) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Ø:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.power_stats.avg) }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Voltage Statistics -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Spannung (V)</h4>
+                {% if device_summary.voltage_stats %}
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Aktuell:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.voltage_stats.current) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Min:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.voltage_stats.min) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Max:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.voltage_stats.max) }}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Ø:</span>
+                            <span class="font-medium">{{ "%.1f"|format(device_summary.voltage_stats.avg) }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Device Info -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h4 class="text-sm font-medium text-gray-900 mb-3">Geräte Info</h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Geräte:</span>
+                        <span class="font-medium">{{ device_summary.devices|length }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Standorte:</span>
+                        <span class="font-medium">{{ device_summary.sites|length }}</span>
+                    </div>
+                    {% if device_summary.devices %}
+                        <div class="mt-2">
+                            <div class="text-xs text-gray-500">Geräte:</div>
+                            {% for device in device_summary.devices %}
+                                <div class="text-xs text-gray-600">{{ device }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Configuration Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                Konfiguration
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-blue-800"><strong>API URL:</strong> {{ system_status.get('api_url', 'Nicht konfiguriert') }}</p>
+                    <p class="text-blue-800"><strong>Timeout:</strong> 5 Sekunden</p>
+                </div>
+                <div>
+                    <p class="text-blue-800"><strong>Update-Intervall:</strong> Manuell</p>
+                    <p class="text-blue-800"><strong>Datenformat:</strong> JSON (FastAPI)</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <p class="text-blue-700 text-sm">
+                    <i class="fas fa-lightbulb mr-1"></i>
+                    <strong>Hinweis:</strong> Für automatische Updates konfigurieren Sie bitte die Umgebungsvariablen 
+                    <code class="bg-blue-100 px-1 rounded">LIVE_BESS_API_URL</code> und 
+                    <code class="bg-blue-100 px-1 rounded">LIVE_BESS_API_TOKEN</code>.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Chart-Daten aus dem Template
+        const chartData = {{ chart_data|tojson|safe }};
+        
+        // Charts initialisieren
+        let socChart, powerChart, voltageChart, temperatureChart;
+
+        function initCharts() {
+            if (!chartData || chartData.error) {
+                console.log('Keine Chart-Daten verfügbar');
+                return;
+            }
+
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: 'Zeit'
+                        }
+                    },
+                    y: {
+                        display: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            };
+
+            // SOC Chart
+            const socCtx = document.getElementById('socChart');
+            if (socCtx) {
+                socChart = new Chart(socCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'SOC (%)',
+                            data: chartData.soc,
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        scales: {
+                            ...commonOptions.scales,
+                            y: {
+                                ...commonOptions.scales.y,
+                                min: 0,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: 'SOC (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Power Chart
+            const powerCtx = document.getElementById('powerChart');
+            if (powerCtx) {
+                powerChart = new Chart(powerCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Leistung (kW)',
+                            data: chartData.power,
+                            borderColor: '#F59E0B',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        scales: {
+                            ...commonOptions.scales,
+                            y: {
+                                ...commonOptions.scales.y,
+                                title: {
+                                    display: true,
+                                    text: 'Leistung (kW)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Voltage Chart
+            const voltageCtx = document.getElementById('voltageChart');
+            if (voltageCtx) {
+                voltageChart = new Chart(voltageCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Spannung (V)',
+                            data: chartData.voltage,
+                            borderColor: '#8B5CF6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        scales: {
+                            ...commonOptions.scales,
+                            y: {
+                                ...commonOptions.scales.y,
+                                title: {
+                                    display: true,
+                                    text: 'Spannung (V)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Temperature Chart
+            const temperatureCtx = document.getElementById('temperatureChart');
+            if (temperatureCtx) {
+                temperatureChart = new Chart(temperatureCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Temperatur (°C)',
+                            data: chartData.temperature,
+                            borderColor: '#EF4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        scales: {
+                            ...commonOptions.scales,
+                            y: {
+                                ...commonOptions.scales.y,
+                                title: {
+                                    display: true,
+                                    text: 'Temperatur (°C)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Daten aktualisieren
+        function refreshData() {
+            const button = event.target.closest('button');
+            const icon = button.querySelector('i');
+            
+            // Loading-Animation
+            icon.classList.add('fa-spin');
+            button.disabled = true;
+            
+            // Seite neu laden
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+
+        // Letzte Aktualisierung anzeigen
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('de-DE');
+            const element = document.getElementById('lastUpdate');
+            if (element) {
+                element.textContent = `Letzte Aktualisierung: ${timeString}`;
+            }
+        }
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateLastUpdateTime();
+            
+            // Auto-Refresh alle 30 Sekunden (optional)
+            // setInterval(refreshData, 30000);
+        });
+    </script>
+</body>
+</html>

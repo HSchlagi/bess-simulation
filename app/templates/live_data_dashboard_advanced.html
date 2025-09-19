@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live BESS Daten (Advanced) - BESS Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    {% include 'header_simple.html' %}
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+                        <i class="fas fa-satellite-dish mr-3 text-blue-600"></i>
+                        Live BESS Daten
+                        <span id="connectionIndicator" class="ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <span class="w-2 h-2 mr-1.5 bg-gray-400 rounded-full"></span>
+                            Verbindung prüfen...
+                        </span>
+                    </h1>
+                    <p class="text-gray-600 mt-2">Echtzeit-Monitoring von BESS-Speichersystemen mit MQTT-Integration</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="autoRefreshToggle" class="mr-2" checked>
+                            <span class="text-sm text-gray-700">Auto-Refresh</span>
+                        </label>
+                        <select id="refreshInterval" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                            <option value="10">10s</option>
+                            <option value="30" selected>30s</option>
+                            <option value="60">1min</option>
+                            <option value="300">5min</option>
+                        </select>
+                    </div>
+                    <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center">
+                        <i class="fas fa-sync-alt mr-2" id="refreshIcon"></i>Aktualisieren
+                    </button>
+                    <div id="lastUpdate" class="text-sm text-gray-500"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Connection Status -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Verbindung</h3>
+                        <p class="text-sm text-gray-600 mt-1">System Status</p>
+                    </div>
+                    <div id="connectionStatus" class="flex items-center">
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-circle text-xs mr-2"></i>
+                            <span class="text-sm font-medium">Prüfen...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500" id="dataSource">Datenquelle: Unbekannt</p>
+                    <p class="text-xs text-gray-500" id="brokerInfo">Broker: -</p>
+                </div>
+            </div>
+
+            <!-- Live Data Count -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Live Daten</h3>
+                        <p class="text-sm text-gray-600 mt-1">Eingegangen heute</p>
+                    </div>
+                    <div class="text-2xl font-bold text-green-600" id="liveDataCount">-</div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500">
+                        Geräte: <span id="deviceCount">-</span>
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Standorte: <span id="siteCount">-</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Current SOC -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">SOC</h3>
+                        <p class="text-sm text-gray-600 mt-1">State of Charge</p>
+                    </div>
+                    <div class="text-2xl font-bold text-blue-600" id="currentSOC">-</div>
+                </div>
+                <div class="mt-4">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-600 h-2 rounded-full" id="socProgressBar" style="width: 0%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1" id="socStatus">Status: Unbekannt</p>
+                </div>
+            </div>
+
+            <!-- Current Power -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Leistung</h3>
+                        <p class="text-sm text-gray-600 mt-1">Aktuelle Leistung</p>
+                    </div>
+                    <div class="text-2xl font-bold text-yellow-600" id="currentPower">-</div>
+                </div>
+                <div class="mt-4">
+                    <p class="text-xs text-gray-500" id="powerDirection">Richtung: -</p>
+                    <p class="text-xs text-gray-500" id="powerStatus">Status: -</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts Section -->
+        <div id="alertsSection" class="mb-8 hidden">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                    <div>
+                        <h4 class="text-red-800 font-medium">Aktive Alarme</h4>
+                        <div id="activeAlerts" class="text-red-700 text-sm mt-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- SOC Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-battery-half mr-2 text-green-600"></i>
+                        SOC Verlauf
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleChart('socChart')" class="text-sm text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <select id="socTimeRange" class="text-sm border border-gray-300 rounded px-2 py-1">
+                            <option value="1">1h</option>
+                            <option value="6">6h</option>
+                            <option value="24" selected>24h</option>
+                            <option value="168">7d</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="relative">
+                    <canvas id="socChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Power Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-bolt mr-2 text-yellow-600"></i>
+                        Leistungsverlauf
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleChart('powerChart')" class="text-sm text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <select id="powerTimeRange" class="text-sm border border-gray-300 rounded px-2 py-1">
+                            <option value="1">1h</option>
+                            <option value="6">6h</option>
+                            <option value="24" selected>24h</option>
+                            <option value="168">7d</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="relative">
+                    <canvas id="powerChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Voltage and Temperature Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Voltage Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-plug mr-2 text-purple-600"></i>
+                        Spannungsverlauf
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleChart('voltageChart')" class="text-sm text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <select id="voltageTimeRange" class="text-sm border border-gray-300 rounded px-2 py-1">
+                            <option value="1">1h</option>
+                            <option value="6">6h</option>
+                            <option value="24" selected>24h</option>
+                            <option value="168">7d</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="relative">
+                    <canvas id="voltageChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <!-- Temperature Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                        <i class="fas fa-thermometer-half mr-2 text-red-600"></i>
+                        Temperaturverlauf
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleChart('temperatureChart')" class="text-sm text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <select id="temperatureTimeRange" class="text-sm border border-gray-300 rounded px-2 py-1">
+                            <option value="1">1h</option>
+                            <option value="6">6h</option>
+                            <option value="24" selected>24h</option>
+                            <option value="168">7d</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="relative">
+                    <canvas id="temperatureChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Information Table -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                    <i class="fas fa-microchip mr-2 text-indigo-600"></i>
+                    Geräte-Informationen
+                </h3>
+                <button onclick="refreshDeviceData()" class="text-sm text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-sync-alt mr-1"></i>Aktualisieren
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gerät</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Standort</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SOC</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Leistung</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spannung</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Temperatur</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Letztes Update</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deviceTableBody" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Lade Gerätedaten...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Configuration Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-8">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+                <i class="fas fa-cog mr-2"></i>
+                System-Konfiguration
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                    <p class="text-blue-800"><strong>MQTT Bridge:</strong> <span id="mqttStatus">-</span></p>
+                    <p class="text-blue-800"><strong>FastAPI Service:</strong> <span id="fastapiStatus">-</span></p>
+                </div>
+                <div>
+                    <p class="text-blue-800"><strong>Auto-Refresh:</strong> <span id="autoRefreshStatus">-</span></p>
+                    <p class="text-blue-800"><strong>Update-Intervall:</strong> <span id="refreshIntervalDisplay">-</span></p>
+                </div>
+                <div>
+                    <p class="text-blue-800"><strong>WebSocket:</strong> <span id="websocketStatus">-</span></p>
+                    <p class="text-blue-800"><strong>Letzte Synchronisation:</strong> <span id="lastSync">-</span></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    {% include 'footer.html' %}
+
+    <script>
+        // Globale Variablen
+        let charts = {};
+        let autoRefreshInterval;
+        let refreshInterval = 30000; // 30 Sekunden
+        let isAutoRefresh = true;
+        let socket;
+
+        // Chart-Konfiguration
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 750,
+                easing: 'easeInOutQuart'
+            },
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Zeit'
+                    },
+                    type: 'time',
+                    time: {
+                        displayFormats: {
+                            hour: 'HH:mm',
+                            day: 'MMM dd'
+                        }
+                    }
+                },
+                y: {
+                    display: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        };
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            setupEventListeners();
+            setupWebSocket();
+            loadInitialData();
+            startAutoRefresh();
+        });
+
+        function initializeCharts() {
+            // SOC Chart
+            const socCtx = document.getElementById('socChart');
+            if (socCtx) {
+                charts.soc = new Chart(socCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'SOC (%)',
+                            data: [],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        scales: {
+                            ...chartOptions.scales,
+                            y: {
+                                ...chartOptions.scales.y,
+                                min: 0,
+                                max: 100,
+                                title: {
+                                    display: true,
+                                    text: 'SOC (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Power Chart
+            const powerCtx = document.getElementById('powerChart');
+            if (powerCtx) {
+                charts.power = new Chart(powerCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Leistung (kW)',
+                            data: [],
+                            borderColor: '#F59E0B',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        scales: {
+                            ...chartOptions.scales,
+                            y: {
+                                ...chartOptions.scales.y,
+                                title: {
+                                    display: true,
+                                    text: 'Leistung (kW)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Voltage Chart
+            const voltageCtx = document.getElementById('voltageChart');
+            if (voltageCtx) {
+                charts.voltage = new Chart(voltageCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Spannung (V)',
+                            data: [],
+                            borderColor: '#8B5CF6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        scales: {
+                            ...chartOptions.scales,
+                            y: {
+                                ...chartOptions.scales.y,
+                                title: {
+                                    display: true,
+                                    text: 'Spannung (V)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Temperature Chart
+            const temperatureCtx = document.getElementById('temperatureChart');
+            if (temperatureCtx) {
+                charts.temperature = new Chart(temperatureCtx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Temperatur (°C)',
+                            data: [],
+                            borderColor: '#EF4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: 2,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        scales: {
+                            ...chartOptions.scales,
+                            y: {
+                                ...chartOptions.scales.y,
+                                title: {
+                                    display: true,
+                                    text: 'Temperatur (°C)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        function setupEventListeners() {
+            // Auto-Refresh Toggle
+            document.getElementById('autoRefreshToggle').addEventListener('change', function() {
+                isAutoRefresh = this.checked;
+                if (isAutoRefresh) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+
+            // Refresh Interval Select
+            document.getElementById('refreshInterval').addEventListener('change', function() {
+                refreshInterval = parseInt(this.value) * 1000;
+                if (isAutoRefresh) {
+                    stopAutoRefresh();
+                    startAutoRefresh();
+                }
+            });
+
+            // Time Range Selectors
+            ['soc', 'power', 'voltage', 'temperature'].forEach(chartType => {
+                const selector = document.getElementById(`${chartType}TimeRange`);
+                if (selector) {
+                    selector.addEventListener('change', function() {
+                        loadChartData(chartType, parseInt(this.value));
+                    });
+                }
+            });
+        }
+
+        function setupWebSocket() {
+            try {
+                socket = io();
+                
+                socket.on('connect', function() {
+                    console.log('WebSocket verbunden');
+                    updateWebSocketStatus('Verbunden');
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('WebSocket getrennt');
+                    updateWebSocketStatus('Getrennt');
+                });
+
+                socket.on('live_data_update', function(data) {
+                    console.log('Live-Daten Update empfangen:', data);
+                    updateLiveData(data);
+                });
+
+            } catch (error) {
+                console.log('WebSocket nicht verfügbar:', error);
+                updateWebSocketStatus('Nicht verfügbar');
+            }
+        }
+
+        function loadInitialData() {
+            refreshData();
+            updateLastUpdateTime();
+            updateConfigurationInfo();
+        }
+
+        function refreshData() {
+            const icon = document.getElementById('refreshIcon');
+            icon.classList.add('fa-spin');
+            
+            Promise.all([
+                fetch('/api/live-data/status').then(r => r.json()),
+                fetch('/api/live-data/latest?limit=50').then(r => r.json()),
+                fetch('/api/live-data/summary').then(r => r.json())
+            ]).then(([status, latestData, summary]) => {
+                updateSystemStatus(status);
+                updateLiveData(latestData);
+                updateDeviceSummary(summary);
+                updateLastUpdateTime();
+            }).catch(error => {
+                console.error('Fehler beim Laden der Daten:', error);
+                showError('Fehler beim Laden der Live-Daten');
+            }).finally(() => {
+                icon.classList.remove('fa-spin');
+            });
+        }
+
+        function updateSystemStatus(status) {
+            const statusElement = document.getElementById('connectionStatus');
+            const indicator = document.getElementById('connectionIndicator');
+            const dataSource = document.getElementById('dataSource');
+            const brokerInfo = document.getElementById('brokerInfo');
+
+            if (status.status === 'online') {
+                statusElement.innerHTML = `
+                    <div class="flex items-center text-green-600">
+                        <i class="fas fa-circle text-xs mr-2 animate-pulse"></i>
+                        <span class="text-sm font-medium">Online</span>
+                    </div>
+                `;
+                indicator.innerHTML = `
+                    <span class="w-2 h-2 mr-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                    Online (${status.data_source})
+                `;
+                indicator.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+            } else {
+                statusElement.innerHTML = `
+                    <div class="flex items-center text-red-600">
+                        <i class="fas fa-circle text-xs mr-2"></i>
+                        <span class="text-sm font-medium">Offline</span>
+                    </div>
+                `;
+                indicator.innerHTML = `
+                    <span class="w-2 h-2 mr-1.5 bg-red-400 rounded-full"></span>
+                    Offline
+                `;
+                indicator.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800';
+            }
+
+            dataSource.textContent = `Datenquelle: ${status.data_source || 'Unbekannt'}`;
+            
+            if (status.broker_host) {
+                brokerInfo.textContent = `Broker: ${status.broker_host}:${status.broker_port}`;
+            } else {
+                brokerInfo.textContent = `API: ${status.api_url || 'Unbekannt'}`;
+            }
+
+            // Update Configuration Info
+            document.getElementById('mqttStatus').textContent = status.mqtt_available ? 'Verfügbar' : 'Nicht verfügbar';
+            document.getElementById('fastapiStatus').textContent = status.api_url ? 'Verfügbar' : 'Nicht verfügbar';
+        }
+
+        function updateLiveData(data) {
+            if (!data || data.length === 0) return;
+
+            const latest = data[0];
+            
+            // Update Current Values
+            updateCurrentValues(latest);
+            
+            // Update Charts
+            updateCharts(data);
+            
+            // Update Device Table
+            updateDeviceTable(data);
+            
+            // Check for Alarms
+            checkAlarms(latest);
+        }
+
+        function updateCurrentValues(data) {
+            document.getElementById('currentSOC').textContent = data.soc ? `${data.soc.toFixed(1)}%` : '-';
+            document.getElementById('currentPower').textContent = data.p ? `${data.p.toFixed(1)} kW` : '-';
+            
+            // SOC Progress Bar
+            if (data.soc) {
+                const progressBar = document.getElementById('socProgressBar');
+                progressBar.style.width = `${data.soc}%`;
+                
+                let socStatus = 'Normal';
+                if (data.soc < 20) socStatus = 'Niedrig';
+                else if (data.soc > 90) socStatus = 'Hoch';
+                
+                document.getElementById('socStatus').textContent = `Status: ${socStatus}`;
+            }
+            
+            // Power Direction
+            if (data.p) {
+                const direction = data.p > 0 ? 'Entladung' : (data.p < 0 ? 'Ladung' : 'Leerlauf');
+                document.getElementById('powerDirection').textContent = `Richtung: ${direction}`;
+                
+                const powerStatus = Math.abs(data.p) > 50 ? 'Hoch' : 'Normal';
+                document.getElementById('powerStatus').textContent = `Status: ${powerStatus}`;
+            }
+        }
+
+        function updateCharts(data) {
+            const labels = data.map(d => new Date(d.ts));
+            
+            // SOC Chart
+            if (charts.soc) {
+                charts.soc.data.labels = labels;
+                charts.soc.data.datasets[0].data = data.map(d => d.soc).filter(v => v !== null);
+                charts.soc.update('none');
+            }
+            
+            // Power Chart
+            if (charts.power) {
+                charts.power.data.labels = labels;
+                charts.power.data.datasets[0].data = data.map(d => d.p).filter(v => v !== null);
+                charts.power.update('none');
+            }
+            
+            // Voltage Chart
+            if (charts.voltage) {
+                charts.voltage.data.labels = labels;
+                charts.voltage.data.datasets[0].data = data.map(d => d.v_dc).filter(v => v !== null);
+                charts.voltage.update('none');
+            }
+            
+            // Temperature Chart
+            if (charts.temperature) {
+                charts.temperature.data.labels = labels;
+                charts.temperature.data.datasets[0].data = data.map(d => d.t_cell_max).filter(v => v !== null);
+                charts.temperature.update('none');
+            }
+        }
+
+        function updateDeviceTable(data) {
+            const tbody = document.getElementById('deviceTableBody');
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-4 text-center text-gray-500">
+                            Keine Gerätedaten verfügbar
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Gruppiere nach Geräten
+            const devices = {};
+            data.forEach(record => {
+                const key = `${record.site}/${record.device}`;
+                if (!devices[key] || new Date(record.ts) > new Date(devices[key].ts)) {
+                    devices[key] = record;
+                }
+            });
+            
+            tbody.innerHTML = Object.values(devices).map(device => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${device.device}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${device.site}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${device.soc ? `${device.soc.toFixed(1)}%` : '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${device.p ? `${device.p.toFixed(1)} kW` : '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${device.v_dc ? `${device.v_dc.toFixed(1)} V` : '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${device.t_cell_max ? `${device.t_cell_max.toFixed(1)} °C` : '-'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${new Date(device.ts).toLocaleTimeString('de-DE')}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateDeviceSummary(summary) {
+            document.getElementById('liveDataCount').textContent = summary.total_records || '-';
+            document.getElementById('deviceCount').textContent = summary.devices ? summary.devices.length : '-';
+            document.getElementById('siteCount').textContent = summary.sites ? summary.sites.length : '-';
+        }
+
+        function checkAlarms(data) {
+            const alerts = [];
+            
+            if (data.soc && data.soc < 20) {
+                alerts.push(`Niedriger SOC: ${data.soc.toFixed(1)}%`);
+            }
+            
+            if (data.soc && data.soc > 90) {
+                alerts.push(`Hoher SOC: ${data.soc.toFixed(1)}%`);
+            }
+            
+            if (data.t_cell_max && data.t_cell_max > 45) {
+                alerts.push(`Hohe Temperatur: ${data.t_cell_max.toFixed(1)}°C`);
+            }
+            
+            if (data.v_dc && (data.v_dc < 700 || data.v_dc > 800)) {
+                alerts.push(`Abnormale Spannung: ${data.v_dc.toFixed(1)}V`);
+            }
+            
+            const alertsSection = document.getElementById('alertsSection');
+            const activeAlerts = document.getElementById('activeAlerts');
+            
+            if (alerts.length > 0) {
+                activeAlerts.innerHTML = alerts.join('<br>');
+                alertsSection.classList.remove('hidden');
+            } else {
+                alertsSection.classList.add('hidden');
+            }
+        }
+
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('de-DE');
+            document.getElementById('lastUpdate').textContent = `Letzte Aktualisierung: ${timeString}`;
+            document.getElementById('lastSync').textContent = timeString;
+        }
+
+        function updateConfigurationInfo() {
+            document.getElementById('autoRefreshStatus').textContent = isAutoRefresh ? 'Aktiviert' : 'Deaktiviert';
+            document.getElementById('refreshIntervalDisplay').textContent = `${refreshInterval / 1000}s`;
+        }
+
+        function updateWebSocketStatus(status) {
+            document.getElementById('websocketStatus').textContent = status;
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            
+            if (isAutoRefresh) {
+                autoRefreshInterval = setInterval(refreshData, refreshInterval);
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function loadChartData(chartType, hours) {
+            fetch(`/api/live-data/chart?hours=${hours}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (charts[chartType] && !data.error) {
+                        const labels = data.labels.map(label => new Date(label));
+                        charts[chartType].data.labels = labels;
+                        
+                        switch(chartType) {
+                            case 'soc':
+                                charts[chartType].data.datasets[0].data = data.soc;
+                                break;
+                            case 'power':
+                                charts[chartType].data.datasets[0].data = data.power;
+                                break;
+                            case 'voltage':
+                                charts[chartType].data.datasets[0].data = data.voltage;
+                                break;
+                            case 'temperature':
+                                charts[chartType].data.datasets[0].data = data.temperature;
+                                break;
+                        }
+                        
+                        charts[chartType].update();
+                    }
+                })
+                .catch(error => {
+                    console.error(`Fehler beim Laden der ${chartType}-Daten:`, error);
+                });
+        }
+
+        function refreshDeviceData() {
+            refreshData();
+        }
+
+        function toggleChart(chartId) {
+            const chart = charts[chartId.replace('Chart', '')];
+            if (chart) {
+                chart.resize();
+            }
+        }
+
+        function showError(message) {
+            // Einfache Fehleranzeige
+            console.error(message);
+        }
+
+        // Cleanup beim Verlassen der Seite
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+            if (socket) {
+                socket.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

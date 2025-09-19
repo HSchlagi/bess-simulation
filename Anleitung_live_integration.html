@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Anleitung_live_integration.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="%F0%9F%9A%80-live-bess-integration-anleitung">🚀 Live BESS Integration Anleitung</h1>
+<h2 id="%F0%9F%93%8B-%C3%BCbersicht">📋 Übersicht</h2>
+<p>Diese Anleitung beschreibt die vollständige Integration von Live-Daten aus echten BESS-Speichersystemen in die BESS-Simulation. Das System unterstützt sowohl MQTT-basierte als auch HTTP-API-basierte Datenquellen.</p>
+<h2 id="%F0%9F%8F%97%EF%B8%8F-systemarchitektur">🏗️ Systemarchitektur</h2>
+<pre class="hljs"><code><div>[BESS-Speicher] → [MQTT Broker] → [MQTT Bridge] → [Flask App]
+                     ↓
+[FastAPI Service] → [SQLite DB] → [Flask App]
+</div></code></pre>
+<h3 id="komponenten">Komponenten:</h3>
+<ul>
+<li><strong>MQTT Broker (Mosquitto):</strong> Empfängt Live-Daten von BESS-Speichern</li>
+<li><strong>MQTT Bridge:</strong> Verbindet MQTT mit Flask-App</li>
+<li><strong>FastAPI Service:</strong> RESTful API für Datenverarbeitung</li>
+<li><strong>SQLite Database:</strong> Speichert Telemetrie-Daten</li>
+<li><strong>Flask App:</strong> Hauptanwendung mit Live-Dashboards</li>
+</ul>
+<h2 id="%F0%9F%94%A7-installation--setup">🔧 Installation &amp; Setup</h2>
+<h3 id="1-abh%C3%A4ngigkeiten-installieren">1. Abhängigkeiten installieren</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># MQTT-Abhängigkeiten</span>
+pip install paho-mqtt
+
+<span class="hljs-comment"># FastAPI-Abhängigkeiten (bereits in requirements.txt)</span>
+pip install fastapi uvicorn sqlalchemy
+
+<span class="hljs-comment"># Docker (für Live-System)</span>
+<span class="hljs-comment"># Windows: Docker Desktop installieren</span>
+<span class="hljs-comment"># Linux: docker-compose installieren</span>
+</div></code></pre>
+<h3 id="2-live-system-starten">2. Live-System starten</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># Ins Live-Verzeichnis wechseln</span>
+<span class="hljs-built_in">cd</span> live
+
+<span class="hljs-comment"># Docker-Services starten</span>
+docker-compose up -d
+
+<span class="hljs-comment"># Status prüfen</span>
+docker-compose ps
+</div></code></pre>
+<h3 id="3-konfiguration">3. Konfiguration</h3>
+<h4 id="umgebungsvariablen-setzen">Umgebungsvariablen setzen:</h4>
+<pre class="hljs"><code><div><span class="hljs-comment"># FastAPI Service</span>
+<span class="hljs-built_in">export</span> LIVE_BESS_API_URL=http://localhost:8080
+<span class="hljs-built_in">export</span> LIVE_BESS_API_TOKEN=changeme_token_123
+
+<span class="hljs-comment"># MQTT Bridge</span>
+<span class="hljs-built_in">export</span> USE_MQTT_BRIDGE=<span class="hljs-literal">true</span>
+<span class="hljs-built_in">export</span> MQTT_BROKER_HOST=localhost
+<span class="hljs-built_in">export</span> MQTT_BROKER_PORT=1883
+<span class="hljs-built_in">export</span> MQTT_USERNAME=bessuser
+<span class="hljs-built_in">export</span> MQTT_PASSWORD=besspass
+<span class="hljs-built_in">export</span> MQTT_BASE_TOPIC=bess
+
+<span class="hljs-comment"># Datenbank</span>
+<span class="hljs-built_in">export</span> LIVE_BESS_DB_PATH=live/data/bess.db
+</div></code></pre>
+<h4 id="konfigurationsdatei-erstellen">Konfigurationsdatei erstellen:</h4>
+<pre class="hljs"><code><div><span class="hljs-comment"># .env Datei im Hauptverzeichnis erstellen</span>
+cat &gt; .env &lt;&lt; EOF
+LIVE_BESS_API_URL=http://localhost:8080
+LIVE_BESS_API_TOKEN=changeme_token_123
+USE_MQTT_BRIDGE=<span class="hljs-literal">true</span>
+MQTT_BROKER_HOST=localhost
+MQTT_BROKER_PORT=1883
+MQTT_USERNAME=bessuser
+MQTT_PASSWORD=besspass
+MQTT_BASE_TOPIC=bess
+LIVE_BESS_DB_PATH=live/data/bess.db
+EOF
+</div></code></pre>
+<h2 id="%F0%9F%93%A1-mqtt-integration">📡 MQTT Integration</h2>
+<h3 id="mqtt-broker-konfiguration">MQTT Broker Konfiguration</h3>
+<p>Die MQTT-Konfiguration befindet sich in <code>live/mosquitto/mosquitto.conf</code>:</p>
+<pre class="hljs"><code><div>persistence true
+persistence_location /mosquitto/data/
+log_dest file /mosquitto/log/mosquitto.log
+listener 1883
+allow_anonymous false
+password_file /mosquitto/config/passwd
+</div></code></pre>
+<h3 id="mqtt-topics">MQTT Topics</h3>
+<p>Das System verwendet folgende Topic-Struktur:</p>
+<pre class="hljs"><code><div>bess/{site}/{device}/telemetry
+</div></code></pre>
+<p><strong>Beispiele:</strong></p>
+<ul>
+<li><code>bess/site1/bess1/telemetry</code></li>
+<li><code>bess/site1/bess2/telemetry</code></li>
+<li><code>bess/site2/bess1/telemetry</code></li>
+</ul>
+<h3 id="datenformat">Datenformat</h3>
+<p>MQTT-Nachrichten müssen folgendes JSON-Format haben:</p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"ts"</span>: <span class="hljs-string">"2025-01-01T00:00:00Z"</span>,
+  <span class="hljs-attr">"site"</span>: <span class="hljs-string">"site1"</span>,
+  <span class="hljs-attr">"device"</span>: <span class="hljs-string">"bess1"</span>,
+  <span class="hljs-attr">"soc"</span>: <span class="hljs-number">57.1</span>,
+  <span class="hljs-attr">"p"</span>: <span class="hljs-number">-120.0</span>,
+  <span class="hljs-attr">"p_ch"</span>: <span class="hljs-number">0.0</span>,
+  <span class="hljs-attr">"p_dis"</span>: <span class="hljs-number">120.0</span>,
+  <span class="hljs-attr">"v_dc"</span>: <span class="hljs-number">780.5</span>,
+  <span class="hljs-attr">"i_dc"</span>: <span class="hljs-number">160.2</span>,
+  <span class="hljs-attr">"t_cell_max"</span>: <span class="hljs-number">31.5</span>,
+  <span class="hljs-attr">"soh"</span>: <span class="hljs-number">98.6</span>,
+  <span class="hljs-attr">"alarms"</span>: []
+}
+</div></code></pre>
+<h3 id="feldbeschreibungen">Feldbeschreibungen:</h3>
+<table>
+<thead>
+<tr>
+<th>Feld</th>
+<th>Typ</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ts</code></td>
+<td>string</td>
+<td>Zeitstempel (ISO 8601)</td>
+</tr>
+<tr>
+<td><code>site</code></td>
+<td>string</td>
+<td>Standort-ID</td>
+</tr>
+<tr>
+<td><code>device</code></td>
+<td>string</td>
+<td>Geräte-ID</td>
+</tr>
+<tr>
+<td><code>soc</code></td>
+<td>float</td>
+<td>State of Charge (%)</td>
+</tr>
+<tr>
+<td><code>p</code></td>
+<td>float</td>
+<td>Gesamtleistung (kW, negativ = Laden)</td>
+</tr>
+<tr>
+<td><code>p_ch</code></td>
+<td>float</td>
+<td>Ladeleistung (kW)</td>
+</tr>
+<tr>
+<td><code>p_dis</code></td>
+<td>float</td>
+<td>Entladeleistung (kW)</td>
+</tr>
+<tr>
+<td><code>v_dc</code></td>
+<td>float</td>
+<td>DC-Spannung (V)</td>
+</tr>
+<tr>
+<td><code>i_dc</code></td>
+<td>float</td>
+<td>DC-Strom (A)</td>
+</tr>
+<tr>
+<td><code>t_cell_max</code></td>
+<td>float</td>
+<td>Max. Zelltemperatur (°C)</td>
+</tr>
+<tr>
+<td><code>soh</code></td>
+<td>float</td>
+<td>State of Health (%)</td>
+</tr>
+<tr>
+<td><code>alarms</code></td>
+<td>array</td>
+<td>Alarm-Liste</td>
+</tr>
+</tbody>
+</table>
+<h2 id="%F0%9F%94%8C-fastapi-service">🔌 FastAPI Service</h2>
+<h3 id="service-starten">Service starten</h3>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> live
+docker-compose up fastapi -d
+</div></code></pre>
+<h3 id="api-endpoints">API Endpoints</h3>
+<h4 id="1-daten-einreichen">1. Daten einreichen</h4>
+<pre class="hljs"><code><div><span class="hljs-attribute">POST /api/ingest
+Authorization</span>: Bearer changeme_token_123
+<span class="hljs-attribute">Content-Type</span>: application/json
+
+<span class="json">{
+  <span class="hljs-attr">"ts"</span>: <span class="hljs-string">"2025-01-01T00:00:00Z"</span>,
+  <span class="hljs-attr">"site"</span>: <span class="hljs-string">"site1"</span>,
+  <span class="hljs-attr">"device"</span>: <span class="hljs-string">"bess1"</span>,
+  <span class="hljs-attr">"soc"</span>: <span class="hljs-number">57.1</span>,
+  <span class="hljs-attr">"p"</span>: <span class="hljs-number">-120.0</span>,
+  <span class="hljs-attr">"p_ch"</span>: <span class="hljs-number">0.0</span>,
+  <span class="hljs-attr">"p_dis"</span>: <span class="hljs-number">120.0</span>,
+  <span class="hljs-attr">"v_dc"</span>: <span class="hljs-number">780.5</span>,
+  <span class="hljs-attr">"i_dc"</span>: <span class="hljs-number">160.2</span>,
+  <span class="hljs-attr">"t_cell_max"</span>: <span class="hljs-number">31.5</span>,
+  <span class="hljs-attr">"soh"</span>: <span class="hljs-number">98.6</span>,
+  <span class="hljs-attr">"alarms"</span>: []
+}
+</span></div></code></pre>
+<h4 id="2-neueste-daten-abrufen">2. Neueste Daten abrufen</h4>
+<pre class="hljs"><code><div><span class="hljs-attribute">GET /api/last?limit=10
+Authorization</span>: Bearer changeme_token_123
+</div></code></pre>
+<h4 id="3-system-status-pr%C3%BCfen">3. System-Status prüfen</h4>
+<pre class="hljs"><code><div><span class="hljs-attribute">GET /healthz
+Authorization</span>: Bearer changeme_token_123
+</div></code></pre>
+<h2 id="%F0%9F%96%A5%EF%B8%8F-flask-integration">🖥️ Flask Integration</h2>
+<h3 id="verf%C3%BCgbare-routen">Verfügbare Routen</h3>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/live-data</code></td>
+<td>Standard Dashboard</td>
+</tr>
+<tr>
+<td><code>/live-data/advanced</code></td>
+<td>Advanced Dashboard mit Auto-Refresh</td>
+</tr>
+<tr>
+<td><code>/api/live-data/status</code></td>
+<td>System-Status</td>
+</tr>
+<tr>
+<td><code>/api/live-data/latest</code></td>
+<td>Neueste Live-Daten</td>
+</tr>
+<tr>
+<td><code>/api/live-data/chart</code></td>
+<td>Chart-Daten</td>
+</tr>
+<tr>
+<td><code>/api/live-data/summary</code></td>
+<td>Geräte-Zusammenfassung</td>
+</tr>
+</tbody>
+</table>
+<h3 id="men%C3%BC-integration">Menü-Integration</h3>
+<p>Die Live-Integration wurde automatisch in das Hauptmenü integriert:</p>
+<pre class="hljs"><code><div>Daten
+├── Spot-Preise
+├── Lastprofile
+├── Wetterdaten
+├── Live BESS Daten          ← NEU
+└── Live Dashboard (Advanced) ← NEU
+</div></code></pre>
+<h2 id="%F0%9F%A7%AA-testing">🧪 Testing</h2>
+<h3 id="1-test-daten-generieren">1. Test-Daten generieren</h3>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> live
+python examples/mqtt_sample_publisher.py
+</div></code></pre>
+<h3 id="2-system-status-pr%C3%BCfen">2. System-Status prüfen</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># FastAPI Health Check</span>
+curl -H <span class="hljs-string">"Authorization: Bearer changeme_token_123"</span> \
+     http://localhost:8080/healthz
+
+<span class="hljs-comment"># Flask API Status</span>
+curl -H <span class="hljs-string">"Authorization: Bearer changeme_token_123"</span> \
+     http://localhost:5000/api/live-data/status
+</div></code></pre>
+<h3 id="3-dashboard-testen">3. Dashboard testen</h3>
+<ol>
+<li>Flask-App starten: <code>python run.py</code></li>
+<li>Browser öffnen: <code>http://localhost:5000</code></li>
+<li>Einloggen und zu &quot;Daten&quot; → &quot;Live BESS Daten&quot; navigieren</li>
+</ol>
+<h2 id="%F0%9F%94%A7-konfiguration-f%C3%BCr-echte-bess-systeme">🔧 Konfiguration für echte BESS-Systeme</h2>
+<h3 id="mqtt-verbindung-zu-echtem-bess">MQTT-Verbindung zu echtem BESS</h3>
+<ol>
+<li>
+<p><strong>BESS-Konfiguration:</strong></p>
+<pre class="hljs"><code><div>{
+  <span class="hljs-attr">"mqtt_broker"</span>: <span class="hljs-string">"IHR_SERVER_IP"</span>,
+  <span class="hljs-attr">"mqtt_port"</span>: <span class="hljs-number">1883</span>,
+  <span class="hljs-attr">"mqtt_username"</span>: <span class="hljs-string">"bessuser"</span>,
+  <span class="hljs-attr">"mqtt_password"</span>: <span class="hljs-string">"besspass"</span>,
+  <span class="hljs-attr">"mqtt_topic"</span>: <span class="hljs-string">"bess/{site}/{device}/telemetry"</span>
+}
+</div></code></pre>
+</li>
+<li>
+<p><strong>Netzwerk-Konfiguration:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># Firewall-Regel für MQTT</span>
+sudo ufw allow 1883/tcp
+
+<span class="hljs-comment"># Port-Forwarding (falls nötig)</span>
+<span class="hljs-comment"># Router: 1883 → Server: 1883</span>
+</div></code></pre>
+</li>
+<li>
+<p><strong>SSL/TLS (Produktiv):</strong></p>
+<pre class="hljs"><code><div># mosquitto.conf
+listener 8883
+cafile /mosquitto/certs/ca.crt
+certfile /mosquitto/certs/server.crt
+keyfile /mosquitto/certs/server.key
+require_certificate false
+</div></code></pre>
+</li>
+</ol>
+<h3 id="http-api-integration">HTTP-API Integration</h3>
+<p>Falls Ihr BESS-System eine HTTP-API hat:</p>
+<ol>
+<li>
+<p><strong>API-Adapter erstellen:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># app/bess_api_adapter.py</span>
+<span class="hljs-keyword">import</span> requests
+<span class="hljs-keyword">from</span> .live_data_service <span class="hljs-keyword">import</span> live_bess_service
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BESSAPIAdapter</span>:</span>
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, api_url, api_key)</span>:</span>
+        self.api_url = api_url
+        self.api_key = api_key
+        
+    <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">get_live_data</span><span class="hljs-params">(self)</span>:</span>
+        <span class="hljs-comment"># Ihre BESS-API aufrufen</span>
+        response = requests.get(
+            <span class="hljs-string">f"<span class="hljs-subst">{self.api_url}</span>/telemetry"</span>,
+            headers={<span class="hljs-string">"Authorization"</span>: <span class="hljs-string">f"Bearer <span class="hljs-subst">{self.api_key}</span>"</span>}
+        )
+        <span class="hljs-keyword">return</span> response.json()
+</div></code></pre>
+</li>
+<li>
+<p><strong>Service erweitern:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># In app/live_data_service.py</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">get_bess_api_data</span><span class="hljs-params">(self)</span>:</span>
+    adapter = BESSAPIAdapter(
+        os.getenv(<span class="hljs-string">'BESS_API_URL'</span>),
+        os.getenv(<span class="hljs-string">'BESS_API_KEY'</span>)
+    )
+    <span class="hljs-keyword">return</span> adapter.get_live_data()
+</div></code></pre>
+</li>
+</ol>
+<h2 id="%F0%9F%93%8A-monitoring--debugging">📊 Monitoring &amp; Debugging</h2>
+<h3 id="logs-pr%C3%BCfen">Logs prüfen</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># Docker-Logs</span>
+docker-compose logs -f fastapi
+docker-compose logs -f mosquitto
+
+<span class="hljs-comment"># Flask-Logs</span>
+tail -f logs/app.log
+
+<span class="hljs-comment"># MQTT-Bridge Logs</span>
+grep <span class="hljs-string">"MQTT"</span> logs/app.log
+</div></code></pre>
+<h3 id="system-status-dashboard">System-Status Dashboard</h3>
+<p>Das Advanced Dashboard zeigt:</p>
+<ul>
+<li><strong>Verbindungsstatus:</strong> MQTT und FastAPI</li>
+<li><strong>Letzte Daten:</strong> Zeitstempel der neuesten Nachricht</li>
+<li><strong>Geräte-Status:</strong> Alle verbundenen BESS-Geräte</li>
+<li><strong>Alarm-Status:</strong> Aktive Alarme</li>
+</ul>
+<h3 id="performance-monitoring">Performance-Monitoring</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># Datenbank-Größe prüfen</span>
+ls -lh live/data/bess.db
+
+<span class="hljs-comment"># API-Response-Zeit testen</span>
+time curl -H <span class="hljs-string">"Authorization: Bearer changeme_token_123"</span> \
+          http://localhost:8080/api/last?<span class="hljs-built_in">limit</span>=1
+</div></code></pre>
+<h2 id="%F0%9F%9A%A8-troubleshooting">🚨 Troubleshooting</h2>
+<h3 id="h%C3%A4ufige-probleme">Häufige Probleme</h3>
+<h4 id="1-mqtt-verbindung-fehlgeschlagen">1. MQTT-Verbindung fehlgeschlagen</h4>
+<pre class="hljs"><code><div><span class="hljs-comment"># Broker-Status prüfen</span>
+docker-compose ps mosquitto
+
+<span class="hljs-comment"># Logs prüfen</span>
+docker-compose logs mosquitto
+
+<span class="hljs-comment"># Manuell testen</span>
+mosquitto_pub -h localhost -t <span class="hljs-string">"test/topic"</span> -m <span class="hljs-string">"test message"</span>
+</div></code></pre>
+<h4 id="2-fastapi-nicht-erreichbar">2. FastAPI nicht erreichbar</h4>
+<pre class="hljs"><code><div><span class="hljs-comment"># Service-Status</span>
+docker-compose ps fastapi
+
+<span class="hljs-comment"># Port prüfen</span>
+netstat -tlnp | grep 8080
+
+<span class="hljs-comment"># Logs prüfen</span>
+docker-compose logs fastapi
+</div></code></pre>
+<h4 id="3-keine-live-daten-im-dashboard">3. Keine Live-Daten im Dashboard</h4>
+<pre class="hljs"><code><div><span class="hljs-comment"># Flask-Logs prüfen</span>
+grep <span class="hljs-string">"Live"</span> logs/app.log
+
+<span class="hljs-comment"># API-Test</span>
+curl http://localhost:5000/api/live-data/status
+
+<span class="hljs-comment"># MQTT-Bridge-Status</span>
+grep <span class="hljs-string">"MQTT_Bridge"</span> logs/app.log
+</div></code></pre>
+<h4 id="4-datenformat-fehler">4. Datenformat-Fehler</h4>
+<pre class="hljs"><code><div><span class="hljs-comment"># JSON-Validierung</span>
+python -m json.tool &lt; data_sample.json
+
+<span class="hljs-comment"># Schema-Validierung</span>
+python -c <span class="hljs-string">"
+import json
+from app.live_data_service import TelemetryModel
+data = json.load(open('data_sample.json'))
+TelemetryModel(**data)
+"</span>
+</div></code></pre>
+<h3 id="debug-modus-aktivieren">Debug-Modus aktivieren</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># Flask Debug-Modus</span>
+<span class="hljs-built_in">export</span> FLASK_DEBUG=1
+
+<span class="hljs-comment"># MQTT-Debug-Logs</span>
+<span class="hljs-built_in">export</span> MQTT_DEBUG=1
+
+<span class="hljs-comment"># FastAPI Debug-Modus</span>
+<span class="hljs-built_in">export</span> FASTAPI_DEBUG=1
+</div></code></pre>
+<h2 id="%F0%9F%94%92-sicherheit">🔒 Sicherheit</h2>
+<h3 id="produktions-setup">Produktions-Setup</h3>
+<ol>
+<li>
+<p><strong>Sichere Passwörter:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># Passwort-Generator</span>
+openssl rand -base64 32
+</div></code></pre>
+</li>
+<li>
+<p><strong>SSL/TLS aktivieren:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># Let's Encrypt Zertifikat</span>
+certbot certonly --standalone -d yourdomain.com
+</div></code></pre>
+</li>
+<li>
+<p><strong>Firewall-Konfiguration:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># Nur notwendige Ports öffnen</span>
+sudo ufw allow 443/tcp  <span class="hljs-comment"># HTTPS</span>
+sudo ufw allow 22/tcp   <span class="hljs-comment"># SSH</span>
+sudo ufw deny 1883/tcp  <span class="hljs-comment"># MQTT (nur intern)</span>
+</div></code></pre>
+</li>
+<li>
+<p><strong>API-Token rotieren:</strong></p>
+<pre class="hljs"><code><div><span class="hljs-comment"># Neues Token generieren</span>
+<span class="hljs-built_in">export</span> LIVE_BESS_API_TOKEN=$(openssl rand -base64 32)
+</div></code></pre>
+</li>
+</ol>
+<h2 id="%F0%9F%93%88-skalierung">📈 Skalierung</h2>
+<h3 id="mehrere-bess-systeme">Mehrere BESS-Systeme</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># app/live_data_service.py</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">get_all_devices</span><span class="hljs-params">(self)</span>:</span>
+    <span class="hljs-string">"""Alle BESS-Geräte abrufen"""</span>
+    devices = []
+    <span class="hljs-keyword">for</span> site <span class="hljs-keyword">in</span> self.get_sites():
+        <span class="hljs-keyword">for</span> device <span class="hljs-keyword">in</span> self.get_devices(site):
+            devices.append({
+                <span class="hljs-string">'site'</span>: site,
+                <span class="hljs-string">'device'</span>: device,
+                <span class="hljs-string">'status'</span>: self.get_device_status(site, device)
+            })
+    <span class="hljs-keyword">return</span> devices
+</div></code></pre>
+<h3 id="load-balancing">Load Balancing</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># docker-compose.yml</span>
+<span class="hljs-attr">version:</span> <span class="hljs-string">'3.8'</span>
+<span class="hljs-attr">services:</span>
+  <span class="hljs-attr">fastapi:</span>
+    <span class="hljs-attr">deploy:</span>
+      <span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span>
+    <span class="hljs-attr">ports:</span>
+      <span class="hljs-bullet">-</span> <span class="hljs-string">"8080-8082:8080"</span>
+</div></code></pre>
+<h3 id="datenbank-optimierung">Datenbank-Optimierung</h3>
+<pre class="hljs"><code><div><span class="hljs-comment">-- Indizes für bessere Performance</span>
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">INDEX</span> idx_telemetry_timestamp <span class="hljs-keyword">ON</span> telemetry(ts);
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">INDEX</span> idx_telemetry_site_device <span class="hljs-keyword">ON</span> telemetry(site, device);
+<span class="hljs-keyword">CREATE</span> <span class="hljs-keyword">INDEX</span> idx_telemetry_recent <span class="hljs-keyword">ON</span> telemetry(ts <span class="hljs-keyword">DESC</span>);
+</div></code></pre>
+<h2 id="%F0%9F%93%9E-support">📞 Support</h2>
+<h3 id="logs-sammeln-f%C3%BCr-support">Logs sammeln für Support</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># Vollständiges Log-Paket erstellen</span>
+tar -czf bess_logs_$(date +%Y%m%d).tar.gz \
+    logs/ \
+    live/data/ \
+    live/logs/ \
+    docker-compose.yml \
+    .env
+</div></code></pre>
+<h3 id="kontakt">Kontakt</h3>
+<p>Bei Problemen oder Fragen:</p>
+<ol>
+<li>Logs prüfen (siehe Troubleshooting)</li>
+<li>System-Status Dashboard verwenden</li>
+<li>Dokumentation durchgehen</li>
+<li>Support-Team kontaktieren</li>
+</ol>
+<hr>
+<p><strong>Letzte Aktualisierung:</strong> 14. Januar 2025<br>
+<strong>Version:</strong> 1.0<br>
+<strong>Autor:</strong> BESS-Simulation Team</p>
+
+</body>
+</html>
