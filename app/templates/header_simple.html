@@ -1,12 +1,15 @@
 ﻿<!-- Vereinfachte Navigation -->
-<nav class="bg-blue-600 text-white shadow-lg">
+<nav class="bg-slate-800 text-white shadow-lg">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
             <!-- Logo -->
             <div class="flex items-center">
-                <a href="{{ url_for('multi_user.dashboard') }}" class="text-xl font-bold flex items-center">
-                    <i class="fas fa-battery-three-quarters mr-2"></i>
-                    BESS Simulation
+                <a href="{{ url_for('multi_user.dashboard') }}" class="text-xl font-bold flex items-center hover:opacity-90 transition-opacity">
+                    <img src="/static/logo/phoenyra_abstract.png" alt="Phoenyra" class="h-16 w-16 mr-4 object-contain" style="max-width: 64px; max-height: 64px;">
+                    <div class="flex flex-col">
+                        <span class="text-lg font-bold leading-tight">Phoenyra</span>
+                        <span class="text-xs text-slate-300 leading-tight">BESS Studio</span>
+                    </div>
                 </a>
             </div>
 

@@ -1,4 +1,4 @@
-# 📚 BESS Simulation - Vollständige Dokumentation
+# 📚 Phoenyra BESS Studio - Vollständige Dokumentation
 
 **Version:** 2.2  
 **Datum:** September 2025  
