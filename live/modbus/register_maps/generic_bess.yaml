@@ -1,0 +1,39 @@
+
+# Beispiel-Registerkarte für generische BESS (anpassen!)
+points:
+  soc:
+    address: 30001
+    type: holding
+    words: 1
+    dtype: uint16
+    scale: 0.1
+    unit: "%"
+  u_batt:
+    address: 30002
+    type: holding
+    words: 1
+    dtype: uint16
+    scale: 0.1
+    unit: "V"
+  i_batt:
+    address: 30003
+    type: holding
+    words: 1
+    dtype: int16
+    scale: 0.1
+    unit: "A"
+  p_batt:
+    address: 30010
+    type: holding
+    words: 2
+    dtype: int32
+    scale: 1
+    unit: "W"
+  setpoint_power:
+    address: 40020
+    type: holding
+    words: 1
+    dtype: int16
+    scale: 1
+    unit: "W"
+    writable: true

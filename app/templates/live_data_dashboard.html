@@ -19,14 +19,42 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900 flex items-center">
-                        <i class="fas fa-satellite-dish mr-3 text-blue-600"></i>
+                        <i id="connectionIcon" class="fas fa-satellite-dish mr-3 text-blue-600"></i>
                         Live BESS Daten
+                        <span id="connectionStatus" class="ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            <span class="w-2 h-2 mr-1.5 bg-gray-400 rounded-full"></span>
+                            <span id="connectionTypeText">MQTT</span> Verbindung prüfen...
+                        </span>
                     </h1>
-                    <p class="text-gray-600 mt-2">Echtzeit-Monitoring von BESS-Speichersystemen</p>
+                    <p class="text-gray-600 mt-2">Echtzeit-Monitoring von BESS-Speichersystemen mit MQTT/Modbus-Integration</p>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- Verbindungsart-Auswahl -->
+                    <div class="flex items-center space-x-2">
+                        <label class="text-sm text-gray-700 font-medium">Verbindung:</label>
+                        <div class="flex bg-gray-100 rounded-lg p-1">
+                            <button id="mqttToggle" onclick="switchConnectionType('mqtt')" class="px-3 py-1 rounded-md text-sm font-medium transition-colors bg-blue-600 text-white">
+                                <i class="fas fa-satellite-dish mr-1"></i>MQTT
+                            </button>
+                            <button id="modbusToggle" onclick="switchConnectionType('modbus')" class="px-3 py-1 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200">
+                                <i class="fas fa-cogs mr-1"></i>Modbus
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="autoRefreshToggle" class="mr-2" checked>
+                            <span class="text-sm text-gray-700">Auto-Refresh</span>
+                        </label>
+                        <select id="refreshInterval" class="px-2 py-1 border border-gray-300 rounded text-sm">
+                            <option value="30" selected>30s</option>
+                            <option value="60">1min</option>
+                            <option value="300">5min</option>
+                        </select>
+                    </div>
                     <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center">
-                        <i class="fas fa-sync-alt mr-2"></i>Aktualisieren
+                        <i class="fas fa-sync-alt mr-2" id="refreshIcon"></i>Aktualisieren
                     </button>
                     <div id="lastUpdate" class="text-sm text-gray-500"></div>
                 </div>
@@ -526,13 +554,187 @@
             }
         }
 
-        // Initialisierung
+        // Lade Daten asynchron für bessere Performance (einfaches Dashboard)
+        function loadDataAsync() {
+            // Lade System-Status mit aktuellem Verbindungstyp
+            fetch(`/api/live-data/status?connection_type=${currentConnectionType}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateSystemStatus(data);
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden des System-Status:', error);
+                });
+            
+            // Lade Gerätezusammenfassung
+            fetch('/api/live-data/summary')
+                .then(response => response.json())
+                .then(data => {
+                    updateDeviceSummary(data);
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Gerätezusammenfassung:', error);
+                });
+            
+            // Lade Chart-Daten (reduzierte Datenmenge für bessere Performance)
+            fetch('/api/live-data/chart?hours=12')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        updateCharts(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Chart-Daten:', error);
+                });
+        }
+
+        function updateSystemStatus(data) {
+            const statusElement = document.getElementById('connectionStatus');
+            const connectionStatusElement = document.getElementById('connectionStatus');
+            
+            if (statusElement) {
+                if (data.status === 'online') {
+                    statusElement.innerHTML = `
+                        <div class="flex items-center text-green-600">
+                            <i class="fas fa-circle text-xs mr-2 animate-pulse"></i>
+                            <span class="text-sm font-medium">Online</span>
+                        </div>
+                    `;
+                } else {
+                    statusElement.innerHTML = `
+                        <div class="flex items-center text-red-600">
+                            <i class="fas fa-circle text-xs mr-2"></i>
+                            <span class="text-sm font-medium">Offline</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Verbindungsstatus aktualisieren (MQTT oder Modbus)
+            if (connectionStatusElement) {
+                const connectionType = currentConnectionType.toUpperCase();
+                
+                if (data.status === 'online' && data.data_source === currentConnectionType) {
+                    connectionStatusElement.innerHTML = `
+                        <span class="w-2 h-2 mr-1.5 ${currentConnectionType === 'mqtt' ? 'bg-green-400' : 'bg-green-400'} rounded-full animate-pulse"></span>
+                        ${connectionType} Verbunden
+                    `;
+                    connectionStatusElement.className = `ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentConnectionType === 'mqtt' ? 'bg-green-100 text-green-800' : 'bg-green-100 text-green-800'}`;
+                } else if (data.status === 'online') {
+                    connectionStatusElement.innerHTML = `
+                        <span class="w-2 h-2 mr-1.5 bg-yellow-400 rounded-full"></span>
+                        ${connectionType} API Verbindung
+                    `;
+                    connectionStatusElement.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800';
+                } else {
+                    connectionStatusElement.innerHTML = `
+                        <span class="w-2 h-2 mr-1.5 bg-red-400 rounded-full"></span>
+                        ${connectionType} Offline
+                    `;
+                    connectionStatusElement.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800';
+                }
+            }
+        }
+
+        function updateDeviceSummary(data) {
+            // Aktualisiere Gerätezusammenfassung falls vorhanden
+            if (data.device_count !== undefined) {
+                const deviceCountElement = document.getElementById('deviceCount');
+                if (deviceCountElement) {
+                    deviceCountElement.textContent = data.device_count;
+                }
+            }
+        }
+
+        function updateCharts(data) {
+            // Aktualisiere Charts mit neuen Daten
+            if (charts && data.labels) {
+                Object.keys(charts).forEach(chartKey => {
+                    if (charts[chartKey] && data[chartKey]) {
+                        charts[chartKey].data.labels = data.labels;
+                        charts[chartKey].data.datasets[0].data = data[chartKey];
+                        charts[chartKey].update();
+                    }
+                });
+            }
+        }
+
+        // Verbindungsart-Management
+        let currentConnectionType = 'mqtt'; // Standard: MQTT
+        
+        function switchConnectionType(type) {
+            currentConnectionType = type;
+            updateConnectionUI(type);
+            // Lade Daten für die neue Verbindungsart
+            loadDataAsync();
+        }
+        
+        function updateConnectionUI(type) {
+            const mqttToggle = document.getElementById('mqttToggle');
+            const modbusToggle = document.getElementById('modbusToggle');
+            const connectionIcon = document.getElementById('connectionIcon');
+            const connectionTypeText = document.getElementById('connectionTypeText');
+            
+            if (type === 'mqtt') {
+                // MQTT aktiv
+                mqttToggle.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors bg-blue-600 text-white';
+                modbusToggle.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200';
+                connectionIcon.className = 'fas fa-satellite-dish mr-3 text-blue-600';
+                connectionTypeText.textContent = 'MQTT';
+            } else if (type === 'modbus') {
+                // Modbus aktiv
+                mqttToggle.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors text-gray-700 hover:bg-gray-200';
+                modbusToggle.className = 'px-3 py-1 rounded-md text-sm font-medium transition-colors bg-green-600 text-white';
+                connectionIcon.className = 'fas fa-cogs mr-3 text-green-600';
+                connectionTypeText.textContent = 'Modbus';
+            }
+        }
+
+        // Auto-Refresh Management
+        let refreshIntervalId = null;
+        
+        function startAutoRefresh() {
+            if (refreshIntervalId) {
+                clearInterval(refreshIntervalId);
+            }
+            
+            const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+            refreshIntervalId = setInterval(loadDataAsync, interval);
+        }
+        
+        function stopAutoRefresh() {
+            if (refreshIntervalId) {
+                clearInterval(refreshIntervalId);
+                refreshIntervalId = null;
+            }
+        }
+        
+        // Event Listeners für Auto-Refresh
         document.addEventListener('DOMContentLoaded', function() {
             initCharts();
             updateLastUpdateTime();
             
-            // Auto-Refresh alle 30 Sekunden (optional)
-            // setInterval(refreshData, 30000);
+            // Lade Daten asynchron für bessere Performance
+            setTimeout(loadDataAsync, 100);
+            
+            // Auto-Refresh Event Listeners
+            document.getElementById('autoRefreshToggle').addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+            
+            document.getElementById('refreshInterval').addEventListener('change', function() {
+                if (document.getElementById('autoRefreshToggle').checked) {
+                    startAutoRefresh();
+                }
+            });
+            
+            // Starte Auto-Refresh standardmäßig
+            startAutoRefresh();
         });
     </script>
 </body>

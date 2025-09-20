@@ -1355,6 +1355,182 @@ sudo systemctl enable bess
 - Berechnungen
 - Pivot-Tabellen
 
+### Multi-User-System und Berechtigungen
+
+#### 1. Admin-Dashboard
+
+**Navigation:** Benutzer-Dropdown → Admin-Dashboard
+
+Das Admin-Dashboard bietet Administratoren umfassende Verwaltungsfunktionen für das gesamte System.
+
+**Verfügbare Funktionen:**
+- **Benutzerverwaltung:** Erstellen, bearbeiten und löschen von Benutzern
+- **Rollenverwaltung:** Zuweisen von Admin, User und Viewer-Rollen
+- **BESS-Zuordnung:** Verwaltung der Live-BESS-Systeme
+- **System-Monitoring:** Überwachung der Systemleistung
+- **Audit-Log:** Protokollierung aller Benutzeraktivitäten
+
+#### 2. BESS-Projekt-Zuordnung
+
+**Navigation:** Admin-Dashboard → BESS-Zuordnung
+
+Die BESS-Projekt-Zuordnung ermöglicht es, Live-BESS-Speichersysteme mit Projekten zu verknüpfen und MQTT-Verbindungen zu konfigurieren.
+
+##### 2.1 Neue BESS-Zuordnung erstellen
+
+**Schritt-für-Schritt Anleitung:**
+
+1. **Projekt auswählen:**
+   - Dropdown-Menü "Projekt auswählen" öffnen
+   - Gewünschtes Projekt aus der Datenbank auswählen
+   - System zeigt verfügbare Projekte an
+
+2. **BESS-Grunddaten eingeben:**
+   - **BESS-Name:** Eindeutiger Name für das Speichersystem
+   - **Site-ID:** Standort-Identifikator (z.B. "site1")
+   - **Device-ID:** Geräte-Identifikator (z.B. "bess001")
+   - **Standort:** Physische Adresse oder Beschreibung
+   - **Nennleistung:** Maximale Leistung in kW
+   - **Nennenergie:** Maximale Kapazität in kWh
+
+3. **MQTT-Verbindung konfigurieren:**
+
+   **MQTT aktivieren:**
+   - Checkbox "MQTT aktivieren" anhaken
+   - MQTT-Konfigurationsfelder werden aktiviert
+
+   **MQTT Topic eingeben:**
+   - **Automatische Vorschläge:** System schlägt Topics basierend auf Projektnamen vor
+     - "BESS Hinterstoder" → `bess/hinterstoder`
+     - "BESS Tillysburg" → `bess/tillysburg`
+   - **Manuelle Eingabe:** Topic nach Bedarf anpassen (z.B. `bess/mein-speicher`)
+
+   **MQTT Broker konfigurieren:**
+   - **Standard:** "localhost (Standard)" für lokale Installationen
+   - **Eigener Broker:** Für externe MQTT-Broker
+     - **Broker Host:** IP-Adresse oder Domain (z.B. "mqtt.meinbess.de")
+     - **Port:** Standard 1883 oder angepasster Port
+     - **Benutzername:** MQTT-Benutzername
+     - **Passwort:** MQTT-Passwort
+
+4. **Weitere Einstellungen:**
+   - **Beschreibung:** Detaillierte Beschreibung des BESS-Systems
+   - **Aktiv:** System aktivieren/deaktivieren
+   - **Automatische Synchronisation:** Auto-Update der Daten
+
+5. **Speichern:**
+   - "Speichern" Button klicken
+   - System erstellt die Zuordnung und konfiguriert MQTT-Verbindung
+
+##### 2.2 MQTT-Topic Format und Beispiele
+
+**Standard-Topic-Format:**
+```
+bess/[projekt-name]
+```
+
+**Beispiele für verschiedene Projekte:**
+- `bess/hinterstoder` - BESS Hinterstoder
+- `bess/tillysburg` - BESS Tillysburg
+- `bess/wien` - BESS Wien
+- `bess/daily_cycles` - BESS Daily Cycles
+
+**MQTT-Datenstruktur:**
+Dein BESS-Speicher sollte Daten unter dem konfigurierten Topic senden:
+
+```json
+{
+  "topic": "bess/hinterstoder/status",
+  "payload": {
+    "soc": 85.5,
+    "power": 1250.0,
+    "voltage": 800.0,
+    "current": 156.25,
+    "temperature": 25.3,
+    "status": "charging",
+    "timestamp": "2024-01-15T14:30:00Z"
+  }
+}
+```
+
+##### 2.3 Bestehende Zuordnungen verwalten
+
+**Zuordnung bearbeiten:**
+1. In der Liste "Bestehende Zuordnungen" den "Bearbeiten" Button klicken
+2. Modal öffnet sich mit allen aktuellen Einstellungen
+3. Änderungen vornehmen (MQTT-Topic, Broker-Einstellungen, etc.)
+4. "Speichern" klicken
+
+**Zuordnung löschen:**
+1. "Löschen" Button in der Zuordnungsliste klicken
+2. Bestätigung bestätigen
+3. Zuordnung wird entfernt
+
+**Status überprüfen:**
+- **Aktiv/Inaktiv:** Status der Zuordnung
+- **MQTT-Verbindung:** Live-Status im Live-Dashboard
+- **Letzte Daten:** Zeitstempel der letzten empfangenen Daten
+
+#### 3. Rollenbasierte Berechtigungen
+
+**Admin-Rolle:**
+- Vollzugriff auf alle Funktionen
+- Benutzerverwaltung
+- BESS-Zuordnung verwalten
+- System-Konfiguration
+- Audit-Logs einsehen
+
+**User-Rolle:**
+- Projekt-Management
+- Simulationen durchführen
+- Daten importieren/exportieren
+- Live-Dashboard verwenden
+- Kein Zugriff auf Admin-Funktionen
+
+**Viewer-Rolle:**
+- Nur Leserechte
+- Dashboard einsehen
+- Berichte anzeigen
+- Keine Änderungen möglich
+
+#### 4. Benutzerverwaltung
+
+**Neuen Benutzer erstellen:**
+1. Admin-Dashboard → Benutzer-Verwaltung
+2. "Neuer Benutzer" Button klicken
+3. Benutzerdaten eingeben:
+   - E-Mail-Adresse
+   - Passwort
+   - Rolle auswählen
+4. Speichern
+
+**Benutzer bearbeiten:**
+- Rolle ändern
+- Passwort zurücksetzen
+- Benutzer deaktivieren
+
+**Audit-Log:**
+- Alle Benutzeraktivitäten werden protokolliert
+- Zeitstempel und Aktionen
+- Sicherheitsüberwachung
+
+#### 5. Sicherheitsfeatures
+
+**Session-Management:**
+- Automatische Abmeldung bei Inaktivität
+- Sichere Session-Tokens
+- Cross-Site-Request-Forgery (CSRF) Schutz
+
+**Passwort-Sicherheit:**
+- Bcrypt-Verschlüsselung
+- Mindestanforderungen für Passwörter
+- Passwort-Reset-Funktionalität
+
+**Datenzugriff:**
+- Projekt-spezifische Berechtigungen
+- Rollenbasierte Zugriffskontrolle
+- Verschlüsselte Datenübertragung
+
 ---
 
 ## 🔧 Technische Dokumentation

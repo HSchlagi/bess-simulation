@@ -123,3 +123,5 @@ POST /api/ml/price-forecast
 ## Status
 ✅ **FERTIG** - ML-Dashboard Preisprognose funktioniert jetzt mit echten Daten
 
+
+

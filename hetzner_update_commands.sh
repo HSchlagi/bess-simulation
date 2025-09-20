@@ -57,3 +57,5 @@ echo "   - Testen Sie die Anwendung im Browser"
 echo "   - Prüfen Sie die Logs: sudo journalctl -u bess -f"
 
 
+
+

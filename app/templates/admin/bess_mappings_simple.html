@@ -1,46 +1,243 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BESS-Projekt-Zuordnung</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100">
-    <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-bold mb-6">BESS-Projekt-Zuordnung</h1>
-        <p class="text-gray-600 mb-6">Verwalten Sie die Zuordnung von Live-BESS-Systemen zu Projekten</p>
-        
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4">Neue Zuordnung erstellen</h2>
-            <button onclick="createMapping()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                + Neue Zuordnung
+{% extends "base.html" %}
+
+{% block title %}BESS-Projekt-Zuordnung - Admin{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">BESS-Projekt-Zuordnung</h1>
+            <p class="text-gray-600 mt-1">Verwalten Sie die Zuordnung von Live-BESS-Systemen zu Projekten</p>
+        </div>
+        <div class="flex space-x-3">
+            <button onclick="createMapping()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                <i class="fas fa-plus mr-2"></i>Neue Zuordnung
             </button>
+            <a href="{{ url_for('admin.dashboard') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md">
+                <i class="fas fa-arrow-left mr-2"></i>Zurück
+            </a>
+        </div>
+    </div>
+        
+    <!-- Neue Zuordnung erstellen -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Neue Zuordnung erstellen</h2>
+        <p class="text-gray-600 mb-4">Erstellen Sie eine neue Zuordnung zwischen einem BESS-System und einem Projekt.</p>
+        
+        <!-- Projektauswahl -->
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Projekt auswählen:</label>
+            <select id="projectSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Projekt auswählen...</option>
+            </select>
         </div>
         
-        <div class="bg-white rounded-lg shadow p-6 mt-6">
-            <h2 class="text-xl font-semibold mb-4">Bestehende Zuordnungen</h2>
+        <button onclick="createMapping()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+            <i class="fas fa-plus mr-2"></i>Neue Zuordnung erstellen
+        </button>
+    </div>
+    
+    <!-- Bestehende Zuordnungen -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Bestehende Zuordnungen</h2>
             <div id="mappings-list">
-                <p>Lade Zuordnungen...</p>
+            <div class="flex items-center justify-center py-8">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i>
+                    <p class="text-gray-600">Lade Zuordnungen...</p>
+                </div>
+            </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Lade Mappings beim Seitenaufruf
+    let projects = [];
+    let mappings = [];
+
+    // Lade Daten beim Seitenaufruf
         document.addEventListener('DOMContentLoaded', function() {
+        loadProjects();
             loadMappings();
         });
+        
+        // Edit-MQTT-Konfiguration Setup
+        function setupEditMqttConfiguration() {
+            const mqttEnabledCheckbox = document.getElementById('editMqttEnabled');
+            const mqttConfigSection = document.getElementById('edit-mqtt-config-section');
+            const mqttBrokerSelect = document.getElementById('editMqttBroker');
+            const customBrokerConfig = document.getElementById('edit-custom-broker-config');
+            
+            if (mqttEnabledCheckbox && mqttConfigSection) {
+                // MQTT aktivieren/deaktivieren
+                mqttEnabledCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        mqttConfigSection.classList.remove('opacity-50', 'pointer-events-none');
+                        mqttConfigSection.classList.add('opacity-100');
+                    } else {
+                        mqttConfigSection.classList.add('opacity-50', 'pointer-events-none');
+                        mqttConfigSection.classList.remove('opacity-100');
+                    }
+                });
+            }
+            
+            if (mqttBrokerSelect && customBrokerConfig) {
+                // Broker-Auswahl
+                mqttBrokerSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customBrokerConfig.classList.remove('hidden');
+                    } else {
+                        customBrokerConfig.classList.add('hidden');
+                    }
+                });
+            }
+        }
+        
+        // Verbindungsart auswählen
+        function selectConnectionType(type) {
+            const mqttConfig = document.getElementById('mqtt-config');
+            const modbusConfig = document.getElementById('modbus-config');
+            
+            if (type === 'mqtt') {
+                mqttConfig.style.display = 'block';
+                modbusConfig.style.display = 'none';
+                document.getElementById('connection_mqtt').checked = true;
+                document.getElementById('connection_modbus').checked = false;
+            } else if (type === 'modbus') {
+                mqttConfig.style.display = 'none';
+                modbusConfig.style.display = 'block';
+                document.getElementById('connection_mqtt').checked = false;
+                document.getElementById('connection_modbus').checked = true;
+            }
+        }
+
+        // Modbus-Konfiguration Setup
+        function setupModbusConfiguration() {
+            const modbusEnabledCheckbox = document.getElementById('modbusEnabled');
+            const modbusConfigSection = document.getElementById('modbus-config-section');
+            const modbusModeSelect = document.getElementById('modbusMode');
+            const tcpConfig = document.getElementById('modbus-tcp-config');
+            const rtuConfig = document.getElementById('modbus-rtu-config');
+            
+            if (modbusEnabledCheckbox && modbusConfigSection) {
+                // Modbus aktivieren/deaktivieren
+                modbusEnabledCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        modbusConfigSection.classList.remove('opacity-50', 'pointer-events-none');
+                        modbusConfigSection.classList.add('opacity-100');
+                    } else {
+                        modbusConfigSection.classList.add('opacity-50', 'pointer-events-none');
+                        modbusConfigSection.classList.remove('opacity-100');
+                    }
+                });
+            }
+            
+            if (modbusModeSelect && tcpConfig && rtuConfig) {
+                // Modbus-Modus ändern
+                modbusModeSelect.addEventListener('change', function() {
+                    if (this.value === 'tcp') {
+                        tcpConfig.style.display = 'block';
+                        rtuConfig.style.display = 'none';
+                    } else if (this.value === 'rtu') {
+                        tcpConfig.style.display = 'none';
+                        rtuConfig.style.display = 'block';
+                    }
+                });
+            }
+        }
+
+        // MQTT-Konfiguration Setup
+        function setupMqttConfiguration() {
+            const mqttEnabledCheckbox = document.getElementById('mqttEnabled');
+            const mqttConfigSection = document.getElementById('mqtt-config-section');
+            const mqttBrokerSelect = document.getElementById('mqttBroker');
+            const customBrokerConfig = document.getElementById('custom-broker-config');
+            const projectSelect = document.getElementById('projectSelect');
+            
+            if (mqttEnabledCheckbox && mqttConfigSection) {
+                // MQTT aktivieren/deaktivieren
+                mqttEnabledCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        mqttConfigSection.classList.remove('opacity-50', 'pointer-events-none');
+                        mqttConfigSection.classList.add('opacity-100');
+                    } else {
+                        mqttConfigSection.classList.add('opacity-50', 'pointer-events-none');
+                        mqttConfigSection.classList.remove('opacity-100');
+                    }
+                });
+            }
+            
+            if (mqttBrokerSelect && customBrokerConfig) {
+                // Broker-Auswahl
+                mqttBrokerSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customBrokerConfig.classList.remove('hidden');
+                    } else {
+                        customBrokerConfig.classList.add('hidden');
+                    }
+                });
+            }
+            
+            if (projectSelect) {
+                // Auto-fill MQTT Topic basierend auf Projekt
+                projectSelect.addEventListener('change', function() {
+                    const mqttTopicInput = document.getElementById('mqttTopic');
+                    if (mqttTopicInput && this.value) {
+                        const selectedOption = this.options[this.selectedIndex];
+                        const projectName = selectedOption.textContent.toLowerCase()
+                            .replace(/[^a-z0-9]/g, '_')
+                            .replace(/_+/g, '_')
+                            .replace(/^_|_$/g, '');
+                        
+                        mqttTopicInput.value = `bess/${projectName}`;
+                    }
+                });
+            }
+        }
+
+    // Lade Projekte aus der Datenbank
+    function loadProjects() {
+        fetch('/api/projects')
+            .then(response => response.json())
+            .then(data => {
+                projects = data;
+                populateProjectSelect();
+            })
+            .catch(error => {
+                console.error('Fehler beim Laden der Projekte:', error);
+            });
+    }
+
+    // Fülle Projekt-Dropdown
+    function populateProjectSelect() {
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '<option value="">Projekt auswählen...</option>';
+        
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = `${project.name} (${project.location || 'Kein Standort'})`;
+            select.appendChild(option);
+        });
+    }
 
         function loadMappings() {
             fetch('/api/admin/bess-mappings')
                 .then(response => response.json())
                 .then(data => {
+                mappings = data;
                     displayMappings(data);
                 })
                 .catch(error => {
                     console.error('Fehler beim Laden der Mappings:', error);
-                    document.getElementById('mappings-list').innerHTML = '<p class="text-red-500">Fehler beim Laden der Daten</p>';
+                document.getElementById('mappings-list').innerHTML = `
+                    <div class="flex items-center justify-center py-8">
+                        <div class="text-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-2"></i>
+                            <p class="text-red-500">Fehler beim Laden der Daten</p>
+                        </div>
+                    </div>
+                `;
                 });
         }
 
@@ -48,20 +245,51 @@
             const container = document.getElementById('mappings-list');
             
             if (mappings.length === 0) {
-                container.innerHTML = '<p class="text-gray-500">Keine Zuordnungen gefunden.</p>';
+            container.innerHTML = `
+                <div class="flex items-center justify-center py-8">
+                    <div class="text-center">
+                        <i class="fas fa-microchip text-gray-400 text-2xl mb-2"></i>
+                        <p class="text-gray-500">Keine Zuordnungen gefunden.</p>
+                        <button onclick="createMapping()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            <i class="fas fa-plus mr-2"></i>Erste Zuordnung erstellen
+                        </button>
+                    </div>
+                </div>
+            `;
                 return;
             }
 
-            let html = '<div class="space-y-4">';
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
             mappings.forEach(mapping => {
                 html += `
-                    <div class="border rounded-lg p-4">
-                        <h3 class="font-semibold">${mapping.bess_name || 'Unbenannt'}</h3>
+                <div class="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">${mapping.bess_name || mapping.display_name || 'Unbenannt'}</h3>
                         <p class="text-sm text-gray-600">Projekt ID: ${mapping.project_id}</p>
-                        <p class="text-sm text-gray-600">Site: ${mapping.site} | Device: ${mapping.device}</p>
-                        <div class="mt-2">
-                            <button onclick="editMapping(${mapping.id})" class="bg-yellow-500 text-white px-3 py-1 rounded text-sm mr-2">Bearbeiten</button>
-                            <button onclick="deleteMapping(${mapping.id})" class="bg-red-500 text-white px-3 py-1 rounded text-sm">Löschen</button>
+                        </div>
+                        <div class="flex space-x-2">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${mapping.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                ${mapping.is_active ? 'Aktiv' : 'Inaktiv'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-map-marker-alt mr-2"></i>
+                            Site: ${mapping.site} | Device: ${mapping.device}
+                        </p>
+                        ${mapping.location ? `<p class="text-sm text-gray-600"><i class="fas fa-location-dot mr-2"></i>${mapping.location}</p>` : ''}
+                        ${mapping.rated_power_kw ? `<p class="text-sm text-gray-600"><i class="fas fa-bolt mr-2"></i>${mapping.rated_power_kw} kW</p>` : ''}
+                        ${mapping.rated_energy_kwh ? `<p class="text-sm text-gray-600"><i class="fas fa-battery-half mr-2"></i>${mapping.rated_energy_kwh} kWh</p>` : ''}
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="editMapping(${mapping.id})" class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-edit mr-1"></i>Bearbeiten
+                        </button>
+                        <button onclick="deleteMapping(${mapping.id})" class="flex-1 bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                            <i class="fas fa-trash mr-1"></i>Löschen
+                        </button>
                         </div>
                     </div>
                 `;
@@ -72,11 +300,809 @@
         }
 
         function createMapping() {
-            alert('Neue Zuordnung erstellen - Feature kommt bald!');
+        const selectedProjectId = document.getElementById('projectSelect').value;
+        
+        if (!selectedProjectId) {
+            alert('Bitte wählen Sie zuerst ein Projekt aus!');
+            return;
+        }
+        
+        const selectedProject = projects.find(p => p.id == selectedProjectId);
+        if (!selectedProject) {
+            alert('Projekt nicht gefunden!');
+            return;
+        }
+        
+        // Öffne Modal für neue Zuordnung
+        showCreateMappingModal(selectedProject);
+    }
+
+    function showCreateMappingModal(project) {
+        const modalHtml = `
+            <div id="createMappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
+                <div class="flex items-center justify-center min-h-screen p-4">
+                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">Neue BESS-Zuordnung für "${project.name}"</h3>
+                        </div>
+                        <form id="mappingForm" class="p-6">
+                            <input type="hidden" name="project_id" value="${project.id}">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Name *</label>
+                                    <input type="text" name="bess_name" required placeholder="z.B. Hauptspeicher" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Site-ID *</label>
+                                    <input type="text" name="site" required placeholder="z.B. site1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Device-ID *</label>
+                                    <input type="text" name="device" required placeholder="z.B. bess1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Standort</label>
+                                    <input type="text" name="location" placeholder="z.B. Wien, Österreich" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nennleistung (kW)</label>
+                                    <input type="number" name="rated_power_kw" step="0.1" placeholder="100.0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nennenergie (kWh)</label>
+                                    <input type="number" name="rated_energy_kwh" step="0.1" placeholder="200.0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
+                                    <textarea name="description" rows="3" placeholder="Beschreibung des BESS-Systems..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Verbindungsart auswählen -->
+                            <div class="border-t border-gray-200 pt-4 mt-6">
+                                <div class="flex items-center mb-4">
+                                    <i class="fas fa-plug text-blue-600 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-900">Verbindungsart</h3>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer" onclick="selectConnectionType('mqtt')">
+                                        <div class="flex items-center">
+                                            <input type="radio" name="connection_type" value="mqtt" id="connection_mqtt" class="mr-3" checked>
+                                            <div>
+                                                <label for="connection_mqtt" class="font-medium text-gray-900 cursor-pointer">MQTT</label>
+                                                <p class="text-sm text-gray-600">Für moderne BESS-Systeme</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer" onclick="selectConnectionType('modbus')">
+                                        <div class="flex items-center">
+                                            <input type="radio" name="connection_type" value="modbus" id="connection_modbus" class="mr-3">
+                                            <div>
+                                                <label for="connection_modbus" class="font-medium text-gray-900 cursor-pointer">Modbus</label>
+                                                <p class="text-sm text-gray-600">Für industrielle BESS-Systeme</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MQTT-Konfiguration -->
+                            <div id="mqtt-config" class="border-t border-gray-200 pt-4 mt-6">
+                                <div class="flex items-center mb-4">
+                                    <i class="fas fa-satellite-dish text-blue-600 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-900">MQTT-Verbindung</h3>
+                                    <div class="ml-auto">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="mqtt_enabled" id="mqttEnabled" class="mr-2" checked>
+                                            <span class="text-sm text-gray-700">MQTT aktivieren</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="mqtt-config-section" class="space-y-4 opacity-50 pointer-events-none">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">MQTT Topic *</label>
+                                            <input type="text" name="mqtt_topic" id="mqttTopic" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. bess/hinterstoder">
+                                            <p class="text-xs text-gray-500 mt-1">Das Topic, unter dem dein BESS-Speicher Daten sendet</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">MQTT Broker</label>
+                                            <select name="mqtt_broker" id="mqttBroker" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="localhost">localhost (Standard)</option>
+                                                <option value="custom">Eigener Broker</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="custom-broker-config" class="hidden space-y-3 p-4 bg-gray-50 rounded-md">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Broker Host</label>
+                                                <input type="text" name="mqtt_host" id="mqttHost" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. mqtt.meinbess.de">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                                                <input type="number" name="mqtt_port" id="mqttPort" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="1883" value="1883">
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Benutzername</label>
+                                                <input type="text" name="mqtt_username" id="mqttUsername" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="MQTT-Benutzername">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Passwort</label>
+                                                <input type="password" name="mqtt_password" id="mqttPassword" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="MQTT-Passwort">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-info-circle text-blue-600 mr-2 mt-0.5"></i>
+                                            <div class="text-sm text-blue-800">
+                                                <p class="font-medium mb-1">MQTT-Topic Format:</p>
+                                                <p class="mb-1">• <code class="bg-blue-100 px-1 rounded">bess/hinterstoder</code> - für BESS Hinterstoder</p>
+                                                <p class="mb-1">• <code class="bg-blue-100 px-1 rounded">bess/tillysburg</code> - für BESS Tillysburg</p>
+                                                <p>• Dein BESS sendet Daten unter diesem Topic (z.B. SOC, Leistung, Status)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modbus-Konfiguration -->
+                            <div id="modbus-config" class="border-t border-gray-200 pt-4 mt-6" style="display: none;">
+                                <div class="flex items-center mb-4">
+                                    <i class="fas fa-cogs text-green-600 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-900">Modbus-Verbindung</h3>
+                                    <div class="ml-auto">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="modbus_enabled" id="modbusEnabled" class="mr-2">
+                                            <span class="text-sm text-gray-700">Modbus aktivieren</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="modbus-config-section" class="space-y-4 opacity-50 pointer-events-none">
+                                    <!-- Modbus-Modus -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Modbus-Modus *</label>
+                                            <select name="modbus_mode" id="modbusMode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <option value="tcp">TCP/IP (Ethernet)</option>
+                                                <option value="rtu">RTU (Seriell)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Unit ID *</label>
+                                            <input type="number" name="modbus_unit_id" id="modbusUnitId" min="1" max="255" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                        </div>
+                                    </div>
+
+                                    <!-- TCP/IP Konfiguration -->
+                                    <div id="modbus-tcp-config" class="space-y-3 p-4 bg-gray-50 rounded-md">
+                                        <h4 class="font-medium text-gray-800 mb-3">TCP/IP Einstellungen</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Host/IP-Adresse *</label>
+                                                <input type="text" name="modbus_host" id="modbusHost" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="192.168.1.100">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                                                <input type="number" name="modbus_port" id="modbusPort" value="502" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RTU Konfiguration -->
+                                    <div id="modbus-rtu-config" class="space-y-3 p-4 bg-gray-50 rounded-md" style="display: none;">
+                                        <h4 class="font-medium text-gray-800 mb-3">RTU Einstellungen</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">COM-Port *</label>
+                                                <select name="modbus_rtu_port" id="modbusRtuPort" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="COM1">COM1</option>
+                                                    <option value="COM2">COM2</option>
+                                                    <option value="COM3">COM3</option>
+                                                    <option value="COM4">COM4</option>
+                                                    <option value="/dev/ttyUSB0">/dev/ttyUSB0</option>
+                                                    <option value="/dev/ttyUSB1">/dev/ttyUSB1</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Baudrate</label>
+                                                <select name="modbus_baudrate" id="modbusBaudrate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="9600">9600</option>
+                                                    <option value="19200">19200</option>
+                                                    <option value="38400">38400</option>
+                                                    <option value="57600">57600</option>
+                                                    <option value="115200">115200</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Parität</label>
+                                                <select name="modbus_parity" id="modbusParity" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="N">None</option>
+                                                    <option value="E">Even</option>
+                                                    <option value="O">Odd</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Stop Bits</label>
+                                                <select name="modbus_stopbits" id="modbusStopbits" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="1">1</option>
+                                                    <option value="2">2</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Data Bits</label>
+                                                <select name="modbus_bytesize" id="modbusBytesize" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="8">8</option>
+                                                    <option value="7">7</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Register-Map -->
+                                    <div class="space-y-3">
+                                        <h4 class="font-medium text-gray-800">Register-Map</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">SOC Register (State of Charge)</label>
+                                                <input type="number" name="modbus_soc_register" id="modbusSocRegister" value="30001" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für SOC in %</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Power Register (Leistung)</label>
+                                                <input type="number" name="modbus_power_register" id="modbusPowerRegister" value="30010" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für Leistung in W</p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Voltage Register (Spannung)</label>
+                                                <input type="number" name="modbus_voltage_register" id="modbusVoltageRegister" value="30002" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für Spannung in V</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Current Register (Strom)</label>
+                                                <input type="number" name="modbus_current_register" id="modbusCurrentRegister" value="30003" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für Strom in A</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Power Setpoint Register (Leistungs-Sollwert)</label>
+                                            <input type="number" name="modbus_setpoint_register" id="modbusSetpointRegister" value="40020" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                            <p class="text-xs text-gray-500 mt-1">Holding Register für Leistungs-Sollwert in W (schreibbar)</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Info-Box -->
+                                    <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-info-circle text-green-600 mr-2 mt-0.5"></i>
+                                            <div class="text-sm text-green-800">
+                                                <p class="font-medium mb-1">Modbus-Konfiguration:</p>
+                                                <p class="mb-1">• <strong>TCP/IP:</strong> Für Ethernet-Verbindungen (Standard: Port 502)</p>
+                                                <p class="mb-1">• <strong>RTU:</strong> Für serielle Verbindungen (RS485/RS232)</p>
+                                                <p class="mb-1">• <strong>Unit ID:</strong> Modbus-Slave-Adresse (1-255)</p>
+                                                <p>• <strong>Register:</strong> Standard-Adressen für generische BESS-Systeme</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+                                <button type="button" onclick="hideCreateMappingModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md">
+                                    Abbrechen
+                                </button>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                                    <i class="fas fa-save mr-2"></i>Speichern
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Form Submit Handler
+        document.getElementById('mappingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitMapping();
+        });
+        
+        // MQTT-Konfiguration Event Listeners
+        setupMqttConfiguration();
+        
+        // Modbus-Konfiguration Event Listeners
+        setupModbusConfiguration();
+    }
+
+    function hideCreateMappingModal() {
+        const modal = document.getElementById('createMappingModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    function submitMapping() {
+        const form = document.getElementById('mappingForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Konvertiere Zahlen
+        if (data.rated_power_kw) data.rated_power_kw = parseFloat(data.rated_power_kw);
+        if (data.rated_energy_kwh) data.rated_energy_kwh = parseFloat(data.rated_energy_kwh);
+        
+        fetch('/api/admin/bess-mappings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Fehler: ' + result.error);
+            } else {
+                hideCreateMappingModal();
+                loadMappings(); // Neu laden
+                alert('BESS-Zuordnung erfolgreich erstellt!');
+            }
+        })
+        .catch(error => {
+            console.error('Fehler beim Speichern:', error);
+            alert('Fehler beim Speichern der Zuordnung');
+        });
         }
 
         function editMapping(id) {
-            alert('Zuordnung bearbeiten - Feature kommt bald!');
+        const mapping = mappings.find(m => m.id === id);
+        if (!mapping) {
+            alert('Zuordnung nicht gefunden!');
+            return;
+        }
+        
+        // Öffne Modal für Bearbeitung
+        showEditMappingModal(mapping);
+    }
+
+    function showEditMappingModal(mapping) {
+        const modalHtml = `
+            <div id="editMappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
+                <div class="flex items-center justify-center min-h-screen p-4">
+                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">BESS-Zuordnung bearbeiten</h3>
+                        </div>
+                        <form id="editMappingForm" class="p-6">
+                            <input type="hidden" name="id" value="${mapping.id}">
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Projekt</label>
+                                    <select name="project_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        ${projects.map(p => `<option value="${p.id}" ${p.id == mapping.project_id ? 'selected' : ''}>${p.name} (${p.location || 'Kein Standort'})</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">BESS-Name *</label>
+                                    <input type="text" name="bess_name" value="${mapping.bess_name || ''}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Site-ID *</label>
+                                    <input type="text" name="site" value="${mapping.site || ''}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Device-ID *</label>
+                                    <input type="text" name="device" value="${mapping.device || ''}" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Standort</label>
+                                    <input type="text" name="location" value="${mapping.location || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nennleistung (kW)</label>
+                                    <input type="number" name="rated_power_kw" value="${mapping.rated_power_kw || ''}" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Nennenergie (kWh)</label>
+                                    <input type="number" name="rated_energy_kwh" value="${mapping.rated_energy_kwh || ''}" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Beschreibung</label>
+                                    <textarea name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">${mapping.description || ''}</textarea>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <div class="flex items-center space-x-4">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="is_active" ${mapping.is_active ? 'checked' : ''} class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                            <span class="ml-2 text-sm text-gray-900">Aktiv</span>
+                                        </label>
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="auto_sync" ${mapping.auto_sync ? 'checked' : ''} class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                            <span class="ml-2 text-sm text-gray-900">Automatische Synchronisation</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Verbindungsart auswählen -->
+                            <div class="border-t border-gray-200 pt-4 mt-6">
+                                <div class="flex items-center mb-4">
+                                    <i class="fas fa-plug text-blue-600 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-900">Verbindungsart</h3>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer" onclick="selectEditConnectionType('mqtt')">
+                                        <div class="flex items-center">
+                                            <input type="radio" name="connection_type" value="mqtt" id="editConnectionMqtt" class="mr-3" ${mapping.connection_type === 'mqtt' || !mapping.connection_type ? 'checked' : ''}>
+                                            <div>
+                                                <label for="editConnectionMqtt" class="font-medium text-gray-900 cursor-pointer">MQTT</label>
+                                                <p class="text-sm text-gray-600">Für moderne BESS-Systeme</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer" onclick="selectEditConnectionType('modbus')">
+                                        <div class="flex items-center">
+                                            <input type="radio" name="connection_type" value="modbus" id="editConnectionModbus" class="mr-3" ${mapping.connection_type === 'modbus' ? 'checked' : ''}>
+                                            <div>
+                                                <label for="editConnectionModbus" class="font-medium text-gray-900 cursor-pointer">Modbus</label>
+                                                <p class="text-sm text-gray-600">Für industrielle BESS-Systeme</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- MQTT-Konfiguration -->
+                            <div id="edit-mqtt-config" class="border-t border-gray-200 pt-4 mt-6" style="display: ${mapping.connection_type === 'modbus' ? 'none' : 'block'};">
+                                <div class="flex items-center mb-4">
+                                    <i class="fas fa-satellite-dish text-blue-600 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-900">MQTT-Verbindung</h3>
+                                    <div class="ml-auto">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="mqtt_enabled" id="editMqttEnabled" class="mr-2" ${mapping.mqtt_enabled ? 'checked' : ''}>
+                                            <span class="text-sm text-gray-700">MQTT aktivieren</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="edit-mqtt-config-section" class="space-y-4 ${mapping.mqtt_enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">MQTT Topic *</label>
+                                            <input type="text" name="mqtt_topic" id="editMqttTopic" value="${mapping.mqtt_topic || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. bess/hinterstoder">
+                                            <p class="text-xs text-gray-500 mt-1">Das Topic, unter dem dein BESS-Speicher Daten sendet</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">MQTT Broker</label>
+                                            <select name="mqtt_broker" id="editMqttBroker" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="localhost" ${mapping.mqtt_broker === 'localhost' ? 'selected' : ''}>localhost (Standard)</option>
+                                                <option value="custom" ${mapping.mqtt_broker === 'custom' ? 'selected' : ''}>Eigener Broker</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="edit-custom-broker-config" class="space-y-3 p-4 bg-gray-50 rounded-md ${mapping.mqtt_broker === 'custom' ? '' : 'hidden'}">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Broker Host</label>
+                                                <input type="text" name="mqtt_host" id="editMqttHost" value="${mapping.mqtt_host || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="z.B. mqtt.meinbess.de">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                                                <input type="number" name="mqtt_port" id="editMqttPort" value="${mapping.mqtt_port || 1883}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="1883">
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Benutzername</label>
+                                                <input type="text" name="mqtt_username" id="editMqttUsername" value="${mapping.mqtt_username || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="MQTT-Benutzername">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Passwort</label>
+                                                <input type="password" name="mqtt_password" id="editMqttPassword" value="${mapping.mqtt_password || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="MQTT-Passwort">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-blue-50 border border-blue-200 rounded-md p-3">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-info-circle text-blue-600 mr-2 mt-0.5"></i>
+                                            <div class="text-sm text-blue-800">
+                                                <p class="font-medium mb-1">MQTT-Topic Format:</p>
+                                                <p class="mb-1">• <code class="bg-blue-100 px-1 rounded">bess/hinterstoder</code> - für BESS Hinterstoder</p>
+                                                <p class="mb-1">• <code class="bg-blue-100 px-1 rounded">bess/tillysburg</code> - für BESS Tillysburg</p>
+                                                <p>• Dein BESS sendet Daten unter diesem Topic (z.B. SOC, Leistung, Status)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modbus-Konfiguration -->
+                            <div id="edit-modbus-config" class="border-t border-gray-200 pt-4 mt-6" style="display: ${mapping.connection_type === 'modbus' ? 'block' : 'none'};">
+                                <div class="flex items-center mb-4">
+                                    <i class="fas fa-cogs text-green-600 mr-2"></i>
+                                    <h3 class="text-lg font-semibold text-gray-900">Modbus-Verbindung</h3>
+                                    <div class="ml-auto">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" name="modbus_enabled" id="editModbusEnabled" class="mr-2" ${mapping.modbus_enabled ? 'checked' : ''}>
+                                            <span class="text-sm text-gray-700">Modbus aktivieren</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="edit-modbus-config-section" class="space-y-4 ${mapping.modbus_enabled ? 'opacity-100' : 'opacity-50 pointer-events-none'}">
+                                    <!-- Modbus-Modus -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Modbus-Modus *</label>
+                                            <select name="modbus_mode" id="editModbusMode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <option value="tcp" ${mapping.modbus_mode === 'tcp' ? 'selected' : ''}>TCP/IP (Ethernet)</option>
+                                                <option value="rtu" ${mapping.modbus_mode === 'rtu' ? 'selected' : ''}>RTU (Seriell)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Unit ID *</label>
+                                            <input type="number" name="modbus_unit_id" id="editModbusUnitId" min="1" max="255" value="${mapping.modbus_unit_id || 1}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                        </div>
+                                    </div>
+
+                                    <!-- TCP/IP Konfiguration -->
+                                    <div id="edit-modbus-tcp-config" class="space-y-3 p-4 bg-gray-50 rounded-md" style="display: ${mapping.modbus_mode === 'rtu' ? 'none' : 'block'};">
+                                        <h4 class="font-medium text-gray-800 mb-3">TCP/IP Einstellungen</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Host/IP-Adresse *</label>
+                                                <input type="text" name="modbus_host" id="editModbusHost" value="${mapping.modbus_host || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="192.168.1.100">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Port</label>
+                                                <input type="number" name="modbus_port" id="editModbusPort" value="${mapping.modbus_port || 502}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- RTU Konfiguration -->
+                                    <div id="edit-modbus-rtu-config" class="space-y-3 p-4 bg-gray-50 rounded-md" style="display: ${mapping.modbus_mode === 'rtu' ? 'block' : 'none'};">
+                                        <h4 class="font-medium text-gray-800 mb-3">RTU Einstellungen</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">COM-Port *</label>
+                                                <select name="modbus_rtu_port" id="editModbusRtuPort" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="COM1" ${mapping.modbus_rtu_port === 'COM1' ? 'selected' : ''}>COM1</option>
+                                                    <option value="COM2" ${mapping.modbus_rtu_port === 'COM2' ? 'selected' : ''}>COM2</option>
+                                                    <option value="COM3" ${mapping.modbus_rtu_port === 'COM3' ? 'selected' : ''}>COM3</option>
+                                                    <option value="COM4" ${mapping.modbus_rtu_port === 'COM4' ? 'selected' : ''}>COM4</option>
+                                                    <option value="/dev/ttyUSB0" ${mapping.modbus_rtu_port === '/dev/ttyUSB0' ? 'selected' : ''}>/dev/ttyUSB0</option>
+                                                    <option value="/dev/ttyUSB1" ${mapping.modbus_rtu_port === '/dev/ttyUSB1' ? 'selected' : ''}>/dev/ttyUSB1</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Baudrate</label>
+                                                <select name="modbus_baudrate" id="editModbusBaudrate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="9600" ${mapping.modbus_baudrate === '9600' ? 'selected' : ''}>9600</option>
+                                                    <option value="19200" ${mapping.modbus_baudrate === '19200' ? 'selected' : ''}>19200</option>
+                                                    <option value="38400" ${mapping.modbus_baudrate === '38400' ? 'selected' : ''}>38400</option>
+                                                    <option value="57600" ${mapping.modbus_baudrate === '57600' ? 'selected' : ''}>57600</option>
+                                                    <option value="115200" ${mapping.modbus_baudrate === '115200' ? 'selected' : ''}>115200</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Parität</label>
+                                                <select name="modbus_parity" id="editModbusParity" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="N" ${mapping.modbus_parity === 'N' ? 'selected' : ''}>None</option>
+                                                    <option value="E" ${mapping.modbus_parity === 'E' ? 'selected' : ''}>Even</option>
+                                                    <option value="O" ${mapping.modbus_parity === 'O' ? 'selected' : ''}>Odd</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Stop Bits</label>
+                                                <select name="modbus_stopbits" id="editModbusStopbits" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="1" ${mapping.modbus_stopbits === '1' ? 'selected' : ''}>1</option>
+                                                    <option value="2" ${mapping.modbus_stopbits === '2' ? 'selected' : ''}>2</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Data Bits</label>
+                                                <select name="modbus_bytesize" id="editModbusBytesize" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                    <option value="8" ${mapping.modbus_bytesize === '8' ? 'selected' : ''}>8</option>
+                                                    <option value="7" ${mapping.modbus_bytesize === '7' ? 'selected' : ''}>7</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Register-Map -->
+                                    <div class="space-y-3">
+                                        <h4 class="font-medium text-gray-800">Register-Map</h4>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">SOC Register (State of Charge)</label>
+                                                <input type="number" name="modbus_soc_register" id="editModbusSocRegister" value="${mapping.modbus_soc_register || 30001}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für SOC in %</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Power Register (Leistung)</label>
+                                                <input type="number" name="modbus_power_register" id="editModbusPowerRegister" value="${mapping.modbus_power_register || 30010}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für Leistung in W</p>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Voltage Register (Spannung)</label>
+                                                <input type="number" name="modbus_voltage_register" id="editModbusVoltageRegister" value="${mapping.modbus_voltage_register || 30002}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für Spannung in V</p>
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Current Register (Strom)</label>
+                                                <input type="number" name="modbus_current_register" id="editModbusCurrentRegister" value="${mapping.modbus_current_register || 30003}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                                <p class="text-xs text-gray-500 mt-1">Holding Register für Strom in A</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Power Setpoint Register (Leistungs-Sollwert)</label>
+                                            <input type="number" name="modbus_setpoint_register" id="editModbusSetpointRegister" value="${mapping.modbus_setpoint_register || 40020}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                            <p class="text-xs text-gray-500 mt-1">Holding Register für Leistungs-Sollwert in W (schreibbar)</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Info-Box -->
+                                    <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                                        <div class="flex items-start">
+                                            <i class="fas fa-info-circle text-green-600 mr-2 mt-0.5"></i>
+                                            <div class="text-sm text-green-800">
+                                                <p class="font-medium mb-1">Modbus-Konfiguration:</p>
+                                                <p class="mb-1">• <strong>TCP/IP:</strong> Für Ethernet-Verbindungen (Standard: Port 502)</p>
+                                                <p class="mb-1">• <strong>RTU:</strong> Für serielle Verbindungen (RS485/RS232)</p>
+                                                <p class="mb-1">• <strong>Unit ID:</strong> Modbus-Slave-Adresse (1-255)</p>
+                                                <p>• <strong>Register:</strong> Standard-Adressen für generische BESS-Systeme</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
+                                <button type="button" onclick="hideEditMappingModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md">
+                                    Abbrechen
+                                </button>
+                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                                    <i class="fas fa-save mr-2"></i>Speichern
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // Form Submit Handler
+        document.getElementById('editMappingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitEditMapping();
+        });
+        
+        // Verbindungsart für Edit-Modal
+        function selectEditConnectionType(type) {
+            const mqttConfig = document.getElementById('edit-mqtt-config');
+            const modbusConfig = document.getElementById('edit-modbus-config');
+            
+            if (type === 'mqtt') {
+                mqttConfig.style.display = 'block';
+                modbusConfig.style.display = 'none';
+                document.getElementById('editConnectionMqtt').checked = true;
+                document.getElementById('editConnectionModbus').checked = false;
+            } else if (type === 'modbus') {
+                mqttConfig.style.display = 'none';
+                modbusConfig.style.display = 'block';
+                document.getElementById('editConnectionMqtt').checked = false;
+                document.getElementById('editConnectionModbus').checked = true;
+            }
+        }
+
+        // Edit-Modbus-Konfiguration Setup
+        function setupEditModbusConfiguration() {
+            const modbusEnabledCheckbox = document.getElementById('editModbusEnabled');
+            const modbusConfigSection = document.getElementById('edit-modbus-config-section');
+            const modbusModeSelect = document.getElementById('editModbusMode');
+            const tcpConfig = document.getElementById('edit-modbus-tcp-config');
+            const rtuConfig = document.getElementById('edit-modbus-rtu-config');
+            
+            if (modbusEnabledCheckbox && modbusConfigSection) {
+                // Modbus aktivieren/deaktivieren
+                modbusEnabledCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        modbusConfigSection.classList.remove('opacity-50', 'pointer-events-none');
+                        modbusConfigSection.classList.add('opacity-100');
+                    } else {
+                        modbusConfigSection.classList.add('opacity-50', 'pointer-events-none');
+                        modbusConfigSection.classList.remove('opacity-100');
+                    }
+                });
+            }
+            
+            if (modbusModeSelect && tcpConfig && rtuConfig) {
+                // Modbus-Modus ändern
+                modbusModeSelect.addEventListener('change', function() {
+                    if (this.value === 'tcp') {
+                        tcpConfig.style.display = 'block';
+                        rtuConfig.style.display = 'none';
+                    } else if (this.value === 'rtu') {
+                        tcpConfig.style.display = 'none';
+                        rtuConfig.style.display = 'block';
+                    }
+                });
+            }
+        }
+
+        // MQTT-Konfiguration Event Listeners für Edit-Modal
+        setupEditMqttConfiguration();
+        
+        // Modbus-Konfiguration Event Listeners für Edit-Modal
+        setupEditModbusConfiguration();
+    }
+
+    function hideEditMappingModal() {
+        const modal = document.getElementById('editMappingModal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    function submitEditMapping() {
+        const form = document.getElementById('editMappingForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        // Konvertiere Checkboxen
+        data.is_active = form.querySelector('input[name="is_active"]').checked;
+        data.auto_sync = form.querySelector('input[name="auto_sync"]').checked;
+        
+        // Konvertiere Zahlen
+        if (data.rated_power_kw) data.rated_power_kw = parseFloat(data.rated_power_kw);
+        if (data.rated_energy_kwh) data.rated_energy_kwh = parseFloat(data.rated_energy_kwh);
+        
+        fetch(`/api/admin/bess-mappings/${data.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Fehler: ' + result.error);
+            } else {
+                hideEditMappingModal();
+                loadMappings(); // Neu laden
+                alert('BESS-Zuordnung erfolgreich aktualisiert!');
+            }
+        })
+        .catch(error => {
+            console.error('Fehler beim Speichern:', error);
+            alert('Fehler beim Speichern der Zuordnung');
+        });
         }
 
         function deleteMapping(id) {
@@ -98,5 +1124,4 @@
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}

@@ -59,6 +59,21 @@
                     <h4 class="text-lg font-semibold text-indigo-800 mb-2">Multi-User-System</h4>
                     <p class="text-indigo-600 text-sm">Rollenbasierte Zugriffskontrolle für Teams</p>
                 </div>
+                <div class="bg-cyan-50 border-2 border-cyan-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-satellite-dish text-3xl text-cyan-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-cyan-800 mb-2">Live-Dashboard</h4>
+                    <p class="text-cyan-600 text-sm">Echtzeit-Monitoring von BESS-Speichersystemen</p>
+                </div>
+                <div class="bg-teal-50 border-2 border-teal-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-cogs text-3xl text-teal-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-teal-800 mb-2">BESS-Zuordnung</h4>
+                    <p class="text-teal-600 text-sm">MQTT-Konfiguration für Live-BESS-Systeme</p>
+                </div>
+                <div class="bg-pink-50 border-2 border-pink-200 rounded-lg p-6 text-center hover:shadow-md transition-shadow">
+                    <i class="fas fa-robot text-3xl text-pink-600 mb-4"></i>
+                    <h4 class="text-lg font-semibold text-pink-800 mb-2">ML & KI</h4>
+                    <p class="text-pink-600 text-sm">Künstliche Intelligenz für Preisprognosen</p>
+                </div>
             </div>
         </div>
 
@@ -84,6 +99,15 @@
                 </a>
                 <a href="#export-funktionen" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
                     📤 Export-Funktionen
+                </a>
+                <a href="#live-dashboard" class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    📡 Live-Dashboard
+                </a>
+                <a href="#bess-zuordnung" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    ⚙️ BESS-Zuordnung
+                </a>
+                <a href="#ml-ki" class="bg-pink-600 hover:bg-pink-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
+                    🤖 ML & KI
                 </a>
                 <a href="#troubleshooting" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg">
                     🔧 Problemlösung
@@ -441,11 +465,172 @@
             </div>
         </div>
 
-        <!-- 6. Troubleshooting -->
+        <!-- 6. Live-Dashboard -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="live-dashboard">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">📡</span>
+                6. Live-Dashboard verwenden
+            </h3>
+            
+            <div class="space-y-6">
+                <div class="bg-cyan-50 border-l-4 border-cyan-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Live-Dashboard öffnen:</h4>
+                    <ol class="text-gray-600 space-y-1 ml-4">
+                        <li>1. <strong>Navigation:</strong> Daten → Live BESS Daten</li>
+                        <li>2. <strong>Dashboard lädt:</strong> System zeigt Live-Daten an</li>
+                        <li>3. <strong>MQTT-Status prüfen:</strong> Verbindungsstatus in der Titelleiste</li>
+                    </ol>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Dashboard-Funktionen:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>System-Status:</strong> Online/Offline-Anzeige</li>
+                        <li>• <strong>MQTT-Verbindung:</strong> Live-Verbindungsstatus</li>
+                        <li>• <strong>Geräte-Übersicht:</strong> Anzahl verbundener BESS-Systeme</li>
+                        <li>• <strong>State of Charge (SOC):</strong> Aktueller Ladestand</li>
+                        <li>• <strong>Auto-Refresh:</strong> Automatische Aktualisierung (30s, 1min, 5min)</li>
+                    </ul>
+                </div>
+
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Tipps für bessere Performance:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Reduzierte Datenmenge:</strong> Dashboard lädt nur 12h Daten für schnelle Anzeige</li>
+                        <li>• <strong>Asynchrones Laden:</strong> Daten werden im Hintergrund nachgeladen</li>
+                        <li>• <strong>Auto-Refresh anpassen:</strong> Bei langsamer Verbindung längere Intervalle wählen</li>
+                        <li>• <strong>MQTT-Status beachten:</strong> Grüner Status = Live-Daten, Gelb = API-Daten</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. BESS-Zuordnung -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="bess-zuordnung">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">⚙️</span>
+                7. BESS-Zuordnung & MQTT-Konfiguration
+            </h3>
+            
+            <div class="space-y-6">
+                <div class="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">BESS-Zuordnung erstellen:</h4>
+                    <ol class="text-gray-600 space-y-1 ml-4">
+                        <li>1. <strong>Navigation:</strong> Benutzer-Dropdown → Admin-Dashboard → BESS-Zuordnung</li>
+                        <li>2. <strong>Projekt wählen:</strong> Aus Dropdown-Menü auswählen</li>
+                        <li>3. <strong>"Neue Zuordnung" klicken</strong></li>
+                        <li>4. <strong>BESS-Daten eingeben:</strong> Name, Site-ID, Device-ID, Standort, Leistung</li>
+                        <li>5. <strong>Verbindungsart wählen:</strong> MQTT oder Modbus auswählen</li>
+                        <li>6. <strong>Verbindung konfigurieren:</strong> MQTT-Topic oder Modbus-Register einstellen</li>
+                    </ol>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">MQTT-Konfiguration:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>MQTT Topic:</strong> Wird automatisch vorgeschlagen (z.B. "bess/hinterstoder")</li>
+                        <li>• <strong>Broker-Auswahl:</strong> "localhost (Standard)" oder "Eigener Broker"</li>
+                        <li>• <strong>Eigener Broker:</strong> Host, Port (1883), Benutzername, Passwort</li>
+                        <li>• <strong>Topic-Format:</strong> "bess/[projekt-name]" (z.B. "bess/tillysburg")</li>
+                    </ul>
+                </div>
+
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">MQTT-Datenformat für deinen BESS:</h4>
+                    <div class="bg-gray-800 text-green-400 p-3 rounded text-sm font-mono">
+                        <div>Topic: "bess/hinterstoder/status"</div>
+                        <div>Payload:</div>
+                        <div>{</div>
+                        <div>&nbsp;&nbsp;"soc": 85.5,</div>
+                        <div>&nbsp;&nbsp;"power": 1250.0,</div>
+                        <div>&nbsp;&nbsp;"voltage": 800.0,</div>
+                        <div>&nbsp;&nbsp;"current": 156.25,</div>
+                        <div>&nbsp;&nbsp;"temperature": 25.3,</div>
+                        <div>&nbsp;&nbsp;"status": "charging"</div>
+                        <div>}</div>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Modbus-Konfiguration:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Modbus-Modus:</strong> TCP/IP für Ethernet oder RTU für serielle Verbindungen</li>
+                        <li>• <strong>Unit ID:</strong> Modbus-Slave-Adresse (1-255)</li>
+                        <li>• <strong>TCP/IP:</strong> Host/IP-Adresse und Port (Standard: 502)</li>
+                        <li>• <strong>RTU:</strong> COM-Port, Baudrate, Parität, Stop-Bits, Data-Bits</li>
+                        <li>• <strong>Register-Map:</strong> Standard-Adressen für SOC, Leistung, Spannung, Strom</li>
+                        <li>• <strong>Power Setpoint:</strong> Schreibbares Register für Leistungs-Sollwert</li>
+                    </ul>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Wichtige Hinweise:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Nur für Admins:</strong> BESS-Zuordnung ist nur für Benutzer mit Admin-Rolle verfügbar</li>
+                        <li>• <strong>Projekt muss existieren:</strong> BESS kann nur mit bestehenden Projekten verknüpft werden</li>
+                        <li>• <strong>Eindeutige IDs:</strong> Site-ID und Device-ID müssen eindeutig sein</li>
+                        <li>• <strong>Verbindungstest:</strong> MQTT/Modbus-Verbindung wird im Live-Dashboard getestet</li>
+                        <li>• <strong>Standard-Register:</strong> Modbus verwendet Standard-Adressen (30001-30010, 40020)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. ML & KI Dashboard -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="ml-ki">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <span class="text-3xl mr-3">🤖</span>
+                8. ML & KI Dashboard verwenden
+            </h3>
+            
+            <div class="space-y-6">
+                <div class="bg-pink-50 border-l-4 border-pink-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">ML & KI Dashboard öffnen:</h4>
+                    <ol class="text-gray-600 space-y-1 ml-4">
+                        <li>1. <strong>Navigation:</strong> Daten → ML & KI Dashboard</li>
+                        <li>2. <strong>Projekt wählen:</strong> Aus Dropdown-Menü auswählen</li>
+                        <li>3. <strong>"Daten laden" klicken</strong></li>
+                        <li>4. <strong>KI-Analysen starten</strong></li>
+                    </ol>
+                </div>
+
+                <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Verfügbare KI-Funktionen:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Preisprognose:</strong> Vorhersage von Spot-Preisen mit Machine Learning</li>
+                        <li>• <strong>Lastprofil-Optimierung:</strong> KI-basierte Optimierung von Lastprofilen</li>
+                        <li>• <strong>Erzeugungsprognose:</strong> PV- und Windkraft-Vorhersagen</li>
+                        <li>• <strong>BESS-Optimierung:</strong> Intelligente Betriebsstrategien</li>
+                    </ul>
+                </div>
+
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">So funktioniert die Preisprognose:</h4>
+                    <ol class="text-gray-600 space-y-1 ml-4">
+                        <li>1. <strong>Datenanalyse:</strong> KI analysiert historische Spot-Preise</li>
+                        <li>2. <strong>Mustererkennung:</strong> Erkennt saisonale und tageszeitliche Muster</li>
+                        <li>3. <strong>Vorhersage:</strong> Prognostiziert Preise für die nächsten 24-48 Stunden</li>
+                        <li>4. <strong>Visualisierung:</strong> Zeigt Prognose als Chart mit Konfidenzintervallen</li>
+                    </ol>
+                </div>
+
+                <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Tipps für bessere Ergebnisse:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Ausreichend Daten:</strong> Mindestens 3 Monate historische Daten für gute Prognosen</li>
+                        <li>• <strong>Regelmäßige Updates:</strong> Prognosen werden täglich aktualisiert</li>
+                        <li>• <strong>Konfidenzintervall beachten:</strong> Höhere Unsicherheit bei extremen Wetterereignissen</li>
+                        <li>• <strong>Kombination mit Dispatch:</strong> Prognosen für optimale BESS-Betriebsstrategien nutzen</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Troubleshooting -->
         <div class="bg-white rounded-xl shadow-lg p-8 mb-8" id="troubleshooting">
             <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
                 <span class="text-3xl mr-3">🔧</span>
-                6. Häufige Probleme & Lösungen
+                9. Häufige Probleme & Lösungen
             </h3>
             
             <div class="space-y-6">
@@ -490,6 +675,57 @@
                         <li>• <strong>Lösung:</strong> Browser-Cache leeren</li>
                         <li>• <strong>Prüfen:</strong> Touch-Events sind aktiviert</li>
                         <li>• <strong>Alternative:</strong> Desktop-Version verwenden</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-cyan-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Live-Dashboard zeigt keine Daten:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> MQTT-Verbindung in BESS-Zuordnung prüfen</li>
+                        <li>• <strong>Prüfen:</strong> BESS-System sendet Daten unter korrektem Topic</li>
+                        <li>• <strong>Warten:</strong> Erste Daten können 1-2 Minuten dauern</li>
+                        <li>• <strong>Alternative:</strong> "Aktualisieren" Button manuell klicken</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-teal-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">MQTT-Verbindung funktioniert nicht:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Broker-Host und Port in BESS-Zuordnung prüfen</li>
+                        <li>• <strong>Prüfen:</strong> MQTT-Broker läuft und ist erreichbar</li>
+                        <li>• <strong>Kontrollieren:</strong> Benutzername und Passwort sind korrekt</li>
+                        <li>• <strong>Testen:</strong> MQTT-Topic-Format entspricht "bess/[projekt-name]"</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">Modbus-Verbindung funktioniert nicht:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Host/IP-Adresse und Port (TCP/IP) oder COM-Port (RTU) prüfen</li>
+                        <li>• <strong>Prüfen:</strong> Modbus-Gerät ist erreichbar und Unit ID ist korrekt</li>
+                        <li>• <strong>Kontrollieren:</strong> RTU-Einstellungen (Baudrate, Parität, Stop-Bits)</li>
+                        <li>• <strong>Testen:</strong> Register-Adressen entsprechen der Gerätedokumentation</li>
+                        <li>• <strong>Alternative:</strong> Modbus-TCP statt RTU verwenden (einfacher zu konfigurieren)</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-pink-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">ML & KI Dashboard lädt nicht:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Projekt auswählen und "Daten laden" klicken</li>
+                        <li>• <strong>Prüfen:</strong> Ausreichend historische Daten vorhanden (min. 3 Monate)</li>
+                        <li>• <strong>Warten:</strong> KI-Analysen können 2-3 Minuten dauern</li>
+                        <li>• <strong>Alternative:</strong> Seite neu laden und erneut versuchen</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-50 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-2">BESS-Zuordnung nicht verfügbar:</h4>
+                    <ul class="text-gray-600 space-y-1">
+                        <li>• <strong>Lösung:</strong> Admin-Rolle erforderlich - Kontaktieren Sie den Administrator</li>
+                        <li>• <strong>Prüfen:</strong> Projekt muss bereits existieren</li>
+                        <li>• <strong>Kontrollieren:</strong> Site-ID und Device-ID sind eindeutig</li>
+                        <li>• <strong>Alternative:</strong> Bestehende Zuordnung bearbeiten statt neue erstellen</li>
                     </ul>
                 </div>
             </div>

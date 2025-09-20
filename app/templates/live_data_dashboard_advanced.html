@@ -873,6 +873,74 @@
             console.error(message);
         }
 
+        // Lade Daten asynchron für bessere Performance
+        function loadDataAsync() {
+            // Lade System-Status
+            fetch('/api/live-data/status')
+                .then(response => response.json())
+                .then(data => {
+                    updateConnectionIndicator(data);
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden des System-Status:', error);
+                });
+            
+            // Lade Chart-Daten (reduziert auf 12 Stunden)
+            fetch('/api/live-data/chart?hours=12')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        updateAllCharts(data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Fehler beim Laden der Chart-Daten:', error);
+                });
+        }
+
+        function updateConnectionIndicator(data) {
+            const indicator = document.getElementById('connectionIndicator');
+            if (indicator) {
+                if (data.status === 'online') {
+                    indicator.innerHTML = `
+                        <span class="w-2 h-2 mr-1.5 bg-green-400 rounded-full animate-pulse"></span>
+                        Online (${data.data_source || 'API'})
+                    `;
+                    indicator.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800';
+                } else {
+                    indicator.innerHTML = `
+                        <span class="w-2 h-2 mr-1.5 bg-red-400 rounded-full"></span>
+                        Offline
+                    `;
+                    indicator.className = 'ml-4 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800';
+                }
+            }
+        }
+
+        function updateAllCharts(data) {
+            // Aktualisiere alle Charts mit neuen Daten
+            Object.keys(charts).forEach(chartKey => {
+                if (charts[chartKey] && data[chartKey]) {
+                    charts[chartKey].data.labels = data.labels.map(label => new Date(label));
+                    charts[chartKey].data.datasets[0].data = data[chartKey];
+                    charts[chartKey].update('none'); // Keine Animation für bessere Performance
+                }
+            });
+        }
+
+        // Initialisierung mit asynchronem Datenladen
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            updateLastUpdateTime();
+            updateConfigurationInfo();
+            
+            // Lade Daten asynchron für bessere Performance
+            setTimeout(loadDataAsync, 100);
+            
+            // Starte Auto-Refresh (falls aktiviert)
+            startAutoRefresh();
+        });
+
         // Cleanup beim Verlassen der Seite
         window.addEventListener('beforeunload', function() {
             stopAutoRefresh();

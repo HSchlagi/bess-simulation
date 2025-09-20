@@ -9437,16 +9437,13 @@ def _calculate_cost_advantage(load_df, market_df, p_ess, q_ess, electricity_cost
 @main_bp.route('/live-data')
 @login_required
 def live_data_dashboard():
-    """Live BESS Daten Dashboard"""
+    """Einfaches Live BESS Daten Dashboard - Performance optimiert"""
     try:
-        # Hole System-Status
-        system_status = live_bess_service.get_system_status()
-        
-        # Hole Gerätezusammenfassung
-        device_summary = live_bess_service.get_device_summary()
-        
-        # Hole Chart-Daten für die letzten 24 Stunden
-        chart_data = live_bess_service.get_chart_data(hours=24)
+        # Für einfaches Dashboard: Lade nur minimale Daten für schnelles Rendering
+        # Weitere Daten werden über AJAX nachgeladen
+        system_status = {'status': 'loading', 'data_source': 'checking'}
+        device_summary = {'loading': True}
+        chart_data = {'loading': True}
         
         return render_template('live_data_dashboard.html',
                              system_status=system_status,
@@ -9506,27 +9503,9 @@ def api_live_data_chart():
 @main_bp.route('/live-data/advanced')
 @login_required
 def live_data_dashboard_advanced():
-    """Erweiterte Live BESS Daten Dashboard mit Real-time Updates"""
-    try:
-        # Hole System-Status
-        system_status = live_bess_service.get_system_status()
-        
-        # Hole Gerätezusammenfassung
-        device_summary = live_bess_service.get_device_summary()
-        
-        # Hole Chart-Daten für die letzten 24 Stunden
-        chart_data = live_bess_service.get_chart_data(hours=24)
-        
-        return render_template('live_data_dashboard_advanced.html',
-                             system_status=system_status,
-                             device_summary=device_summary,
-                             chart_data=chart_data)
-    except Exception as e:
-        flash(f'Fehler beim Laden des erweiterten Live-Dashboards: {str(e)}', 'error')
-        return render_template('live_data_dashboard_advanced.html',
-                             system_status={'status': 'error', 'error': str(e)},
-                             device_summary={'error': str(e)},
-                             chart_data={'error': str(e)})
+    """Umleitung auf das vereinheitlichte Live BESS Dashboard"""
+    # Leite auf das normale Dashboard um, da es jetzt alle Features enthält
+    return redirect(url_for('main.live_data_dashboard'))
 
 # ============================================================================
 # PROJEKT-SPEZIFISCHE LIVE BESS INTEGRATION
