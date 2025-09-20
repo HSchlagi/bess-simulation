@@ -319,11 +319,14 @@
 
     function showCreateMappingModal(project) {
         const modalHtml = `
-            <div id="createMappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
-                <div class="flex items-center justify-center min-h-screen p-4">
-                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
-                        <div class="px-6 py-4 border-b border-gray-200">
+            <div id="createMappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 overflow-y-auto">
+                <div class="flex items-center justify-center min-h-screen p-4 py-8">
+                    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 class="text-lg font-semibold text-gray-900">Neue BESS-Zuordnung für "${project.name}"</h3>
+                            <button type="button" onclick="hideCreateMappingModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                         <form id="mappingForm" class="p-6">
                             <input type="hidden" name="project_id" value="${project.id}">
@@ -600,13 +603,21 @@
                                 </div>
                             </div>
 
-                            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
-                                <button type="button" onclick="hideCreateMappingModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md">
-                                    Abbrechen
-                                </button>
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
-                                    <i class="fas fa-save mr-2"></i>Speichern
-                                </button>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Alle Felder mit * sind Pflichtfelder
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button type="button" onclick="hideCreateMappingModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-md font-medium transition-colors">
+                                        <i class="fas fa-times mr-2"></i>Abbrechen
+                                    </button>
+                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Speichern
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -627,6 +638,20 @@
         
         // Modbus-Konfiguration Event Listeners
         setupModbusConfiguration();
+        
+        // ESC-Taste zum Schließen des Modals
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                hideCreateMappingModal();
+            }
+        });
+        
+        // Klick außerhalb des Modals zum Schließen
+        document.getElementById('createMappingModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                hideCreateMappingModal();
+            }
+        });
     }
 
     function hideCreateMappingModal() {
@@ -681,11 +706,14 @@
 
     function showEditMappingModal(mapping) {
         const modalHtml = `
-            <div id="editMappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50">
-                <div class="flex items-center justify-center min-h-screen p-4">
-                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
-                        <div class="px-6 py-4 border-b border-gray-200">
+            <div id="editMappingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 overflow-y-auto">
+                <div class="flex items-center justify-center min-h-screen p-4 py-8">
+                    <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full my-8">
+                        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                             <h3 class="text-lg font-semibold text-gray-900">BESS-Zuordnung bearbeiten</h3>
+                            <button type="button" onclick="hideEditMappingModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                         <form id="editMappingForm" class="p-6">
                             <input type="hidden" name="id" value="${mapping.id}">
@@ -980,13 +1008,21 @@
                                 </div>
                             </div>
 
-                            <div class="flex justify-end space-x-3 mt-6 pt-6 border-t border-gray-200">
-                                <button type="button" onclick="hideEditMappingModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-md">
-                                    Abbrechen
-                                </button>
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
-                                    <i class="fas fa-save mr-2"></i>Speichern
-                                </button>
+                            
+                            <!-- Action Buttons -->
+                            <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Alle Felder mit * sind Pflichtfelder
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button type="button" onclick="hideEditMappingModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-md font-medium transition-colors">
+                                        <i class="fas fa-times mr-2"></i>Abbrechen
+                                    </button>
+                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors">
+                                        <i class="fas fa-save mr-2"></i>Speichern
+                                    </button>
+                                </div>
                             </div>
                         </form>
                     </div>
@@ -1060,6 +1096,20 @@
         
         // Modbus-Konfiguration Event Listeners für Edit-Modal
         setupEditModbusConfiguration();
+        
+        // ESC-Taste zum Schließen des Edit-Modals
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                hideEditMappingModal();
+            }
+        });
+        
+        // Klick außerhalb des Edit-Modals zum Schließen
+        document.getElementById('editMappingModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                hideEditMappingModal();
+            }
+        });
     }
 
     function hideEditMappingModal() {
