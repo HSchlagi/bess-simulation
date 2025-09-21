@@ -2,7 +2,7 @@
   "mcpServers": {
     "bess-simulation": {
       "command": "python",
-      "args": ["mcp_server.py"],
+      "args": ["mcp_server_working.py"],
       "cwd": "D:\\Daten-Heinz\\BESS-Simulation",
       "env": {
         "BESS_DB_PATH": "instance/bess.db",
