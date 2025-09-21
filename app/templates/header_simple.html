@@ -34,11 +34,6 @@
                 <a href="{{ url_for('multi_user.dashboard') }}" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors bg-green-600">
                     <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
                 </a>
-                
-                <!-- MCP-Dashboard -->
-                <a href="{{ url_for('main.mcp_dashboard') }}" class="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                    <i class="fas fa-robot mr-2"></i>MCP AI
-                </a>
 
                 
                 <!-- Projekte Dropdown -->
@@ -107,8 +102,11 @@
                         <a href="{{ url_for('main.ml_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-robot mr-2"></i>ML & KI Dashboard
                         </a>
-                        <a href="{{ url_for('main.advanced_ml_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50 rounded-b-md">
+                        <a href="{{ url_for('main.advanced_ml_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50">
                             <i class="fas fa-brain mr-2"></i>Advanced ML Dashboard
+                        </a>
+                        <a href="{{ url_for('main.mcp_dashboard') }}" class="block px-4 py-2 text-gray-800 hover:bg-blue-50 rounded-b-md">
+                            <i class="fas fa-robot mr-2"></i>MCP AI Dashboard
                         </a>
                     </div>
                 </div>
@@ -244,11 +242,6 @@
                     <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
                 </a>
                 
-                <!-- MCP-Dashboard -->
-                <a href="{{ url_for('main.mcp_dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium hover:bg-blue-700">
-                    <i class="fas fa-robot mr-2"></i>MCP AI
-                </a>
-                
                 <!-- Benutzer-Bereich -->
                 {% if session.get('user') %}
                     <div class="border-t border-blue-500 pt-2 mt-2">
@@ -320,6 +313,9 @@
                     </a>
                     <a href="{{ url_for('main.advanced_ml_dashboard') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
                         <i class="fas fa-brain mr-2"></i>Advanced ML Dashboard
+                    </a>
+                    <a href="{{ url_for('main.mcp_dashboard') }}" class="block px-6 py-2 rounded-md hover:bg-blue-700">
+                        <i class="fas fa-robot mr-2"></i>MCP AI Dashboard
                     </a>
                 </div>
 
