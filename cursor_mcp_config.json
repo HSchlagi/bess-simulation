@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "bess-simulation": {
+      "command": "python",
+      "args": ["mcp_server.py"],
+      "cwd": "D:\\Daten-Heinz\\BESS-Simulation",
+      "env": {
+        "BESS_DB_PATH": "instance/bess.db",
+        "DISPATCH_MODULE": "app.mcp_dispatch_adapter",
+        "DISPATCH_FUNC": "run_dispatch",
+        "AWATTAR_BASE_URL": "https://api.awattar.at/v1/marketdata",
+        "APG_BASE_URL": "https://api.apg.at/v1",
+        "MQTT_BROKER": "localhost",
+        "MQTT_PORT": "1883"
+      }
+    }
+  }
+}
