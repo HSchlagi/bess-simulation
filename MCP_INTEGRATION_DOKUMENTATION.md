@@ -203,3 +203,4 @@ tail -f logs/bess_simulation.log
 ---
 
 **Die MCP-Integration macht Ihre BESS-Simulation zu einem intelligenten, Cursor AI-gesteuerten System!** 🎯
+

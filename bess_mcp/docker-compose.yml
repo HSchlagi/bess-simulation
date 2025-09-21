@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  bess-sim:
+    image: your/bess-sim:latest
+    volumes:
+      - ./data:/data
+
+  mcp-server:
+    build: .
+    container_name: bess-mcp-server
+    environment:
+      - BESS_DB_PATH=/data/bess.db
+      - DISPATCH_MODULE=${DISPATCH_MODULE:-app.sim_dispatch}
+      - DISPATCH_FUNC=${DISPATCH_FUNC:-run_dispatch}
+      - AWATTAR_BASE_URL=${AWATTAR_BASE_URL:-https://api.awattar.at/v1/marketdata}
+      - AWATTAR_COUNTRY=${AWATTAR_COUNTRY:-AT}
+      - MQTT_BROKER=${MQTT_BROKER:-mqtt-broker}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_USERNAME=${MQTT_USERNAME}
+      - MQTT_PASSWORD=${MQTT_PASSWORD}
+    volumes:
+      - ./data:/data
+      - ./app:/app/app
+    depends_on:
+      - bess-sim
+    # To expose HTTP mode, uncomment:
+    # command: ["uvicorn", "mcp.http_server:app", "--host", "0.0.0.0", "--port", "8080"]
+    # ports:
+    #   - "8080:8080"

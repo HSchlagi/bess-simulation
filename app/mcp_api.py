@@ -207,3 +207,4 @@ def api_demo():
             "GET /api/mcp/status"
         ]
     }, "MCP API Demo")
+

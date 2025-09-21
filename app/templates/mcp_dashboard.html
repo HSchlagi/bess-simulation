@@ -1,25 +1,23 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BESS MCP Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
-        }
-        .status-online { background-color: #10B981; }
-        .status-offline { background-color: #EF4444; }
-        .status-demo { background-color: #F59E0B; }
-    </style>
-</head>
-<body class="bg-gray-100">
+{% extends "base.html" %}
+{% block title %}BESS MCP Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    .status-online { background-color: #10B981; }
+    .status-offline { background-color: #EF4444; }
+    .status-demo { background-color: #F59E0B; }
+</style>
+{% endblock %}
+
+{% block content %}
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -142,6 +140,53 @@
             </div>
         </div>
 
+        <!-- MCP Query Panel -->
+        <div class="mt-6 bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">🤖 MCP-Abfrage</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Direkte MCP-Abfrage eingeben:</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="mcp-query" placeholder="z.B. 'Zeige mir alle Projekte' oder 'Berechne Dispatch für 1MWh'"
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button onclick="executeMCPQuery()" 
+                                class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <i class="fas fa-paper-plane mr-2"></i>Abfrage senden
+                        </button>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-600">
+                    <strong>Beispiel-Abfragen:</strong>
+                    <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <div>
+                            <div class="font-medium text-blue-600 mb-1">📊 Projekte & Daten:</div>
+                            <ul class="space-y-1 text-xs">
+                                <li>• "Zeige mir alle Projekte"</li>
+                                <li>• "Lade aktuelle Spotpreise"</li>
+                                <li>• "Zeige SOC-Status"</li>
+                                <li>• "Lade aWATTar-Preise"</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="font-medium text-green-600 mb-1">🚀 Simulationen:</div>
+                            <ul class="space-y-1 text-xs">
+                                <li>• "Berechne Dispatch für 2MWh"</li>
+                                <li>• "Simulation mit 1.5MWh Kapazität"</li>
+                                <li>• "Dispatch für 100 EUR/MWh Spread"</li>
+                                <li>• "Starte Simulation"</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-3 p-3 bg-blue-50 rounded-md">
+                        <div class="font-medium text-blue-800 mb-1">💡 Tipp:</div>
+                        <div class="text-xs text-blue-700">
+                            Sie können auch Parameter kombinieren: "Berechne Dispatch für 3MWh mit 150 EUR/MWh Spread und 2.5 Zyklen pro Tag"
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Log Panel -->
         <div class="mt-6 bg-white rounded-lg shadow-md p-6">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">📝 Aktivitäts-Log</h2>
@@ -158,6 +203,18 @@
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
             logMessage('Dashboard initialisiert');
+            logMessage('JavaScript-Funktionen geladen: ' + (typeof window.runDispatch === 'function' ? 'OK' : 'FEHLER'));
+            
+            // Debug: Alle Funktionen testen
+            const functions = ['runDispatch', 'readSOC', 'getSpotPrices', 'getAwatttarPrices', 'showDatabase'];
+            functions.forEach(func => {
+                if (typeof window[func] === 'function') {
+                    logMessage(`✅ ${func} verfügbar`);
+                } else {
+                    logMessage(`❌ ${func} NICHT verfügbar`);
+                }
+            });
+            
             readSOC();
             getSpotPrices();
         });
@@ -173,7 +230,7 @@
         }
 
         // Dispatch Simulation
-        async function runDispatch() {
+        window.runDispatch = async function() {
             const capacity = document.getElementById('capacity').value;
             const priceSpread = document.getElementById('price-spread').value;
             const cycles = document.getElementById('cycles').value;
@@ -203,7 +260,7 @@
         }
 
         // Display dispatch results
-        function displayDispatchResults(result) {
+        window.displayDispatchResults = function(result) {
             document.getElementById('profit').textContent = result.profit_eur + ' EUR';
             document.getElementById('autarky').textContent = result.autarky_pct + '%';
             document.getElementById('roi').textContent = result.roi_pct + '%';
@@ -213,7 +270,7 @@
         }
 
         // Read SOC
-        async function readSOC() {
+        window.readSOC = async function() {
             try {
                 const response = await fetch('/api/mcp/soc');
                 const soc = await response.json();
@@ -228,7 +285,7 @@
         }
 
         // Get spot prices
-        async function getSpotPrices() {
+        window.getSpotPrices = async function() {
             const today = new Date().toISOString().split('T')[0];
             
             try {
@@ -247,7 +304,7 @@
         }
 
         // Get aWATTar prices
-        async function getAwatttarPrices() {
+        window.getAwatttarPrices = async function() {
             const today = new Date().toISOString().split('T')[0];
             
             try {
@@ -266,7 +323,7 @@
         }
 
         // Update price chart
-        function updatePriceChart(priceData) {
+        window.updatePriceChart = function(priceData) {
             const ctx = document.getElementById('priceChart').getContext('2d');
             
             if (priceChart) {
@@ -299,18 +356,172 @@
             });
         }
 
-        // Show database
-        async function showDatabase() {
+        // Execute MCP Query - Version 2.0 (Cache-Busting)
+        window.executeMCPQuery = async function() {
+            const query = document.getElementById('mcp-query').value.trim();
+            if (!query) {
+                logMessage('❌ Bitte geben Sie eine Abfrage ein');
+                return;
+            }
+            
+            logMessage(`🤖 MCP-Abfrage: "${query}"`);
+            
             try {
-                const response = await fetch('/api/mcp/database?table=projects&limit=5');
-                const data = await response.json();
+                // Einfache Keyword-basierte Verarbeitung
+                const lowerQuery = query.toLowerCase();
                 
-                logMessage(`Datenbank: ${data.count} Projekte geladen`);
-                console.log('Database data:', data);
+                if (lowerQuery.includes('projekt') || lowerQuery.includes('projekte')) {
+                    logMessage('📊 Lade Projekte...');
+                    await showDatabase();
+                } else if (lowerQuery.includes('spotpreis') || lowerQuery.includes('spot')) {
+                    logMessage('📈 Lade Spotpreise...');
+                    await getSpotPrices();
+                } else if (lowerQuery.includes('awattar') || lowerQuery.includes('awattar')) {
+                    logMessage('⚡ Lade aWATTar-Preise...');
+                    await getAwatttarPrices();
+                } else if (lowerQuery.includes('soc') || lowerQuery.includes('ladezustand')) {
+                    logMessage('🔋 Lade SOC-Status...');
+                    await readSOC();
+                } else if (lowerQuery.includes('kapazität') || lowerQuery.includes('mwh') || lowerQuery.includes('dispatch') || lowerQuery.includes('simulation') || lowerQuery.includes('berechne')) {
+                    // Debug: Zeige die ursprüngliche Abfrage
+                    logMessage(`🔍 Debug: Verarbeite Abfrage: "${query}"`);
+                    
+                    // Extrahiere alle Parameter aus der Abfrage - verbesserte Regex
+                    const capacityMatch = query.match(/(\d+(?:\.\d+)?)\s*mwh/i);
+                    const spreadMatch = query.match(/(\d+(?:\.\d+)?)\s*eur[\/\s]*mwh/i);
+                    const cyclesMatch = query.match(/(\d+(?:\.\d+)?)\s*zyklen/i);
+                    
+                    logMessage(`🔍 Debug: Kapazität-Match: ${capacityMatch ? capacityMatch[1] : 'null'}`);
+                    logMessage(`🔍 Debug: Spread-Match: ${spreadMatch ? spreadMatch[1] : 'null'}`);
+                    logMessage(`🔍 Debug: Zyklen-Match: ${cyclesMatch ? cyclesMatch[1] : 'null'}`);
+                    
+                    let parametersUpdated = false;
+                    
+                    if (capacityMatch) {
+                        const capacity = parseFloat(capacityMatch[1]);
+                        document.getElementById('capacity').value = capacity;
+                        logMessage(`📊 Kapazität auf ${capacity} MWh gesetzt`);
+                        parametersUpdated = true;
+                    }
+                    
+                    if (spreadMatch) {
+                        const spread = parseFloat(spreadMatch[1]);
+                        document.getElementById('price-spread').value = spread;
+                        logMessage(`💰 Preis-Spread auf ${spread} EUR/MWh gesetzt`);
+                        parametersUpdated = true;
+                    }
+                    
+                    if (cyclesMatch) {
+                        const cycles = parseFloat(cyclesMatch[1]);
+                        document.getElementById('cycles').value = cycles;
+                        logMessage(`🔄 Zyklen auf ${cycles} pro Tag gesetzt`);
+                        parametersUpdated = true;
+                    }
+                    
+                    if (parametersUpdated) {
+                        logMessage('🚀 Starte Dispatch-Simulation mit neuen Parametern...');
+                        await runDispatch();
+                    } else {
+                        logMessage('❌ Keine Parameter erkannt. Verwende aktuelle Einstellungen...');
+                        await runDispatch();
+                    }
+                } else if (lowerQuery.includes('simulation') || lowerQuery.includes('starte')) {
+                    logMessage('🚀 Starte Dispatch-Simulation mit aktuellen Parametern...');
+                    await runDispatch();
+                } else if (lowerQuery.includes('parameter') || lowerQuery.includes('einstellung')) {
+                    // Zeige aktuelle Parameter
+                    const capacity = document.getElementById('capacity').value;
+                    const priceSpread = document.getElementById('price-spread').value;
+                    const cycles = document.getElementById('cycles').value;
+                    logMessage(`📊 Aktuelle Parameter:`);
+                    logMessage(`  • Kapazität: ${capacity} MWh`);
+                    logMessage(`  • Preis-Spread: ${priceSpread} EUR/MWh`);
+                    logMessage(`  • Zyklen/Tag: ${cycles}`);
+                } else if (lowerQuery.includes('hilfe') || lowerQuery.includes('help')) {
+                    logMessage('📚 Verfügbare MCP-Befehle:');
+                    logMessage('  📊 Daten: "projekte", "spotpreise", "soc", "awattar"');
+                    logMessage('  🚀 Simulation: "dispatch", "simulation", "starte"');
+                    logMessage('  ⚙️ Parameter: "parameter", "einstellungen"');
+                    logMessage('  💡 Beispiele: "Berechne Dispatch für 2MWh"');
+                } else {
+                    // Fallback: Versuche Parameter-Extraktion auch bei unbekannten Abfragen
+                    logMessage(`🔍 Fallback: Versuche Parameter-Extraktion für: "${query}"`);
+                    
+                    const capacityMatch = query.match(/(\d+(?:\.\d+)?)\s*mwh/i);
+                    const spreadMatch = query.match(/(\d+(?:\.\d+)?)\s*eur[\/\s]*mwh/i);
+                    const cyclesMatch = query.match(/(\d+(?:\.\d+)?)\s*zyklen/i);
+                    
+                    if (capacityMatch || spreadMatch || cyclesMatch) {
+                        logMessage('🎯 Parameter erkannt - starte Dispatch-Simulation...');
+                        
+                        if (capacityMatch) {
+                            const capacity = parseFloat(capacityMatch[1]);
+                            document.getElementById('capacity').value = capacity;
+                            logMessage(`📊 Kapazität auf ${capacity} MWh gesetzt`);
+                        }
+                        
+                        if (spreadMatch) {
+                            const spread = parseFloat(spreadMatch[1]);
+                            document.getElementById('price-spread').value = spread;
+                            logMessage(`💰 Preis-Spread auf ${spread} EUR/MWh gesetzt`);
+                        }
+                        
+                        if (cyclesMatch) {
+                            const cycles = parseFloat(cyclesMatch[1]);
+                            document.getElementById('cycles').value = cycles;
+                            logMessage(`🔄 Zyklen auf ${cycles} pro Tag gesetzt`);
+                        }
+                        
+                        await runDispatch();
+                    } else {
+                        logMessage('❓ Unbekannte Abfrage. Verfügbare Befehle:');
+                        logMessage('  • "Zeige mir alle Projekte"');
+                        logMessage('  • "Berechne Dispatch für 2MWh"');
+                        logMessage('  • "Lade aktuelle Spotpreise"');
+                        logMessage('  • "Zeige SOC-Status"');
+                    }
+                }
+                
+                // Eingabefeld leeren
+                document.getElementById('mcp-query').value = '';
+                
             } catch (error) {
-                logMessage(`Datenbank-Fehler: ${error.message}`);
+                logMessage(`❌ MCP-Abfrage-Fehler: ${error.message}`);
+            }
+        };
+
+        // Show database
+        window.showDatabase = async function() {
+            try {
+                logMessage('Lade Datenbank-Projekte...');
+                const response = await fetch('/api/mcp/database?table=projects&limit=5');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Database response:', data);
+                
+                if (data.status === 'error') {
+                    logMessage(`❌ Datenbank-Fehler: ${data.error}`);
+                } else if (data.count !== undefined) {
+                    logMessage(`✅ Datenbank: ${data.count} Projekte geladen`);
+                    if (data.data && data.data.length > 0) {
+                        data.data.forEach(project => {
+                            logMessage(`  - Projekt ${project.id}: ${project.name} (${project.location})`);
+                            logMessage(`    BESS: ${project.bess_size} kWh / ${project.bess_power} kW`);
+                        });
+                    } else {
+                        logMessage('  (Keine Projekte in der Datenbank)');
+                    }
+                } else {
+                    logMessage(`❌ Unerwartete Antwort: ${JSON.stringify(data)}`);
+                }
+            } catch (error) {
+                logMessage(`❌ Datenbank-Fehler: ${error.message}`);
+                console.error('Database error:', error);
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}

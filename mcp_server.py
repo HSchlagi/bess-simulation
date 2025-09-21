@@ -335,7 +335,7 @@ def main():
         print("❌ Datenbankverbindung fehlgeschlagen")
     
     # MCP-Server starten
-    mcp.run_stdio()
+    mcp.run()
 
 if __name__ == "__main__":
     main()

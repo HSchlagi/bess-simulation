@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BESS Anmeldung – Battery Energy Simulation</title>
+  <title>Phoenyra BESS Studio – Anmeldung</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @keyframes float {
@@ -56,10 +56,24 @@
       <div class="absolute top-6 right-6 w-12 h-12 bg-green-500 rounded-full opacity-20 float-animation"></div>
       <div class="absolute bottom-6 left-6 w-10 h-10 bg-blue-500 rounded-full opacity-20 float-animation" style="animation-delay: 1s;"></div>
       
-             <!-- BESS Container with Animation -->
-               <div class="relative mb-8">
+      <!-- Phoenyra Logo + BESS Container -->
+      <div class="flex items-center justify-center mb-8 space-x-6">
+        <!-- Phoenyra Logo (gleiche Größe wie Container) -->
+        <div class="w-40 h-40 bg-gradient-to-br from-slate-700 to-slate-800 rounded-2xl flex items-center justify-center border-2 border-slate-600">
+          <img src="{{ url_for('static', filename='logo/phoenyra_abstract.png') }}" 
+               alt="Phoenyra Logo" 
+               class="w-4/5 h-4/5 object-contain"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+          <!-- Fallback Icon -->
+          <svg class="w-20 h-20 text-slate-400 hidden" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+          </svg>
+        </div>
+        
+        <!-- BESS Container -->
+        <div class="relative">
           <div class="w-40 h-40 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center pulse-glow overflow-hidden">
-                                   <!-- BESS Container Image -->
+            <!-- BESS Container Image -->
             <img src="{{ url_for('static', filename='img/bess_bat.jpg') }}" 
                  alt="BESS Container" 
                  class="w-4/5 h-4/5 object-contain rounded-xl"
@@ -68,25 +82,23 @@
             <svg class="w-24 h-24 text-white hidden" fill="currentColor" viewBox="0 0 24 24">
               <path d="M4 6h16v12H4V6zm2 2v8h12V8H6zm2 2h8v4H8v-4z"/>
             </svg>
-         </div>
-         <!-- Status Indicator -->
-         <div class="absolute -top-2 -right-2 w-10 h-10 bg-green-400 rounded-full flex items-center justify-center shadow-lg">
-           <div class="w-4 h-4 bg-white rounded-full animate-ping"></div>
-         </div>
-         <!-- BESS Label -->
-         <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-black/70 text-white px-3 py-1 rounded-full text-xs font-medium">
-           BESS
-         </div>
-       </div>
+          </div>
+          
+          <!-- Status Indicator -->
+          <div class="absolute -top-2 -right-2 w-10 h-10 bg-green-400 rounded-full flex items-center justify-center shadow-lg">
+            <div class="w-4 h-4 bg-white rounded-full animate-ping"></div>
+          </div>
+        </div>
+      </div>
       
       <!-- Title with Gradient -->
       <h1 class="text-4xl lg:text-5xl font-bold gradient-text text-center mb-6 leading-tight">
-        Battery Energy<br>Storage Simulation
+        Phoenyra<br>BESS Studio
       </h1>
       
       <!-- Description -->
       <div class="text-center space-y-3 text-gray-300">
-        <p class="text-lg font-medium">Verwalte und simuliere deinen Batteriespeicher</p>
+        <p class="text-lg font-medium">Professionelle Batteriespeicher-Simulation</p>
         <p class="text-base">Optimiere Leistung, Ausnutzung und Wirtschaftlichkeit</p>
       </div>
       
@@ -110,7 +122,7 @@
           </div>
           <h2 class="text-3xl font-bold text-white">Willkommen zurück</h2>
         </div>
-        <p class="text-gray-400">Melden Sie sich an, um Ihre BESS-Simulation zu verwalten</p>
+        <p class="text-gray-400">Melden Sie sich an, um Ihr Phoenyra BESS Studio zu verwalten</p>
       </div>
       
       <!-- Flash Messages -->

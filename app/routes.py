@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, session
 from flask_login import login_required, current_user
 from app import db, get_db
+from datetime import datetime
 import sys
 import os
 import sqlite3
@@ -85,6 +86,158 @@ except ImportError:
 
 main_bp = Blueprint('main', __name__)
 
+
+@main_bp.route("/mcp-dashboard")
+@login_required
+def mcp_dashboard():
+    """MCP-Dashboard für intelligente BESS-Steuerung"""
+    return render_template("mcp_dashboard.html")
+
+# MCP API Endpunkte
+@main_bp.route("/api/mcp/dispatch", methods=['POST'])
+@login_required
+def mcp_dispatch():
+    """MCP Dispatch-Simulation API"""
+    try:
+        data = request.get_json()
+        capacity_mwh = data.get('capacity_mwh', 0.5)
+        price_spread_eur_mwh = data.get('price_spread_eur_mwh', 100)
+        cycles_limit_per_day = data.get('cycles_limit_per_day', 2.0)
+        
+        # Einfache Demo-Berechnung
+        profit_eur = capacity_mwh * price_spread_eur_mwh * cycles_limit_per_day * 0.1
+        autarky_pct = min(95, capacity_mwh * 20)
+        roi_pct = (profit_eur / (capacity_mwh * 1000)) * 100
+        payback_years = max(1, 1000 / profit_eur) if profit_eur > 0 else 99
+        
+        return jsonify({
+            'profit_eur': round(profit_eur, 2),
+            'autarky_pct': round(autarky_pct, 1),
+            'roi_pct': round(roi_pct, 1),
+            'payback_years': round(payback_years, 1)
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route("/api/mcp/soc")
+@login_required
+def mcp_soc():
+    """MCP SOC (State of Charge) API"""
+    try:
+        # Demo SOC-Wert (normalerweise aus Hardware oder Datenbank)
+        import random
+        soc = random.randint(20, 80)
+        return jsonify(soc)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route("/api/mcp/spot-prices")
+@login_required
+def mcp_spot_prices():
+    """MCP Spot-Preise API"""
+    try:
+        date = request.args.get('date', datetime.now().strftime('%Y-%m-%d'))
+        
+        # Demo Spot-Preise generieren
+        import random
+        curve = []
+        for hour in range(24):
+            base_price = 50 + random.randint(-20, 30)
+            curve.append({
+                'ts': f"{date}T{hour:02d}:00:00Z",
+                'price_eur_mwh': base_price
+            })
+        
+        return jsonify({
+            'curve': curve,
+            'points': len(curve),
+            'date': date
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route("/api/mcp/awattar")
+@login_required
+def mcp_awattar():
+    """MCP aWATTar-Preise API"""
+    try:
+        day = request.args.get('day', datetime.now().strftime('%Y-%m-%d'))
+        country = request.args.get('country', 'AT')
+        
+        # Demo aWATTar-Preise generieren
+        import random
+        curve = []
+        for hour in range(24):
+            base_price = 60 + random.randint(-25, 35)
+            curve.append({
+                'ts': f"{day}T{hour:02d}:00:00Z",
+                'price_eur_mwh': base_price
+            })
+        
+        return jsonify({
+            'curve': curve,
+            'points': len(curve),
+            'day': day,
+            'country': country
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@main_bp.route("/api/mcp/database")
+@login_required
+def mcp_database():
+    """MCP Datenbank API"""
+    try:
+        table = request.args.get('table', 'projects')
+        limit = int(request.args.get('limit', 10))
+        
+        # Einfache Datenbankabfrage
+        from app import db
+        from models import Project
+        
+        if table == 'projects':
+            try:
+                projects = Project.query.limit(limit).all()
+                data = [{
+                    'id': p.id,
+                    'name': p.name or 'Unbenannt',
+                    'location': p.location or 'Keine Angabe',
+                    'bess_size': p.bess_size or 0,
+                    'bess_power': p.bess_power or 0,
+                    'date': p.date.isoformat() if p.date else 'Unbekannt'
+                } for p in projects]
+                
+                return jsonify({
+                    'table': table,
+                    'count': len(data),
+                    'data': data,
+                    'status': 'success'
+                })
+            except Exception as db_error:
+                return jsonify({
+                    'table': table,
+                    'count': 0,
+                    'data': [],
+                    'error': f'Datenbankfehler: {str(db_error)}',
+                    'status': 'error'
+                })
+        else:
+            return jsonify({
+                'table': table,
+                'count': 0,
+                'data': [],
+                'error': 'Tabelle nicht gefunden',
+                'status': 'error'
+            })
+            
+    except Exception as e:
+        return jsonify({
+            'table': 'unknown',
+            'count': 0,
+            'data': [],
+            'error': f'Allgemeiner Fehler: {str(e)}',
+            'status': 'error'
+        }), 500
 @main_bp.route('/')
 @auth_optional
 def index():
@@ -9750,3 +9903,4 @@ def api_delete_bess_mapping(mapping_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+

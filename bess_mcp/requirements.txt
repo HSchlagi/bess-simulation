@@ -1,0 +1,6 @@
+mcp>=1.2.0
+paho-mqtt>=2.1.0
+uvicorn>=0.30.0
+fastapi>=0.111.0
+requests>=2.32.3
+sqlite3-binary; python_version < "3.12"

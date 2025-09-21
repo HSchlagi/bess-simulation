@@ -10,6 +10,7 @@ import os
 from .logging_config import setup_logging
 from .monitoring_middleware import init_monitoring
 from .monitoring_routes import monitoring_bp
+from .mcp_api import mcp_api
 
 db = SQLAlchemy()
 csrf = CSRFProtect()
@@ -98,6 +99,9 @@ def create_app():
     # Benachrichtigungs-Blueprint registrieren
     from .notification_routes import notification_bp
     app.register_blueprint(notification_bp)
+    
+    # MCP-API-Blueprint registrieren
+    app.register_blueprint(mcp_api)
     
     # CO₂-Tracking-Blueprint registrieren
     try:
