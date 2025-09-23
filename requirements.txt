@@ -42,7 +42,7 @@ gunicorn==21.2.0
 # flask-debugtoolbar==0.13.1
 
 # Authentication
-supabase==2.0.2
+supabase>=2.3.0
 
 # Performance & Monitoring
 flask-caching==2.1.0
