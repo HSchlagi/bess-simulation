@@ -10,7 +10,7 @@ itsdangerous==2.1.2
 click==8.1.7
 blinker==1.6.3
 greenlet==3.0.0
-typing_extensions==4.7.1
+typing_extensions>=4.12.0,<5.0.0
 
 # PDF Generation
 reportlab==4.0.4
@@ -41,8 +41,8 @@ gunicorn==21.2.0
 # Development tools (optional)
 # flask-debugtoolbar==0.13.1
 
-# Authentication
-supabase>=2.3.0,<3.0.0
+# Authentication (deaktiviert wegen Konflikten)
+# supabase>=2.3.0,<3.0.0
 
 # Performance & Monitoring
 flask-caching==2.1.0
