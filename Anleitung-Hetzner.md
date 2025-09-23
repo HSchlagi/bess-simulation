@@ -2,7 +2,7 @@
 
 ## 📋 Voraussetzungen
 
-- Hetzner-Server läuft bereits mit nginx auf Port 5050
+- Hetzner-Server läuft bereits mit nginx auf Port 5000
 - Alte Version läuft unter `/opt/bess-simulation/`
 - SSH-Zugang zum Server verfügbar
 - Lokale Kopie des aktuellen BESS-Programms bereit
@@ -146,7 +146,7 @@ sudo systemctl status nginx
 sudo journalctl -u bess-simulation -f
 
 # Port prüfen
-sudo netstat -tlnp | grep :5050
+sudo netstat -tlnp | grep :5000
 
 # Web-Interface testen
 curl http://localhost:5050

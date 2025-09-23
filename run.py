@@ -18,11 +18,11 @@ if __name__ == '__main__':
     register_notification_socketio(socketio)
     
     print("🚀 BESS-Simulation Server wird gestartet...")
-    print("📊 Dashboard: http://127.0.0.1:5000/dashboard")
-    print("🔧 Admin-Panel: http://127.0.0.1:5000/admin/dashboard")
-    print("📤 Export-Zentrum: http://127.0.0.1:5000/export/")
-    print("🔔 Benachrichtigungen: http://127.0.0.1:5000/notifications")
+    print("📊 Dashboard: http://127.0.0.1:5050/dashboard")
+    print("🔧 Admin-Panel: http://127.0.0.1:5050/admin/dashboard")
+    print("📤 Export-Zentrum: http://127.0.0.1:5050/export/")
+    print("🔔 Benachrichtigungen: http://127.0.0.1:5050/notifications")
     print("=" * 50)
     
     # Server mit WebSocket-Support starten
-    socketio.run(app, debug=True, host='127.0.0.1', port=5000)
+    socketio.run(app, debug=True, host='127.0.0.1', port=5050)

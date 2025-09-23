@@ -12,7 +12,7 @@ def main():
     
     # Docker-spezifische Konfiguration
     host = os.environ.get('HOST', '0.0.0.0')
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5050))
     debug = os.environ.get('FLASK_DEBUG', '0') == '1'
     
     # App erstellen
