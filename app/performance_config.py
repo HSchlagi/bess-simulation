@@ -77,32 +77,32 @@ performance_monitor = PerformanceMonitor()
 # Datenbank-Indizes
 DATABASE_INDICES = [
     # Projekte-Tabelle
-    "CREATE INDEX IF NOT EXISTS idx_projects_customer_id ON projects(customer_id)",
-    "CREATE INDEX IF NOT EXISTS idx_projects_created_at ON projects(created_at)",
-    "CREATE INDEX IF NOT EXISTS idx_projects_bess_size ON projects(bess_size)",
-    "CREATE INDEX IF NOT EXISTS idx_projects_pv_power ON projects(pv_power)",
+    "CREATE INDEX IF NOT EXISTS idx_projects_customer_id ON project(customer_id)",
+    "CREATE INDEX IF NOT EXISTS idx_projects_created_at ON project(created_at)",
+    "CREATE INDEX IF NOT EXISTS idx_projects_bess_size ON project(bess_size)",
+    "CREATE INDEX IF NOT EXISTS idx_projects_pv_power ON project(pv_power)",
     
     # Kunden-Tabelle
-    "CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)",
-    "CREATE INDEX IF NOT EXISTS idx_customers_company ON customers(company)",
+    "CREATE INDEX IF NOT EXISTS idx_customers_email ON customer(email)",
+    "CREATE INDEX IF NOT EXISTS idx_customers_company ON customer(company)",
     
     # Spot-Preise-Tabelle
-    "CREATE INDEX IF NOT EXISTS idx_spot_prices_timestamp ON spot_prices(timestamp)",
-    "CREATE INDEX IF NOT EXISTS idx_spot_prices_region ON spot_prices(region)",
-    "CREATE INDEX IF NOT EXISTS idx_spot_prices_price ON spot_prices(price)",
+    "CREATE INDEX IF NOT EXISTS idx_spot_prices_timestamp ON spot_price(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_spot_prices_region ON spot_price(region)",
+    "CREATE INDEX IF NOT EXISTS idx_spot_prices_price ON spot_price(price)",
     
     # Load-Profile-Tabelle
-    "CREATE INDEX IF NOT EXISTS idx_load_profiles_project_id ON load_profiles(project_id)",
-    "CREATE INDEX IF NOT EXISTS idx_load_profiles_timestamp ON load_profiles(timestamp)",
+    "CREATE INDEX IF NOT EXISTS idx_load_profiles_project_id ON load_profile(project_id)",
+    "CREATE INDEX IF NOT EXISTS idx_load_profiles_timestamp ON load_profile(timestamp)",
     
     # Use-Cases-Tabelle
-    "CREATE INDEX IF NOT EXISTS idx_use_cases_project_id ON use_cases(project_id)",
-    "CREATE INDEX IF NOT EXISTS idx_use_cases_type ON use_cases(type)",
+    "CREATE INDEX IF NOT EXISTS idx_use_cases_project_id ON use_case(project_id)",
+    "CREATE INDEX IF NOT EXISTS idx_use_cases_type ON use_case(type)",
     
     # Benutzer-Tabelle
-    "CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)",
-    "CREATE INDEX IF NOT EXISTS idx_users_role_id ON users(role_id)",
-    "CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active)"
+    "CREATE INDEX IF NOT EXISTS idx_users_email ON user(email)",
+    "CREATE INDEX IF NOT EXISTS idx_users_role_id ON user(role_id)",
+    "CREATE INDEX IF NOT EXISTS idx_users_is_active ON user(is_active)"
 ]
 
 def create_database_indices(db_path: str):
