@@ -42,8 +42,10 @@ gunicorn==21.2.0
 # Development tools (optional)
 # flask-debugtoolbar==0.13.1
 
-# Authentication (deaktiviert wegen Konflikten)
+# Authentication (deaktiviert wegen httpx-Konflikten)
 # supabase>=2.3.0,<3.0.0
+# postgrest>=0.13.0,<0.14.0
+# supafunc>=0.3.0,<0.4.0
 
 # Performance & Monitoring
 flask-caching==2.1.0
