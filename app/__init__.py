@@ -31,9 +31,9 @@ def create_app():
         from .performance_config import cache_config, cache
         app.config.update(cache_config)
         cache.init_app(app)
-        print("✅ Redis-Caching erfolgreich initialisiert")
+        print("[OK] Redis-Caching erfolgreich initialisiert")
     except Exception as e:
-        print(f"⚠️  Redis-Caching nicht verfügbar: {e}")
+        print(f"[WARN] Redis-Caching nicht verfuegbar: {e}")
         # Fallback: Einfaches Memory-Caching
         app.config['CACHE_TYPE'] = 'simple'
         from flask_caching import Cache
@@ -72,7 +72,7 @@ def create_app():
     from .routes_config import config_bp
     app.register_blueprint(config_bp)
     
-    # Auth-Blueprint registrieren (lokales System)
+    # Auth-Blueprint registrieren (nur lokales System verwenden)
     from .auth_routes_local import auth_local_bp
     app.register_blueprint(auth_local_bp)
     
@@ -107,25 +107,25 @@ def create_app():
     try:
         from .co2_routes import co2_bp
         app.register_blueprint(co2_bp, name='co2_tracking')
-        print("✅ CO₂-Tracking System erfolgreich registriert")
+        print("[OK] CO2-Tracking System erfolgreich registriert")
     except Exception as e:
-        print(f"⚠️  CO₂-Tracking System nicht verfügbar: {e}")
+        print(f"[WARN] CO2-Tracking System nicht verfuegbar: {e}")
     
     # Climate Impact Dashboard-Blueprint registrieren
     try:
         from .climate_routes import climate_bp
         app.register_blueprint(climate_bp, url_prefix='/climate')
-        print("✅ Climate Impact Dashboard erfolgreich registriert")
+        print("[OK] Climate Impact Dashboard erfolgreich registriert")
     except Exception as e:
-        print(f"⚠️  Climate Impact Dashboard nicht verfügbar: {e}")
+        print(f"[WARN] Climate Impact Dashboard nicht verfuegbar: {e}")
     
     # Advanced Dispatch-Blueprint registrieren
     try:
         from .advanced_dispatch_routes import advanced_dispatch_bp
         app.register_blueprint(advanced_dispatch_bp)
-        print("✅ Advanced Dispatch System erfolgreich registriert")
+        print("[OK] Advanced Dispatch System erfolgreich registriert")
     except ImportError as e:
-        print(f"⚠️  Advanced Dispatch System nicht verfügbar: {e}")
+        print(f"[WARN] Advanced Dispatch System nicht verfuegbar: {e}")
     
     # Monitoring & Logging Blueprint registrieren
     app.register_blueprint(monitoring_bp)
@@ -149,7 +149,7 @@ def create_app():
         try:
             db.create_all()
         except Exception as e:
-            print(f"⚠️  Tabellen bereits vorhanden oder Fehler beim Erstellen: {e}")
+            print(f"[WARN] Tabellen bereits vorhanden oder Fehler beim Erstellen: {e}")
             pass
         
         # Performance-Optimierung: Datenbank-Indizes erstellen
@@ -159,27 +159,27 @@ def create_app():
             if os.path.exists(db_path):
                 create_database_indices(db_path)
         except Exception as e:
-            print(f"⚠️  Datenbank-Indizes konnten nicht erstellt werden: {e}")
+            print(f"[WARN] Datenbank-Indizes konnten nicht erstellt werden: {e}")
         
         # Performance-Middleware registrieren
         try:
             from .performance_config import performance_middleware
             app.after_request(performance_middleware())
         except Exception as e:
-            print(f"⚠️  Performance-Middleware konnte nicht registriert werden: {e}")
+            print(f"[WARN] Performance-Middleware konnte nicht registriert werden: {e}")
         
         # Logging-System initialisieren
         try:
             setup_logging()
-            print("✅ Logging-System erfolgreich initialisiert")
+            print("[OK] Logging-System erfolgreich initialisiert")
         except Exception as e:
-            print(f"⚠️  Logging-System konnte nicht initialisiert werden: {e}")
+            print(f"[WARN] Logging-System konnte nicht initialisiert werden: {e}")
         
         # Monitoring-System initialisieren
         try:
             init_monitoring(app)
-            print("✅ Monitoring-System erfolgreich initialisiert")
+            print("[OK] Monitoring-System erfolgreich initialisiert")
         except Exception as e:
-            print(f"⚠️  Monitoring-System konnte nicht initialisiert werden: {e}")
+            print(f"[WARN] Monitoring-System konnte nicht initialisiert werden: {e}")
 
     return app

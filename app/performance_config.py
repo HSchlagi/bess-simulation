@@ -116,10 +116,10 @@ def create_database_indices(db_path: str):
         
         conn.commit()
         conn.close()
-        print("✅ Datenbank-Indizes erfolgreich erstellt")
+        print("[OK] Datenbank-Indizes erfolgreich erstellt")
         
     except Exception as e:
-        print(f"❌ Fehler beim Erstellen der Datenbank-Indizes: {e}")
+        print(f"[ERROR] Fehler beim Erstellen der Datenbank-Indizes: {e}")
 
 # Lazy Loading für große Datasets
 class LazyDatasetLoader:

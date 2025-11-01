@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Menue-Liste.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="bess-simulation---men%C3%BC-liste">BESS-Simulation - Menü-Liste</h1>
+<h2 id="vollst%C3%A4ndige-%C3%BCbersicht-aller-men%C3%BCfunktionen">Vollständige Übersicht aller Menüfunktionen</h2>
+<h3 id="%F0%9F%8F%A0-hauptnavigation">🏠 <strong>Hauptnavigation</strong></h3>
+<ul>
+<li><strong>Dashboard</strong> - Hauptübersicht mit Statistiken und Charts</li>
+<li><strong>Projekte</strong> - Projektverwaltung und -übersicht</li>
+<li><strong>Kunden</strong> - Kundenverwaltung</li>
+<li><strong>Daten</strong> - Datenverwaltung und -import</li>
+<li><strong>BESS-Analysen</strong> - Batteriespeicher-Analysen</li>
+<li><strong>Wirtschaftlichkeit</strong> - Wirtschaftlichkeitsberechnungen</li>
+<li><strong>Benutzer</strong> - Benutzerverwaltung und Profil</li>
+</ul>
+<hr>
+<h2 id="%F0%9F%93%8A-dashboard--%C3%BCbersicht">📊 <strong>Dashboard &amp; Übersicht</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Multi-User Dashboard</strong></td>
+<td><code>/dashboard</code></td>
+<td>Hauptdashboard mit Projektübersicht</td>
+</tr>
+<tr>
+<td><strong>PWA Dashboard</strong></td>
+<td><code>/pwa/dashboard</code></td>
+<td>Progressive Web App Dashboard</td>
+</tr>
+<tr>
+<td><strong>Admin Dashboard</strong></td>
+<td><code>/admin/dashboard</code></td>
+<td>Administrator-Dashboard</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%91%A5-kundenverwaltung">👥 <strong>Kundenverwaltung</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Alle Kunden</strong></td>
+<td><code>/customers</code></td>
+<td>Übersicht aller Kunden</td>
+</tr>
+<tr>
+<td><strong>Neuer Kunde</strong></td>
+<td><code>/new_customer</code></td>
+<td>Neuen Kunden anlegen</td>
+</tr>
+<tr>
+<td><strong>Kunde bearbeiten</strong></td>
+<td><code>/edit_customer</code></td>
+<td>Kundenstammdaten bearbeiten</td>
+</tr>
+<tr>
+<td><strong>Kunde anzeigen</strong></td>
+<td><code>/view_customer</code></td>
+<td>Kundenstammdaten anzeigen</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%8F%97%EF%B8%8F-projektverwaltung">🏗️ <strong>Projektverwaltung</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Alle Projekte</strong></td>
+<td><code>/projects</code></td>
+<td>Übersicht aller BESS-Projekte</td>
+</tr>
+<tr>
+<td><strong>Neues Projekt</strong></td>
+<td><code>/new_project</code></td>
+<td>Neues BESS-Projekt erstellen</td>
+</tr>
+<tr>
+<td><strong>Projekt bearbeiten</strong></td>
+<td><code>/edit_project</code></td>
+<td>Projektparameter bearbeiten</td>
+</tr>
+<tr>
+<td><strong>Projekt anzeigen</strong></td>
+<td><code>/view_project</code></td>
+<td>Projektdetails anzeigen</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%93%88-datenverwaltung">📈 <strong>Datenverwaltung</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Spot-Preise</strong></td>
+<td><code>/spot_prices</code></td>
+<td>Strompreis-Daten verwalten</td>
+</tr>
+<tr>
+<td><strong>aWattar API</strong></td>
+<td><code>/awattar_import_working_page</code></td>
+<td>aWattar API-Integration</td>
+</tr>
+<tr>
+<td><strong>Live BESS Daten</strong></td>
+<td><code>/live_data_dashboard</code></td>
+<td>Live-Daten von BESS-Systemen</td>
+</tr>
+<tr>
+<td><strong>Datenimport-Center</strong></td>
+<td><code>/data_import_center</code></td>
+<td>Zentrale Datenimport-Verwaltung</td>
+</tr>
+<tr>
+<td><strong>Datenvorschau</strong></td>
+<td><code>/preview_data</code></td>
+<td>Intelligente Datenvorschau</td>
+</tr>
+<tr>
+<td><strong>Use Case Manager</strong></td>
+<td><code>/use_case_manager</code></td>
+<td>Use Case Verwaltung</td>
+</tr>
+<tr>
+<td><strong>Batterie-Limits (C-Rate)</strong></td>
+<td><code>/battery_crate_config</code></td>
+<td>C-Rate Konfiguration</td>
+</tr>
+<tr>
+<td><strong>Export-Zentrum</strong></td>
+<td><code>/export/export_center</code></td>
+<td>Datenexport-Verwaltung</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%A4%96-ki--machine-learning">🤖 <strong>KI &amp; Machine Learning</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ML &amp; KI Dashboard</strong></td>
+<td><code>/ml_dashboard</code></td>
+<td>Machine Learning Dashboard</td>
+</tr>
+<tr>
+<td><strong>Advanced ML Dashboard</strong></td>
+<td><code>/advanced_ml_dashboard</code></td>
+<td>Erweiterte ML-Analysen</td>
+</tr>
+<tr>
+<td><strong>MCP AI Dashboard</strong></td>
+<td><code>/mcp_dashboard</code></td>
+<td>MCP AI Integration</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%94%8B-bess-analysen">🔋 <strong>BESS-Analysen</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dispatch &amp; Redispatch</strong></td>
+<td><code>/dispatch</code></td>
+<td>Dispatch-Steuerung</td>
+</tr>
+<tr>
+<td><strong>Advanced Dispatch &amp; Grid Services</strong></td>
+<td><code>/advanced_dispatch/dashboard</code></td>
+<td>Erweiterte Dispatch-Funktionen</td>
+</tr>
+<tr>
+<td><strong>BESS-Simulation</strong></td>
+<td><code>/bess_simulation_enhanced</code></td>
+<td>Batteriespeicher-Simulation</td>
+</tr>
+<tr>
+<td><strong>C-Rate Config</strong></td>
+<td><code>/battery_crate_config</code></td>
+<td>C-Rate Konfiguration</td>
+</tr>
+<tr>
+<td><strong>Peak Shaving Analyse</strong></td>
+<td><code>/bess_peak_shaving_analysis</code></td>
+<td>Peak Shaving Analyse</td>
+</tr>
+<tr>
+<td><strong>Erweiterte Simulation &amp; Dashboard</strong></td>
+<td><code>/bess_simulation_enhanced</code></td>
+<td>Erweiterte Simulationsfunktionen</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%92%B0-wirtschaftlichkeit">💰 <strong>Wirtschaftlichkeit</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Investitionskosten</strong></td>
+<td><code>/investment_costs</code></td>
+<td>Kostenverwaltung</td>
+</tr>
+<tr>
+<td><strong>Referenzpreise</strong></td>
+<td><code>/reference_prices</code></td>
+<td>Preisreferenzen verwalten</td>
+</tr>
+<tr>
+<td><strong>Wirtschaftlichkeitsanalyse</strong></td>
+<td><code>/economic_analysis</code></td>
+<td>ROI und Wirtschaftlichkeitsberechnungen</td>
+</tr>
+<tr>
+<td><strong>BESS Sizing &amp; Optimierung</strong></td>
+<td><code>/bess_sizing_simple</code></td>
+<td>Systemgrößen-Optimierung</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%8C%B1-nachhaltigkeit--co%E2%82%82">🌱 <strong>Nachhaltigkeit &amp; CO₂</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CO₂-Tracking &amp; Nachhaltigkeit</strong></td>
+<td><code>/co2_tracking/co2_dashboard</code></td>
+<td>CO₂-Fußabdruck Tracking</td>
+</tr>
+<tr>
+<td><strong>Climate Impact Dashboard</strong></td>
+<td><code>/climate/climate-dashboard</code></td>
+<td>Klimaauswirkungs-Dashboard</td>
+</tr>
+<tr>
+<td><strong>Green Finance Dashboard</strong></td>
+<td><code>/climate/green-finance-dashboard</code></td>
+<td>Green Finance Analysen</td>
+</tr>
+<tr>
+<td><strong>Carbon Credits Dashboard</strong></td>
+<td><code>/climate/carbon-credits-dashboard</code></td>
+<td>CO₂-Zertifikate Dashboard</td>
+</tr>
+<tr>
+<td><strong>CO₂-Optimierung Dashboard</strong></td>
+<td><code>/climate/co2-optimization-dashboard</code></td>
+<td>CO₂-Optimierung</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%91%A4-benutzerverwaltung">👤 <strong>Benutzerverwaltung</strong></h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Benutzerinfo</strong></td>
+<td><code>/auth_local/profile</code></td>
+<td>Benutzerprofil verwalten</td>
+</tr>
+<tr>
+<td><strong>Benachrichtigungen</strong></td>
+<td><code>/notifications/notification_center</code></td>
+<td>Benachrichtigungszentrale</td>
+</tr>
+<tr>
+<td><strong>Hilfe &amp; Anleitungen</strong></td>
+<td><code>/help</code></td>
+<td>Hilfe und Dokumentation</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%94%A7-administration-nur-f%C3%BCr-admins">🔧 <strong>Administration</strong> (nur für Admins)</h2>
+<table>
+<thead>
+<tr>
+<th>Funktion</th>
+<th>URL</th>
+<th>Beschreibung</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Admin-Dashboard</strong></td>
+<td><code>/admin/dashboard</code></td>
+<td>Administrator-Übersicht</td>
+</tr>
+<tr>
+<td><strong>Benutzer-Verwaltung</strong></td>
+<td><code>/admin/users</code></td>
+<td>Benutzerverwaltung</td>
+</tr>
+<tr>
+<td><strong>BESS-Zuordnung</strong></td>
+<td><code>/main/admin_bess_mappings</code></td>
+<td>BESS-System-Zuordnung</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="%F0%9F%94%8C-api-endpunkte">🔌 <strong>API-Endpunkte</strong></h2>
+<h3 id="projekt-apis"><strong>Projekt-APIs</strong></h3>
+<ul>
+<li><code>GET /api/projects</code> - Alle Projekte abrufen</li>
+<li><code>POST /api/projects</code> - Neues Projekt erstellen</li>
+<li><code>GET /api/projects/&lt;id&gt;</code> - Projektdetails abrufen</li>
+<li><code>PUT /api/projects/&lt;id&gt;</code> - Projekt bearbeiten</li>
+<li><code>DELETE /api/projects/&lt;id&gt;</code> - Projekt löschen</li>
+</ul>
+<h3 id="kunden-apis"><strong>Kunden-APIs</strong></h3>
+<ul>
+<li><code>GET /api/customers</code> - Alle Kunden abrufen</li>
+<li><code>POST /api/customers</code> - Neuen Kunden erstellen</li>
+<li><code>GET /api/customers/&lt;id&gt;</code> - Kundendetails abrufen</li>
+<li><code>PUT /api/customers/&lt;id&gt;</code> - Kunde bearbeiten</li>
+<li><code>DELETE /api/customers/&lt;id&gt;</code> - Kunde löschen</li>
+</ul>
+<h3 id="dashboard-apis"><strong>Dashboard-APIs</strong></h3>
+<ul>
+<li><code>GET /api/dashboard/stats</code> - Dashboard-Statistiken</li>
+<li><code>GET /api/dashboard/charts</code> - Chart-Daten</li>
+<li><code>GET /api/dashboard/performance</code> - Performance-Metriken</li>
+<li><code>GET /api/dashboard/realtime</code> - Real-time Updates</li>
+<li><code>GET /api/dashboard/locations</code> - Projekt-Standorte</li>
+</ul>
+<h3 id="daten-apis"><strong>Daten-APIs</strong></h3>
+<ul>
+<li><code>POST /api/spot-prices</code> - Spot-Preise importieren</li>
+<li><code>POST /api/spot-prices/refresh</code> - Spot-Preise aktualisieren</li>
+<li><code>GET /api/load-profiles/&lt;id&gt;</code> - Lastprofil-Daten</li>
+<li><code>POST /api/import-data</code> - Datenimport</li>
+</ul>
+<h3 id="wirtschaftlichkeits-apis"><strong>Wirtschaftlichkeits-APIs</strong></h3>
+<ul>
+<li><code>GET /api/economic-analysis/&lt;id&gt;</code> - Wirtschaftlichkeitsanalyse</li>
+<li><code>GET /api/enhanced-economic-analysis/&lt;id&gt;</code> - Erweiterte Analyse</li>
+<li><code>POST /api/economic-simulation/&lt;id&gt;</code> - Wirtschaftlichkeitssimulation</li>
+</ul>
+<h3 id="mcp-apis"><strong>MCP-APIs</strong></h3>
+<ul>
+<li><code>POST /api/mcp/dispatch</code> - MCP Dispatch</li>
+<li><code>GET /api/mcp/soc</code> - State of Charge</li>
+<li><code>GET /api/mcp/spot-prices</code> - Spot-Preise</li>
+<li><code>GET /api/mcp/awattar</code> - aWattar Daten</li>
+<li><code>GET /api/mcp/database</code> - Datenbank-Status</li>
+</ul>
+<hr>
+<h2 id="%F0%9F%93%B1-mobile-navigation">📱 <strong>Mobile Navigation</strong></h2>
+<p>Die mobile Navigation enthält alle Hauptfunktionen in gruppierter Form:</p>
+<ul>
+<li><strong>Dashboard</strong> (Hauptübersicht)</li>
+<li><strong>BENUTZER</strong> (Benutzerbereich)</li>
+<li><strong>PROJEKTE</strong> (Projektverwaltung)</li>
+<li><strong>KUNDEN</strong> (Kundenverwaltung)</li>
+<li><strong>DATEN</strong> (Datenverwaltung)</li>
+<li><strong>BESS-ANALYSEN</strong> (Batteriespeicher-Analysen)</li>
+<li><strong>WIRTSCHAFTLICHKEIT</strong> (Wirtschaftlichkeitsberechnungen)</li>
+<li><strong>ADMIN</strong> (Administration, nur für Admins)</li>
+</ul>
+<hr>
+<h2 id="%F0%9F%94%90-authentifizierung">🔐 <strong>Authentifizierung</strong></h2>
+<ul>
+<li><strong>Login</strong> - Benutzeranmeldung</li>
+<li><strong>Registrierung</strong> - Neuen Benutzer anlegen</li>
+<li><strong>Logout</strong> - Benutzer abmelden</li>
+<li><strong>Profil</strong> - Benutzerprofil verwalten</li>
+</ul>
+<hr>
+<h2 id="%F0%9F%93%8A-zus%C3%A4tzliche-funktionen">📊 <strong>Zusätzliche Funktionen</strong></h2>
+<ul>
+<li><strong>PWA Install</strong> - Progressive Web App Installation</li>
+<li><strong>Auto-Save</strong> - Automatisches Speichern</li>
+<li><strong>Export-Funktionen</strong> - Datenexport in verschiedenen Formaten</li>
+<li><strong>Live-Integration</strong> - Live-Daten von BESS-Systemen</li>
+<li><strong>Notification System</strong> - Benachrichtigungssystem</li>
+</ul>
+<hr>
+<p><em>Stand: Januar 2025</em><br>
+<em>BESS-Simulation v2.0</em></p>
+
+</body>
+</html>

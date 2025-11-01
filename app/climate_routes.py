@@ -44,21 +44,25 @@ def get_projects():
             SELECT DISTINCT project_id 
             FROM co2_balance 
             WHERE project_id IS NOT NULL
+            GROUP BY project_id
             HAVING COUNT(*) > 0
             UNION
             SELECT DISTINCT project_id 
             FROM sustainability_metrics 
             WHERE project_id IS NOT NULL
+            GROUP BY project_id
             HAVING COUNT(*) > 0
             UNION
             SELECT DISTINCT project_id 
             FROM esg_reports 
             WHERE project_id IS NOT NULL
+            GROUP BY project_id
             HAVING COUNT(*) > 0
             UNION
             SELECT DISTINCT project_id 
             FROM battery_config 
             WHERE project_id IS NOT NULL
+            GROUP BY project_id
             HAVING COUNT(*) > 0
         ''')
         

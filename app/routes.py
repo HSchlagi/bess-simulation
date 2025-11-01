@@ -703,7 +703,7 @@ def api_delete_project(project_id):
 def api_load_profiles(project_id):
     """API-Endpoint für Lastprofile eines Projekts"""
     try:
-        print(f"🔄 Lade Lastprofile für Projekt {project_id}...")
+        print(f"[INFO] Lade Lastprofile fuer Projekt {project_id}...")
         
         cursor = get_db().cursor()
         profiles = []
@@ -779,7 +779,7 @@ def api_load_profiles(project_id):
                                 if location_name != location_key:
                                     break
                         except Exception as e:
-                            print(f"⚠️ Fehler beim Abrufen der Standort-Informationen: {e}")
+                            print(f"[WARN] Fehler beim Abrufen der Standort-Informationen: {e}")
                             location_name = location_key
                         
                         solar_profiles.append({
@@ -1896,7 +1896,7 @@ def save_apg_data_to_db(apg_data):
 def api_refresh_spot_prices():
     """Manueller Refresh der APG-Daten - Versuche aWattar API"""
     try:
-        print("🔄 Manueller APG-Daten-Refresh gestartet...")
+        print("[INFO] Manueller APG-Daten-Refresh gestartet...")
         
         # Versuche zuerst aWattar API (funktioniert besser)
         from awattar_data_fetcher import AWattarDataFetcher
@@ -1945,7 +1945,7 @@ def api_refresh_spot_prices():
             })
         
         # Letzter Fallback: Realistische Demo-Daten
-        print("⚠️ Keine echten APIs verfügbar, verwende realistische Demo-Daten")
+        print("[WARN] Keine echten APIs verfuegbar, verwende realistische Demo-Daten")
         demo_data = generate_realistic_2024_prices()
         save_demo_data_to_db(demo_data)
         
@@ -1958,7 +1958,7 @@ def api_refresh_spot_prices():
         })
             
     except Exception as e:
-        print(f"❌ Fehler beim APG-Refresh: {e}")
+        print(f"[ERROR] Fehler beim APG-Refresh: {e}")
         return jsonify({
             'success': False,
             'error': f'Fehler beim Laden der Daten: {str(e)}'

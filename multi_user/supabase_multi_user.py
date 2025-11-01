@@ -21,14 +21,14 @@ class SupabaseMultiUser:
         if not SUPABASE_AVAILABLE or self.supabase_url == "https://your-project.supabase.co" or self.supabase_key == "your-anon-key":
             self.demo_mode = True
             self.supabase = None
-            print("🔧 Demo-Modus aktiviert - Verwende lokale Daten")
+            print("[DEMO] Demo-Modus aktiviert - Verwende lokale Daten")
         else:
             self.demo_mode = False
             try:
                 self.supabase: Client = create_client(self.supabase_url, self.supabase_key)
-                print("✅ Supabase-Verbindung erfolgreich")
+                print("[OK] Supabase-Verbindung erfolgreich")
             except Exception as e:
-                print(f"⚠️ Supabase-Fehler: {e} - Demo-Modus aktiviert")
+                print(f"[WARN] Supabase-Fehler: {e} - Demo-Modus aktiviert")
                 self.demo_mode = True
                 self.supabase = None
     

@@ -2,6 +2,9 @@
 
 {% block extra_head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 {% endblock %}
 
 {% block content %}
@@ -128,8 +131,11 @@
                         <span class="font-medium">Aktueller Preis</span>
                         <span class="text-blue-600 font-bold" id="currentPriceValue">45 €</span>
                     </div>
-                    <button class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700">
+                    <button id="sellCreditsButton" class="w-full bg-orange-600 text-white py-2 px-4 rounded-lg hover:bg-orange-700 transition-all duration-200 transform hover:scale-105">
                         <i class="fas fa-handshake mr-2"></i>Credits verkaufen
+                    </button>
+                    <button id="generateCreditsButton" onclick="generateCredits()" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 mt-2">
+                        <i class="fas fa-plus mr-2"></i>Credits generieren
                     </button>
                 </div>
             </div>
@@ -430,38 +436,138 @@ async function loadProjectData(projectId) {
         const response = await fetch(`/climate/api/climate/co2-data/${projectId}`);
         const data = await response.json();
         
-        if (data.success && data.co2_data) {
-            const co2Data = data.co2_data;
+        console.log('🔍 API Response:', data);
+        
+        if (data.success && data.data) {
+            const co2Data = data.data;
+            console.log('📊 CO2-Daten erhalten:', co2Data);
             
             // Berechnungen basierend auf CO2-Daten
             const totalCredits = Math.floor(co2Data.total_co2_saved * 0.37); // 0.37 Credits pro kg CO2
             const soldCredits = Math.floor(totalCredits * 0.6); // 60% verkauft
             const availableCredits = totalCredits - soldCredits;
             const revenue = Math.floor(soldCredits * 45); // 45€ pro Credit
-            const avgPrice = 45;
+            
+            console.log('💰 Berechnete Werte:', { totalCredits, soldCredits, availableCredits, revenue });
+            const avgPrice = Math.round(revenue / soldCredits); // Dynamisch berechnet
+            console.log('💰 Durchschnittspreis berechnet:', { revenue, soldCredits, avgPrice });
             const marketStatus = 'Aktiv';
             
-            // UI aktualisieren
-            document.getElementById('availableCredits').textContent = availableCredits.toLocaleString();
-            document.getElementById('soldCredits').textContent = soldCredits.toLocaleString();
-            document.getElementById('revenue').textContent = revenue.toLocaleString() + ' €';
-            document.getElementById('avgPrice').textContent = avgPrice + ' €';
-            document.getElementById('marketStatus').textContent = 'Markt: ' + marketStatus;
+            // UI aktualisieren - ALLE Elemente mit Debugging
+            console.log('🔄 Aktualisiere UI-Elemente...');
+            
+            const availableElement = document.getElementById('availableCredits');
+            const soldElement = document.getElementById('soldCredits');
+            const revenueElement = document.getElementById('revenue');
+            const avgPriceElement = document.getElementById('avgPrice');
+            const marketStatusElement = document.getElementById('marketStatus');
+            
+            if (availableElement) {
+                availableElement.textContent = availableCredits.toLocaleString();
+                console.log('✅ Available Credits UI aktualisiert:', availableCredits);
+            } else {
+                console.error('❌ availableCredits Element nicht gefunden!');
+            }
+            
+            if (soldElement) {
+                soldElement.textContent = soldCredits.toLocaleString();
+                console.log('✅ Sold Credits UI aktualisiert:', soldCredits);
+            } else {
+                console.error('❌ soldCredits Element nicht gefunden!');
+            }
+            
+            if (revenueElement) {
+                revenueElement.textContent = revenue.toLocaleString() + ' €';
+                console.log('✅ Revenue UI aktualisiert:', revenue);
+            } else {
+                console.error('❌ revenue Element nicht gefunden!');
+            }
+            
+            if (avgPriceElement) {
+                avgPriceElement.textContent = avgPrice + ' €';
+                console.log('✅ Avg Price UI aktualisiert:', avgPrice);
+            } else {
+                console.error('❌ avgPrice Element nicht gefunden!');
+            }
+            
+            if (marketStatusElement) {
+                marketStatusElement.textContent = 'Markt: ' + marketStatus;
+                console.log('✅ Market Status UI aktualisiert:', marketStatus);
+            } else {
+                console.error('❌ marketStatus Element nicht gefunden!');
+            }
             
             // Charts aktualisieren - monthly_trend zu Zahlen-Array konvertieren
             const monthlyValues = co2Data.monthly_trend.map(item => item.saved || 0);
             updateCharts(availableCredits, soldCredits, monthlyValues);
             
             // Tab-Daten aktualisieren
-            document.getElementById('availableCreditsValue').textContent = availableCredits.toLocaleString();
-            document.getElementById('soldCreditsValue').textContent = soldCredits.toLocaleString();
-            document.getElementById('avgPriceValue').textContent = avgPrice + ' €';
-            document.getElementById('marketStatusValue').textContent = marketStatus;
-            document.getElementById('totalRevenueValue').textContent = revenue.toLocaleString() + ' €';
-            document.getElementById('marketVolume').textContent = soldCredits.toLocaleString();
+            console.log('🔄 Aktualisiere Tab-Elemente...');
+            
+            const availableCreditsValueElement = document.getElementById('availableCreditsValue');
+            const soldCreditsValueElement = document.getElementById('soldCreditsValue');
+            const avgPriceValueElement = document.getElementById('avgPriceValue');
+            const marketStatusValueElement = document.getElementById('marketStatusValue');
+            const totalRevenueValueElement = document.getElementById('totalRevenueValue');
+            const marketVolumeElement = document.getElementById('marketVolume');
+            
+            if (availableCreditsValueElement) {
+                availableCreditsValueElement.textContent = availableCredits.toLocaleString();
+                console.log('✅ Tab Available Credits aktualisiert:', availableCredits);
+            }
+            
+            if (soldCreditsValueElement) {
+                soldCreditsValueElement.textContent = soldCredits.toLocaleString();
+                console.log('✅ Tab Sold Credits aktualisiert:', soldCredits);
+            }
+            
+            if (avgPriceValueElement) {
+                avgPriceValueElement.textContent = avgPrice + ' €';
+                console.log('✅ Tab Avg Price aktualisiert:', avgPrice);
+            }
+            
+            if (marketStatusValueElement) {
+                marketStatusValueElement.textContent = marketStatus;
+                console.log('✅ Tab Market Status aktualisiert:', marketStatus);
+            }
+            
+            if (totalRevenueValueElement) {
+                totalRevenueValueElement.textContent = revenue.toLocaleString() + ' €';
+                console.log('✅ Tab Revenue aktualisiert:', revenue);
+            }
+            
+            if (marketVolumeElement) {
+                marketVolumeElement.textContent = soldCredits.toLocaleString();
+                console.log('✅ Tab Market Volume aktualisiert:', soldCredits);
+            }
             
             // Zusätzliche Charts für Tabs aktualisieren
+            console.log('📊 Rufe updateTabCharts auf mit:', { availableCredits, soldCredits, revenue });
             updateTabCharts(availableCredits, soldCredits, monthlyValues, revenue);
+            
+            // Zusätzliche UI-Elemente aktualisieren
+            console.log('🔄 Aktualisiere zusätzliche UI-Elemente...');
+            
+            // Verfügbare Credits in der Hauptansicht aktualisieren
+            const mainAvailableElement = document.getElementById('availableCredits');
+            if (mainAvailableElement) {
+                mainAvailableElement.textContent = availableCredits.toLocaleString();
+                console.log('✅ Main Available Credits aktualisiert:', availableCredits);
+            }
+            
+            // Verkaufte Credits in der Hauptansicht aktualisieren
+            const mainSoldElement = document.getElementById('soldCredits');
+            if (mainSoldElement) {
+                mainSoldElement.textContent = soldCredits.toLocaleString();
+                console.log('✅ Main Sold Credits aktualisiert:', soldCredits);
+            }
+            
+            // Umsatz in der Hauptansicht aktualisieren
+            const mainRevenueElement = document.getElementById('revenue');
+            if (mainRevenueElement) {
+                mainRevenueElement.textContent = revenue.toLocaleString() + ' €';
+                console.log('✅ Main Revenue aktualisiert:', revenue);
+            }
             
             console.log('✅ Carbon Credits Daten geladen:', {
                 totalCredits,
@@ -470,14 +576,48 @@ async function loadProjectData(projectId) {
                 revenue,
                 avgPrice
             });
+        } else {
+            console.error('❌ API-Fehler oder keine Daten:', data);
+            console.log('🔄 Lade Demo-Daten als Fallback...');
+            loadDemoData();
         }
     } catch (error) {
-        console.error('Fehler beim Laden der Projekt-Daten:', error);
+        console.error('❌ Fehler beim Laden der Projekt-Daten:', error);
+        console.log('🔄 Lade Demo-Daten als Fallback...');
+        if (typeof window.loadDemoData === 'function') {
+            window.loadDemoData();
+        } else {
+            console.error('❌ window.loadDemoData ist keine Funktion!');
+        }
+    }
+}
+
+// Intelligente Chart-Cleanup-Funktion
+function destroyAllCharts() {
+    try {
+        if (typeof creditsChart !== 'undefined' && creditsChart) {
+            creditsChart.destroy();
+            creditsChart = null;
+        }
+        if (typeof priceChart !== 'undefined' && priceChart) {
+            priceChart.destroy();
+            priceChart = null;
+        }
+        if (typeof historyChart !== 'undefined' && historyChart) {
+            historyChart.destroy();
+            historyChart = null;
+        }
+        console.log('✅ Alle Charts erfolgreich zerstört');
+    } catch (error) {
+        console.error('❌ Fehler beim Zerstören der Charts:', error);
     }
 }
 
 // Charts aktualisieren
 function updateCharts(availableCredits, soldCredits, monthlyTrend) {
+    // Alle Charts vorher zerstören
+    destroyAllCharts();
+    
     // Credits Chart
     if (creditsChart) creditsChart.destroy();
     const creditsCtx = document.getElementById('creditsChart').getContext('2d');
@@ -548,6 +688,64 @@ function updateCharts(availableCredits, soldCredits, monthlyTrend) {
 
 // Tab-Charts aktualisieren
 function updateTabCharts(availableCredits, soldCredits, monthlyValues, revenue) {
+    console.log('🔄 updateTabCharts aufgerufen mit:', { availableCredits, soldCredits, revenue });
+    
+    // UI-Elemente aktualisieren
+    try {
+        const availableElement = document.getElementById('availableCreditsValue');
+        const soldElement = document.getElementById('soldCreditsValue');
+        const revenueElement = document.getElementById('totalRevenueValue');
+        
+        if (availableElement) {
+            availableElement.textContent = availableCredits.toLocaleString();
+            console.log('✅ Available Credits aktualisiert:', availableCredits);
+        }
+        
+        if (soldElement) {
+            soldElement.textContent = soldCredits.toLocaleString();
+            console.log('✅ Sold Credits aktualisiert:', soldCredits);
+        }
+        
+        if (revenueElement) {
+            revenueElement.textContent = revenue.toLocaleString() + ' €';
+            console.log('✅ Revenue aktualisiert:', revenue);
+        }
+        
+        // Zusätzliche UI-Elemente aktualisieren
+        const marketVolumeElement = document.getElementById('marketVolume');
+        if (marketVolumeElement) {
+            marketVolumeElement.textContent = soldCredits.toLocaleString();
+        }
+        
+        // Durchschnittspreis aktualisieren
+        const avgPriceElement = document.getElementById('avgPriceValue');
+        if (avgPriceElement && soldCredits > 0) {
+            const avgPrice = Math.round(revenue / soldCredits);
+            avgPriceElement.textContent = avgPrice.toLocaleString() + ' €';
+        }
+        
+        // Verfügbare Credits in der Hauptansicht aktualisieren
+        const mainAvailableElement = document.getElementById('availableCredits');
+        if (mainAvailableElement) {
+            mainAvailableElement.textContent = availableCredits.toLocaleString();
+        }
+        
+        // Verkaufte Credits in der Hauptansicht aktualisieren
+        const mainSoldElement = document.getElementById('soldCredits');
+        if (mainSoldElement) {
+            mainSoldElement.textContent = soldCredits.toLocaleString();
+        }
+        
+        // Umsatz in der Hauptansicht aktualisieren
+        const mainRevenueElement = document.getElementById('revenue');
+        if (mainRevenueElement) {
+            mainRevenueElement.textContent = revenue.toLocaleString() + ' €';
+        }
+        
+    } catch (error) {
+        console.error('❌ Fehler beim Aktualisieren der UI-Elemente:', error);
+    }
+    
     // Trading History Chart
     if (tradingHistoryChart) tradingHistoryChart.destroy();
     const tradingHistoryCtx = document.getElementById('tradingHistoryChart');
@@ -719,7 +917,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`✅ ${data.projects.length} Projekte geladen, Dropdown leer gelassen`);
             } else {
                 console.error('❌ API Response hat keine Projekte:', data);
-                loadDemoData();
+                if (typeof window.loadDemoData === 'function') {
+                    window.loadDemoData();
+                } else {
+                    console.error('❌ window.loadDemoData ist keine Funktion!');
+                }
             }
         } catch (error) {
             console.error('❌ Fehler beim Laden der Projekte:', error);
@@ -739,7 +941,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateCarbonCreditsChart(result.data);
             } else {
                 console.error('API-Fehler:', result.error);
-                loadDemoData();
+                if (typeof window.loadDemoData === 'function') {
+                    window.loadDemoData();
+                } else {
+                    console.error('❌ window.loadDemoData ist keine Funktion!');
+                }
             }
         } catch (error) {
             console.error('Fehler beim Laden der CO2-Daten:', error);
@@ -747,8 +953,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Demo-Daten als Fallback
+    // Demo-Daten als Fallback - GLOBALE FUNKTION
     function loadDemoData() {
+        console.log('🚀 loadDemoData() Funktion aufgerufen!');
+        console.log('🔄 Lade Demo-Daten...');
+        console.log('🔍 loadDemoData ist definiert:', typeof loadDemoData);
         const data = {
             total_co2_saved: 1161.3,
             total_co2_emitted: 89.2,
@@ -769,10 +978,100 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         };
         
-        updateCO2Metrics(data);
-        updateCO2TrendChart(data.monthly_trend);
-        updateCarbonCreditsChart(data);
-    }
+        console.log('📊 Demo-Daten geladen:', data);
+        
+        // Berechnungen basierend auf Demo-Daten
+        const totalCredits = Math.floor(data.total_co2_saved * 0.37); // 0.37 Credits pro kg CO2
+        const soldCredits = Math.floor(totalCredits * 0.6); // 60% verkauft
+        const availableCredits = totalCredits - soldCredits;
+        const revenue = Math.floor(soldCredits * 45); // 45€ pro Credit
+        const avgPrice = Math.round(revenue / soldCredits); // Dynamisch berechnet
+        console.log('💰 Demo-Durchschnittspreis berechnet:', { revenue, soldCredits, avgPrice });
+        const marketStatus = 'Aktiv';
+        
+        console.log('💰 Demo-Werte berechnet:', { totalCredits, soldCredits, availableCredits, revenue });
+        
+        // UI aktualisieren - ALLE Elemente mit Debugging
+        console.log('🔄 Aktualisiere UI-Elemente mit Demo-Daten...');
+        
+        const availableElement = document.getElementById('availableCredits');
+        const soldElement = document.getElementById('soldCredits');
+        const revenueElement = document.getElementById('revenue');
+        const avgPriceElement = document.getElementById('avgPrice');
+        const marketStatusElement = document.getElementById('marketStatus');
+        
+        if (availableElement) {
+            availableElement.textContent = availableCredits.toLocaleString();
+            console.log('✅ Demo Available Credits UI aktualisiert:', availableCredits);
+        }
+        
+        if (soldElement) {
+            soldElement.textContent = soldCredits.toLocaleString();
+            console.log('✅ Demo Sold Credits UI aktualisiert:', soldCredits);
+        }
+        
+        if (revenueElement) {
+            revenueElement.textContent = revenue.toLocaleString() + ' €';
+            console.log('✅ Demo Revenue UI aktualisiert:', revenue);
+        }
+        
+        if (avgPriceElement) {
+            avgPriceElement.textContent = avgPrice + ' €';
+            console.log('✅ Demo Avg Price UI aktualisiert:', avgPrice);
+        }
+        
+        if (marketStatusElement) {
+            marketStatusElement.textContent = 'Markt: ' + marketStatus;
+            console.log('✅ Demo Market Status UI aktualisiert:', marketStatus);
+        }
+        
+        // Tab-Daten aktualisieren
+        console.log('🔄 Aktualisiere Tab-Elemente mit Demo-Daten...');
+        
+        const availableCreditsValueElement = document.getElementById('availableCreditsValue');
+        const soldCreditsValueElement = document.getElementById('soldCreditsValue');
+        const avgPriceValueElement = document.getElementById('avgPriceValue');
+        const marketStatusValueElement = document.getElementById('marketStatusValue');
+        const totalRevenueValueElement = document.getElementById('totalRevenueValue');
+        const marketVolumeElement = document.getElementById('marketVolume');
+        
+        if (availableCreditsValueElement) {
+            availableCreditsValueElement.textContent = availableCredits.toLocaleString();
+            console.log('✅ Demo Tab Available Credits aktualisiert:', availableCredits);
+        }
+        
+        if (soldCreditsValueElement) {
+            soldCreditsValueElement.textContent = soldCredits.toLocaleString();
+            console.log('✅ Demo Tab Sold Credits aktualisiert:', soldCredits);
+        }
+        
+        if (avgPriceValueElement) {
+            avgPriceValueElement.textContent = avgPrice + ' €';
+            console.log('✅ Demo Tab Avg Price aktualisiert:', avgPrice);
+        }
+        
+        if (marketStatusValueElement) {
+            marketStatusValueElement.textContent = marketStatus;
+            console.log('✅ Demo Tab Market Status aktualisiert:', marketStatus);
+        }
+        
+        if (totalRevenueValueElement) {
+            totalRevenueValueElement.textContent = revenue.toLocaleString() + ' €';
+            console.log('✅ Demo Tab Revenue aktualisiert:', revenue);
+        }
+        
+        if (marketVolumeElement) {
+            marketVolumeElement.textContent = soldCredits.toLocaleString();
+            console.log('✅ Demo Tab Market Volume aktualisiert:', soldCredits);
+        }
+        
+        // Charts aktualisieren
+        const monthlyValues = data.monthly_trend.map(item => item.saved || 0);
+        updateCharts(availableCredits, soldCredits, monthlyValues);
+        updateTabCharts(availableCredits, soldCredits, monthlyValues, revenue);
+        
+        console.log('✅ Demo-Daten erfolgreich geladen und UI aktualisiert!');
+    };
 
     // CO2-Metriken aktualisieren
     function updateCO2Metrics(data) {
@@ -900,8 +1199,78 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Credits generieren Funktion - FINALE VERSION (GLOBAL)
+    function generateCredits() {
+        console.log('🚀 generateCredits() Funktion aufgerufen!');
+        console.log('🔍 Debug: Template Version 3.0 - FINALE VERSION');
+        
+        const availableCredits = document.getElementById('availableCreditsValue');
+        if (!availableCredits) {
+            console.error('❌ availableCreditsValue Element nicht gefunden!');
+            alert('Fehler: Credits-Element nicht gefunden!');
+            return;
+        }
+        
+        const currentCredits = parseInt(availableCredits.textContent) || 0;
+        const newCredits = currentCredits + 100; // 100 neue Credits generieren
+        
+        console.log(`📊 Credits vor Update: ${currentCredits}`);
+        availableCredits.textContent = newCredits;
+        console.log(`📊 Credits nach Update: ${newCredits}`);
+        
+        // Visuelle Bestätigung
+        availableCredits.style.backgroundColor = '#10B981';
+        availableCredits.style.color = 'white';
+        availableCredits.style.padding = '5px';
+        availableCredits.style.borderRadius = '5px';
+        
+        setTimeout(() => {
+            availableCredits.style.backgroundColor = '';
+            availableCredits.style.color = '';
+            availableCredits.style.padding = '';
+            availableCredits.style.borderRadius = '';
+        }, 2000);
+        
+        // Einfache Erfolgsmeldung
+        alert(`✅ ${100} neue Credits generiert! Gesamt: ${newCredits} Credits`);
+        
+        // Chart aktualisieren - mit aktuellen Werten
+        const availableCredits = parseInt(document.getElementById('availableCreditsValue').textContent) || 0;
+        const soldCredits = parseInt(document.getElementById('soldCreditsValue').textContent) || 0;
+        const monthlyTrend = [1, 2, 3, 4, 5, 6]; // Demo-Daten
+        updateCharts(availableCredits, soldCredits, monthlyTrend);
+    };
+
+    // Zusätzliche globale Zuweisung für maximale Kompatibilität
+    window.generateCredits = generateCredits;
+
     // Initialisierung
     loadProjects();
+    
+    // Event-Listener entfernt - verwende onclick="generateCredits()" stattdessen
+    
+    // Credits verkaufen Button Event-Listener
+    document.getElementById('sellCreditsButton').addEventListener('click', function() {
+        console.log('🚀 Credits verkaufen Button geklickt!');
+        
+        const availableCredits = document.getElementById('availableCreditsValue').textContent;
+        const currentPrice = document.getElementById('currentPriceValue').textContent;
+        
+        if (availableCredits === '0' || availableCredits === '0') {
+            showNotification('⚠️ Keine Credits zum Verkauf verfügbar! Alle Credits wurden bereits verkauft.', 'warning');
+            return;
+        }
+        
+        // Modal oder Bestätigung anzeigen
+        const confirmMessage = `Möchten Sie ${availableCredits} Credits zum Preis von ${currentPrice} pro Credit verkaufen?`;
+        
+        if (confirm(confirmMessage)) {
+            // Simuliere Verkauf
+            sellCredits(parseInt(availableCredits.replace(/,/g, '')), parseInt(currentPrice.replace(' €', '')));
+        }
+    });
+    
+    console.log('✅ Event Listeners registriert');
 });
 
 // Berichtswesen Funktionen für Carbon Credits Dashboard
@@ -1075,13 +1444,15 @@ function showReportNotification(message, type) {
     const colors = {
         'info': 'bg-blue-500',
         'success': 'bg-green-500',
-        'error': 'bg-red-500'
+        'error': 'bg-red-500',
+        'warning': 'bg-yellow-500'
     };
     
     const icons = {
         'info': 'fa-info-circle',
         'success': 'fa-check-circle',
-        'error': 'fa-exclamation-circle'
+        'error': 'fa-exclamation-circle',
+        'warning': 'fa-exclamation-triangle'
     };
     
     const toast = document.createElement('div');
@@ -1107,6 +1478,74 @@ function showReportNotification(message, type) {
             }
         }, 300);
     }, 3000);
+}
+
+// Credits verkaufen Funktion
+function sellCredits(creditsToSell, pricePerCredit) {
+    console.log(`💰 Verkaufe ${creditsToSell} Credits zu ${pricePerCredit}€ pro Credit`);
+    
+    const button = document.getElementById('sellCreditsButton');
+    const originalText = button.innerHTML;
+    
+    // Button während Verkauf deaktivieren
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verkaufe...';
+    button.classList.add('opacity-75', 'cursor-not-allowed');
+    
+    // Simuliere Verkaufsprozess
+    setTimeout(() => {
+        try {
+            // Berechne neue Werte
+            const currentAvailable = parseInt(document.getElementById('availableCreditsValue').textContent.replace(/,/g, ''));
+            const currentSold = parseInt(document.getElementById('soldCreditsValue').textContent.replace(/,/g, ''));
+            const currentRevenue = parseInt(document.getElementById('revenue').textContent.replace(/[€,]/g, ''));
+            
+            const newAvailable = Math.max(0, currentAvailable - creditsToSell);
+            const newSold = currentSold + creditsToSell;
+            const newRevenue = currentRevenue + (creditsToSell * pricePerCredit);
+            
+            // UI aktualisieren
+            document.getElementById('availableCredits').textContent = newAvailable.toLocaleString();
+            document.getElementById('availableCreditsValue').textContent = newAvailable.toLocaleString();
+            document.getElementById('soldCredits').textContent = newSold.toLocaleString();
+            document.getElementById('soldCreditsValue').textContent = newSold.toLocaleString();
+            document.getElementById('revenue').textContent = newRevenue.toLocaleString() + ' €';
+            document.getElementById('totalRevenueValue').textContent = newRevenue.toLocaleString() + ' €';
+            document.getElementById('marketVolume').textContent = newSold.toLocaleString();
+            
+            // Charts aktualisieren
+            const monthlyValues = [95.2, 108.7, 142.3, 156.8, 178.9, 195.6];
+            updateCharts(newAvailable, newSold, monthlyValues);
+            updateTabCharts(newAvailable, newSold, monthlyValues, newRevenue);
+            
+            // Erfolgsmeldung
+            const totalValue = creditsToSell * pricePerCredit;
+            alert(`✅ Erfolgreich ${creditsToSell} Credits für ${totalValue.toLocaleString()}€ verkauft!`);
+            
+            console.log('✅ Credits erfolgreich verkauft:', {
+                creditsToSell,
+                pricePerCredit,
+                totalValue,
+                newAvailable,
+                newSold,
+                newRevenue
+            });
+            
+        } catch (error) {
+            console.error('❌ Fehler beim Verkauf:', error);
+            alert('❌ Fehler beim Verkauf der Credits!');
+        } finally {
+            // Button zurücksetzen
+            button.disabled = false;
+            button.innerHTML = originalText;
+            button.classList.remove('opacity-75', 'cursor-not-allowed');
+        }
+    }, 2000);
+}
+
+// Globale showNotification Funktion - vereinfacht
+function showNotification(message, type) {
+    alert(message);
 }
 </script>
 {% endblock %}
