@@ -119,6 +119,7 @@
   - Day-Ahead Preise (A44)
   - Intraday Preise (A69)
   - Generation/Load Daten
+- **Kombinierte Spotpreis-Ansicht** mit APG, ENTSO-E A44 und aWATTar inklusive Quellen-Auswahl (entsoe, apg, awattar, combined), Quellaufschlüsselung sowie farbcodierten Tooltips im Dashboard
 
 #### **Wasserkraft**
 - **eHYD** - Österreichische Wasserstandsdaten
@@ -397,12 +398,17 @@ Content-Type: application/json
 {
   "start_date": "2025-01-01",
   "end_date": "2025-01-31",
-  "source": "awattar"
+  "data_source": "entsoe"  # entsoe | apg | awattar | combined
 }
 
 # Spot-Preise aktualisieren
 POST /api/spot-prices/refresh
 ```
+
+**Antwort-Felder (Auszug):**
+- `data`: Liste der Preise mit `source`, `source_category`, `source_label`, `region`, `market`
+- `status_info`: Enthält Tonalität und Text, z. B. „✅ Kombinierte APG & ENTSO-E Daten – 21× APG, 21× ENTSO-E, …“
+- `source_summary`: Aggregierte Aufstellung je Quelle (`category`, `label`, `count`, `percentage`) für Dashboard-Legende und Tooltips
 
 ### ENTSO-E Daten
 

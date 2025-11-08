@@ -38,8 +38,10 @@ class ENTSOEData:
 class ENTSOEAPIFetcher:
     """Hauptklasse für ENTSO-E API Integration"""
     
-    def __init__(self):
-        self.api_key = os.getenv('ENTSOE_API_KEY', '')
+    def __init__(self, api_key: Optional[str] = None):
+        env_token = os.getenv('ENTSOE_API_KEY', '')
+        self.api_key = api_key or env_token or ''
+        self.demo_mode = not bool(self.api_key)
         self.base_url = 'https://web-api.tp.entsoe.eu/api'
         
         # Rate Limiting
@@ -56,6 +58,18 @@ class ENTSOEAPIFetcher:
             'SK': 'Slovakia',
             'HU': 'Hungary',
             'SI': 'Slovenia'
+        }
+
+        self.bidding_zones = {
+            'AT': '10YAT-APG------L',
+            'DE': '10Y1001A1001A83F',
+            'DE-LU': '10Y1001A1001A82H',
+            'CH': '10YCH-SWISSGRIDZ',
+            'IT': '10YIT-GRTN-----B',
+            'CZ': '10YCZ-CEPS-----N',
+            'SK': '10YSK-SEPS-----K',
+            'HU': '10YHU-MAVIR----U',
+            'SI': '10YSI-ELES-----O'
         }
         
         # Market Types
@@ -103,48 +117,71 @@ class ENTSOEAPIFetcher:
             root = ET.fromstring(xml_content)
             data_points = []
             
-            # ENTSO-E XML Namespace
-            ns = {'ns': 'urn:iec62325.351:tc57wg16:451-6:balancingmarketdocument:3:0'}
+            default_ns = root.tag.split('}')[0].strip('{')
+            ns = {'ns': default_ns}
             
-            # Suche nach TimeSeries
             for timeseries in root.findall('.//ns:TimeSeries', ns):
-                # Market Type extrahieren
                 market_type = 'unknown'
-                for mkt_type in timeseries.findall('.//ns:businessType', ns):
-                    if mkt_type.text:
-                        market_type = mkt_type.text
-                        break
+                business = timeseries.find('.//ns:businessType', ns)
+                if business is not None and business.text:
+                    market_type = business.text
                 
-                # Country Code extrahieren
-                country_code = 'AT'  # Default
-                for area in timeseries.findall('.//ns:outBiddingZone_Domain.mRID', ns):
-                    if area.text:
-                        country_code = area.text[:2]  # Erste 2 Zeichen
-                        break
+                country_code = 'AT'
+                bidding_zone = timeseries.find('.//ns:outBiddingZone_Domain.mRID', ns)
+                if bidding_zone is None:
+                    bidding_zone = timeseries.find('.//ns:in_Domain.mRID', ns)
+                if bidding_zone is not None and bidding_zone.text:
+                    zone_text = bidding_zone.text
+                    if zone_text.startswith('10Y') and '-' in zone_text:
+                        country_code = zone_text[2:4]
+                    elif len(zone_text) >= 2:
+                        country_code = zone_text[:2]
                 
-                # Period extrahieren
-                for period in timeseries.findall('.//ns:Period', ns):
-                    start_time = period.find('.//ns:start', ns)
-                    if start_time is not None:
-                        start_dt = datetime.fromisoformat(start_time.text.replace('Z', '+00:00'))
+                periods = timeseries.findall('.//ns:Period', ns)
+                if not periods:
+                    periods = timeseries.findall('.//ns:period', ns)
+                
+                for period in periods:
+                    start_node = period.find('.//ns:start', ns)
+                    resolution_node = period.find('.//ns:resolution', ns)
+                    if start_node is None:
+                        continue
+                    start_dt = datetime.fromisoformat(start_node.text.replace('Z', '+00:00'))
+                    
+                    resolution = resolution_node.text if resolution_node is not None else 'PT60M'
+                    if resolution == 'PT15M':
+                        step = timedelta(minutes=15)
+                    elif resolution == 'PT30M':
+                        step = timedelta(minutes=30)
+                    else:
+                        step = timedelta(hours=1)
+                    
+                    points = period.findall('.//ns:Point', ns)
+                    for point in points:
+                        position_node = point.find('.//ns:position', ns)
+                        price_node = point.find('.//ns:price.amount', ns)
+                        quantity_node = point.find('.//ns:quantity', ns)
                         
-                        # Point extrahieren
-                        for point in period.findall('.//ns:Point', ns):
-                            position = point.find('.//ns:position', ns)
-                            quantity = point.find('.//ns:quantity', ns)
-                            
-                            if position is not None and quantity is not None:
-                                # Zeitstempel berechnen (Position ist Stunden-Offset)
-                                timestamp = start_dt + timedelta(hours=int(position.text) - 1)
-                                
-                                data_points.append(ENTSOEData(
-                                    timestamp=timestamp,
-                                    price_eur_mwh=float(quantity.text),
-                                    country_code=country_code,
-                                    market_type=market_type,
-                                    data_type='price',
-                                    source='ENTSO-E'
-                                ))
+                        price_text = None
+                        if price_node is not None and price_node.text:
+                            price_text = price_node.text
+                        elif quantity_node is not None and quantity_node.text:
+                            price_text = quantity_node.text
+                        
+                        if position_node is None or price_text is None:
+                            continue
+                        
+                        position = int(position_node.text)
+                        timestamp = start_dt + step * (position - 1)
+                        
+                        data_points.append(ENTSOEData(
+                            timestamp=timestamp,
+                            price_eur_mwh=float(price_text),
+                            country_code=country_code,
+                            market_type=market_type,
+                            data_type='price',
+                            source='ENTSO-E'
+                        ))
             
             return data_points
             
@@ -166,12 +203,14 @@ class ENTSOEAPIFetcher:
         if not end_date:
             end_date = datetime.now().strftime('%Y%m%d%H%M')
         
+        zone = self.bidding_zones.get(country_code, self.bidding_zones.get('AT'))
+
         url = f"{self.base_url}"
         params = {
             'securityToken': self.api_key,
             'documentType': self.market_types['day_ahead'],
-            'in_Domain': f"{country_code}_10Y1001A1001A63L",  # Bidding Zone Domain
-            'out_Domain': f"{country_code}_10Y1001A1001A63L",
+            'in_Domain': zone,
+            'out_Domain': zone,
             'periodStart': start_date,
             'periodEnd': end_date
         }
@@ -196,12 +235,14 @@ class ENTSOEAPIFetcher:
         if not end_date:
             end_date = datetime.now().strftime('%Y%m%d%H%M')
         
+        zone = self.bidding_zones.get(country_code, self.bidding_zones.get('AT'))
+
         url = f"{self.base_url}"
         params = {
             'securityToken': self.api_key,
             'documentType': self.market_types['intraday'],
-            'in_Domain': f"{country_code}_10Y1001A1001A63L",
-            'out_Domain': f"{country_code}_10Y1001A1001A63L",
+            'in_Domain': zone,
+            'out_Domain': zone,
             'periodStart': start_date,
             'periodEnd': end_date
         }
@@ -226,12 +267,14 @@ class ENTSOEAPIFetcher:
         if not end_date:
             end_date = datetime.now().strftime('%Y%m%d%H%M')
         
+        zone = self.bidding_zones.get(country_code, self.bidding_zones.get('AT'))
+
         url = f"{self.base_url}"
         params = {
             'securityToken': self.api_key,
             'documentType': self.market_types['generation'],
-            'in_Domain': f"{country_code}_10Y1001A1001A63L",
-            'out_Domain': f"{country_code}_10Y1001A1001A63L",
+            'in_Domain': zone,
+            'out_Domain': zone,
             'periodStart': start_date,
             'periodEnd': end_date
         }

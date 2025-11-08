@@ -1,9 +1,11 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, session
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify, send_file, session, current_app
 from flask_login import login_required, current_user
 from app import db, get_db
 from datetime import datetime
+from collections import Counter
 import sys
 import os
+from pathlib import Path
 import sqlite3
 import pandas as pd
 import time
@@ -698,7 +700,6 @@ def api_delete_project(project_id):
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-
 @main_bp.route('/api/projects/<int:project_id>/load-profiles')
 def api_load_profiles(project_id):
     """API-Endpoint für Lastprofile eines Projekts"""
@@ -1498,7 +1499,6 @@ def api_reference_prices():
     except Exception as e:
         print(f"❌ Fehler beim Laden der Referenzpreise: {e}")
         return jsonify({'error': str(e)}), 400
-
 @main_bp.route('/api/reference-prices', methods=['POST'])
 def api_create_reference_price():
     try:
@@ -1636,199 +1636,385 @@ def api_delete_reference_price(price_id):
 @main_bp.route('/api/spot-prices', methods=['POST'])
 def api_spot_prices():
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
         time_range = data.get('time_range', 'month')
         start_date_str = data.get('start_date')
         end_date_str = data.get('end_date')
+        data_source = data.get('data_source', 'apg')
+        country_code = data.get('country', 'AT')
+        price_type = data.get('price_type', 'day_ahead')
         
-        # Datum-Parsing mit besserer Fehlerbehandlung
         try:
             if start_date_str and end_date_str:
-                # Entferne 'Z' am Ende falls vorhanden (ISO-Format)
                 start_date_str = start_date_str.replace('Z', '')
                 end_date_str = end_date_str.replace('Z', '')
-                
                 start_date = datetime.fromisoformat(start_date_str)
                 end_date = datetime.fromisoformat(end_date_str)
             else:
-                # Fallback: Letzte 7 Tage
                 end_date = datetime.now()
                 start_date = end_date - timedelta(days=7)
         except ValueError as e:
             print(f"❌ Datum-Parsing Fehler: {e}")
             return jsonify({
-                'success': False, 
+                'success': False,
                 'error': f'Ungültiges Datumsformat: {str(e)}',
                 'message': 'Bitte verwenden Sie das Format: YYYY-MM-DDTHH:MM:SS'
             }), 400
+
+        start_is_date_only = bool(start_date_str) and 'T' not in start_date_str
+        end_is_date_only = bool(end_date_str) and 'T' not in end_date_str
+
+        if start_is_date_only:
+            start_date = datetime.combine(start_date.date(), datetime.min.time())
+        if end_is_date_only:
+            end_date = datetime.combine(end_date.date(), datetime.min.time())
+
+        effective_end = end_date + timedelta(days=1) if end_is_date_only else end_date
+
+        now = datetime.now()
+        if effective_end > now:
+            print(f"ℹ️ Enddatum ({effective_end}) liegt in der Zukunft – begrenze auf {now}")
+            effective_end = now
+        if start_date > effective_end:
+            start_date = effective_end - timedelta(days=7)
+            print(f"ℹ️ Startdatum angepasst auf {start_date}, da es größer als Enddatum war")
         
-        print(f"🔍 Lade Spot-Preise für {start_date} bis {end_date}")
+        print(f"🔍 Lade Spot-Preise für {start_date} bis {effective_end} (Quelle: {data_source.upper()})")
         
-        # Versuche echte APG-Daten aus der Datenbank zu laden
-        try:
-            cursor = get_db().cursor()
-            
-            # Lade APG-Daten aus der Datenbank
-            cursor.execute("""
-                SELECT timestamp, price_eur_mwh, source, region, price_type
-                FROM spot_price 
-                WHERE timestamp BETWEEN ? AND ?
-                ORDER BY timestamp ASC
-            """, (start_date, end_date))
-            
-            db_data = cursor.fetchall()
-            
-            if db_data and len(db_data) > 0:
-                print(f"✅ {len(db_data)} APG-Daten aus Datenbank geladen")
-                
-                # Konvertiere zu JSON-Format
-                prices = []
-                for row in db_data:
-                    prices.append({
-                        'timestamp': row[0],
-                        'price': float(row[1]),
-                        'source': row[2],
-                        'region': row[3],
-                        'market': row[4]
-                    })
-                
-                # Bestimme Datenquelle basierend auf den gefilterten Daten
-                sources = set(row[2] for row in db_data)
-                print(f"🔍 Gefundene Datenquellen: {sources}")
-                
-                if any('APG' in source for source in sources):
-                    # Prüfe ob die gefilterten Daten aus 2024 sind
-                    cursor.execute("""
-                        SELECT COUNT(*) FROM spot_price 
-                        WHERE timestamp BETWEEN ? AND ? AND timestamp LIKE '2024%'
-                    """, (start_date, end_date))
-                    count_2024_in_range = cursor.fetchone()[0]
-                    print(f"🔍 2024-Daten im Bereich: {count_2024_in_range}")
-                    
-                    if count_2024_in_range > 0:
-                        source_info = "APG (Austrian Power Grid) - Echte österreichische Day-Ahead Preise für 2024"
-                    else:
-                        source_info = "APG (Austrian Power Grid) - Offizielle österreichische Day-Ahead Preise"
+        cursor = get_db().cursor()
+        
+        source_filters = []
+        if data_source == 'entsoe':
+            source_filters = ['ENTSO-E%']
+        elif data_source == 'apg':
+            source_filters = ['APG%', 'aWattar%']
+        elif data_source == 'awattar':
+            source_filters = ['aWATTAR%']
+        # combined -> keine Filter, alle Daten
+        
+        query = """
+            SELECT timestamp, price_eur_mwh, source, region, price_type
+            FROM spot_price
+            WHERE timestamp >= ? AND timestamp < ?
+        """
+        params = [start_date, effective_end]
+        
+        if source_filters:
+            query += " AND (" + " OR ".join(["source LIKE ?"] * len(source_filters)) + ")"
+            params.extend(source_filters)
+        
+        query += " ORDER BY timestamp ASC"
+        cursor.execute(query, params)
+        db_data = cursor.fetchall()
+        
+        if (not db_data or len(db_data) == 0) and data_source == 'entsoe':
+            print("ℹ️ Keine ENTSO-E Datensätze gefunden – starte Live-Abruf...")
+            try:
+                fetched = fetch_and_store_entsoe_prices(start_date, effective_end, country_code, price_type)
+                if fetched > 0:
+                    cursor.execute(query, params)
+                    db_data = cursor.fetchall()
+                    print(f"✅ {fetched} ENTSO-E Datensätze gespeichert")
+            except ValueError as ve:
+                return jsonify({
+                    'success': False,
+                    'data_source': 'entsoe',
+                    'error': str(ve),
+                    'message': 'Bitte hinterlegen Sie einen gültigen ENTSO-E Token im Admin-Bereich.'
+                }), 400
+            except Exception as entsoe_error:
+                print(f"❌ ENTSO-E Abruf fehlgeschlagen: {entsoe_error}")
+                return jsonify({
+                    'success': False,
+                    'data_source': 'entsoe',
+                    'error': str(entsoe_error),
+                    'message': 'ENTSO-E Daten konnten nicht geladen werden.'
+                }), 500
+        elif (not db_data or len(db_data) == 0) and data_source == 'awattar':
+            print("ℹ️ Keine aWATTAR Datensätze in der Datenbank – starte Live-Abruf...")
+            try:
+                from awattar_data_fetcher import AWattarDataFetcher
+                aw_fetcher = AWattarDataFetcher()
+                fetch_result = aw_fetcher.fetch_and_save(
+                    start_date=start_date,
+                    end_date=effective_end
+                )
+                if fetch_result.get('success'):
+                    cursor.execute(query, params)
+                    db_data = cursor.fetchall()
+                    saved = fetch_result['save_result'].get('saved_count', 0)
+                    print(f"✅ {saved} aWATTAR Datensätze gespeichert")
                 else:
-                    source_info = "Datenbank - Importierte Spot-Preise"
-                
+                    return jsonify({
+                        'success': False,
+                        'data_source': 'awattar',
+                        'error': fetch_result.get('error', 'Unbekannter Fehler'),
+                        'message': 'aWATTAR Daten konnten nicht geladen werden.'
+                    }), 500
+            except Exception as aw_error:
+                print(f"❌ aWATTAR Abruf fehlgeschlagen: {aw_error}")
                 return jsonify({
-                    'success': True,
-                    'data': prices,
-                    'source': source_info,
-                    'message': f'{len(prices)} Spot-Preise aus Datenbank geladen'
-                })
+                    'success': False,
+                    'data_source': 'awattar',
+                    'error': str(aw_error),
+                    'message': 'aWATTAR Daten konnten nicht geladen werden.'
+                }), 500
+        
+        if not db_data or len(db_data) == 0:
+            if data_source == 'entsoe':
+                return jsonify({
+                    'success': False,
+                    'data_source': 'entsoe',
+                    'error': 'Keine ENTSO-E Daten im gewünschten Zeitraum verfügbar.',
+                    'message': 'Keine ENTSO-E Werte gefunden.'
+                }), 404
+            elif data_source == 'apg':
+                return jsonify({
+                    'success': False,
+                    'data_source': 'apg',
+                    'error': 'Keine APG Daten im gewünschten Zeitraum verfügbar.',
+                    'message': 'Keine APG Werte gefunden.'
+                }), 404
             else:
-                print("⚠️ Keine Daten für den gewählten Zeitraum gefunden")
-                
-                # Generiere Demo-Daten für den gewählten Zeitraum
-                print("🔄 Generiere Demo-Daten für gewählten Zeitraum...")
-                demo_data = generate_legacy_demo_prices(start_date, end_date)
                 return jsonify({
-                    'success': True,
-                    'data': demo_data,
-                    'source': 'Demo (Legacy)',
-                    'message': f'{len(demo_data)} Demo-Preise für gewählten Zeitraum ({start_date.date()} - {end_date.date()})'
-                })
-                    
-                # PRIORITÄT: Echte APG-Daten laden
-                print("🌐 PRIORITÄT: Lade echte APG-Daten...")
-                from apg_data_fetcher import APGDataFetcher
-                fetcher = APGDataFetcher()
-                
-                # 1. Versuche ENTSO-E Daten (echte österreichische Spot-Preise)
-                print("🌐 1. Versuche ENTSO-E Daten (echte österreichische Spot-Preise)...")
-                try:
-                    entsoe_data = fetcher.fetch_entsoe_data()
-                    if entsoe_data and len(entsoe_data) > 0:
-                        print(f"✅ {len(entsoe_data)} echte ENTSO-E Preise erfolgreich geladen!")
-                        # Echte ENTSO-E Daten verfügbar - in Datenbank speichern
-                        save_apg_data_to_db(entsoe_data)
-                        return jsonify({
-                            'success': True,
-                            'data': entsoe_data,
-                            'source': 'ENTSO-E (Live - Echte österreichische Day-Ahead Preise)',
-                            'message': f'{len(entsoe_data)} echte österreichische Spot-Preise geladen'
-                        })
-                except Exception as e:
-                    print(f"⚠️ ENTSO-E Fehler: {e}")
-                
-                # 2. Versuche echte APG-Daten von markt.apg.at
-                print("🌐 2. Versuche echte APG-Daten von markt.apg.at...")
-                try:
-                    apg_data = fetcher.fetch_current_prices()
-                    if apg_data and len(apg_data) > 0:
-                        print(f"✅ {len(apg_data)} echte APG-Preise erfolgreich geladen!")
-                        # Echte APG-Daten verfügbar - in Datenbank speichern
-                        save_apg_data_to_db(apg_data)
-                        return jsonify({
-                            'success': True,
-                            'data': apg_data,
-                            'source': 'APG (Live)',
-                            'message': f'{len(apg_data)} echte österreichische Spot-Preise geladen'
-                        })
-                except Exception as e:
-                    print(f"⚠️ APG API Fehler: {e}")
-                
-                # 3. Versuche historische 2024-Daten aus der Datenbank
-                print("🌐 3. Versuche historische 2024-Daten aus der Datenbank...")
-                try:
-                    cursor.execute("""
-                        SELECT timestamp, price_eur_mwh, source, region, price_type
-                        FROM spot_price 
-                        WHERE timestamp LIKE '2024%' AND source NOT LIKE '%Demo%'
-                        ORDER BY timestamp DESC
-                        LIMIT 168
-                    """)
-                    
-                    historical_data = cursor.fetchall()
-                    if historical_data and len(historical_data) > 0:
-                        print(f"✅ {len(historical_data)} historische echte Daten geladen!")
-                        
-                        # Konvertiere zu JSON-Format
-                        prices = []
-                        for row in historical_data:
-                            prices.append({
-                                'timestamp': row[0],
-                                'price': float(row[1]),
-                                'source': row[2],
-                                'region': row[3],
-                                'market': row[4]
-                            })
-                        
-                        return jsonify({
-                            'success': True,
-                            'data': prices,
-                            'source': 'APG (Historische echte Daten aus 2024)',
-                            'message': f'{len(prices)} historische echte APG-Daten geladen'
-                        })
-                except Exception as e:
-                    print(f"⚠️ Historische Daten Fehler: {e}")
-                
-                # 4. Nur als letzter Fallback: Demo-Daten
-                print("⚠️ Keine echten APG-Daten verfügbar, verwende Demo-Daten als letzter Fallback")
-                demo_data = fetcher.get_demo_data_based_on_apg(start_date, end_date)
-                return jsonify({
-                    'success': True,
-                    'data': demo_data,
-                    'source': 'APG (Demo - nur als Fallback)',
-                    'message': f'{len(demo_data)} Demo-Preise (keine echten Daten verfügbar)'
-                })
-                    
-        except ImportError as e:
-            print(f"❌ APG Data Fetcher nicht verfügbar: {e}")
-            # Fallback: Alte Demo-Daten
-            demo_data = generate_legacy_demo_prices(start_date, end_date)
-            return jsonify({
-                'success': True,
-                'data': demo_data,
-                'source': 'Demo (Legacy)',
-                'message': f'{len(demo_data)} Legacy Demo-Preise'
+                    'success': False,
+                    'data_source': data_source,
+                    'error': 'Keine Spot-Preise im gewünschten Zeitraum verfügbar.',
+                    'message': 'Keine Spot-Preise gefunden.'
+                }), 404
+        
+        def _categorize_source(source_value: str) -> str:
+            source_lower = (source_value or '').lower()
+            if 'entso' in source_lower:
+                return 'entsoe'
+            if 'awattar' in source_lower:
+                return 'awattar'
+            if 'apg' in source_lower:
+                return 'apg'
+            if 'demo' in source_lower:
+                return 'demo'
+            return 'other' if source_value else 'unknown'
+
+        def _label_for_category(category: str) -> str:
+            return {
+                'entsoe': 'ENTSO-E',
+                'apg': 'APG',
+                'awattar': 'aWATTar',
+                'demo': 'Demo',
+                'other': 'Weitere Quelle',
+                'unknown': 'Unbekannt'
+            }.get(category, 'Weitere Quelle')
+
+        unique_entries = {}
+        for row in db_data:
+            source_value = row[2] or ''
+            if source_value.lower().startswith('awattar'):
+                source_value = 'aWATTAR (Live API)'
+            region_value = row[3] or ('AT' if source_value.startswith('aWATTAR') else None)
+            market_value = row[4] or ('day_ahead' if source_value.startswith('aWATTAR') else None)
+
+            category = _categorize_source(source_value)
+            source_label = _label_for_category(category)
+
+            key = (
+                row[0],
+                source_value or '',
+                region_value or '',
+                market_value or ''
+            )
+            unique_entries[key] = {
+                'timestamp': row[0],
+                'price': float(row[1]),
+                'source': source_value,
+                'region': region_value,
+                'market': market_value,
+                'source_category': category,
+                'source_label': source_label
+            }
+
+        prices = [
+            unique_entries[key]
+            for key in sorted(unique_entries.keys(), key=lambda item: item[0])
+        ]
+
+        total_points = len(prices)
+        category_counts = Counter(entry['source_category'] for entry in prices if entry.get('source_category'))
+        source_summary = []
+        for category, count in category_counts.items():
+            label = _label_for_category(category)
+            percentage = round((count / total_points) * 100, 1) if total_points else 0
+            source_summary.append({
+                'category': category,
+                'label': label,
+                'count': count,
+                'percentage': percentage
             })
-            
+        source_summary.sort(key=lambda item: item['label'])
+        
+        sources = {entry['source'] or '' for entry in prices}
+        print(f"🔍 Gefundene Datenquellen: {sources}")
+        
+        if data_source == 'entsoe':
+            source_meta = {
+                'name': 'ENTSO-E Transparency Platform',
+                'url': 'https://transparency.entsoe.eu/',
+                'description': f'Europäische {price_type.replace("_", " ").title()} Preise ({country_code})'
+            }
+            if not prices:
+                status_info = {
+                    'tone': 'warning',
+                    'text': '⚠️ Keine ENTSO-E Daten im gewählten Zeitraum verfügbar'
+                }
+            elif any('Demo' in (src or '') for src in sources):
+                status_info = {
+                    'tone': 'warning',
+                    'text': '⚠️ ENTSO-E Demo-Daten (kein Live-Feed verfügbar)'
+                }
+            else:
+                status_details = f" – {total_points} Werte" if total_points else ''
+                status_info = {
+                    'tone': 'success',
+                    'text': f'✅ Echte ENTSO-E Daten{status_details}'
+                }
+        elif data_source == 'combined':
+            source_meta = {
+                'name': 'APG & ENTSO-E',
+                'url': 'https://transparency.entsoe.eu/',
+                'description': 'Kombinierte Spot-Preise aus APG-Datenbank und ENTSO-E (Benutzer-Token)'
+            }
+            has_entsoe = any('ENTSO-E' in src for src in sources)
+            has_apg = any(src.startswith('APG') or src.startswith('aWattar') for src in sources)
+            if has_entsoe and has_apg:
+                breakdown_parts = []
+                if category_counts.get('apg'):
+                    breakdown_parts.append(f"{category_counts['apg']}× APG")
+                if category_counts.get('entsoe'):
+                    breakdown_parts.append(f"{category_counts['entsoe']}× ENTSO-E")
+                if category_counts.get('awattar'):
+                    breakdown_parts.append(f"{category_counts['awattar']}× aWATTar")
+                breakdown_text = f" – {', '.join(breakdown_parts)}" if breakdown_parts else ''
+                status_info = {'tone': 'success', 'text': f'✅ Kombinierte APG & ENTSO-E Daten{breakdown_text}'}
+            elif has_entsoe:
+                status_info = {'tone': 'info', 'text': 'ℹ️ Nur ENTSO-E Daten im Zeitraum vorhanden'}
+            else:
+                status_info = {'tone': 'info', 'text': 'ℹ️ Kombinierte Ansicht (derzeit nur APG-Daten)'}
+        elif data_source == 'awattar':
+            source_meta = {
+                'name': 'aWATTar API',
+                'url': 'https://api.awattar.at/',
+                'description': 'Österreichische Day-Ahead Preise über aWATTar Schnittstelle'
+            }
+            if not prices:
+                status_info = {
+                    'tone': 'warning',
+                    'text': '⚠️ Keine aWATTAR Daten im gewählten Zeitraum verfügbar'
+                }
+            else:
+                status_details = f" ({total_points} Werte)" if total_points else ''
+                status_info = {
+                    'tone': 'success',
+                    'text': f'✅ Echte aWATTAR Daten (Live API){status_details}'
+                }
+        else:
+            source_meta = {
+                'name': 'APG (Austrian Power Grid)',
+                'url': 'https://markt.apg.at/transparenz/uebertragung/day-ahead-preise/',
+                'description': 'Offizielle österreichische Day-Ahead Preise aus der lokalen Datenbank'
+            }
+            status_details = f" ({total_points} Werte)" if total_points else ''
+            status_info = {'tone': 'success', 'text': f'✅ APG-Daten aus Datenbank{status_details}'}
+        
+        return jsonify({
+            'success': True,
+            'data': prices,
+            'data_source': data_source,
+            'source_meta': source_meta,
+            'status_info': status_info,
+            'message': f'{len(prices)} Spot-Preise geladen',
+            'source_summary': source_summary
+        })
+        
     except Exception as e:
         print(f"❌ Fehler in Spot-Preis-API: {e}")
         return jsonify({'error': str(e)}), 400
+
+@main_bp.route('/api/spot-prices/import', methods=['POST'])
+@login_required
+def api_import_spot_prices():
+    """Importiert Spotpreise (z. B. ENTSO-E Dateien)."""
+    mode = request.form.get('mode', 'entsoe')
+    
+    if mode == 'entsoe':
+        area = request.form.get('area', ENTSOE_DEFAULT_AREA)
+        region = request.form.get('region', ENTSOE_DEFAULT_REGION)
+        source_label = request.form.get('source', ENTSOE_DEFAULT_SOURCE)
+        price_type = request.form.get('price_type', ENTSOE_DEFAULT_PRICE_TYPE)
+        pattern = request.form.get('pattern', 'GUI_ENERGY_PRICES_*.csv')
+        base_dir = Path(request.form.get('base_dir', 'TP_export'))
+        
+        paths = sorted(base_dir.glob(pattern))
+        if not paths:
+            return jsonify({
+                'success': False,
+                'error': f'Keine ENTSO-E Dateien gefunden (Muster: {pattern})'
+            }), 400
+        
+        try:
+            price_series = entsoe_combine_series(paths, area=area)
+            if price_series.empty:
+                return jsonify({
+                    'success': False,
+                    'error': 'Keine gültigen Daten in den ausgewählten Dateien gefunden.'
+                }), 400
+            
+            start_ts = price_series.index.min().to_pydatetime().replace(tzinfo=None)
+            end_ts = price_series.index.max().to_pydatetime().replace(tzinfo=None)
+            
+            deleted = SpotPrice.query.filter(
+                SpotPrice.source == source_label,
+                SpotPrice.region == region,
+                SpotPrice.price_type == price_type,
+                SpotPrice.timestamp >= start_ts,
+                SpotPrice.timestamp <= end_ts,
+            ).delete(synchronize_session=False)
+            
+            for ts, price in price_series.items():
+                timestamp = ts.to_pydatetime().replace(tzinfo=None)
+                spot = SpotPrice(
+                    timestamp=timestamp,
+                    price_eur_mwh=float(price),
+                    source=source_label,
+                    region=region,
+                    price_type=price_type,
+                    created_at=datetime.utcnow(),
+                )
+                db.session.add(spot)
+            
+            db.session.commit()
+            return jsonify({
+                'success': True,
+                'inserted': int(price_series.size),
+                'replaced': int(deleted or 0),
+                'files': [str(p) for p in paths],
+                'area': area,
+                'region': region,
+                'source': source_label,
+                'message': f'{price_series.size} ENTSO-E Stundenpreise importiert ({area})'
+            })
+        except Exception as exc:
+            db.session.rollback()
+            current_app.logger.exception("ENTSO-E Import fehlgeschlagen")
+            return jsonify({'success': False, 'error': str(exc)}), 500
+    
+    # Datei-Import (Legacy)
+    uploaded_file = request.files.get('file')
+    if not uploaded_file:
+        return jsonify({'success': False, 'error': 'Kein Importmodus ausgewählt oder Datei fehlt.'}), 400
+    
+    return jsonify({
+        'success': False,
+        'error': 'Manueller CSV-Import ist derzeit nicht aktiviert.'
+    }), 400
 
 def save_apg_data_to_db(apg_data):
     """Speichert APG-Daten in der Datenbank"""
@@ -1969,17 +2155,55 @@ def save_awattar_data_to_db(spot_prices):
     try:
         conn = get_db()
         cursor = conn.cursor()
+
+        if not spot_prices:
+            print("ℹ️ Keine aWATTAR Daten zum Speichern erhalten")
+            return
+
+        timestamps = [
+            price.get('timestamp')
+            for price in spot_prices
+            if isinstance(price.get('timestamp'), datetime)
+        ]
+
+        region_default = (spot_prices[0].get('region') or 'AT') if spot_prices else 'AT'
+        market_default = (spot_prices[0].get('price_type') or 'day_ahead') if spot_prices else 'day_ahead'
+
+        if timestamps:
+            start_ts = min(timestamps)
+            end_ts = max(timestamps)
+
+            cursor.execute("""
+                DELETE FROM spot_price
+                WHERE source LIKE 'aWATTAR%'
+                  AND timestamp BETWEEN ? AND ?
+                  AND COALESCE(region, ?) = ?
+                  AND COALESCE(price_type, ?) = ?
+            """, (start_ts, end_ts, region_default, region_default, market_default, market_default))
+            print(f"🧹 Alte aWATTAR Datensätze zwischen {start_ts} und {end_ts} entfernt")
         
         for price in spot_prices:
+            timestamp = price.get('timestamp')
+            value = price.get('price_eur_mwh')
+            source = price.get('source') or 'aWATTAR (Live API)'
+            region_value = price.get('region') or region_default
+            market_value = price.get('price_type') or market_default
+
+            if not timestamp or value is None:
+                print(f"⚠️ Überspringe ungültigen aWATTAR Datensatz: {price}")
+                continue
+
             cursor.execute("""
-                INSERT OR REPLACE INTO spot_price 
-                (timestamp, price_eur_mwh, source, created_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO spot_price 
+                (timestamp, price_eur_mwh, source, region, price_type, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, (
-                price['timestamp'],
-                price['price_eur_mwh'],
-                price['source'],
-                datetime.now()
+                timestamp,
+                value,
+                source if source.startswith('aWATTAR') else 'aWATTAR (Live API)',
+                region_value,
+                market_value,
+                datetime.utcnow()
             ))
         
         conn.commit()
@@ -2254,7 +2478,6 @@ def api_get_load_profile(load_profile_id):
         return jsonify(profile)
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-
 @main_bp.route('/api/load-profiles/<string:profile_id>')
 def api_get_load_profile_string(profile_id):
     """API-Endpoint für Lastprofile mit String-IDs (new_2, old_3, etc.)"""
@@ -3048,7 +3271,6 @@ def calculate_pv_self_consumption_savings(project):
     print(f"  - Ersparnisse: {savings:,.0f} €/Jahr")
     
     return savings
-
 def calculate_hp_efficiency_savings(project):
     """Berechnet Wärmepumpen-Effizienz Ersparnisse"""
     if not project.hp_power:
@@ -3810,7 +4032,6 @@ def get_overlay_data(project_id, time_range, start_date, end_date):
     except Exception as e:
         print(f"Fehler beim Laden der Overlay-Daten: {e}")
         return jsonify({'success': False, 'error': str(e)})
-
 @main_bp.route('/api/projects/<int:project_id>/data-overview')
 def api_data_overview(project_id):
     """API-Endpoint für Datenübersicht"""
@@ -4570,7 +4791,6 @@ def get_economic_analysis_data(project_id):
     except Exception as e:
         print(f"Fehler beim Laden der Wirtschaftlichkeitsanalyse-Daten: {e}")
         return None
-
 def generate_economic_analysis_pdf(project, analysis_data):
     """Generiert PDF-Bericht für Wirtschaftlichkeitsanalyse"""
     try:
@@ -5335,7 +5555,6 @@ def api_project_revenue_models(project_id):
         } for rm in revenue_models])
     except Exception as e:
         return jsonify({'error': f'Fehler beim Abrufen der Erlösmodelle: {str(e)}'}), 500
-
 @main_bp.route('/api/simulation/run', methods=['POST'])
 def api_run_simulation():
     """BESS-Simulation ausführen mit Use Case-spezifischen Daten und BESS-Modus"""
@@ -6111,7 +6330,6 @@ def n8n_webhook_trigger():
     except Exception as e:
         print(f"❌ Fehler beim n8n Webhook: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
-
 @main_bp.route('/api/load-shifting/optimize', methods=['POST'])
 def api_optimize_load_shifting():
     """Load-Shifting optimieren"""
@@ -6910,7 +7128,6 @@ def api_get_battery_crate(project_id):
             
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
-
 @main_bp.route('/api/battery-crate/<int:project_id>', methods=['POST'])
 @login_required
 def api_save_battery_crate(project_id):
@@ -7666,6 +7883,104 @@ def weather_import_page():
 
 # ENTSO-E API Fetcher importieren
 from entsoe_api_fetcher import ENTSOEAPIFetcher
+from app.services.entsoe_token_service import get_active_entsoe_token
+from import_entsoe_prices import (
+    combine_series as entsoe_combine_series,
+    DEFAULT_SOURCE as ENTSOE_DEFAULT_SOURCE,
+    DEFAULT_REGION as ENTSOE_DEFAULT_REGION,
+    DEFAULT_PRICE_TYPE as ENTSOE_DEFAULT_PRICE_TYPE,
+    DEFAULT_AREA as ENTSOE_DEFAULT_AREA,
+)
+
+
+def _create_entsoe_fetcher():
+    """Erstelle ENTSO-E Fetcher unter Berücksichtigung benutzerspezifischer Tokens."""
+    user_token = None
+    try:
+        if current_user.is_authenticated:
+            user_token = get_active_entsoe_token(current_user.id)
+    except Exception as exc:
+        print(f"⚠️ Fehler beim Laden des Benutzer-Tokens: {exc}")
+        user_token = None
+    
+    fetcher = ENTSOEAPIFetcher(api_key=user_token)
+    token_source = 'user' if user_token else ('env' if fetcher.api_key else 'demo')
+    return fetcher, token_source
+def save_entsoe_prices_to_db(entsoe_prices, country_code='AT', price_type='day_ahead'):
+    """Speichert ENTSO-E Preise in der Datenbank."""
+    if not entsoe_prices:
+        return 0
+    
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        timestamps = []
+        for record in entsoe_prices:
+            ts = record.timestamp
+            if ts.tzinfo:
+                ts = ts.replace(tzinfo=None)
+            timestamps.append(ts)
+        
+        if timestamps:
+            start_ts = min(timestamps)
+            end_ts = max(timestamps)
+            cursor.execute(
+                """
+                DELETE FROM spot_price
+                WHERE source LIKE 'ENTSO-E%%'
+                  AND timestamp BETWEEN ? AND ?
+                """,
+                (start_ts, end_ts)
+            )
+        
+        inserted = 0
+        source_label = f"ENTSO-E ({price_type.replace('_', ' ').title()})"
+        
+        for record, ts in zip(entsoe_prices, timestamps):
+            cursor.execute(
+                """
+                INSERT INTO spot_price
+                (timestamp, price_eur_mwh, source, region, price_type, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    ts,
+                    float(record.price_eur_mwh),
+                    source_label,
+                    record.country_code or country_code,
+                    price_type,
+                    datetime.utcnow()
+                )
+            )
+            inserted += 1
+        
+        conn.commit()
+        print(f"✅ {inserted} ENTSO-E Preise in DB gespeichert ({price_type})")
+        return inserted
+    except Exception as e:
+        print(f"❌ Fehler beim Speichern der ENTSO-E Daten: {e}")
+        return 0
+
+
+def fetch_and_store_entsoe_prices(start_date, end_date, country_code='AT', price_type='day_ahead'):
+    """ENTSO-E Daten abrufen und in der Datenbank speichern."""
+    fetcher, token_source = _create_entsoe_fetcher()
+    if fetcher.demo_mode:
+        raise ValueError("ENTSO-E Token nicht konfiguriert oder deaktiviert.")
+    
+    start_str = start_date.strftime('%Y%m%d%H%M')
+    end_str = end_date.strftime('%Y%m%d%H%M')
+    
+    if price_type == 'intraday':
+        entsoe_data = fetcher.get_intraday_prices(country_code, start_str, end_str)
+    else:
+        entsoe_data = fetcher.get_day_ahead_prices(country_code, start_str, end_str)
+    
+    if not entsoe_data:
+        raise RuntimeError("Keine ENTSO-E Daten verfügbar.")
+    
+    return save_entsoe_prices_to_db(entsoe_data, country_code, price_type)
 
 @main_bp.route('/api/entsoe/fetch', methods=['POST'])
 def api_entsoe_fetch():
@@ -8356,7 +8671,6 @@ def api_smart_grid_afrr():
             'success': False,
             'error': str(e)
         }), 500
-
 @main_bp.route('/api/smart-grid/mfrr')
 def api_smart_grid_mfrr():
     """Manuelle Frequenzregelung (mFRR) Daten abrufen"""
@@ -8881,7 +9195,6 @@ def api_iot_test():
 @login_required
 def iot_import_page():
     """IoT-Sensor Daten-Import-Seite"""
-
 # ============================================================================
 # BESS SIZING & PS/LL OPTIMIZATION API ROUTES
 # ============================================================================
@@ -9659,7 +9972,6 @@ def live_data_dashboard_advanced():
     """Umleitung auf das vereinheitlichte Live BESS Dashboard"""
     # Leite auf das normale Dashboard um, da es jetzt alle Features enthält
     return redirect(url_for('main.live_data_dashboard'))
-
 # ============================================================================
 # PROJEKT-SPEZIFISCHE LIVE BESS INTEGRATION
 # ============================================================================
@@ -9903,4 +10215,3 @@ def api_delete_bess_mapping(mapping_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-

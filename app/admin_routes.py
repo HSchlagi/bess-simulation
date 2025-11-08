@@ -14,6 +14,13 @@ import json
 from datetime import datetime
 import os
 
+from app.services.entsoe_token_service import (
+    get_user_entsoe_config,
+    get_active_entsoe_token,
+    test_entsoe_token,
+    upsert_user_entsoe_token,
+)
+
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @admin_bp.route('/')
@@ -361,6 +368,78 @@ def system():
     except Exception as e:
         flash(f"Fehler beim Laden der System-Einstellungen: {e}", "error")
         return redirect(url_for("admin.dashboard"))
+
+@admin_bp.route('/marketdata/entsoe')
+@admin_required
+def entsoe_token_page():
+    """ENTSO-E Token Verwaltung"""
+    try:
+        user = get_current_user()
+        token_info = get_user_entsoe_config(user.id) if user else None
+        return render_template(
+            'admin/entsoe_token.html',
+            token_info=token_info,
+            current_user=user
+        )
+    except Exception as e:
+        flash(f"Fehler beim Laden der ENTSO-E Konfiguration: {e}", "error")
+        return redirect(url_for("admin.dashboard"))
+
+@admin_bp.route('/marketdata/entsoe/status')
+@admin_required
+def entsoe_token_status():
+    """Status für das Frontend abrufen"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Benutzer nicht gefunden'}), 404
+    config = get_user_entsoe_config(user.id)
+    return jsonify({
+        'success': True,
+        'has_token': config.get('has_token'),
+        'is_active': config.get('is_active'),
+        'token_masked': config.get('token_masked'),
+        'last_updated': config.get('last_updated').isoformat() if config.get('last_updated') else None
+    })
+
+@admin_bp.route('/marketdata/entsoe/save', methods=['POST'])
+@admin_required
+def entsoe_token_save():
+    """Token speichern"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Benutzer nicht gefunden'}), 404
+    data = request.get_json(silent=True) or {}
+    token = (data.get('token') or '').strip()
+    enabled = data.get('enabled', True)
+    keep_existing = data.get('keep_existing', False)
+
+    if not token and keep_existing:
+        existing = get_active_entsoe_token(user.id)
+        token = existing or ''
+
+    success, message = upsert_user_entsoe_token(user.id, token, enabled)
+    status_code = 200 if success else 400
+    return jsonify({'success': success, 'message': message}), status_code
+
+@admin_bp.route('/marketdata/entsoe/test', methods=['POST'])
+@admin_required
+def entsoe_token_test():
+    """Token testen"""
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': 'Benutzer nicht gefunden'}), 404
+    data = request.get_json(silent=True) or {}
+    token = (data.get('token') or '').strip()
+
+    if not token:
+        token = get_active_entsoe_token(user.id) or ''
+
+    if not token:
+        return jsonify({'success': False, 'error': 'Kein ENTSO-E Token vorhanden'}), 400
+
+    success, message = test_entsoe_token(token)
+    status_code = 200 if success else 400
+    return jsonify({'success': success, 'message': message}), status_code
 
 @admin_bp.route('/backup/now', methods=['POST'])
 @admin_required

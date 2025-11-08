@@ -14,14 +14,11 @@
                 <button onclick="openImportModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
                     <i class="fas fa-upload mr-2"></i>Import
                 </button>
-                <button onclick="openNewPriceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                    <i class="fas fa-plus mr-2"></i>Neuer Preis
-                </button>
             </div>
         </div>
         
         <!-- Filter -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
                 <select id="timeRange" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -39,6 +36,15 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Enddatum</label>
                 <input type="date" id="endDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Datenquelle</label>
+                <select id="dataSourceSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="entsoe" selected>ENTSO-E A44 (Empfohlen)</option>
+                    <option value="combined">ENTSO-E + APG kombiniert</option>
+                    <option value="awattar">aWATTar (Live API)</option>
+                    <option value="apg">APG (nur Datenbank)</option>
+                </select>
             </div>
             <div class="flex items-end">
                 <button onclick="loadSpotPrices()" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
@@ -74,23 +80,23 @@
                 <div>
                     <h4 class="font-medium text-yellow-800">Datenquelle</h4>
                     <p class="text-sm text-yellow-700" id="dataSource">
-                        <span class="font-medium">APG (Austrian Power Grid)</span> - 
-                        <a href="https://markt.apg.at/transparenz/uebertragung/day-ahead-preise/" 
-                           target="_blank" class="underline hover:text-yellow-900">
-                            Offizielle österreichische Day-Ahead Preise
-                        </a>
+                        <span class="font-medium">ENTSO-E Transparency Platform</span> – Europäische Day-Ahead Marktdaten
                     </p>
                     <p class="text-xs text-yellow-600 mt-1" id="dataStatus">
-                        Status: <span class="font-medium">Demo-Daten basierend auf APG-Mustern</span>
+                        Status: <span class="font-medium text-blue-600">Bitte warten, Daten werden geladen...</span>
+                    </p>
+                    <p class="text-xs text-yellow-600 mt-1" id="dataSummary">
+                        Zusammensetzung: <span class="font-medium text-blue-600">--</span>
                     </p>
                 </div>
             </div>
         </div>
         
         <!-- Chart -->
-        <div class="mb-6">
+        <div class="mb-6" id="spotPriceChartContainer">
             <canvas id="spotPriceChart" width="400" height="200"></canvas>
         </div>
+        <div id="chartSourceLegend" class="flex flex-wrap gap-3 text-sm text-gray-600 mb-6 hidden"></div>
         
         <!-- Preis-Tabelle -->
         <div class="overflow-x-auto">
@@ -111,60 +117,79 @@
     </div>
 </div>
 
-<!-- Neuer Preis Modal -->
-<div id="newPriceModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen">
-        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
-            <h3 class="text-lg font-semibold mb-4">Neuen Spot-Preis hinzufügen</h3>
-            <form id="newPriceForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Datum</label>
-                    <input type="date" id="priceDate" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Stunde</label>
-                    <input type="number" id="priceHour" min="0" max="23" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Preis (€/MWh)</label>
-                    <input type="number" id="priceValue" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeNewPriceModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
-                        Abbrechen
-                    </button>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-                        Hinzufügen
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <!-- Import Modal -->
 <div id="importModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen">
-        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <div class="bg-white rounded-lg p-8 max-w-lg w-full mx-4">
             <h3 class="text-lg font-semibold mb-4">Spot-Preise importieren</h3>
             <form id="importForm">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Datei auswählen</label>
-                    <input type="file" id="importFile" accept=".csv,.xlsx" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Importmodus</label>
+                        <select id="importMode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="entsoe" selected>ENTSO-E (Automatischer Import aus TP_export)</option>
+                            <option value="file">CSV Upload (manuell)</option>
+                        </select>
+                    </div>
+
+                    <div id="entsoeImportFields" class="md:col-span-2 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bidding Zone (ENTSO-E)</label>
+                            <select id="entsoeArea" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="BZN|AT" selected>Austria (BZN|AT)</option>
+                                <option value="BZN|DE-AT-LU">Germany/Luxembourg (BZN|DE-AT-LU)</option>
+                                <option value="BZN|DE_LU">Germany/Luxemburg (BZN|DE_LU)</option>
+                                <option value="BZN|CH">Switzerland (BZN|CH)</option>
+                                <option value="BZN|CZ">Czech Republic (BZN|CZ)</option>
+                                <option value="BZN|HU">Hungary (BZN|HU)</option>
+                                <option value="BZN|SI">Slovenia (BZN|SI)</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Region (für Datenbank)</label>
+                                <input type="text" id="entsoeRegion" value="AT" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Preistyp</label>
+                                <select id="entsoePriceType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="day_ahead" selected>Day-Ahead</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Dateimuster (TP_export)</label>
+                            <input type="text" id="entsoePattern" value="GUI_ENERGY_PRICES_*.csv" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-2">
+                                Hinweis: Lege die ENTSO-E CSV-Dateien im Ordner <code>TP_export</code> ab. Alle Dateien, die auf das Muster passen, werden importiert.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="fileImportFields" class="md:col-span-2 hidden space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Datei auswählen</label>
+                            <input type="file" id="importFile" accept=".csv,.xlsx" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Import-Modus</label>
+                            <select id="importTimeRange" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="replace">Zeitraum ersetzen</option>
+                                <option value="append">Daten anhängen</option>
+                            </select>
+                        </div>
+                        <p class="text-xs text-gray-500 md:col-span-2">
+                            CSV-Upload ist für kundenspezifische Daten vorgesehen. Die Datei muss <code>timestamp,price</code>-Spalten enthalten.
+                        </p>
+                    </div>
                 </div>
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
-                    <select id="importTimeRange" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="replace">Ersetzen</option>
-                        <option value="append">Hinzufügen</option>
-                    </select>
-                </div>
-                <div class="flex justify-end space-x-3">
+
+                <div class="flex justify-end space-x-3 mt-6">
                     <button type="button" onclick="closeImportModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">
                         Abbrechen
                     </button>
                     <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
-                        Importieren
+                        Import starten
                     </button>
                 </div>
             </form>
@@ -176,11 +201,80 @@
 <script>
 let spotPriceChart;
 
+const toneClassMap = {
+    success: 'text-green-600',
+    warning: 'text-yellow-600',
+    info: 'text-blue-600',
+    error: 'text-red-600'
+};
+
+const sourceColorMap = {
+    apg: '#0f766e',
+    entsoe: '#2563eb',
+    awattar: '#f59e0b',
+    demo: '#9ca3af',
+    other: '#8b5cf6',
+    unknown: '#6b7280'
+};
+
+const sourceLabelMap = {
+    apg: 'APG',
+    entsoe: 'ENTSO-E',
+    awattar: 'aWATTar',
+    demo: 'Demo',
+    other: 'Weitere Quelle',
+    unknown: 'Unbekannt'
+};
+
+const defaultChartColor = '#3b82f6';
+
+function colorForCategory(category) {
+    return sourceColorMap[category] || defaultChartColor;
+}
+
+function renderSourceInformation(meta = {}) {
+    const sourceElement = document.getElementById('dataSource');
+    const statusElement = document.getElementById('dataStatus');
+    const summaryElement = document.getElementById('dataSummary');
+    
+    const sourceMeta = meta.source_meta || null;
+    if (sourceMeta) {
+        if (sourceMeta.url) {
+            sourceElement.innerHTML = `<span class="font-medium">${sourceMeta.name}</span> - <a href="${sourceMeta.url}" target="_blank" class="underline hover:text-blue-700">${sourceMeta.description || ''}</a>`;
+        } else {
+            sourceElement.innerHTML = `<span class="font-medium">${sourceMeta.name}</span>${sourceMeta.description ? ' - ' + sourceMeta.description : ''}`;
+        }
+    }
+    
+    const statusInfo = meta.status_info || null;
+    if (statusInfo) {
+        const toneClass = toneClassMap[statusInfo.tone] || 'text-gray-600';
+        statusElement.innerHTML = `Status: <span class="font-medium ${toneClass}">${statusInfo.text}</span>`;
+    } else {
+        statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">Keine Statusinformation verfügbar</span>';
+    }
+
+    if (summaryElement) {
+        const summary = meta.source_summary || [];
+        if (summary.length > 0) {
+            const summaryHtml = summary.map(item => {
+                const color = colorForCategory(item.category);
+                const percentageText = item.percentage ? ` (${item.percentage}% )` : '';
+                return `<span class="inline-flex items-center gap-2 mr-3"><span class="w-3 h-3 rounded-full border border-white shadow" style="background-color:${color}"></span>${item.count}× ${item.label}${percentageText}</span>`;
+            }).join('');
+            summaryElement.innerHTML = `Zusammensetzung: <span class="font-medium text-gray-700">${summaryHtml}</span>`;
+        } else {
+            summaryElement.innerHTML = 'Zusammensetzung: <span class="font-medium text-gray-500">--</span>';
+        }
+    }
+}
+
 // Spot-Preise laden
 async function loadSpotPrices() {
     const timeRange = document.getElementById('timeRange').value;
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
+    const dataSource = document.getElementById('dataSourceSelect').value;
     
     try {
         const response = await fetch('/api/spot-prices', {
@@ -191,7 +285,8 @@ async function loadSpotPrices() {
             body: JSON.stringify({
                 time_range: timeRange,
                 start_date: startDate,
-                end_date: endDate
+                end_date: endDate,
+                data_source: dataSource
             })
         });
         
@@ -200,41 +295,57 @@ async function loadSpotPrices() {
             
             if (result.success) {
                 console.log(`✅ ${result.message}`);
-                updateSpotPriceDisplay(result.data);
-                
-                // Datenquelle-Status aktualisieren
-                const statusElement = document.getElementById('dataStatus');
-                if (result.source.includes('APG (Live)')) {
-                    statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten (Live)</span>';
-                } else if (result.source.includes('APG') && result.source.includes('2024')) {
-                    statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten für 2024</span>';
-                } else if (result.source.includes('APG (Demo')) {
-                    statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">⚠️ Demo-Daten basierend auf APG-Mustern</span>';
-                } else if (result.source.includes('APG')) {
-                    statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ APG-Daten aus Datenbank</span>';
-                } else {
-                    statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">📊 Demo-Daten (Legacy)</span>';
-                }
-                
-                // Erfolgsmeldung anzeigen
+                updateSpotPriceDisplay(result.data, result);
                 showNotification(result.message, 'success');
             } else {
                 console.error('API-Fehler:', result.error);
-                showNotification('Fehler beim Laden der Spot-Preise', 'error');
-                // Fallback zu Demo-Daten
-                updateSpotPriceDisplay(generateDemoSpotPrices());
+                showNotification(result.message || 'Fehler beim Laden der Spot-Preise', 'warning');
+                
+                if (result.data_source === 'apg') {
+                    updateSpotPriceDisplay(generateDemoSpotPrices(), {
+                        data_source: 'demo',
+                        source_meta: {
+                            name: 'Demo-Daten',
+                            description: 'Fallback für APG-Spotpreise (keine aktuellen Daten verfügbar)'
+                        },
+                        status_info: {
+                            tone: 'warning',
+                            text: '⚠️ APG Demo-Daten (Fallback)'
+                        }
+                    });
+                } else {
+                    clearSpotPriceDisplay(result.data_source);
+                }
             }
         } else {
             console.error('HTTP-Fehler:', response.status);
             showNotification('Fehler beim Laden der Spot-Preise', 'error');
-            // Fallback zu Demo-Daten
-            updateSpotPriceDisplay(generateDemoSpotPrices());
+            updateSpotPriceDisplay(generateDemoSpotPrices(), {
+                data_source: 'demo',
+                source_meta: {
+                    name: 'Demo-Daten',
+                    description: 'Fallback aufgrund eines HTTP-Fehlers'
+                },
+                status_info: {
+                    tone: 'warning',
+                    text: '⚠️ Demo-Daten (HTTP-Fehler)'
+                }
+            });
         }
     } catch (error) {
         console.error('Netzwerk-Fehler:', error);
         showNotification('Netzwerk-Fehler beim Laden der Spot-Preise', 'error');
-        // Fallback zu Demo-Daten
-        updateSpotPriceDisplay(generateDemoSpotPrices());
+        updateSpotPriceDisplay(generateDemoSpotPrices(), {
+            data_source: 'demo',
+            source_meta: {
+                name: 'Demo-Daten',
+                description: 'Fallback aufgrund eines Netzwerkfehlers'
+            },
+            status_info: {
+                tone: 'warning',
+                text: '⚠️ Demo-Daten (Netzwerk-Fehler)'
+            }
+        });
     }
 }
 
@@ -275,7 +386,10 @@ function generateDemoSpotPrices() {
         prices.push({
             id: i + 1,
             timestamp: date.toISOString(),
-            price: Math.round(basePrice * 100) / 100
+            price: Math.round(basePrice * 100) / 100,
+            source: 'Demo (Legacy)',
+            source_category: 'demo',
+            source_label: 'Demo'
         });
     }
     
@@ -283,13 +397,55 @@ function generateDemoSpotPrices() {
 }
 
 // Spot-Preis Anzeige aktualisieren
-function updateSpotPriceDisplay(prices) {
+function updateSpotPriceDisplay(prices, meta = {}) {
+    renderSourceInformation(meta);
+    
+    if (!prices || prices.length === 0) {
+        document.getElementById('avgPrice').textContent = '--';
+        document.getElementById('maxPrice').textContent = '--';
+        document.getElementById('minPrice').textContent = '--';
+        document.getElementById('priceCount').textContent = '0';
+        const summaryElement = document.getElementById('dataSummary');
+        if (summaryElement) {
+            summaryElement.innerHTML = 'Zusammensetzung: <span class="font-medium text-gray-500">--</span>';
+        }
+        const legendElement = document.getElementById('chartSourceLegend');
+        if (legendElement) {
+            legendElement.innerHTML = '';
+            legendElement.classList.add('hidden');
+        }
+        
+        const tableBody = document.getElementById('priceTableBody');
+        tableBody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-sm text-gray-500 text-center">Keine Daten für den ausgewählten Zeitraum.</td></tr>';
+        
+        updateSpotPriceChart([]);
+        return;
+    }
+    
     // Statistiken aktualisieren
     const priceValues = prices.map(p => p.price);
     document.getElementById('avgPrice').textContent = (priceValues.reduce((a, b) => a + b, 0) / priceValues.length).toFixed(2);
     document.getElementById('maxPrice').textContent = Math.max(...priceValues).toFixed(2);
     document.getElementById('minPrice').textContent = Math.min(...priceValues).toFixed(2);
     document.getElementById('priceCount').textContent = prices.length;
+    
+    const legendElement = document.getElementById('chartSourceLegend');
+    if (legendElement) {
+        const summary = meta.source_summary || [];
+        if (summary.length > 0) {
+            legendElement.innerHTML = summary.map(item => {
+                const color = colorForCategory(item.category);
+                return `<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+                    <span class="w-3 h-3 rounded-full border border-white shadow" style="background-color:${color}"></span>
+                    ${item.label}<span class="text-xs text-gray-500"> (${item.count}${item.percentage ? ', ' + item.percentage + '%' : ''})</span>
+                </span>`;
+            }).join('');
+            legendElement.classList.remove('hidden');
+        } else {
+            legendElement.innerHTML = '';
+            legendElement.classList.add('hidden');
+        }
+    }
     
     // Datenquelle-Status aktualisieren
     if (prices.length > 0 && prices[0].source) {
@@ -302,9 +458,8 @@ function updateSpotPriceDisplay(prices) {
             statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Echte APG-Daten</span>';
         } else if (source.includes('APG (Demo)')) {
             statusElement.innerHTML = 'Status: <span class="font-medium text-yellow-600">⚠️ Demo-Daten basierend auf APG-Mustern</span>';
-        } else {
-            statusElement.innerHTML = 'Status: <span class="font-medium text-gray-600">📊 Demo-Daten (Legacy)</span>';
         }
+        // Für alle anderen Quellen bleibt der zuvor gesetzte status_info-Text bestehen
     }
     
     // Tabelle aktualisieren
@@ -335,13 +490,39 @@ function updateSpotPriceDisplay(prices) {
     updateSpotPriceChart(prices);
 }
 
+function clearSpotPriceDisplay(dataSource) {
+    updateSpotPriceDisplay([], {
+        data_source: dataSource,
+        source_meta: {
+            name: dataSource === 'entsoe' ? 'ENTSO-E Transparency Platform' : dataSource === 'apg' ? 'APG (Austrian Power Grid)' : 'Kombinierte Datenquellen',
+            description: dataSource === 'entsoe'
+                ? 'Keine ENTSO-E Daten für den gewählten Zeitraum verfügbar.'
+                : dataSource === 'apg'
+                    ? 'Keine APG Daten für den gewählten Zeitraum verfügbar.'
+                    : 'Keine Daten für den gewählten Zeitraum verfügbar.'
+        },
+        status_info: {
+            tone: 'warning',
+            text: '⚠️ Keine Daten im gewählten Zeitraum gefunden.'
+        }
+    });
+}
+
 // Spot-Preis Chart aktualisieren
 function updateSpotPriceChart(prices) {
-    const ctx = document.getElementById('spotPriceChart').getContext('2d');
-    
+    const container = document.getElementById('spotPriceChartContainer');
     if (spotPriceChart) {
         spotPriceChart.destroy();
     }
+    
+    if (!prices || prices.length === 0) {
+        spotPriceChart = null;
+        container.innerHTML = '<div class="h-40 flex items-center justify-center text-gray-400 bg-gray-50 rounded-lg">Keine Daten zur Anzeige verfügbar.</div>';
+        return;
+    }
+    
+    container.innerHTML = '<canvas id="spotPriceChart" width="400" height="200"></canvas>';
+    const ctx = container.querySelector('#spotPriceChart').getContext('2d');
     
     const labels = prices.map(p => {
         const date = new Date(p.timestamp);
@@ -353,6 +534,7 @@ function updateSpotPriceChart(prices) {
     });
     
     const data = prices.map(p => p.price);
+    const pointColors = prices.map(p => colorForCategory(p.source_category || 'unknown'));
     
     spotPriceChart = new Chart(ctx, {
         type: 'line',
@@ -363,7 +545,12 @@ function updateSpotPriceChart(prices) {
                 data: data,
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                tension: 0.1
+                tension: 0.1,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: pointColors,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointHitRadius: 10
             }]
         },
         options: {
@@ -373,6 +560,27 @@ function updateSpotPriceChart(prices) {
             plugins: {
                 legend: {
                     display: true
+                },
+                tooltip: {
+                    callbacks: {
+                        title: (items) => {
+                            if (!items.length) return '';
+                            return items[0].label || '';
+                        },
+                        label: (context) => {
+                            return `Preis: ${context.parsed.y.toFixed(2)} €/MWh`;
+                        },
+                        afterLabel: (context) => {
+                            const price = prices[context.dataIndex];
+                            if (price && price.source_label) {
+                                return `Quelle: ${price.source_label}`;
+                            }
+                            if (price && price.source) {
+                                return `Quelle: ${price.source}`;
+                            }
+                            return '';
+                        }
+                    }
                 }
             },
             scales: {
@@ -407,79 +615,77 @@ function updateSpotPriceChart(prices) {
     });
 }
 
-// Modal Funktionen
-function openNewPriceModal() {
-    document.getElementById('newPriceModal').classList.remove('hidden');
-}
-
-function closeNewPriceModal() {
-    document.getElementById('newPriceModal').classList.add('hidden');
-    document.getElementById('newPriceForm').reset();
-}
-
 function openImportModal() {
     document.getElementById('importModal').classList.remove('hidden');
+    updateImportModeUI();
 }
 
 function closeImportModal() {
     document.getElementById('importModal').classList.add('hidden');
     document.getElementById('importForm').reset();
+    importModeSelect.value = 'entsoe';
+    updateImportModeUI();
 }
 
-// Neuen Preis hinzufügen
-document.getElementById('newPriceForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        date: document.getElementById('priceDate').value,
-        hour: document.getElementById('priceHour').value,
-        price: document.getElementById('priceValue').value
-    };
-    
-    try {
-        const response = await fetch('/api/spot-prices', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData)
-        });
-        
-        if (response.ok) {
-            closeNewPriceModal();
-            loadSpotPrices();
-        } else {
-            alert('Fehler beim Hinzufügen des Preises');
-        }
-    } catch (error) {
-        console.error('Fehler:', error);
-        alert('Fehler beim Hinzufügen des Preises');
+const importModeSelect = document.getElementById('importMode');
+const entsoeImportFields = document.getElementById('entsoeImportFields');
+const fileImportFields = document.getElementById('fileImportFields');
+
+function updateImportModeUI() {
+    const mode = importModeSelect.value;
+    if (mode === 'entsoe') {
+        entsoeImportFields.classList.remove('hidden');
+        fileImportFields.classList.add('hidden');
+    } else {
+        entsoeImportFields.classList.add('hidden');
+        fileImportFields.classList.remove('hidden');
     }
-});
+}
+
+importModeSelect.addEventListener('change', updateImportModeUI);
+updateImportModeUI();
 
 // Import
 document.getElementById('importForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     
+    const mode = importModeSelect.value;
     const formData = new FormData();
-    formData.append('file', document.getElementById('importFile').files[0]);
-    formData.append('time_range', document.getElementById('importTimeRange').value);
+    formData.append('mode', mode);
+
+    if (mode === 'entsoe') {
+        formData.append('area', document.getElementById('entsoeArea').value);
+        formData.append('region', document.getElementById('entsoeRegion').value);
+        formData.append('price_type', document.getElementById('entsoePriceType').value);
+        formData.append('pattern', document.getElementById('entsoePattern').value);
+    } else {
+        const fileInput = document.getElementById('importFile');
+        if (!fileInput.files.length) {
+            alert('Bitte eine CSV-Datei auswählen.');
+            return;
+        }
+        formData.append('file', fileInput.files[0]);
+        formData.append('time_range', document.getElementById('importTimeRange').value);
+    }
     
     try {
         const response = await fetch('/api/spot-prices/import', {
             method: 'POST',
             body: formData
         });
+
+        const result = await response.json();
         
-        if (response.ok) {
+        if (response.ok && result.success) {
             closeImportModal();
             loadSpotPrices();
+            showNotification(result.message || 'Import erfolgreich durchgeführt.', 'success');
         } else {
-            alert('Fehler beim Importieren');
+            showNotification(result.error || 'Fehler beim Importieren', 'error');
         }
     } catch (error) {
         console.error('Fehler:', error);
-        alert('Fehler beim Importieren');
+        showNotification('Fehler beim Importieren', 'error');
     }
 });
 
@@ -516,21 +722,6 @@ async function refreshAPGData() {
         
         if (result.success) {
             showNotification(result.message, 'success');
-            
-            // Datenquelle-Status aktualisieren
-            const statusElement = document.getElementById('dataStatus');
-            if (result.source) {
-                if (result.source.includes('Live')) {
-                    statusElement.innerHTML = `Status: <span class="font-medium text-green-600">✅ ${result.source}</span>`;
-                } else if (result.source.includes('Demo')) {
-                    statusElement.innerHTML = `Status: <span class="font-medium text-yellow-600">⚠️ ${result.source}</span>`;
-                } else {
-                    statusElement.innerHTML = `Status: <span class="font-medium text-blue-600">📊 ${result.source}</span>`;
-                }
-            } else {
-                statusElement.innerHTML = 'Status: <span class="font-medium text-green-600">✅ Daten aktualisiert</span>';
-            }
-            
             // Daten neu laden
             loadSpotPrices();
         } else {
@@ -588,18 +779,24 @@ document.getElementById('timeRange').addEventListener('change', function() {
             const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sonntag = 0, Montag = 1
             startDate = new Date(today.getTime() - (daysToMonday * 24 * 60 * 60 * 1000));
             endDate = new Date(startDate.getTime() + (6 * 24 * 60 * 60 * 1000));
+            if (endDate > today) {
+                endDate = today;
+            }
             startDate = startDate.toISOString().split('T')[0];
             endDate = endDate.toISOString().split('T')[0];
             break;
         case 'month':
             // Dieser Monat
-            startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split('T')[0];
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            startDate = firstDay.toISOString().split('T')[0];
+            endDate = (lastDay > today ? today : lastDay).toISOString().split('T')[0];
             break;
         case 'year':
-            // Dieses Jahr - verwende 2024 für echte APG-Daten
-            startDate = '2024-01-01';
-            endDate = '2024-12-31';
+            // Dieses Jahr: Beginn am 1. Januar des aktuellen Jahres, Ende heute
+            const currentYear = today.getFullYear();
+            startDate = new Date(currentYear, 0, 1).toISOString().split('T')[0];
+            endDate = today.toISOString().split('T')[0];
             break;
         case 'custom':
             // Benutzerdefiniert - Datumsfelder aktivieren und fokussieren
@@ -620,6 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const timeRangeSelect = document.getElementById('timeRange');
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
+    const dataSourceSelect = document.getElementById('dataSourceSelect');
     
     // Prüfe ob bereits Werte gesetzt sind
     if (!startDateInput.value || !endDateInput.value) {
@@ -632,10 +830,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Zeitraum auf "Diese Woche" setzen
         timeRangeSelect.value = 'week';
+        dataSourceSelect.value = 'entsoe';
         
         // Nur beim ersten Laden Daten laden
         loadSpotPrices();
     }
+    
+    dataSourceSelect.addEventListener('change', () => {
+        loadSpotPrices();
+    });
 });
 </script>
 {% endblock %} 

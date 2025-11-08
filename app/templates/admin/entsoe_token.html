@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}ENTSO-E Token Verwaltung{% endblock %}
+
+{% block content %}
+<div class="-mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-10 bg-slate-950 text-slate-100 rounded-3xl shadow-inner min-h-[calc(100vh-6rem)]">
+    <div class="max-w-6xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-white mb-2">Marktdaten / ENTSO-E API Konfiguration</h1>
+        <p class="text-slate-300 max-w-3xl">
+            Konfigurieren Sie Ihren persönlichen ENTSO-E API Token für den Zugriff auf EPEX Spot Marktdaten.
+            Jeder Benutzer verwaltet seinen eigenen Token. Der Token wird verschlüsselt gespeichert und ausschließlich
+            für Marktdaten-Abfragen verwendet.
+        </p>
+    </div>
+
+    <div class="bg-slate-900/80 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden">
+        <div class="border-b border-slate-700 bg-slate-800/60 px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300">
+                    <i class="fas fa-chart-line text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-semibold text-white">ENTSO-E API Token</h2>
+                    <p class="text-sm text-slate-400">Stellen Sie sicher, dass der Token für Ihren Benutzer aktiv ist.</p>
+                </div>
+            </div>
+            <a href="https://transparency.entsoe.eu/" target="_blank" class="text-sm text-blue-400 hover:text-blue-300 transition-colors">
+                Token erhalten&nbsp;↗
+            </a>
+        </div>
+
+        <div class="px-6 py-6 space-y-6">
+            <div class="bg-blue-500/10 border border-blue-400/30 rounded-xl p-5">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 mt-1 text-blue-300">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="text-sm text-slate-200">
+                        <p class="font-medium text-blue-200">Information</p>
+                        <p class="mt-1">Jeder Benutzer kann seinen eigenen ENTSO-E API Token eingeben. Dieser Token wird für den Abruf von EPEX Spot Marktdaten verwendet.</p>
+                        <p class="mt-1">Tokens werden verschlüsselt gespeichert. Bei leeren Eingabefeldern bleibt der bestehende Token erhalten.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <label class="block">
+                    <span class="text-sm font-medium text-slate-200 mb-2 block">Ihr ENTSO-E API Token</span>
+                    <input type="password" id="entsoe-token" class="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                           autocomplete="off" placeholder="Ihr ENTSO-E API Token (z.B. 2793353d-b5dd-4d4f-9638-8e26c88027e5)">
+                    <p class="text-xs text-slate-400 mt-2">Ihr persönlicher ENTSO-E API Token. Dieser wird verschlüsselt gespeichert und nur für Marktdaten-Abfragen verwendet.</p>
+                </label>
+
+                <label class="inline-flex items-center space-x-3 text-slate-200">
+                    <input type="checkbox" id="entsoe-enabled" class="h-5 w-5 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-blue-500">
+                    <span>ENTSO-E API Token aktivieren</span>
+                </label>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-semibold text-slate-300 uppercase tracking-wide">Aktueller Status</h3>
+                <div id="entsoe-status" class="mt-3 bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 text-slate-300">
+                    Lade Status...
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <button id="entsoe-test-btn" class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-lg font-medium shadow transition">
+                    <i class="fas fa-vial mr-2"></i>Token testen
+                </button>
+                <button id="entsoe-save-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium shadow transition">
+                    <i class="fas fa-save mr-2"></i>Token speichern
+                </button>
+                <button id="entsoe-clear-btn" class="bg-red-600/80 hover:bg-red-600 text-white px-5 py-2.5 rounded-lg font-medium shadow transition">
+                    <i class="fas fa-trash mr-2"></i>Token entfernen
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<template id="entsoe-status-template">
+    <div>
+        <div class="flex items-center space-x-3">
+            <div class="status-icon"></div>
+            <div>
+                <p class="text-lg font-semibold text-white status-headline"></p>
+                <p class="text-sm text-slate-400 status-subline"></p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm text-slate-300">
+            <div class="bg-slate-800/70 border border-slate-700 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Token</p>
+                <p class="token-value mt-1 font-mono text-slate-100"></p>
+            </div>
+            <div class="bg-slate-800/70 border border-slate-700 rounded-lg p-4">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Zuletzt aktualisiert</p>
+                <p class="updated-value mt-1 text-slate-100"></p>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const statusBox = document.getElementById('entsoe-status');
+    const tokenInput = document.getElementById('entsoe-token');
+    const enabledInput = document.getElementById('entsoe-enabled');
+    const testButton = document.getElementById('entsoe-test-btn');
+    const saveButton = document.getElementById('entsoe-save-btn');
+    const clearButton = document.getElementById('entsoe-clear-btn');
+    const statusTemplate = document.getElementById('entsoe-status-template');
+
+    async function loadStatus() {
+        statusBox.textContent = 'Lade Status...';
+        try {
+            const response = await fetch('{{ url_for("admin.entsoe_token_status") }}');
+            const result = await response.json();
+            if (!result.success) {
+                statusBox.textContent = result.error || 'Status konnte nicht geladen werden.';
+                return;
+            }
+            renderStatus(result);
+        } catch (error) {
+            console.error('Fehler beim Laden des ENTSO-E Status:', error);
+            statusBox.textContent = 'Fehler beim Laden des Status.';
+        }
+    }
+
+    function renderStatus(data) {
+        if (!statusTemplate) {
+            statusBox.textContent = 'Statusvorlage fehlt.';
+            return;
+        }
+        const fragment = statusTemplate.content.cloneNode(true);
+        const hasToken = data.has_token;
+        const isActive = data.is_active;
+        const icon = fragment.querySelector('.status-icon');
+        const headline = fragment.querySelector('.status-headline');
+        const subline = fragment.querySelector('.status-subline');
+        const tokenValue = fragment.querySelector('.token-value');
+        const updatedValue = fragment.querySelector('.updated-value');
+
+        icon.innerHTML = isActive && hasToken
+            ? '<span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-green-500/20 text-green-300"><i class="fas fa-check"></i></span>'
+            : '<span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-yellow-500/20 text-yellow-300"><i class="fas fa-exclamation"></i></span>';
+
+        headline.textContent = isActive
+            ? (hasToken ? 'Token aktiv' : 'Token benötigt')
+            : 'Token deaktiviert';
+
+        subline.textContent = isActive
+            ? (hasToken ? 'ENTSO-E Abfragen verwenden diesen Token.' : 'Bitte tragen Sie einen gültigen Token ein.')
+            : 'Der Token ist deaktiviert und wird nicht verwendet.';
+
+        tokenValue.textContent = hasToken ? data.token_masked || 'Token vorhanden' : 'Kein Token gespeichert';
+        updatedValue.textContent = data.last_updated
+            ? new Date(data.last_updated).toLocaleString('de-AT')
+            : 'Noch nie gespeichert';
+
+        statusBox.innerHTML = '';
+        statusBox.appendChild(fragment);
+        enabledInput.checked = Boolean(isActive);
+    }
+
+    async function testToken() {
+        const token = tokenInput.value.trim();
+        statusBox.textContent = 'Teste ENTSO-E Token...';
+        try {
+            const response = await fetch('{{ url_for("admin.entsoe_token_test") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({token})
+            });
+            const result = await response.json();
+            if (result.success) {
+                showFlash('success', result.message || 'Token Test erfolgreich.');
+            } else {
+                showFlash('error', result.error || result.message || 'Token Test fehlgeschlagen.');
+            }
+        } catch (error) {
+            console.error('Fehler beim Testen des ENTSO-E Tokens:', error);
+            showFlash('error', 'Fehler beim Testen des Tokens.');
+        } finally {
+            await loadStatus();
+        }
+    }
+
+    async function saveToken(options = {}) {
+        const payload = {
+            token: tokenInput.value.trim(),
+            enabled: enabledInput.checked,
+            keep_existing: options.keepExisting || false
+        };
+        try {
+            const response = await fetch('{{ url_for("admin.entsoe_token_save") }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showFlash('success', result.message || 'Token gespeichert.');
+                tokenInput.value = '';
+                await loadStatus();
+            } else {
+                showFlash('error', result.error || result.message || 'Token konnte nicht gespeichert werden.');
+            }
+        } catch (error) {
+            console.error('Fehler beim Speichern des ENTSO-E Tokens:', error);
+            showFlash('error', 'Fehler beim Speichern des Tokens.');
+        }
+    }
+
+    function showFlash(type, message) {
+        const container = document.createElement('div');
+        container.className = `mt-4 px-4 py-3 rounded-lg border ${type === 'success'
+            ? 'bg-green-500/10 border-green-400/40 text-green-200'
+            : 'bg-red-500/10 border-red-400/40 text-red-200'}`;
+        container.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <div>${type === 'success' ? '<i class="fas fa-check-circle"></i>' : '<i class="fas fa-exclamation-triangle"></i>'}</div>
+                <div class="text-sm">${message}</div>
+            </div>
+        `;
+        statusBox.insertAdjacentElement('beforebegin', container);
+        setTimeout(() => container.remove(), 6000);
+    }
+
+    testButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        testToken();
+    });
+
+    saveButton.addEventListener('click', (event) => {
+        event.preventDefault();
+        saveToken({keepExisting: true});
+    });
+
+    clearButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        tokenInput.value = '';
+        enabledInput.checked = false;
+        await saveToken({keepExisting: false});
+    });
+
+    loadStatus();
+});
+</script>
+{% endblock %}
+

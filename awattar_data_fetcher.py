@@ -115,7 +115,7 @@ class AWattarDataFetcher:
                     'timestamp': start_timestamp,
                     'end_timestamp': end_timestamp,
                     'price_eur_mwh': float(item['marketprice']),
-                    'source': 'aWATTAR',
+                    'source': 'aWATTAR (Live API)',
                     'region': 'AT',
                     'price_type': 'day_ahead',
                     'unit': item.get('unit', 'Eur/MWh')

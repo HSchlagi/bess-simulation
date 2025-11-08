@@ -167,6 +167,7 @@ Umfassendes Datenimport-System für alle relevanten Markt- und Wetterdaten:
 
 - **Spot-Preis-Import:** Automatischer und manueller Import von APG-Spot-Preisen
 - **aWattar-Integration:** Automatischer Import österreichischer Strompreise (täglich 14:00/15:00 Uhr)
+- **Multi-Quellen-Dashboard:** Auswahl zwischen ENTSO-E A44, APG, aWATTar oder kombinierter Ansicht mit detaillierter Quellenaufschlüsselung, farbcodierten Datenpunkten und Tooltips im Spotpreis-Dashboard
 - **Lastprofil-Integration:** Import von Haushalts-, Gewerbe- und Industrieprofilen
 - **Wetterdaten:** Integration von PVGIS-Wetterdaten für PV-Simulationen
 - **EHYD-Integration:** Automatischer Import von Wasserkraftdaten für österreichische Flüsse
@@ -1203,6 +1204,13 @@ Das **ML & KI Dashboard** bietet intelligente Analysen und Vorhersagen für opti
 2. **Spalten zuordnen** (Datum, Preis)
 3. **Import starten**
 4. **Datenvorschau** prüfen
+
+**Spot-Preis-Dashboard-Funktionen (2025-11 Update):**
+- **Quellenwahl:** `ENTSO-E A44`, `APG`, `aWATTar` oder `ENTSO-E + APG kombiniert`
+- **Statuskarten:** Anzeigen der aktuellen Datenquelle inkl. „✅ Echte … Daten“ und Mengenaufschlüsselung
+- **Quellenlegende:** Farbcodierte Darstellung (Chart.js) der Quellenanteile basierend auf `source_summary`
+- **Tooltips:** Zeigen Preis und die zugehörige Quelle (`APG`, `ENTSO-E`, `aWATTar`) pro Datenpunkt
+- **Kombinierte Ansicht:** Mischt Daten aus allen Quellen, hebt per Farbe und Legende die Herkunft hervor
 
 #### 2.1 aWattar API Integration
 
@@ -4320,6 +4328,46 @@ X-CSRFToken: <csrf_token>
     "end_date": "2025-09-02",
     "status": "completed"
   }
+}
+```
+
+#### POST /api/spot-prices
+**Beschreibung:** Spot-Preise für das Dashboard abrufen (inkl. Quellen-Breakdown)
+
+**Request Body:**
+```json
+{
+  "start_date": "2025-11-01",
+  "end_date": "2025-11-08",
+  "data_source": "combined"  // entsoe | apg | awattar | combined
+}
+```
+
+**Response (Auszug):**
+```json
+{
+  "success": true,
+  "data_source": "combined",
+  "status_info": {
+    "tone": "success",
+    "text": "✅ Kombinierte APG & ENTSO-E Daten – 21× APG, 21× ENTSO-E, 21× aWATTar"
+  },
+  "source_summary": [
+    {"category": "apg", "label": "APG", "count": 21, "percentage": 33.3},
+    {"category": "entsoe", "label": "ENTSO-E", "count": 21, "percentage": 33.3},
+    {"category": "awattar", "label": "aWATTar", "count": 21, "percentage": 33.3}
+  ],
+  "data": [
+    {
+      "timestamp": "2025-11-08 00:00:00",
+      "price": 52.72,
+      "region": "AT",
+      "market": "day_ahead",
+      "source": "APG",
+      "source_category": "apg",
+      "source_label": "APG"
+    }
+  ]
 }
 ```
 
