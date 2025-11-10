@@ -3,7 +3,7 @@ echo 🚀 Starte APG Scheduler für automatische 2025-Daten...
 echo.
 
 REM Wechsle ins Projekt-Verzeichnis
-cd /d "D:\Daten-Heinz\BESS-Simulation"
+cd /d "D:\Daten-Heinz\phoenyra_BESS-Simulation"
 
 REM Aktiviere Virtual Environment
 call venv\Scripts\activate.bat

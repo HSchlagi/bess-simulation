@@ -5,7 +5,7 @@
 ### **1. Virtual Environment aktivieren**
 ```powershell
 # PowerShell öffnen und zum Projektverzeichnis navigieren
-cd D:\Daten-Heinz\BESS-Simulation
+cd D:\Daten-Heinz\phoenyra_BESS-Simulation
 
 # Virtual Environment aktivieren
 .\venv_new\Scripts\Activate.ps1
@@ -73,7 +73,7 @@ Erstellen Sie eine Datei `start_bess.bat` im Projektverzeichnis:
 
 ```batch
 @echo off
-cd /d D:\Daten-Heinz\BESS-Simulation
+cd /d D:\Daten-Heinz\phoenyra_BESS-Simulation
 call venv_new\Scripts\activate.bat
 python run.py
 pause
@@ -123,7 +123,7 @@ Falls etwas nicht funktioniert:
 1. **Virtual Environment prüfen:**
    ```powershell
    # Sollte (venv_new) am Anfang der Zeile zeigen
-   (venv_new) PS D:\Daten-Heinz\BESS-Simulation>
+   (venv_new) PS D:\Daten-Heinz\phoenyra_BESS-Simulation>
    ```
 
 2. **Python-Version prüfen:**

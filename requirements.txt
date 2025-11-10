@@ -1,61 +1,68 @@
-Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
-Flask-WTF==1.1.1
+annotated-types==0.7.0
+anyio==4.10.0
+bidict==0.23.1
+blinker==1.9.0
+cachelib==0.13.0
+certifi==2025.7.14
+charset-normalizer==3.4.2
+click==8.2.1
+colorama==0.4.6
+deprecation==2.1.0
+et_xmlfile==2.0.0
+Flask==3.1.1
+Flask-Caching==2.3.1
 Flask-Login==0.6.3
-SQLAlchemy==2.0.21
-Werkzeug==2.3.7
-Jinja2==3.1.2
-MarkupSafe==2.1.3
-itsdangerous==2.1.2
-click==8.1.7
-blinker==1.6.3
-greenlet==3.0.0
-typing_extensions>=4.12.0,<5.0.0
-
-# PDF Generation
-reportlab==4.0.4
-Pillow==10.0.1
-
-# Excel Generation
-openpyxl==3.1.2
-
-# Data Processing
-pandas==2.0.3
-numpy==1.24.3
-
-# HTTP Requests
-requests==2.31.0
-httpx>=0.27,<0.28
-
-# Date/Time handling
-python-dateutil==2.8.2
-
-# Environment variables
-python-dotenv==1.0.0
-
-# YAML support
-PyYAML==6.0.1
-
-# Production server
-gunicorn==21.2.0
-
-# Development tools (optional)
-# flask-debugtoolbar==0.13.1
-
-# Authentication (deaktiviert wegen httpx-Konflikten)
-# supabase>=2.3.0,<3.0.0
-# postgrest>=0.13.0,<0.14.0
-# supafunc>=0.3.0,<0.4.0
-
-# Performance & Monitoring
-flask-caching==2.1.0
-redis==5.0.1
-psutil==5.9.6
-
-# Machine Learning & AI
-scikit-learn==1.3.0
-joblib==1.3.2
-
-# MCP Integration für Cursor AI
-mcp>=1.2.0,<2.0.0
-paho-mqtt>=2.1.0,<3.0.0
+Flask-SocketIO==5.5.1
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.2
+matplotlib==3.9.2
+gotrue==1.3.1
+greenlet==3.2.3
+h11==0.14.0
+httpcore==0.17.3
+httpx==0.24.1
+idna==3.10
+itsdangerous==2.2.0
+Jinja2==3.1.6
+joblib==1.5.2
+MarkupSafe==3.0.2
+numpy==2.3.2
+openpyxl==3.1.5
+packaging==25.0
+pandas==2.3.1
+pillow==11.3.0
+postgrest==0.13.2
+psutil==7.0.0
+pydantic==2.11.7
+pydantic_core==2.33.2
+python-dateutil==2.9.0.post0
+python-engineio==4.12.2
+python-socketio==5.13.0
+pytz==2025.2
+PyYAML==6.0.2
+realtime==1.0.6
+redis==6.4.0
+reportlab==4.4.3
+requests==2.32.4
+schedule==1.2.2
+scikit-learn==1.7.1
+scipy==1.16.1
+simple-websocket==1.1.0
+six==1.17.0
+sniffio==1.3.1
+statsmodels==0.14.4
+SQLAlchemy==2.0.41
+storage3==0.6.1
+StrEnum==0.4.15
+supabase==2.0.2
+supafunc==0.3.3
+threadpoolctl==3.6.0
+typing-inspection==0.4.1
+typing_extensions==4.14.1
+tzdata==2025.2
+urllib3==2.5.0
+websockets==12.0
+Werkzeug==3.1.3
+wsproto==1.2.0
+WTForms==3.2.1
+xgboost==2.1.2

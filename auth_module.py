@@ -8,8 +8,16 @@ Supabase-basierte Benutzeranmeldung für die BESS-Simulation.
 import os
 from functools import wraps
 from flask import session, redirect, url_for, flash, request
-from supabase import create_client, Client
 from typing import Optional
+
+try:
+    from supabase import create_client, Client
+    _SUPABASE_MODULE_AVAILABLE = True
+except ModuleNotFoundError:
+    print("⚠️ Supabase-Modul nicht installiert – Authentifizierung wird deaktiviert.")
+    create_client = None  # type: ignore
+    Client = None  # type: ignore
+    _SUPABASE_MODULE_AVAILABLE = False
 
 # Supabase-Initialisierung
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -21,13 +29,17 @@ if not SUPABASE_URL:
 if not SUPABASE_KEY:
     SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4a2J5ZXVleXJ4b2V2Y3d3cW9wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2NDQ4OTAsImV4cCI6MjA2NTIyMDg5MH0.5VUcUYlANZf_GkGrd2vPWDsduS9OaIfIhSiS1xsXONU"  # Ihr Supabase Anon Key
 
-try:
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-    AUTH_AVAILABLE = True
-except Exception as e:
-    print(f"⚠️ Supabase nicht verfügbar: {e}")
-    AUTH_AVAILABLE = False
+if _SUPABASE_MODULE_AVAILABLE:
+    try:
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)  # type: ignore[arg-type]
+        AUTH_AVAILABLE = True
+    except Exception as e:
+        print(f"⚠️ Supabase nicht verfügbar: {e}")
+        AUTH_AVAILABLE = False
+        supabase = None
+else:
     supabase = None
+    AUTH_AVAILABLE = False
 
 def login_required(f):
     """

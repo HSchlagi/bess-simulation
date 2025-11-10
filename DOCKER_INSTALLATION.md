@@ -69,7 +69,7 @@ Nach der Installation:
 
 ```powershell
 # Zum Projektverzeichnis wechseln
-cd D:\Daten-Heinz\BESS-Simulation
+cd D:\Daten-Heinz\phoenyra_BESS-Simulation
 
 # Docker-Container starten
 .\docker-start.ps1

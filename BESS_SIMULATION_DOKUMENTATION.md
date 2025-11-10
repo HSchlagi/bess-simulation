@@ -6442,7 +6442,7 @@ Fügen Sie diese Konfiguration zu Ihren Cursor-Einstellungen hinzu:
     "bess-simulation": {
       "command": "python",
       "args": ["mcp_server_working.py"],
-      "cwd": "D:\\Daten-Heinz\\BESS-Simulation",
+      "cwd": "D:\\Daten-Heinz\\phoenyra_BESS-Simulation",
       "env": {
         "BESS_DB_PATH": "instance/bess.db",
         "DISPATCH_MODULE": "app.mcp_dispatch_adapter",
@@ -6459,7 +6459,7 @@ Fügen Sie diese Konfiguration zu Ihren Cursor-Einstellungen hinzu:
 
 #### **2. Server starten**
 ```bash
-cd D:\Daten-Heinz\BESS-Simulation
+cd D:\Daten-Heinz\phoenyra_BESS-Simulation
 python mcp_server_working.py
 ```
 

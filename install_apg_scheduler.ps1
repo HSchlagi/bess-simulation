@@ -4,7 +4,7 @@
 Write-Host "🚀 Installiere APG Scheduler für automatische 2025-Daten..." -ForegroundColor Green
 
 # Projekt-Verzeichnis
-$projectPath = "D:\Daten-Heinz\BESS-Simulation"
+$projectPath = "D:\Daten-Heinz\phoenyra_BESS-Simulation"
 $pythonPath = "$projectPath\venv\Scripts\python.exe"
 $scriptPath = "$projectPath\apg_scheduler_2025.py"
 

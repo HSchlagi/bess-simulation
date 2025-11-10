@@ -4,7 +4,7 @@ echo    BESS-Simulation Starter
 echo ========================================
 echo.
 
-cd /d D:\Daten-Heinz\BESS-Simulation
+cd /d D:\Daten-Heinz\phoenyra_BESS-Simulation
 
 echo [1/4] Aktiviere Virtual Environment...
 call venv_new\Scripts\activate.bat
