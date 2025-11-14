@@ -67,6 +67,104 @@
             </div>
         </div>
         
+        <!-- Marktpreis-Konfiguration -->
+        <div class="mt-4">
+            <button id="toggleMarketPrices" class="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 border border-gray-300 rounded-lg p-3 transition-colors">
+                <div class="flex items-center">
+                    <i class="fas fa-cog text-gray-600 mr-2"></i>
+                    <span class="text-sm font-medium text-gray-700">Marktpreise konfigurieren</span>
+                </div>
+                <i class="fas fa-chevron-down text-gray-500" id="marketPricesChevron"></i>
+            </button>
+            
+            <div id="marketPricesPanel" class="hidden mt-4 bg-white border border-gray-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Marktpreis-Konfiguration</h3>
+                <p class="text-sm text-gray-600 mb-4">Passen Sie die Marktpreise für die Wirtschaftlichkeitsberechnung an. Diese Werte werden für die Berechnung der Erlöse verwendet.</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Intraday Trading -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-orange-800 border-b border-orange-200 pb-2">Intraday Trading (€/kWh)</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Spot-Arbitrage
+                                <span class="text-xs text-gray-500 ml-1" title="Preis für Spot-Markt-Arbitrage">(Referenz: 0.0074)</span>
+                            </label>
+                            <input type="number" id="spotArbitragePrice" step="0.001" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Intraday-Handel
+                                <span class="text-xs text-gray-500 ml-1" title="Preis für Intraday-Handel">(Referenz: 0.0111)</span>
+                            </label>
+                            <input type="number" id="intradayTradingPrice" step="0.001" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Regelenergie
+                                <span class="text-xs text-gray-500 ml-1" title="Preis für Regelenergie">(Referenz: 0.0231)</span>
+                            </label>
+                            <input type="number" id="balancingEnergyPrice" step="0.001" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Sekundärmarkt -->
+                    <div class="space-y-4">
+                        <h4 class="font-medium text-indigo-800 border-b border-indigo-200 pb-2">Sekundärmarkt (€/kWh)</h4>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Frequenzregelung
+                                <span class="text-xs text-gray-500 ml-1" title="Preis für Frequenzregelung">(Referenz: 0.30)</span>
+                            </label>
+                            <input type="number" id="frequencyRegulationPrice" step="0.001" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Kapazitätsmärkte
+                                <span class="text-xs text-gray-500 ml-1" title="Preis für Kapazitätsmärkte">(Referenz: 0.18)</span>
+                            </label>
+                            <input type="number" id="capacityMarketPrice" step="0.001" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Flexibilitätsmärkte
+                                <span class="text-xs text-gray-500 ml-1" title="Preis für Flexibilitätsmärkte">(Referenz: 0.22)</span>
+                            </label>
+                            <input type="number" id="flexibilityMarketPrice" step="0.001" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Bezugsjahr-Auswahl -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt mr-2 text-blue-600"></i>Bezugsjahr für 10-Jahres-Berechnung
+                        </label>
+                        <p class="text-xs text-gray-500 mb-2">Das Bezugsjahr ist das Referenzjahr für die 10-Jahres-Prognose. Standardmäßig wird das aktuelle Jahr verwendet.</p>
+                        <input type="number" id="referenceYear" min="2020" max="2100" step="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex items-center justify-between">
+                    <button id="resetMarketPrices" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors">
+                        <i class="fas fa-undo mr-2"></i>Standardwerte zurücksetzen
+                    </button>
+                    <button id="saveMarketPrices" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors">
+                        <i class="fas fa-save mr-2"></i>Speichern
+                    </button>
+                </div>
+                
+                <div id="marketPricesStatus" class="mt-4 hidden"></div>
+            </div>
+        </div>
+        
         <div class="mt-6">
             <button id="runAnalysis" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg">
                 <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,6 +256,22 @@
             </div>
         </div>
 
+        <!-- Tab Navigation -->
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200 mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px">
+                    <button id="tabOverview" class="tab-button active px-6 py-4 text-sm font-medium text-blue-600 border-b-2 border-blue-600">
+                        Übersicht
+                    </button>
+                    <button id="tab10Year" class="tab-button px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 border-transparent">
+                        10-Jahres-Report
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Tab Content: Overview -->
+        <div id="tabContentOverview" class="tab-content">
         <!-- Detailed Analysis Grid - Vertikale Anordnung -->
         <div class="space-y-6 mb-8">
             <!-- Investment Breakdown -->
@@ -335,6 +449,63 @@
                     <div id="sensitivityResults" class="space-y-3">
                         <!-- Will be populated by JavaScript -->
                     </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        <!-- End Tab Content: Overview -->
+
+        <!-- Tab Content: 10-Year Report -->
+        <div id="tabContent10Year" class="tab-content hidden">
+            <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-2xl font-semibold text-gray-900">Erlöspotenzial Use Case 1</h3>
+                        <p class="text-sm text-gray-600 mt-1">Arbitrage-Optimierung, 50% SRL/E-, 50% SRL/E+</p>
+                        <p class="text-xs text-gray-500 mt-1">Erlöskalkulation BESS - Backtesting (2024) und Prognose (2025-34) | Laufzeit: 10 Jahre</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="export10YearPDF" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <i class="fas fa-file-pdf mr-2"></i>PDF
+                        </button>
+                        <button id="export10YearExcel" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <i class="fas fa-file-excel mr-2"></i>Excel
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 10-Year Report Table -->
+                <div class="overflow-x-auto">
+                    <table id="10YearReportTable" class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Kategorie</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">10Y Summe</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300">Referenzjahr<br>2024</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-r border-gray-300" colspan="10">Projektion → Zukunft</th>
+                                <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">10Y<br>Mittelwert</th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2025</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2026</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2027</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2028</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2029</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2030</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2031</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2032</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2033</th>
+                                <th class="px-2 py-2 text-center text-xs font-medium text-gray-500 border-r border-gray-300">2034</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="10YearReportTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Will be populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -1308,6 +1479,451 @@ function closeShareDialog() {
     if (dialog) {
         dialog.remove();
     }
+}
+
+// ===== MARKTPREIS-KONFIGURATION =====
+
+let currentMarketPrices = null;
+
+// Panel ein-/ausklappen
+document.getElementById('toggleMarketPrices')?.addEventListener('click', function() {
+    const panel = document.getElementById('marketPricesPanel');
+    const chevron = document.getElementById('marketPricesChevron');
+    
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        chevron.classList.remove('fa-chevron-down');
+        chevron.classList.add('fa-chevron-up');
+        loadMarketPrices();
+    } else {
+        panel.classList.add('hidden');
+        chevron.classList.remove('fa-chevron-up');
+        chevron.classList.add('fa-chevron-down');
+    }
+});
+
+// Marktpreise laden
+function loadMarketPrices() {
+    if (!currentProjectId) {
+        showMarketPricesStatus('Bitte wählen Sie zuerst ein Projekt aus', 'warning');
+        return;
+    }
+    
+    fetch(`/api/market-prices/${currentProjectId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentMarketPrices = data.prices;
+                
+                // Standardwerte als Fallback (angepasst basierend auf Referenz-Screenshot)
+                // Reduktionsfaktor: 108,274 / 1,172,380 = 0.0924 (ca. 9.24%)
+                const defaultPrices = {
+                    spot_arbitrage_price: 0.0074,  // 0.08 * 0.0924 = 0.007392
+                    intraday_trading_price: 0.0111,  // 0.12 * 0.0924 = 0.011088
+                    balancing_energy_price: 0.0231,  // 0.25 * 0.0924 = 0.0231
+                    frequency_regulation_price: 0.30,
+                    capacity_market_price: 0.18,
+                    flexibility_market_price: 0.22
+                };
+                
+                // Werte in Formular eintragen (mit Standardwerten als Fallback)
+                // Verwende ?? für null/undefined, aber auch || für 0 oder leere Strings
+                const getValue = (value, defaultValue) => {
+                    return (value !== null && value !== undefined && value !== '') ? value : defaultValue;
+                };
+                
+                document.getElementById('spotArbitragePrice').value = getValue(data.prices.spot_arbitrage_price, defaultPrices.spot_arbitrage_price);
+                document.getElementById('intradayTradingPrice').value = getValue(data.prices.intraday_trading_price, defaultPrices.intraday_trading_price);
+                document.getElementById('balancingEnergyPrice').value = getValue(data.prices.balancing_energy_price, defaultPrices.balancing_energy_price);
+                document.getElementById('frequencyRegulationPrice').value = getValue(data.prices.frequency_regulation_price, defaultPrices.frequency_regulation_price);
+                document.getElementById('capacityMarketPrice').value = getValue(data.prices.capacity_market_price, defaultPrices.capacity_market_price);
+                document.getElementById('flexibilityMarketPrice').value = getValue(data.prices.flexibility_market_price, defaultPrices.flexibility_market_price);
+                
+                // Bezugsjahr setzen (Standard: aktuelles Jahr)
+                const referenceYearInput = document.getElementById('referenceYear');
+                if (referenceYearInput) {
+                    const currentYear = new Date().getFullYear();
+                    referenceYearInput.value = data.prices.reference_year ?? currentYear;
+                }
+                
+                if (data.has_custom_config) {
+                    showMarketPricesStatus('Projektspezifische Konfiguration geladen', 'success');
+                } else {
+                    showMarketPricesStatus('Standardwerte werden verwendet', 'info');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden der Marktpreise:', error);
+            showMarketPricesStatus('Fehler beim Laden der Marktpreise', 'error');
+        });
+}
+
+// Marktpreise speichern
+document.getElementById('saveMarketPrices')?.addEventListener('click', function() {
+    if (!currentProjectId) {
+        showMarketPricesStatus('Bitte wählen Sie zuerst ein Projekt aus', 'warning');
+        return;
+    }
+    
+    const referenceYearInput = document.getElementById('referenceYear');
+    const referenceYear = referenceYearInput ? parseInt(referenceYearInput.value) : null;
+    
+    const prices = {
+        spot_arbitrage_price: parseFloat(document.getElementById('spotArbitragePrice').value) || null,
+        intraday_trading_price: parseFloat(document.getElementById('intradayTradingPrice').value) || null,
+        balancing_energy_price: parseFloat(document.getElementById('balancingEnergyPrice').value) || null,
+        frequency_regulation_price: parseFloat(document.getElementById('frequencyRegulationPrice').value) || null,
+        capacity_market_price: parseFloat(document.getElementById('capacityMarketPrice').value) || null,
+        flexibility_market_price: parseFloat(document.getElementById('flexibilityMarketPrice').value) || null,
+        reference_year: referenceYear || null
+    };
+    
+    fetch(`/api/market-prices/${currentProjectId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(prices)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || `HTTP ${response.status}: ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showMarketPricesStatus('Marktpreise erfolgreich gespeichert', 'success');
+            currentMarketPrices = prices;
+            // Analyse neu starten, wenn bereits Ergebnisse vorhanden
+            if (document.getElementById('analysisResults').classList.contains('hidden') === false) {
+                setTimeout(() => {
+                    document.getElementById('runAnalysis').click();
+                }, 1000);
+            }
+        } else {
+            const errorMsg = data.error || data.message || 'Unbekannter Fehler';
+            showMarketPricesStatus('Fehler beim Speichern: ' + errorMsg, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Fehler beim Speichern der Marktpreise:', error);
+        const errorMsg = error.message || 'Unbekannter Fehler beim Speichern';
+        showMarketPricesStatus('Fehler beim Speichern: ' + errorMsg, 'error');
+    });
+});
+
+// Standardwerte zurücksetzen
+document.getElementById('resetMarketPrices')?.addEventListener('click', function() {
+    if (confirm('Möchten Sie wirklich die Standardwerte wiederherstellen? Die aktuellen Werte gehen verloren.')) {
+        // Standardwerte setzen (angepasst basierend auf Referenz-Screenshot)
+        document.getElementById('spotArbitragePrice').value = '0.0074';
+        document.getElementById('intradayTradingPrice').value = '0.0111';
+        document.getElementById('balancingEnergyPrice').value = '0.0231';
+        document.getElementById('frequencyRegulationPrice').value = '0.30';
+        document.getElementById('capacityMarketPrice').value = '0.18';
+        document.getElementById('flexibilityMarketPrice').value = '0.22';
+        
+        // Bezugsjahr auf aktuelles Jahr zurücksetzen
+        const referenceYearInput = document.getElementById('referenceYear');
+        if (referenceYearInput) {
+            referenceYearInput.value = new Date().getFullYear();
+        }
+        
+        showMarketPricesStatus('Standardwerte wiederhergestellt', 'info');
+    }
+});
+
+// Status-Anzeige
+function showMarketPricesStatus(message, type) {
+    const statusDiv = document.getElementById('marketPricesStatus');
+    statusDiv.classList.remove('hidden');
+    
+    const colors = {
+        'success': 'bg-green-100 border-green-400 text-green-700',
+        'error': 'bg-red-100 border-red-400 text-red-700',
+        'warning': 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        'info': 'bg-blue-100 border-blue-400 text-blue-700'
+    };
+    
+    statusDiv.className = `mt-4 p-3 rounded-lg border ${colors[type] || colors.info}`;
+    statusDiv.textContent = message;
+    
+    // Fehlermeldungen länger anzeigen (15 Sekunden) oder gar nicht ausblenden
+    // Erfolgs- und Info-Meldungen nach 5 Sekunden ausblenden
+    if (type === 'error') {
+        // Fehlermeldungen bleiben sichtbar, bis der Benutzer sie schließt oder eine neue Meldung kommt
+        // Optional: Nach 15 Sekunden ausblenden
+        setTimeout(() => {
+            if (statusDiv.textContent === message) { // Nur ausblenden, wenn keine neue Meldung kam
+                statusDiv.classList.add('hidden');
+            }
+        }, 15000);
+    } else {
+        // Erfolgs- und Info-Meldungen nach 5 Sekunden ausblenden
+        setTimeout(() => {
+            if (statusDiv.textContent === message) { // Nur ausblenden, wenn keine neue Meldung kam
+                statusDiv.classList.add('hidden');
+            }
+        }, 5000);
+    }
+}
+
+// Marktpreise laden, wenn Projekt ausgewählt wird
+const originalProjectSelectHandler = window.handleProjectSelect;
+window.handleProjectSelect = function(projectId) {
+    if (originalProjectSelectHandler) {
+        originalProjectSelectHandler(projectId);
+    }
+    currentProjectId = projectId;
+    // Marktpreise neu laden, wenn Panel geöffnet ist
+    if (document.getElementById('marketPricesPanel') && !document.getElementById('marketPricesPanel').classList.contains('hidden')) {
+        loadMarketPrices();
+    }
+};
+
+// ===== TAB-NAVIGATION =====
+
+document.getElementById('tabOverview')?.addEventListener('click', function() {
+    switchTab('overview');
+});
+
+document.getElementById('tab10Year')?.addEventListener('click', function() {
+    switchTab('10year');
+    load10YearReport();
+});
+
+function switchTab(tabName) {
+    // Tab-Buttons
+    const tabOverview = document.getElementById('tabOverview');
+    const tab10Year = document.getElementById('tab10Year');
+    
+    // Tab-Contents
+    const contentOverview = document.getElementById('tabContentOverview');
+    const content10Year = document.getElementById('tabContent10Year');
+    
+    if (tabName === 'overview') {
+        tabOverview.classList.add('active', 'text-blue-600', 'border-blue-600');
+        tabOverview.classList.remove('text-gray-500', 'border-transparent');
+        tab10Year.classList.remove('active', 'text-blue-600', 'border-blue-600');
+        tab10Year.classList.add('text-gray-500', 'border-transparent');
+        
+        contentOverview.classList.remove('hidden');
+        content10Year.classList.add('hidden');
+    } else if (tabName === '10year') {
+        tab10Year.classList.add('active', 'text-blue-600', 'border-blue-600');
+        tab10Year.classList.remove('text-gray-500', 'border-transparent');
+        tabOverview.classList.remove('active', 'text-blue-600', 'border-blue-600');
+        tabOverview.classList.add('text-gray-500', 'border-transparent');
+        
+        content10Year.classList.remove('hidden');
+        contentOverview.classList.add('hidden');
+    }
+}
+
+// ===== 10-JAHRES-REPORT =====
+
+function load10YearReport() {
+    if (!currentProjectId) {
+        showNotification('Bitte wählen Sie zuerst ein Projekt aus', 'warning');
+        return;
+    }
+    
+    const useCase = document.getElementById('useCaseSelect')?.value || 'hybrid';
+    const tbody = document.getElementById('10YearReportTableBody');
+    
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="15" class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div><p class="mt-2 text-gray-600">Lade 10-Jahres-Report...</p></td></tr>';
+    
+    fetch(`/api/economic-analysis/${currentProjectId}/10year-report?use_case=${useCase}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                render10YearTable(data.data);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="15" class="text-center py-8 text-red-600">Fehler: ${data.error || 'Unbekannter Fehler'}</td></tr>`;
+            }
+        })
+        .catch(error => {
+            console.error('Fehler beim Laden des 10-Jahres-Reports:', error);
+            tbody.innerHTML = `<tr><td colspan="15" class="text-center py-8 text-red-600">Fehler beim Laden: ${error.message}</td></tr>`;
+        });
+}
+
+function render10YearTable(reportData) {
+    const tbody = document.getElementById('10YearReportTableBody');
+    if (!tbody || !reportData) return;
+    
+    const referenceYear = reportData.reference_year || new Date().getFullYear();
+    const years = [referenceYear, ...reportData.projection_years];
+    const sum10y = reportData.sum_10y;
+    const mean10y = reportData.mean_10y;
+    const yearsData = reportData.years;
+    
+    // Tabellen-Header dynamisch aktualisieren
+    try {
+        const table = document.getElementById('10YearReportTable');
+        if (table) {
+            const thead = table.querySelector('thead');
+            if (thead) {
+                // Erste Zeile: Referenzjahr aktualisieren
+                const firstRow = thead.querySelector('tr:first-child');
+                if (firstRow) {
+                    const firstRowHeaders = firstRow.querySelectorAll('th');
+                    // Suche nach dem Header-Element, das "Referenzjahr" enthält (normalerweise Index 2)
+                    for (let i = 0; i < firstRowHeaders.length; i++) {
+                        if (firstRowHeaders[i].textContent.includes('Referenzjahr')) {
+                            firstRowHeaders[i].innerHTML = `Referenzjahr<br>${referenceYear}`;
+                            break;
+                        }
+                    }
+                }
+                
+                // Zweite Zeile: Projektionsjahre aktualisieren
+                const secondRow = thead.querySelector('tr:nth-child(2)');
+                if (secondRow && reportData.projection_years) {
+                    const secondRowHeaders = secondRow.querySelectorAll('th');
+                    // Überspringe die ersten 3 leeren Spalten (Kategorie, 10Y Summe, Referenzjahr)
+                    let yearIndex = 0;
+                    for (let i = 3; i < secondRowHeaders.length - 1 && yearIndex < reportData.projection_years.length; i++) {
+                        secondRowHeaders[i].textContent = reportData.projection_years[yearIndex];
+                        yearIndex++;
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('Fehler beim Aktualisieren des Tabellen-Headers:', error);
+        // Fehler ignorieren, da die Tabelle trotzdem funktionieren sollte
+    }
+    
+    tbody.innerHTML = '';
+    
+    // Tabellenstruktur wie im Screenshot
+    const rows = [
+        // Erlöse SRR
+        { label: 'Erlös SRL- [€]', key: 'srl_negative', category: 'srr' },
+        { label: 'Erlös SRL+ [€]', key: 'srl_positive', category: 'srr' },
+        { label: 'Erlös SRE- [€]', key: 'sre_negative', category: 'srr' },
+        { label: 'Erlös SRE+ [€]', key: 'sre_positive', category: 'srr' },
+        { label: 'Summe Erlöse SRR [€]', key: 'sum_srr', category: 'srr', bold: true },
+        
+        // Erlöse Intraday
+        { label: 'Erlös Intraday Speicherstrategie [€]', key: 'intraday_storage_strategy', category: 'intraday' },
+        { label: 'Summe Intraday [€]', key: 'sum_intraday', category: 'intraday', bold: true },
+        
+        // Zyklen
+        { label: 'Kumulierte Zyklen', key: 'cumulative_cycles', category: 'cycles', format: 'integer' },
+        
+        // Kosten
+        { label: 'Kosten HKNs für Verluste', key: 'hkn_costs', category: 'costs' },
+        { label: 'Systemnutzungsentgelte BESS', key: null, category: 'costs', header: true },
+        { label: 'Netzentgelte Lieferung', key: 'grid_fees_delivery', category: 'costs' },
+        { label: 'Reduzierte Netzentgelte Bezug', key: 'reduced_grid_fees', category: 'costs' },
+        { label: 'Reguläre Netzentgelte Bezug', key: 'regular_grid_fees', category: 'costs' },
+        { label: 'Summe Systemnutzungsentgelte [€]', key: 'sum_grid_fees', category: 'costs', bold: true },
+        { label: 'Gesetzliche Abgaben BESS', key: 'legal_charges', category: 'costs' },
+        { label: 'Sonstige Stromkosten', key: 'other_costs', category: 'costs' },
+        
+        // Zusammenfassung
+        { label: 'Erlös / a', key: 'revenue_per_year', category: 'summary', bold: true },
+        { label: 'Erlös / MW / a', key: 'revenue_per_mw', category: 'summary', bold: true },
+        { label: 'Erlös / MWh / a', key: 'revenue_per_mwh', category: 'summary', bold: true },
+        { label: 'Summe Erlöse', key: 'total_revenue', category: 'summary', bold: true },
+        { label: 'Summe Kosten', key: 'total_costs', category: 'summary', bold: true }
+    ];
+    
+    rows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = row.bold ? 'font-semibold bg-gray-50' : (row.header ? 'font-semibold bg-blue-50' : '');
+        
+        // Kategorie-Spalte
+        const tdCategory = document.createElement('td');
+        tdCategory.className = 'px-4 py-3 text-left text-sm border-r border-gray-300';
+        tdCategory.textContent = row.label;
+        tr.appendChild(tdCategory);
+        
+        // Header-Zeile ohne Werte
+        if (row.key === null || row.header) {
+            const colspan = 1 + 1 + reportData.projection_years.length + 1; // 10Y Summe + 2024 + Jahre + Mittelwert
+            const tdEmpty = document.createElement('td');
+            tdEmpty.colSpan = colspan;
+            tdEmpty.className = 'px-4 py-2 text-left text-sm border-r border-gray-300';
+            tr.appendChild(tdEmpty);
+            tbody.appendChild(tr);
+            return;
+        }
+        
+        // 10Y Summe
+        const tdSum = document.createElement('td');
+        tdSum.className = 'px-4 py-3 text-right text-sm border-r border-gray-300';
+        tdSum.textContent = formatNumber(sum10y[row.key], row.format);
+        tr.appendChild(tdSum);
+        
+        // Referenzjahr (dynamisch)
+        const referenceYear = reportData.reference_year || new Date().getFullYear();
+        const tdRefYear = document.createElement('td');
+        tdRefYear.className = 'px-4 py-3 text-right text-sm border-r border-gray-300';
+        tdRefYear.textContent = formatNumber(yearsData[referenceYear][row.key], row.format);
+        tr.appendChild(tdRefYear);
+        
+        // Projektionsjahre 2025-2034
+        reportData.projection_years.forEach(year => {
+            const td = document.createElement('td');
+            td.className = 'px-2 py-3 text-right text-sm border-r border-gray-300';
+            td.textContent = formatNumber(yearsData[year][row.key], row.format);
+            tr.appendChild(td);
+        });
+        
+        // 10Y Mittelwert
+        const tdMean = document.createElement('td');
+        tdMean.className = 'px-4 py-3 text-right text-sm font-medium';
+        tdMean.textContent = formatNumber(mean10y[row.key], row.format);
+        tr.appendChild(tdMean);
+        
+        tbody.appendChild(tr);
+    });
+}
+
+function formatNumber(value, format) {
+    if (value === null || value === undefined) return '--';
+    if (format === 'integer') {
+        return Math.round(value).toLocaleString('de-DE');
+    }
+    return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Export-Buttons für 10-Jahres-Report
+document.getElementById('export10YearPDF')?.addEventListener('click', function() {
+    if (!currentProjectId) {
+        showNotification('Bitte wählen Sie zuerst ein Projekt aus', 'warning');
+        return;
+    }
+    export10YearPDF();
+});
+
+document.getElementById('export10YearExcel')?.addEventListener('click', function() {
+    if (!currentProjectId) {
+        showNotification('Bitte wählen Sie zuerst ein Projekt aus', 'warning');
+        return;
+    }
+    export10YearExcel();
+});
+
+function export10YearPDF() {
+    const useCase = document.getElementById('useCaseSelect')?.value || 'hybrid';
+    showNotification('PDF wird generiert...', 'info');
+    window.open(`/api/economic-analysis/${currentProjectId}/export-10year-pdf?use_case=${useCase}`, '_blank');
+}
+
+function export10YearExcel() {
+    const useCase = document.getElementById('useCaseSelect')?.value || 'hybrid';
+    showNotification('Excel wird generiert...', 'info');
+    window.open(`/api/economic-analysis/${currentProjectId}/export-10year-excel?use_case=${useCase}`, '_blank');
 }
 </script>
 {% endblock %} 

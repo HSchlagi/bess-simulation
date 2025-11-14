@@ -41,12 +41,12 @@ class FormValidator {
             
             // Kostenfelder
             costs: {
-                bess_cost: { min: 0, max: 10000000 },
-                pv_cost: { min: 0, max: 10000000 },
-                hp_cost: { min: 0, max: 5000000 },
-                wind_cost: { min: 0, max: 5000000 },
-                hydro_cost: { min: 0, max: 10000000 },
-                other_cost: { min: 0, max: 10000000 }
+                bess_cost: { min: 0, max: 500000000 },  // 500 Millionen Euro
+                pv_cost: { min: 0, max: 500000000 },    // 500 Millionen Euro
+                hp_cost: { min: 0, max: 100000000 },     // 100 Millionen Euro
+                wind_cost: { min: 0, max: 100000000 },  // 100 Millionen Euro
+                hydro_cost: { min: 0, max: 500000000 }, // 500 Millionen Euro
+                other_cost: { min: 0, max: 500000000 }  // 500 Millionen Euro
             }
         };
         

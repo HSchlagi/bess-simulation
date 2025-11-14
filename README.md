@@ -109,7 +109,23 @@
 - **LCOE (Levelized Cost of Energy)** für Energiespeicher
 - **Amortisationszeit** unter Berücksichtigung von Degradation
 - **10-Jahres-Analyse** mit Batterie-Alterung
+  - **Konfigurierbares Bezugsjahr** für die 10-Jahres-Prognose (z.B. 2024, 2025)
+  - **Marktpreise konfigurieren** - Benutzerdefinierte Preise für:
+    - Spot-Arbitrage (€/kWh)
+    - Intraday-Handel (€/kWh)
+    - Regelenergie (€/kWh)
+    - Frequenzregelung (€/kWh)
+    - Kapazitätsmärkte (€/kWh)
+    - Flexibilitätsmärkte (€/kWh)
+  - **Detaillierte Kostenaufstellung** mit Sub-Kategorien:
+    - Systemnutzungsentgelte BESS:
+      - Netzentgelte Lieferung
+      - Reduzierte Netzentgelte Bezug
+      - Reguläre Netzentgelte Bezug
+  - **PDF- und Excel-Export** des 10-Jahres-Reports
+  - **Dynamische Jahresprojektion** basierend auf Bezugsjahr
 - **Szenario-Vergleiche** für verschiedene Konfigurationen
+- **Use Case Vergleich** mit detaillierten Metriken
 
 ### 5. **Datenintegration & APIs**
 
@@ -176,7 +192,12 @@
 ### 8. **Export & Reporting**
 
 - **PDF-Export** mit professionellem Layout
+  - **10-Jahres-Erlöspotenzial-Report** als PDF (A4 Querformat, optimiert für eine Seite)
+  - Detaillierte Aufstellung aller Erlöse und Kosten über 10 Jahre
+  - Dynamische Jahresprojektion basierend auf konfigurierbarem Bezugsjahr
 - **Excel-Export** mit detaillierten Tabellen
+  - **10-Jahres-Erlöspotenzial-Report** als Excel-Datei
+  - Vollständige Jahresaufstellung mit allen Kategorien
 - **CSV-Export** für Datenanalyse
 - **Automatische Berichte** (täglich, wöchentlich, monatlich)
 - **Individualisierbare Templates**
@@ -448,6 +469,53 @@ GET /api/enhanced-economic-analysis/{project_id}
 
 # Simulation
 POST /api/economic-simulation/{project_id}
+
+# 10-Jahres-Erlöspotenzial-Report
+GET /api/economic-analysis/{project_id}/10year-report
+
+# 10-Jahres-Report als PDF exportieren
+GET /api/economic-analysis/{project_id}/export-10year-pdf?use_case=hybrid
+
+# 10-Jahres-Report als Excel exportieren
+GET /api/economic-analysis/{project_id}/export-10year-excel?use_case=hybrid
+```
+
+### Marktpreise konfigurieren
+
+```bash
+# Marktpreise für Projekt abrufen
+GET /api/market-prices/{project_id}
+
+# Marktpreise für Projekt speichern
+PUT /api/market-prices/{project_id}
+Content-Type: application/json
+
+{
+  "spot_arbitrage_price": 0.0074,
+  "intraday_trading_price": 0.0111,
+  "balancing_energy_price": 0.0231,
+  "frequency_regulation_price": 0.30,
+  "capacity_market_price": 0.18,
+  "flexibility_market_price": 0.22,
+  "reference_year": 2024
+}
+
+# Globale Marktpreise abrufen
+GET /api/market-prices/global
+
+# Globale Marktpreise speichern
+PUT /api/market-prices/global
+Content-Type: application/json
+
+{
+  "spot_arbitrage_price": 0.0074,
+  "intraday_trading_price": 0.0111,
+  "balancing_energy_price": 0.0231,
+  "frequency_regulation_price": 0.30,
+  "capacity_market_price": 0.18,
+  "flexibility_market_price": 0.22,
+  "reference_year": 2024
+}
 ```
 
 Vollständige API-Dokumentation: [API_DOCS.md](docs/API_DOCS.md)

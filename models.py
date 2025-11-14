@@ -507,3 +507,30 @@ class BESSTelemetryData(db.Model):
     
     def __repr__(self):
         return f'<BESSTelemetryData {self.bess_mapping}: {self.timestamp}>'
+
+class MarketPriceConfig(db.Model):
+    """Konfigurierbare Marktpreise für Wirtschaftlichkeitsberechnungen"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=True)  # NULL = globale Konfiguration
+    project = db.relationship('Project', backref='market_price_configs')
+    
+    # Intraday Trading Preise (€/kWh)
+    spot_arbitrage_price = db.Column(db.Float)  # Spot-Markt-Arbitrage
+    intraday_trading_price = db.Column(db.Float)  # Intraday-Handel
+    balancing_energy_price = db.Column(db.Float)  # Regelenergie
+    
+    # Sekundärmarkt Preise (€/kWh)
+    frequency_regulation_price = db.Column(db.Float)  # Frequenzregelung
+    capacity_market_price = db.Column(db.Float)  # Kapazitätsmärkte
+    flexibility_market_price = db.Column(db.Float)  # Flexibilitätsmärkte
+    
+    # Metadaten
+    name = db.Column(db.String(100))  # Name der Konfiguration
+    description = db.Column(db.Text)  # Beschreibung
+    is_default = db.Column(db.Boolean, default=False)  # Standard-Konfiguration
+    reference_year = db.Column(db.Integer, default=None)  # Bezugsjahr für 10-Jahres-Berechnung (z.B. 2024, 2025)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<MarketPriceConfig {self.name or "Standard"} (Project: {self.project_id or "Global"})>'

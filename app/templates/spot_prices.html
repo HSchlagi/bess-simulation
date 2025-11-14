@@ -93,8 +93,8 @@
         </div>
         
         <!-- Chart -->
-        <div class="mb-6" id="spotPriceChartContainer">
-            <canvas id="spotPriceChart" width="400" height="200"></canvas>
+        <div class="mb-6" id="spotPriceChartContainer" style="height: 360px;">
+            <canvas id="spotPriceChart"></canvas>
         </div>
         <div id="chartSourceLegend" class="flex flex-wrap gap-3 text-sm text-gray-600 mb-6 hidden"></div>
         
@@ -521,7 +521,8 @@ function updateSpotPriceChart(prices) {
         return;
     }
     
-    container.innerHTML = '<canvas id="spotPriceChart" width="400" height="200"></canvas>';
+    container.style.height = '360px';
+    container.innerHTML = '<canvas id="spotPriceChart"></canvas>';
     const ctx = container.querySelector('#spotPriceChart').getContext('2d');
     
     const labels = prices.map(p => {
@@ -548,9 +549,10 @@ function updateSpotPriceChart(prices) {
                 tension: 0.1,
                 pointBackgroundColor: pointColors,
                 pointBorderColor: pointColors,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                pointHitRadius: 10
+                pointRadius: 1.5,
+                pointHoverRadius: 3,
+                pointHitRadius: 6,
+                borderWidth: 2
             }]
         },
         options: {

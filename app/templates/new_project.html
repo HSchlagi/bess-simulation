@@ -166,7 +166,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-Save System initialisieren
     const autoSave = initAutoSave('newProjectForm', {
         autoSaveInterval: 30000, // 30 Sekunden
-        maxUndoSteps: 10
+        maxUndoSteps: 10,
+        handleNativeSubmit: false
     });
     
     // Formular-Templates initialisieren
@@ -255,15 +256,17 @@ function createProject() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Projekt erfolgreich erstellt!');
+            showSuccessMessage('Projekt erfolgreich erstellt');
+            setTimeout(() => {
             window.location.href = '/projects';
+            }, 800);
         } else {
-            alert('Fehler beim Erstellen des Projekts: ' + data.error);
+            showErrorMessage('Fehler beim Erstellen des Projekts: ' + (data.error || 'Unbekannter Fehler'));
         }
     })
     .catch(error => {
         console.error('Fehler:', error);
-        alert('Fehler beim Erstellen des Projekts');
+        showErrorMessage('Fehler beim Erstellen des Projekts');
     });
 }
 
@@ -301,6 +304,22 @@ function showKeyboardShortcuts() {
     setTimeout(() => {
         shortcutsDiv.style.opacity = '0.5';
     }, 5000);
+}
+
+function showSuccessMessage(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-6 right-6 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg z-50';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 2500);
+}
+
+function showErrorMessage(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-6 right-6 bg-red-600 text-white px-4 py-3 rounded-lg shadow-lg z-50';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 4000);
 }
 </script>
 {% endblock %} 

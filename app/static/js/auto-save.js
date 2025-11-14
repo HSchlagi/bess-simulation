@@ -22,6 +22,7 @@ class AutoSaveSystem {
         this.maxUndoSteps = options.maxUndoSteps || 10;
         this.isSaving = false;
         this.hasUnsavedChanges = false;
+        this.handleNativeSubmit = options.handleNativeSubmit !== false;
         
         // Progress-Indikator erstellen
         this.createProgressIndicator();
@@ -75,7 +76,9 @@ class AutoSaveSystem {
         });
         
         // Formular-Submit abfangen
-        this.form.addEventListener('submit', (e) => this.onFormSubmit(e));
+        if (this.handleNativeSubmit) {
+            this.form.addEventListener('submit', (e) => this.onFormSubmit(e));
+        }
         
         // Browser-Navigation abfangen (unsaved changes)
         window.addEventListener('beforeunload', (e) => this.onBeforeUnload(e));

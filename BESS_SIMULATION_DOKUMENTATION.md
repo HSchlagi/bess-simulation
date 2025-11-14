@@ -148,8 +148,35 @@ Die leistungsstarke Simulation-Engine führt umfassende Wirtschaftlichkeitsanaly
 - **Cashflow-Analysen:** Detaillierte monatliche und jährliche Cashflow-Berechnungen
 - **Sensitivitätsanalysen:** Untersuchung der Auswirkungen von Parameteränderungen
 - **Szenario-Vergleiche:** Vergleich verschiedener Betriebsstrategien und Marktbedingungen
-- **Degradation-Modellierung:** Realistische Modellierung der Batteriealterung über die Zeit
+- **Degradation-Modellierung:** Realistische Modellierung der Batteriealterung über die Zeit (2% pro Jahr)
 - **Marktentwicklungen:** Berücksichtigung von Strompreisentwicklungen und Marktveränderungen
+
+**Neue Features der 10-Jahres-Prognose:**
+
+- **Konfigurierbares Bezugsjahr:** Das Bezugsjahr für die 10-Jahres-Prognose kann vom Benutzer konfiguriert werden (z.B. 2024, 2025). Die Projektion erfolgt dann dynamisch vom Bezugsjahr bis Bezugsjahr + 10 Jahre.
+
+- **Marktpreise konfigurieren:** Benutzer können individuelle Marktpreise für die Wirtschaftlichkeitsberechnung festlegen:
+  - **Spot-Arbitrage** (€/kWh) - Standard: 0.0074 €/kWh
+  - **Intraday-Handel** (€/kWh) - Standard: 0.0111 €/kWh
+  - **Regelenergie** (€/kWh) - Standard: 0.0231 €/kWh
+  - **Frequenzregelung** (€/kWh) - Standard: 0.30 €/kWh
+  - **Kapazitätsmärkte** (€/kWh) - Standard: 0.18 €/kWh
+  - **Flexibilitätsmärkte** (€/kWh) - Standard: 0.22 €/kWh
+  
+  Die Preise können projektspezifisch oder global konfiguriert werden. Falls keine projektspezifischen Preise vorhanden sind, werden die globalen Standardwerte verwendet.
+
+- **Detaillierte Kostenaufstellung:** Der 10-Jahres-Report enthält eine detaillierte Aufstellung aller Kosten mit Sub-Kategorien:
+  - **Systemnutzungsentgelte BESS:**
+    - Netzentgelte Lieferung
+    - Reduzierte Netzentgelte Bezug
+    - Reguläre Netzentgelte Bezug
+  - **Gesetzliche Abgaben BESS**
+  - **Kosten HKNs für Verluste**
+  - **Sonstige Stromkosten**
+
+- **PDF- und Excel-Export:** Der 10-Jahres-Report kann als PDF (A4 Querformat, optimiert für eine Seite) oder als Excel-Datei exportiert werden. Beide Formate enthalten die vollständige Jahresaufstellung mit allen Erlösen und Kosten.
+
+- **Dynamische Jahresprojektion:** Die Jahresprojektion wird dynamisch basierend auf dem konfigurierten Bezugsjahr erstellt. Die Tabellenüberschriften zeigen das Referenzjahr und die Projektionsjahre (z.B. "Referenzjahr 2024", "2025", "2026", etc.).
 
 #### ✅ **Dispatch-Integration - Optimierte Betriebsstrategien**
 Die Dispatch-Integration bietet intelligente Betriebsstrategien für maximale Erträge:
