@@ -8479,9 +8479,19 @@ def api_awattar_status():
         api_test = awattar_fetcher.fetch_market_data()
         
         # Statistiken berechnen
-        total_prices = SpotPrice.query.filter(SpotPrice.source == 'aWATTAR').count()
+        # Suche nach beiden Varianten: 'aWATTAR' und 'aWATTAR (Live API)'
+        from sqlalchemy import or_
+        total_prices = SpotPrice.query.filter(
+            or_(
+                SpotPrice.source == 'aWATTAR',
+                SpotPrice.source.like('aWATTAR%')
+            )
+        ).count()
         latest_price = SpotPrice.query.filter(
-            SpotPrice.source == 'aWATTAR'
+            or_(
+                SpotPrice.source == 'aWATTAR',
+                SpotPrice.source.like('aWATTAR%')
+            )
         ).order_by(SpotPrice.timestamp.desc()).first()
         
         return jsonify({
@@ -8570,7 +8580,7 @@ def awattar_import_fixed_page():
     return render_template('awattar_import_fixed.html')
 
 @main_bp.route('/api/awattar/import-working')
-@login_required
+@auth_optional
 def awattar_import_working_page():
     """aWattar-Import-Seite (funktionierende Version)"""
     return render_template('awattar_import_working.html')

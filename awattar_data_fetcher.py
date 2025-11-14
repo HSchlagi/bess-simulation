@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
 import logging
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from models import db, SpotPrice
 
 logger = logging.getLogger(__name__)
@@ -281,12 +281,16 @@ class AWattarDataFetcher:
         try:
             cutoff_time = datetime.now() - timedelta(hours=hours)
             
+            # Suche nach beiden Varianten: 'aWATTAR' und 'aWATTAR (Live API)'
             prices = SpotPrice.query.filter(
                 and_(
-                    SpotPrice.source == 'aWATTAR',
+                    or_(
+                        SpotPrice.source == 'aWATTAR',
+                        SpotPrice.source.like('aWATTAR%')
+                    ),
                     SpotPrice.timestamp >= cutoff_time
                 )
-            ).order_by(SpotPrice.timestamp.desc()).all()
+            ).order_by(SpotPrice.timestamp.asc()).all()  # Aufsteigend für Chart-Darstellung
             
             return [{
                 'id': price.id,
@@ -318,9 +322,13 @@ class AWattarDataFetcher:
             start_dt = datetime.strptime(start_date, '%Y-%m-%d')
             end_dt = datetime.strptime(end_date, '%Y-%m-%d') + timedelta(days=1)  # +1 Tag für Enddatum
             
+            # Suche nach beiden Varianten: 'aWATTAR' und 'aWATTAR (Live API)'
             prices = SpotPrice.query.filter(
                 and_(
-                    SpotPrice.source == 'aWATTAR',
+                    or_(
+                        SpotPrice.source == 'aWATTAR',
+                        SpotPrice.source.like('aWATTAR%')
+                    ),
                     SpotPrice.timestamp >= start_dt,
                     SpotPrice.timestamp < end_dt
                 )

@@ -434,12 +434,29 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.priceChart.destroy();
         }
         
-        const labels = priceData.map(p => new Date(p.timestamp).toLocaleTimeString('de-DE', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        }));
+        // Daten chronologisch sortieren (falls nicht bereits sortiert)
+        const sortedData = [...priceData].sort((a, b) => 
+            new Date(a.timestamp) - new Date(b.timestamp)
+        );
         
-        const data = priceData.map(p => p.price_eur_mwh);
+        // Labels mit Datum und Uhrzeit für bessere Lesbarkeit
+        const labels = sortedData.map(p => {
+            const date = new Date(p.timestamp);
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const isYesterday = date.toDateString() === new Date(now.getTime() - 24*60*60*1000).toDateString();
+            
+            if (isToday) {
+                return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            } else if (isYesterday) {
+                return 'Gestern ' + date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ' ' + 
+                       date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            }
+        });
+        
+        const data = sortedData.map(p => p.price_eur_mwh);
         
         window.priceChart = new Chart(ctx, {
             type: 'line',
