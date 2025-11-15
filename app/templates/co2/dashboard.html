@@ -35,10 +35,6 @@
             <div class="flex items-center space-x-4">
                 <select id="projectSelect" onchange="loadDemoData()" class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">Projekt auswählen...</option>
-                    <option value="1">BESS Hinterstoder</option>
-                    <option value="2">Solar-BESS Wien</option>
-                    <option value="3">BESS Tillysburg</option>
-                    <option value="4">Test Projekt Daily Cycles</option>
                 </select>
                 <select class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="30">Letzte 30 Tage</option>
@@ -498,9 +494,49 @@ function downloadReport() {
     printWindow.print();
 }
 
-// Dashboard initialisiert - wartet auf Projekt-Auswahl
+// Projekte dynamisch laden
+async function loadProjects() {
+    try {
+        console.log('🔄 Lade Projekte für CO₂-Dashboard...');
+        const response = await fetch('/co2/api/projects');
+        const data = await response.json();
+        
+        console.log('📊 API Response:', data);
+        
+        if (data.success && data.projects) {
+            const select = document.getElementById('projectSelect');
+            
+            if (!select) {
+                console.error('❌ Dropdown-Element nicht gefunden!');
+                return;
+            }
+            
+            // Leere Optionen behalten, aber Projekte hinzufügen
+            select.innerHTML = '<option value="">Projekt auswählen...</option>';
+            
+            console.log(`📋 Füge ${data.projects.length} Projekte hinzu:`);
+            data.projects.forEach(project => {
+                console.log(`  - ${project.name} (ID: ${project.id})`);
+                const option = document.createElement('option');
+                option.value = project.id;
+                const locationText = project.location ? ` (${project.location})` : '';
+                option.textContent = `${project.name}${locationText}`;
+                select.appendChild(option);
+            });
+            
+            console.log('✅ Projekte erfolgreich geladen');
+        } else {
+            console.error('❌ Fehler beim Laden der Projekte:', data.error || 'Unbekannter Fehler');
+        }
+    } catch (error) {
+        console.error('❌ Fehler beim Laden der Projekte:', error);
+    }
+}
+
+// Dashboard initialisiert - Projekte laden
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('CO₂-Dashboard geladen - bereit für Projekt-Auswahl');
+    console.log('CO₂-Dashboard geladen - lade Projekte...');
+    loadProjects();
 });
 </script>
 {% endblock %}

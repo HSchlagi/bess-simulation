@@ -174,6 +174,22 @@
                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                         </div>
                         
+                        <div id="projectSyncInfo" class="hidden mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-yellow-600 mt-1 mr-2"></i>
+                                <div class="flex-1">
+                                    <p class="text-sm text-yellow-800 font-medium mb-1">Hinweis: Projektwerte verfügbar</p>
+                                    <div id="syncInfoDetails" class="text-xs text-yellow-700 mb-2">
+                                        Die Werte in diesem Use Case weichen von den Projektwerten ab. Klicken Sie auf "Mit Projekt synchronisieren", um die aktuellen Projektwerte zu übernehmen.
+                                    </div>
+                                    <button type="button" onclick="syncWithProject()" 
+                                            class="text-xs px-3 py-1 bg-yellow-600 text-white rounded hover:bg-yellow-700">
+                                        <i class="fas fa-sync-alt mr-1"></i>Mit Projekt synchronisieren
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="flex justify-end space-x-3 pt-4">
                             <button type="button" onclick="closeUseCaseManager()" 
                                     class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
@@ -409,10 +425,28 @@ function openUseCaseManagerForProject(projectId) {
     const modal = document.getElementById('useCaseModal');
     if (modal) {
         modal.classList.remove('hidden');
-        loadExistingUseCases();
+        
+        // Nur Use Cases für dieses Projekt laden
+        loadExistingUseCases(projectId);
         
         // Projekt-Daten laden und in Formular vorausfüllen
         loadProjectDataForUseCase(projectId);
+        
+        // Modal-Titel aktualisieren (falls vorhanden)
+        const modalTitle = modal.querySelector('h2, h3, .modal-title');
+        if (modalTitle) {
+            // Lade Projektname für bessere UX
+            fetch(`/api/projects/${projectId}`)
+                .then(response => response.json())
+                .then(project => {
+                    if (project && project.name) {
+                        modalTitle.textContent = `Use Case Manager - ${project.name}`;
+                    }
+                })
+                .catch(error => {
+                    console.warn('Konnte Projektname nicht laden:', error);
+                });
+        }
         
         console.log('Modal für Projekt', projectId, 'geöffnet');
     } else {
@@ -420,8 +454,8 @@ function openUseCaseManagerForProject(projectId) {
     }
 }
 
-function loadProjectDataForUseCase(projectId) {
-    // Lade Projekt-Daten und fülle BESS-Parameter vor
+function loadProjectDataForUseCase(projectId, overwriteExisting = false) {
+    // Lade Projekt-Daten und fülle alle Parameter vor
     fetch(`/api/projects/${projectId}`)
         .then(response => response.json())
         .then(project => {
@@ -431,12 +465,48 @@ function loadProjectDataForUseCase(projectId) {
                 const bessPowerField = document.getElementById('bessPower');
                 
                 if (bessSizeField && project.bess_size) {
-                    // Konvertiere kWh zu MWh
-                    bessSizeField.value = (project.bess_size / 1000).toFixed(1);
+                    // Nur setzen, wenn Feld leer ist oder overwriteExisting = true
+                    if (overwriteExisting || !bessSizeField.value) {
+                        // Konvertiere kWh zu MWh
+                        bessSizeField.value = (project.bess_size / 1000).toFixed(1);
+                    }
                 }
                 if (bessPowerField && project.bess_power) {
-                    // Konvertiere kW zu MW
-                    bessPowerField.value = (project.bess_power / 1000).toFixed(1);
+                    // Nur setzen, wenn Feld leer ist oder overwriteExisting = true
+                    if (overwriteExisting || !bessPowerField.value) {
+                        // Konvertiere kW zu MW
+                        bessPowerField.value = (project.bess_power / 1000).toFixed(1);
+                    }
+                }
+                
+                // PV-Parameter vorausfüllen (wenn vorhanden)
+                const pvField = document.getElementById('pvPower');
+                if (pvField && project.pv_power) {
+                    // Nur setzen, wenn Feld leer ist oder overwriteExisting = true
+                    if (overwriteExisting || !pvField.value) {
+                        // Konvertiere kW zu MWp
+                        pvField.value = (project.pv_power / 1000).toFixed(2);
+                    }
+                }
+                
+                // Hydro-Parameter vorausfüllen (wenn vorhanden)
+                const hydroField = document.getElementById('hydroPower');
+                if (hydroField && project.hydro_power) {
+                    // Nur setzen, wenn Feld leer ist oder overwriteExisting = true
+                    if (overwriteExisting || !hydroField.value) {
+                        // Bleibt in kW (keine Konvertierung nötig)
+                        hydroField.value = project.hydro_power;
+                    }
+                }
+                
+                // Wind-Parameter vorausfüllen (wenn vorhanden)
+                const windField = document.getElementById('windPower');
+                if (windField && project.wind_power) {
+                    // Nur setzen, wenn Feld leer ist oder overwriteExisting = true
+                    if (overwriteExisting || !windField.value) {
+                        // Bleibt in kW (keine Konvertierung nötig)
+                        windField.value = project.wind_power;
+                    }
                 }
                 
                 console.log('Projekt-Daten für Use Case geladen:', project);
@@ -454,7 +524,7 @@ function openUseCaseManager() {
     const modal = document.getElementById('useCaseModal');
     if (modal) {
         modal.classList.remove('hidden');
-        loadExistingUseCases();
+        loadExistingUseCases(null); // Alle Use Cases laden
         console.log('Globales Modal geöffnet');
     } else {
         console.error('Modal nicht gefunden!');
@@ -466,6 +536,13 @@ function closeUseCaseManager() {
     const modal = document.getElementById('useCaseModal');
     if (modal) {
         modal.classList.add('hidden');
+        
+        // Modal-Titel zurücksetzen
+        const modalTitle = modal.querySelector('h2, h3, .modal-title');
+        if (modalTitle) {
+            modalTitle.textContent = 'Use Case Manager';
+        }
+        
         console.log('Modal geschlossen');
     } else {
         console.error('Modal nicht gefunden!');
@@ -499,8 +576,8 @@ function switchUseCaseTab(tab, event = null) {
     }
 }
 
-function loadExistingUseCases() {
-    console.log('loadExistingUseCases aufgerufen');
+function loadExistingUseCases(projectId = null) {
+    console.log('loadExistingUseCases aufgerufen für Projekt:', projectId);
     
     const container = document.getElementById('existingUseCasesList');
     if (!container) {
@@ -509,9 +586,16 @@ function loadExistingUseCases() {
     }
     
     // Loading-Indikator anzeigen
-    container.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Lade Use Cases...</div>';
+    const loadingText = projectId ? 'Lade Use Cases für dieses Projekt...' : 'Lade Use Cases...';
+    container.innerHTML = `<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> ${loadingText}</div>`;
     
-    fetch('/api/use-cases')
+    // API-URL mit optionalem project_id Parameter
+    let apiUrl = '/api/use-cases';
+    if (projectId) {
+        apiUrl += `?project_id=${projectId}`;
+    }
+    
+    fetch(apiUrl)
         .then(response => {
             console.log('API Response Status:', response.status);
             console.log('API Response Headers:', response.headers);
@@ -541,7 +625,10 @@ function loadExistingUseCases() {
             }
             
             if (useCases.length === 0) {
-                container.innerHTML = '<div class="text-center py-4 text-gray-500">Keine Use Cases gefunden</div>';
+                const emptyMessage = projectId 
+                    ? '<div class="text-center py-4 text-gray-500"><i class="fas fa-info-circle mr-2"></i>Keine Use Cases für dieses Projekt gefunden.<br><span class="text-sm">Erstellen Sie einen neuen Use Case im Tab "Neuen Use Case erstellen".</span></div>'
+                    : '<div class="text-center py-4 text-gray-500">Keine Use Cases gefunden</div>';
+                container.innerHTML = emptyMessage;
                 return;
             }
             
@@ -587,7 +674,7 @@ function loadExistingUseCases() {
                     <i class="fas fa-exclamation-triangle"></i>
                     <p class="mt-2">Fehler beim Laden der Use Cases</p>
                     <p class="text-sm">${error.message}</p>
-                    <button onclick="loadExistingUseCases()" class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    <button onclick="loadExistingUseCases(${currentProjectId || 'null'})" class="mt-2 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">
                         Erneut versuchen
                     </button>
                 </div>
@@ -642,7 +729,7 @@ function createUseCase(event) {
             alert('Use Case erfolgreich erstellt!');
             closeUseCaseManager();
             loadUseCases();
-            loadExistingUseCases();
+            loadExistingUseCases(currentProjectId);
             
             // Wenn ein Projekt ausgewählt war, Projekte neu laden
             if (currentProjectId) {
@@ -701,11 +788,30 @@ function editUseCase(useCaseId) {
             // Tab auf "Erstellen" wechseln und Formular-Modus ändern
             switchUseCaseTab('create', null);
             
+            // Prüfe, ob Use Case Werte von Projektwerten abweichen
+            if (currentProjectId) {
+                checkProjectValuesSync(useCase, currentProjectId);
+            }
+            
             // Formular-Button ändern
             const submitBtn = document.querySelector('#createUseCaseForm button[type="submit"]');
-            if (submitBtn) {
+            const form = document.getElementById('createUseCaseForm');
+            if (submitBtn && form) {
                 submitBtn.textContent = 'Use Case aktualisieren';
-                submitBtn.onclick = (e) => updateUseCase(e, useCaseId);
+                
+                // Alten Event-Listener entfernen
+                form.removeEventListener('submit', createUseCase);
+                
+                // Neuen Event-Listener für Update hinzufügen
+                const updateHandler = (e) => {
+                    e.preventDefault();
+                    updateUseCase(e, useCaseId);
+                };
+                form.addEventListener('submit', updateHandler);
+                
+                // Speichere den Handler, damit wir ihn später entfernen können
+                form._updateHandler = updateHandler;
+                form._useCaseId = useCaseId;
             }
             
             // Modal öffnen falls geschlossen
@@ -714,22 +820,30 @@ function editUseCase(useCaseId) {
                 modal.classList.remove('hidden');
             }
             
-            // Use Cases Liste neu laden
-            loadExistingUseCases();
+            // Use Cases Liste neu laden (mit aktuellem Projekt-Filter)
+            loadExistingUseCases(currentProjectId);
         })
         .catch(error => {
             console.error('Fehler beim Laden des Use Cases:', error);
             alert('Fehler beim Laden des Use Cases: ' + error.message);
             
-            // Use Cases Liste neu laden bei Fehler
-            loadExistingUseCases();
+            // Use Cases Liste neu laden bei Fehler (mit aktuellem Projekt-Filter)
+            loadExistingUseCases(currentProjectId);
         });
 }
 
 function updateUseCase(event, useCaseId) {
     event.preventDefault();
     
-    const formData = new FormData(event.target);
+    // Stelle sicher, dass wir das Formular haben (nicht den Button)
+    const form = event.target.tagName === 'FORM' ? event.target : event.target.closest('form');
+    if (!form) {
+        console.error('Formular nicht gefunden');
+        alert('Fehler: Formular nicht gefunden');
+        return;
+    }
+    
+    const formData = new FormData(form);
     const useCaseData = Object.fromEntries(formData.entries());
     
     // Numerische Werte konvertieren
@@ -752,7 +866,7 @@ function updateUseCase(event, useCaseId) {
             alert('Use Case erfolgreich aktualisiert!');
             closeUseCaseManager();
             loadUseCases();
-            loadExistingUseCases();
+            loadExistingUseCases(currentProjectId);
             resetUseCaseForm();
         } else {
             alert('Fehler beim Aktualisieren des Use Cases: ' + data.error);
@@ -766,12 +880,119 @@ function updateUseCase(event, useCaseId) {
 
 function resetUseCaseForm() {
     // Formular zurücksetzen
-    document.getElementById('createUseCaseForm').reset();
+    const form = document.getElementById('createUseCaseForm');
+    if (form) {
+        form.reset();
+        
+        // Update-Event-Listener entfernen, falls vorhanden
+        if (form._updateHandler) {
+            form.removeEventListener('submit', form._updateHandler);
+            delete form._updateHandler;
+            delete form._useCaseId;
+        }
+        
+        // Standard Event-Listener wieder hinzufügen
+        form.addEventListener('submit', createUseCase);
+    }
     
     // Button zurücksetzen
     const submitBtn = document.querySelector('#createUseCaseForm button[type="submit"]');
-    submitBtn.textContent = 'Use Case erstellen';
-    submitBtn.onclick = createUseCase;
+    if (submitBtn) {
+        submitBtn.textContent = 'Use Case erstellen';
+    }
+    
+    // Sync-Info ausblenden
+    const syncInfo = document.getElementById('projectSyncInfo');
+    if (syncInfo) {
+        syncInfo.classList.add('hidden');
+    }
+}
+
+function syncWithProject() {
+    if (!currentProjectId) {
+        alert('Kein Projekt ausgewählt. Bitte öffnen Sie den Use Case Manager über ein Projekt.');
+        return;
+    }
+    
+    if (confirm('Möchten Sie wirklich alle Werte mit den aktuellen Projektwerten überschreiben?')) {
+        // Überschreibe alle Werte mit Projektwerten
+        loadProjectDataForUseCase(currentProjectId, true);
+        
+        // Sync-Info ausblenden
+        const syncInfo = document.getElementById('projectSyncInfo');
+        if (syncInfo) {
+            syncInfo.classList.add('hidden');
+        }
+        
+        alert('Werte wurden mit den Projektwerten synchronisiert.');
+    }
+}
+
+function checkProjectValuesSync(useCase, projectId) {
+    // Lade Projektwerte und vergleiche mit Use Case Werten
+    fetch(`/api/projects/${projectId}`)
+        .then(response => response.json())
+        .then(project => {
+            if (project && project.success !== false) {
+                const differences = [];
+                
+                // PV vergleichen (Use Case: MWp, Projekt: kW)
+                const useCasePvMw = useCase.pv_power_mwp || 0;
+                const projectPvMw = project.pv_power ? (project.pv_power / 1000) : 0;
+                if (Math.abs(useCasePvMw - projectPvMw) > 0.01) {
+                    differences.push(`PV: ${useCasePvMw} MWp (Projekt: ${projectPvMw.toFixed(2)} MWp)`);
+                }
+                
+                // Hydro vergleichen (beide in kW)
+                const useCaseHydro = useCase.hydro_power_kw || 0;
+                const projectHydro = project.hydro_power || 0;
+                if (Math.abs(useCaseHydro - projectHydro) > 0.1) {
+                    differences.push(`Wasserkraft: ${useCaseHydro} kW (Projekt: ${projectHydro} kW)`);
+                }
+                
+                // Wind vergleichen (beide in kW)
+                const useCaseWind = useCase.wind_power_kw || 0;
+                const projectWind = project.wind_power || 0;
+                if (Math.abs(useCaseWind - projectWind) > 0.1) {
+                    differences.push(`Windkraft: ${useCaseWind} kW (Projekt: ${projectWind} kW)`);
+                }
+                
+                // BESS Größe vergleichen (Use Case: MWh, Projekt: kWh)
+                const useCaseBessSize = useCase.bess_size_mwh || 0;
+                const projectBessSize = project.bess_size ? (project.bess_size / 1000) : 0;
+                if (Math.abs(useCaseBessSize - projectBessSize) > 0.1) {
+                    differences.push(`BESS-Größe: ${useCaseBessSize} MWh (Projekt: ${projectBessSize.toFixed(1)} MWh)`);
+                }
+                
+                // BESS Leistung vergleichen (Use Case: MW, Projekt: kW)
+                const useCaseBessPower = useCase.bess_power_mw || 0;
+                const projectBessPower = project.bess_power ? (project.bess_power / 1000) : 0;
+                if (Math.abs(useCaseBessPower - projectBessPower) > 0.1) {
+                    differences.push(`BESS-Leistung: ${useCaseBessPower} MW (Projekt: ${projectBessPower.toFixed(1)} MW)`);
+                }
+                
+                // Wenn Unterschiede gefunden wurden, Sync-Info anzeigen
+                if (differences.length > 0) {
+                    const syncInfo = document.getElementById('projectSyncInfo');
+                    const syncInfoDetails = document.getElementById('syncInfoDetails');
+                    if (syncInfo && syncInfoDetails) {
+                        const detailsHtml = differences.map(d => `<li class="mt-1">${d}</li>`).join('');
+                        syncInfoDetails.innerHTML = 
+                            `Die folgenden Werte weichen von den Projektwerten ab:<ul class="list-disc list-inside mt-2">${detailsHtml}</ul>`;
+                        syncInfo.classList.remove('hidden');
+                    }
+                } else {
+                    // Keine Unterschiede - Sync-Info ausblenden
+                    const syncInfo = document.getElementById('projectSyncInfo');
+                    if (syncInfo) {
+                        syncInfo.classList.add('hidden');
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.warn('Konnte Projektwerte nicht vergleichen:', error);
+        });
 }
 
 function deleteUseCase(useCaseId) {
@@ -784,7 +1005,7 @@ function deleteUseCase(useCaseId) {
         .then(data => {
             if (data.success) {
                 alert('Use Case erfolgreich gelöscht!');
-                loadExistingUseCases();
+                loadExistingUseCases(currentProjectId);
                 loadUseCases();
             } else {
                 alert('Fehler beim Löschen des Use Cases: ' + data.error);

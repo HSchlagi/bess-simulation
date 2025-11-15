@@ -30,27 +30,21 @@ def co2_dashboard():
 def get_projects():
     """Projekte für CO₂-Dashboard abrufen"""
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Importiere hier, um zirkuläre Imports zu vermeiden
+        from models import Project
         
-        # Projekte aus der Datenbank abrufen
-        cursor.execute('''
-        SELECT id, name, location, bess_size, bess_power
-        FROM project 
-        ORDER BY name ASC
-        ''')
+        # Verwende SQLAlchemy für korrekte Spalten-Zugriffe
+        all_projects = Project.query.order_by(Project.name.asc()).all()
         
         projects = []
-        for row in cursor.fetchall():
+        for project in all_projects:
             projects.append({
-                'id': row[0],
-                'name': row[1],
-                'location': row[2],
-                'bess_size': row[3],
-                'bess_power': row[4]
+                'id': project.id,
+                'name': project.name or f"Projekt {project.id}",
+                'location': project.location or "Kein Standort angegeben",
+                'bess_size': project.bess_size or 0,
+                'bess_power': project.bess_power or 0
             })
-        
-        conn.close()
         
         return jsonify({
             'success': True,
@@ -58,7 +52,31 @@ def get_projects():
         })
         
     except Exception as e:
-        return jsonify({'error': f'Fehler beim Abrufen der Projekte: {str(e)}'}), 500
+        print(f"Fehler beim Abrufen der Projekte: {e}")
+        import traceback
+        traceback.print_exc()
+        # Fallback: Versuche es mit direkter SQL-Abfrage (nur vorhandene Spalten)
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name FROM projects ORDER BY name ASC')
+            fallback_projects = []
+            for row in cursor.fetchall():
+                fallback_projects.append({
+                    'id': row[0],
+                    'name': row[1] or f"Projekt {row[0]}",
+                    'location': "Kein Standort angegeben",
+                    'bess_size': 0,
+                    'bess_power': 0
+                })
+            conn.close()
+            return jsonify({
+                'success': True,
+                'projects': fallback_projects
+            })
+        except Exception as e2:
+            print(f"Fehler beim Fallback: {e2}")
+            return jsonify({'error': f'Fehler beim Abrufen der Projekte: {str(e)}'}), 500
 
 @co2_bp.route('/api/balance/<int:project_id>')
 def get_co2_balance(project_id):

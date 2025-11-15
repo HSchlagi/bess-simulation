@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, jsonify, request, send_file
+from flask import Blueprint, render_template, jsonify, request, send_file, current_app
 import sqlite3
 import json
 import os
@@ -34,100 +34,74 @@ def climate_dashboard():
 
 @climate_bp.route('/api/climate/projects')
 def get_projects():
-    """Ruft verfügbare Projekte ab"""
+    """Ruft alle verfügbaren Projekte aus der projects Tabelle ab"""
     try:
-        conn = sqlite3.connect('instance/bess.db')
-        cursor = conn.cursor()
+        # Importiere hier, um zirkuläre Imports zu vermeiden
+        from models import Project
         
-        # Alle verfügbaren project_ids aus verschiedenen Tabellen sammeln
-        cursor.execute('''
-            SELECT DISTINCT project_id 
-            FROM co2_balance 
-            WHERE project_id IS NOT NULL
-            GROUP BY project_id
-            HAVING COUNT(*) > 0
-            UNION
-            SELECT DISTINCT project_id 
-            FROM sustainability_metrics 
-            WHERE project_id IS NOT NULL
-            GROUP BY project_id
-            HAVING COUNT(*) > 0
-            UNION
-            SELECT DISTINCT project_id 
-            FROM esg_reports 
-            WHERE project_id IS NOT NULL
-            GROUP BY project_id
-            HAVING COUNT(*) > 0
-            UNION
-            SELECT DISTINCT project_id 
-            FROM battery_config 
-            WHERE project_id IS NOT NULL
-            GROUP BY project_id
-            HAVING COUNT(*) > 0
-        ''')
+        # Verwende SQLAlchemy für korrekte Spalten-Zugriffe
+        all_projects = Project.query.order_by(Project.name.asc()).all()
         
-        project_ids = [row[0] for row in cursor.fetchall()]
-        
-        # Projekte mit Namen, Standorten und Kapazitäten erstellen
         projects = []
-        for project_id in project_ids:
-            # CO2-Daten für Projekt-Info
-            cursor.execute('''
-                SELECT 
-                    MIN(date) as first_date,
-                    MAX(date) as last_date,
-                    COUNT(*) as data_count,
-                    SUM(co2_saved_kg) as total_co2_saved
-                FROM co2_balance 
-                WHERE project_id = ?
-            ''', (project_id,))
+        for project in all_projects:
+            project_id = project.id
+            name = project.name or f"Projekt {project_id}"
+            location = project.location or "Kein Standort angegeben"
+            bess_size = project.bess_size or 0
+            bess_power = project.bess_power or 0
+            pv_power = getattr(project, 'pv_power', None) or 0
+            hydro_power = getattr(project, 'hydro_power', None) or 0
+            wind_power = getattr(project, 'wind_power', None) or 0
+            created_at = project.created_at.strftime('%Y-%m-%d') if project.created_at else "2025-01-01"
             
-            co2_data = cursor.fetchone()
-            if co2_data and co2_data[2] > 0:  # Wenn Daten vorhanden
-                first_date = co2_data[0]
-                last_date = co2_data[1]
-                data_points = co2_data[2]
-                total_co2_saved = round(co2_data[3], 2) if co2_data[3] else 0
-            else:
-                first_date = "2025-01-01"
-                last_date = "2025-09-07"
+            # CO2-Daten für Projekt-Info (optional, falls vorhanden)
+            try:
+                conn = sqlite3.connect('instance/bess.db')
+                cursor = conn.cursor()
+                cursor.execute('''
+                    SELECT 
+                        MIN(date) as first_date,
+                        MAX(date) as last_date,
+                        COUNT(*) as data_count,
+                        SUM(co2_saved_kg) as total_co2_saved
+                    FROM co2_balance 
+                    WHERE project_id = ?
+                ''', (project_id,))
+                
+                co2_data = cursor.fetchone()
+                conn.close()
+                
+                if co2_data and co2_data[2] and co2_data[2] > 0:  # Wenn Daten vorhanden
+                    first_date = co2_data[0] or created_at
+                    last_date = co2_data[1] or created_at
+                    data_points = co2_data[2] or 0
+                    total_co2_saved = round(co2_data[3], 2) if co2_data[3] else 0
+                else:
+                    first_date = created_at
+                    last_date = created_at
+                    data_points = 0
+                    total_co2_saved = 0
+            except Exception as co2_error:
+                print(f"Warnung: Konnte CO2-Daten für Projekt {project_id} nicht laden: {co2_error}")
+                first_date = created_at
+                last_date = created_at
                 data_points = 0
                 total_co2_saved = 0
-            
-            # Hardcoded Projekt-Info basierend auf Screenshot
-            if project_id == 1:
-                name = "BESS Hinterstoder"
-                location = "Hinterstoder, Österreich"
-                capacity_kwh = 8000
-            elif project_id == 2:
-                name = "BESS Tillysburg"
-                location = "Tillysburg"
-                capacity_kwh = 200
-            elif project_id == 3:
-                name = "Solar-BESS Wien"
-                location = "Wien, Österreich"
-                capacity_kwh = 200
-            elif project_id == 4:
-                name = "Test Projekt Daily Cycles"
-                location = "Kein Standort angegeben"
-                capacity_kwh = 100
-            else:
-                name = f"Projekt {project_id}"
-                location = "Unbekannter Standort"
-                capacity_kwh = 100
             
             projects.append({
                 'id': project_id,
                 'name': name,
                 'location': location,
-                'capacity_kwh': capacity_kwh,
+                'capacity_kwh': bess_size,
+                'bess_power': bess_power,
+                'pv_power': pv_power,
+                'hydro_power': hydro_power,
+                'wind_power': wind_power,
                 'created_at': first_date,
                 'last_update': last_date,
                 'data_points': data_points,
                 'total_co2_saved_kg': total_co2_saved
             })
-        
-        conn.close()
         
         return jsonify({
             'success': True,
@@ -136,16 +110,37 @@ def get_projects():
         
     except Exception as e:
         print(f"Fehler beim Laden der Projekte: {e}")
-        # Fallback: Projekte aus dem Screenshot
-        return jsonify({
-            'success': True,
-            'projects': [
-                {'id': 1, 'name': 'BESS Hinterstoder', 'location': 'Hinterstoder, Österreich', 'capacity_kwh': 8000, 'created_at': '2025-07-23', 'data_points': 360},
-                {'id': 2, 'name': 'BESS Tillysburg', 'location': 'Tillysburg', 'capacity_kwh': 200, 'created_at': '2025-08-17', 'data_points': 0},
-                {'id': 3, 'name': 'Solar-BESS Wien', 'location': 'Wien, Österreich', 'capacity_kwh': 200, 'created_at': '2025-07-23', 'data_points': 0},
-                {'id': 4, 'name': 'Test Projekt Daily Cycles', 'location': 'Kein Standort angegeben', 'capacity_kwh': 100, 'created_at': '2025-08-28', 'data_points': 0}
-            ]
-        })
+        import traceback
+        traceback.print_exc()
+        # Fallback: Versuche es mit direkter SQL-Abfrage (nur vorhandene Spalten)
+        try:
+            conn = sqlite3.connect('instance/bess.db')
+            cursor = conn.cursor()
+            cursor.execute('SELECT id, name FROM projects ORDER BY name')
+            fallback_projects = []
+            for row in cursor.fetchall():
+                fallback_projects.append({
+                    'id': row[0],
+                    'name': row[1] or f"Projekt {row[0]}",
+                    'location': "Kein Standort angegeben",
+                    'capacity_kwh': 0,
+                    'created_at': '2025-01-01',
+                    'last_update': '2025-01-01',
+                    'data_points': 0,
+                    'total_co2_saved_kg': 0
+                })
+            conn.close()
+            return jsonify({
+                'success': True,
+                'projects': fallback_projects
+            })
+        except Exception as e2:
+            print(f"Fehler beim Fallback: {e2}")
+            return jsonify({
+                'success': False,
+                'error': str(e),
+                'projects': []
+            }), 500
 
 @climate_bp.route('/green-finance-dashboard')
 def green_finance_dashboard():

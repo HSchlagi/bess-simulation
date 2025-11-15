@@ -197,7 +197,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log(`  - ${project.name} (ID: ${project.id})`);
                     const option = document.createElement('option');
                     option.value = project.id;
-                    option.textContent = `${project.name} (${project.location})`;
+                    const locationText = project.location ? ` (${project.location})` : '';
+                    option.textContent = `${project.name}${locationText}`;
                     select.appendChild(option);
                 });
                 
@@ -223,11 +224,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 // loadCO2Data(currentProjectId); // Erst laden wenn Projekt ausgewählt wird
             } else {
                 console.error('❌ API Response hat keine Projekte:', data);
-                loadDemoData();
+                if (data.error) {
+                    console.error('❌ API Fehler:', data.error);
+                }
+                // Fallback: Zeige Fehlermeldung im Dropdown
+                const select = document.getElementById('projectSelect');
+                if (select) {
+                    select.innerHTML = '<option value="">Fehler beim Laden der Projekte</option>';
+                }
             }
         } catch (error) {
             console.error('❌ Fehler beim Laden der Projekte:', error);
-            loadDemoData();
+            console.error('❌ Fehler-Details:', error.message);
+            // Fallback: Zeige Fehlermeldung im Dropdown
+            const select = document.getElementById('projectSelect');
+            if (select) {
+                select.innerHTML = '<option value="">Fehler beim Laden der Projekte</option>';
+            }
         }
     }
 
