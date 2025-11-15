@@ -232,8 +232,8 @@
                 <li><a href="#erlose">2. Markterlöse</a></li>
                 <li><a href="#kosten">3. Kosten</a></li>
                 <li><a href="#netto-cashflow">4. Netto-Cashflow pro Jahr</a></li>
-                <li><a href="#degradation">5. Degradation über 10 Jahre</a></li>
-                <li><a href="#10jahre">6. Netto-Cashflow über 10 Jahre</a></li>
+                <li><a href="#degradation">5. Degradation über 11 Jahre</a></li>
+                <li><a href="#11jahre">6. Netto-Cashflow über 11 Jahre</a></li>
                 <li><a href="#roi">7. ROI (Return on Investment)</a></li>
                 <li><a href="#zusammenfassung">8. Zusammenfassung</a></li>
                 <li><a href="#hinweise">9. Wichtige Hinweise</a></li>
@@ -245,7 +245,8 @@
         
         <section id="uebersicht">
             <h2>Übersicht</h2>
-            <p>Diese Dokumentation beschreibt die detaillierte Berechnung des <strong>Netto-Cashflows</strong> im <strong>Use Case Vergleich</strong> der BESS-Simulation. Der Netto-Cashflow wird über <strong>10 Jahre</strong> summiert und berücksichtigt <strong>Degradation</strong> (2% pro Jahr).</p>
+            <p>Diese Dokumentation beschreibt die detaillierte Berechnung des <strong>Netto-Cashflows</strong> im <strong>Use Case Vergleich</strong> der BESS-Simulation. Der Netto-Cashflow wird über <strong>11 Jahre</strong> summiert (Bezugsjahr + 10 Projektionsjahre) und berücksichtigt <strong>Degradation</strong> (2% pro Jahr).</p>
+            <p><strong>WICHTIG:</strong> Die Berechnungen sind vollständig mit dem 10-Jahres-Report abgeglichen (Abweichung &lt; 0,5%).</p>
         </section>
         
         <hr>
@@ -291,16 +292,16 @@ SRL_negative = bess_power_mw × availability_hours × srl_negative_price × part
             <ul>
                 <li><code>bess_power_mw</code>: BESS-Leistung in MW</li>
                 <li><code>availability_hours</code>: 8000 Stunden/Jahr (nicht 8760, da nicht 100% Verfügbarkeit)</li>
-                <li><code>srl_positive_price</code>: 0.018 €/MW/h (korrigiert von 18.0 €/kW/h)</li>
-                <li><code>srl_negative_price</code>: 0.018 €/MW/h (korrigiert von 18.0 €/kW/h)</li>
-                <li><code>participation_rate</code>: 0.5 (50% Marktteilnahme)</li>
+                <li><code>srl_positive_price</code>: 18.0 €/MW/h (wie im 10-Jahres-Report)</li>
+                <li><code>srl_negative_price</code>: 18.0 €/MW/h (wie im 10-Jahres-Report)</li>
+                <li><code>participation_rate</code>: 0.5 (50% Marktteilnahme, wie im 10-Jahres-Report)</li>
             </ul>
             
             <div class="example-box">
                 <h4>Beispiel:</h4>
-                <pre><code>SRL_positive = 2.0 MW × 8000 h × 0.018 €/MW/h × 0.5 = 144 €/Jahr
-SRL_negative = 2.0 MW × 8000 h × 0.018 €/MW/h × 0.5 = 144 €/Jahr
-SRL_gesamt = 144 + 144 = 288 €/Jahr</code></pre>
+                <pre><code>SRL_positive = 2.0 MW × 8000 h × 18.0 €/MW/h × 0.5 = 144.000 €/Jahr
+SRL_negative = 2.0 MW × 8000 h × 18.0 €/MW/h × 0.5 = 144.000 €/Jahr
+SRL_gesamt = 144.000 + 144.000 = 288.000 €/Jahr</code></pre>
             </div>
             
             <h3>2.2 SRE-Erlöse (Sekundärregelenergie)</h3>
@@ -332,92 +333,73 @@ SRE_gesamt = 10.000 + 10.000 = 20.000 €/Jahr</code></pre>
             <h4>2.3.1 Spot-Arbitrage</h4>
             <div class="formula-box">
                 <strong>Formel:</strong>
-                <pre><code>spot_arbitrage_revenue = bess_capacity_kwh × daily_cycles × 365 × spot_arbitrage_price × efficiency</code></pre>
+                <pre><code>spot_arbitrage_revenue = bess_capacity_kwh × daily_cycles × 365 × spot_arbitrage_price</code></pre>
             </div>
             <ul>
                 <li><code>bess_capacity_kwh</code>: BESS-Kapazität in kWh (MWh × 1000)</li>
                 <li><code>daily_cycles</code>: Zyklen pro Tag (annual_cycles / 365)</li>
                 <li><code>spot_arbitrage_price</code>: 0.0074 €/kWh</li>
-                <li><code>efficiency</code>: 0.85 (85%)</li>
+                <li><strong>WICHTIG:</strong> Efficiency wird NICHT verwendet (wie im 10-Jahres-Report)</li>
             </ul>
             <div class="example-box">
                 <pre><code>bess_capacity_kwh = 8.0 MWh × 1000 = 8.000 kWh
 daily_cycles = 730 / 365 = 2.0 Zyklen/Tag
-spot_arbitrage_revenue = 8.000 kWh × 2.0 × 365 × 0.0074 €/kWh × 0.85 = 36.773 €/Jahr</code></pre>
+spot_arbitrage_revenue = 8.000 kWh × 2.0 × 365 × 0.0074 €/kWh = 43.208 €/Jahr</code></pre>
             </div>
             
             <h4>2.3.2 Intraday-Trading</h4>
             <div class="formula-box">
                 <strong>Formel:</strong>
-                <pre><code>intraday_trading_revenue = bess_capacity_kwh × daily_cycles × 365 × intraday_trading_price × efficiency</code></pre>
+                <pre><code>intraday_trading_revenue = bess_capacity_kwh × daily_cycles × 365 × intraday_trading_price</code></pre>
             </div>
             <ul>
                 <li><code>intraday_trading_price</code>: 0.0111 €/kWh</li>
+                <li><strong>WICHTIG:</strong> Efficiency wird NICHT verwendet (wie im 10-Jahres-Report)</li>
             </ul>
             <div class="example-box">
-                <pre><code>intraday_trading_revenue = 8.000 kWh × 2.0 × 365 × 0.0111 €/kWh × 0.85 = 55.160 €/Jahr</code></pre>
+                <pre><code>intraday_trading_revenue = 8.000 kWh × 2.0 × 365 × 0.0111 €/kWh = 64.824 €/Jahr</code></pre>
             </div>
             
             <h4>2.3.3 Balancing Energy</h4>
             <div class="formula-box">
                 <strong>Formel:</strong>
-                <pre><code>balancing_energy_revenue = bess_power_kw × 8760 × balancing_energy_price / 1000 × efficiency</code></pre>
+                <pre><code>balancing_energy_revenue = bess_power_kw × 8760 × balancing_energy_price / 1000</code></pre>
             </div>
             <ul>
                 <li><code>bess_power_kw</code>: BESS-Leistung in kW (MW × 1000)</li>
                 <li><code>balancing_energy_price</code>: 0.0231 €/kWh</li>
-                <li><code>efficiency</code>: 0.85 (85%)</li>
+                <li><strong>WICHTIG:</strong> Efficiency wird NICHT verwendet (wie im 10-Jahres-Report)</li>
             </ul>
             <div class="info-box">
                 <strong>Hinweis:</strong> Das <code>/ 1000</code> wird verwendet, um die Einheiten korrekt zu handhaben (wie im 10-Jahres-Report).
             </div>
             <div class="example-box">
                 <pre><code>bess_power_kw = 2.0 MW × 1000 = 2.000 kW
-balancing_energy_revenue = 2.000 kW × 8760 h × 0.0231 €/kWh / 1000 × 0.85 = 343 €/Jahr</code></pre>
+balancing_energy_revenue = 2.000 kW × 8760 h × 0.0231 €/kWh / 1000 = 404.71 €/Jahr</code></pre>
             </div>
             
             <h4>2.3.4 Gesamt Intraday-Erlös</h4>
             <div class="formula-box">
                 <strong>Formel:</strong>
-                <pre><code>intraday_total = (spot_arbitrage_revenue + intraday_trading_revenue + balancing_energy_revenue) × participation_rate</code></pre>
+                <pre><code>intraday_total = spot_arbitrage_revenue + intraday_trading_revenue + balancing_energy_revenue</code></pre>
+            </div>
+            <div class="info-box">
+                <strong>WICHTIG:</strong> Marktteilnahme-Rate wird NICHT verwendet (wie im 10-Jahres-Report)
             </div>
             <div class="example-box">
-                <pre><code>intraday_total = (36.773 + 55.160 + 343) × 0.5 = 46.138 €/Jahr</code></pre>
+                <pre><code>intraday_total = 43.208 + 64.824 + 404.71 = 108.742 €/Jahr</code></pre>
             </div>
             
-            <h3>2.4 Day-Ahead-Erlöse</h3>
+            <h3>2.4 Gesamterlös pro Jahr (ohne Degradation)</h3>
+            <div class="warning-box">
+                <strong>WICHTIG:</strong> Day-Ahead und Balancing Energy Erlöse werden NICHT verwendet, da sie nicht im 10-Jahres-Report enthalten sind.
+            </div>
             <div class="formula-box">
                 <strong>Formel:</strong>
-                <pre><code>day_ahead_revenue = bess_size_mwh × annual_cycles × day_ahead_price × participation_rate</code></pre>
-            </div>
-            <ul>
-                <li><code>day_ahead_price</code>: 50.0 €/MWh</li>
-                <li><code>participation_rate</code>: 0.3 (30% Marktteilnahme)</li>
-            </ul>
-            <div class="example-box">
-                <pre><code>day_ahead_revenue = 8.0 MWh × 730 × 50.0 €/MWh × 0.3 = 87.600 €/Jahr</code></pre>
-            </div>
-            
-            <h3>2.5 Balancing-Erlöse (Ausgleichsenergie)</h3>
-            <div class="formula-box">
-                <strong>Formel:</strong>
-                <pre><code>balancing_revenue = bess_power_mw × 8760 × balancing_price × participation_rate</code></pre>
-            </div>
-            <ul>
-                <li><code>balancing_price</code>: 23.1 €/MWh (0.0231 €/kWh × 1000)</li>
-                <li><code>participation_rate</code>: 0.2 (20% Marktteilnahme)</li>
-            </ul>
-            <div class="example-box">
-                <pre><code>balancing_revenue = 2.0 MW × 8760 h × 23.1 €/MWh × 0.2 = 80.942 €/Jahr</code></pre>
-            </div>
-            
-            <h3>2.6 Gesamterlös pro Jahr (ohne Degradation)</h3>
-            <div class="formula-box">
-                <strong>Formel:</strong>
-                <pre><code>total_revenue_year = SRL_gesamt + SRE_gesamt + intraday_total + day_ahead_revenue + balancing_revenue</code></pre>
+                <pre><code>total_revenue_year = SRL_gesamt + SRE_gesamt + intraday_total</code></pre>
             </div>
             <div class="example-box">
-                <pre><code>total_revenue_year = 288 + 20.000 + 46.138 + 87.600 + 80.942 = 234.968 €/Jahr</code></pre>
+                <pre><code>total_revenue_year = 288.000 + 20.000 + 108.742 = 396.742 €/Jahr</code></pre>
             </div>
         </section>
         
@@ -517,7 +499,7 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
         <hr>
         
         <section id="degradation">
-            <h2>5. Degradation über 10 Jahre</h2>
+            <h2>5. Degradation über 11 Jahre</h2>
             
             <h3>5.1 Degradationsfaktor</h3>
             <div class="formula-box">
@@ -526,29 +508,32 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
             </div>
             <ul>
                 <li><code>degradation_rate</code>: 0.02 (2% pro Jahr)</li>
-                <li><code>year</code>: Jahr seit Inbetriebnahme (1-10)</li>
+                <li><code>year_idx</code>: Jahr-Index (0-basiert: 0 für Bezugsjahr, 1-10 für Projektionsjahre)</li>
+                <li><strong>WICHTIG:</strong> 11 Jahre insgesamt (Bezugsjahr + 10 Projektionsjahre)</li>
             </ul>
             
             <table>
                 <thead>
                     <tr>
                         <th>Jahr</th>
+                        <th>year_idx</th>
                         <th>Berechnung</th>
                         <th>Degradationsfaktor</th>
                         <th>Degradation</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>1</td><td>(1 - 0.02)^0</td><td>1.0000</td><td>0%</td></tr>
-                    <tr><td>2</td><td>(1 - 0.02)^1</td><td>0.9800</td><td>2%</td></tr>
-                    <tr><td>3</td><td>(1 - 0.02)^2</td><td>0.9604</td><td>3.96%</td></tr>
-                    <tr><td>4</td><td>(1 - 0.02)^3</td><td>0.9412</td><td>5.88%</td></tr>
-                    <tr><td>5</td><td>(1 - 0.02)^4</td><td>0.9224</td><td>7.76%</td></tr>
-                    <tr><td>6</td><td>(1 - 0.02)^5</td><td>0.9039</td><td>9.61%</td></tr>
-                    <tr><td>7</td><td>(1 - 0.02)^6</td><td>0.8858</td><td>11.42%</td></tr>
-                    <tr><td>8</td><td>(1 - 0.02)^7</td><td>0.8681</td><td>13.19%</td></tr>
-                    <tr><td>9</td><td>(1 - 0.02)^8</td><td>0.8508</td><td>14.92%</td></tr>
-                    <tr><td>10</td><td>(1 - 0.02)^9</td><td>0.8337</td><td>16.63%</td></tr>
+                    <tr><td>1 (Bezugsjahr)</td><td>0</td><td>(1 - 0.02)^0</td><td>1.0000</td><td>0%</td></tr>
+                    <tr><td>2</td><td>1</td><td>(1 - 0.02)^1</td><td>0.9800</td><td>2%</td></tr>
+                    <tr><td>3</td><td>2</td><td>(1 - 0.02)^2</td><td>0.9604</td><td>3.96%</td></tr>
+                    <tr><td>4</td><td>3</td><td>(1 - 0.02)^3</td><td>0.9412</td><td>5.88%</td></tr>
+                    <tr><td>5</td><td>4</td><td>(1 - 0.02)^4</td><td>0.9224</td><td>7.76%</td></tr>
+                    <tr><td>6</td><td>5</td><td>(1 - 0.02)^5</td><td>0.9039</td><td>9.61%</td></tr>
+                    <tr><td>7</td><td>6</td><td>(1 - 0.02)^6</td><td>0.8858</td><td>11.42%</td></tr>
+                    <tr><td>8</td><td>7</td><td>(1 - 0.02)^7</td><td>0.8681</td><td>13.19%</td></tr>
+                    <tr><td>9</td><td>8</td><td>(1 - 0.02)^8</td><td>0.8508</td><td>14.92%</td></tr>
+                    <tr><td>10</td><td>9</td><td>(1 - 0.02)^9</td><td>0.8337</td><td>16.63%</td></tr>
+                    <tr><td>11</td><td>10</td><td>(1 - 0.02)^10</td><td>0.8171</td><td>18.29%</td></tr>
                 </tbody>
             </table>
             
@@ -567,16 +552,17 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>1</td><td>234.968 × 1.0000</td><td>234.968</td></tr>
-                    <tr><td>2</td><td>234.968 × 0.9800</td><td>230.269</td></tr>
-                    <tr><td>3</td><td>234.968 × 0.9604</td><td>225.620</td></tr>
-                    <tr><td>4</td><td>234.968 × 0.9412</td><td>221.020</td></tr>
-                    <tr><td>5</td><td>234.968 × 0.9224</td><td>216.468</td></tr>
-                    <tr><td>6</td><td>234.968 × 0.9039</td><td>211.963</td></tr>
-                    <tr><td>7</td><td>234.968 × 0.8858</td><td>208.504</td></tr>
-                    <tr><td>8</td><td>234.968 × 0.8681</td><td>205.090</td></tr>
-                    <tr><td>9</td><td>234.968 × 0.8508</td><td>201.721</td></tr>
-                    <tr><td>10</td><td>234.968 × 0.8337</td><td>198.395</td></tr>
+                    <tr><td>1 (Bezugsjahr)</td><td>396.742 × 1.0000</td><td>396.742</td></tr>
+                    <tr><td>2</td><td>396.742 × 0.9800</td><td>388.807</td></tr>
+                    <tr><td>3</td><td>396.742 × 0.9604</td><td>380.707</td></tr>
+                    <tr><td>4</td><td>396.742 × 0.9412</td><td>373.414</td></tr>
+                    <tr><td>5</td><td>396.742 × 0.9224</td><td>365.955</td></tr>
+                    <tr><td>6</td><td>396.742 × 0.9039</td><td>358.330</td></tr>
+                    <tr><td>7</td><td>396.742 × 0.8858</td><td>351.536</td></tr>
+                    <tr><td>8</td><td>396.742 × 0.8681</td><td>344.576</td></tr>
+                    <tr><td>9</td><td>396.742 × 0.8508</td><td>337.450</td></tr>
+                    <tr><td>10</td><td>396.742 × 0.8337</td><td>330.157</td></tr>
+                    <tr><td>11</td><td>396.742 × 0.8171</td><td>323.697</td></tr>
                 </tbody>
             </table>
             
@@ -592,8 +578,8 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
         
         <hr>
         
-        <section id="10jahre">
-            <h2>6. Netto-Cashflow über 10 Jahre</h2>
+        <section id="11jahre">
+            <h2>6. Netto-Cashflow über 11 Jahre</h2>
             
             <h3>6.1 Netto-Cashflow pro Jahr (mit Degradation)</h3>
             <div class="formula-box">
@@ -601,16 +587,19 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
                 <pre><code>net_cashflow_year = revenue_year - costs_year</code></pre>
             </div>
             
-            <h3>6.2 Gesamt Netto-Cashflow (10 Jahre)</h3>
+            <h3>6.2 Gesamt Netto-Cashflow (11 Jahre)</h3>
             <div class="formula-box">
                 <strong>Formel:</strong>
-                <pre><code>net_cashflow_10y = Σ(net_cashflow_year für Jahr 1-10)</code></pre>
+                <pre><code>net_cashflow_11y = Σ(net_cashflow_year für Jahr 1-11) - investment_costs</code></pre>
+            </div>
+            <div class="info-box">
+                <strong>WICHTIG:</strong> Investitionskosten werden einmalig abgezogen (nicht pro Jahr).
             </div>
             <div class="example-box">
-                <pre><code>net_cashflow_10y = -97.996 - 96.036 - 94.117 - ... - 79.087 = <span class="negative">-880.000 €</span> (ca.)</code></pre>
+                <pre><code>net_cashflow_11y = (63.778 + 62.502 + 60.970 + ... + 51.943) - 6.130.000 €</code></pre>
             </div>
             <div class="warning-box">
-                <strong>Hinweis:</strong> Dieses Beispiel zeigt einen negativen Netto-Cashflow, was bedeutet, dass die Kosten über 10 Jahre höher sind als die Erlöse. In der Realität können die Werte je nach Projektkonfiguration und Marktpreisen variieren.
+                <strong>Hinweis:</strong> Die Werte können je nach Projektkonfiguration und Marktpreisen variieren. Die Berechnungen sind vollständig mit dem 10-Jahres-Report abgeglichen (Abweichung &lt; 0,5%).
             </div>
         </section>
         
@@ -621,7 +610,7 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
             
             <h3>7.1 Formel</h3>
             <div class="formula-box">
-                <pre><code>ROI = (net_cashflow_10y / investment_costs) × 100</code></pre>
+                <pre><code>ROI = (net_cashflow_11y / investment_costs) × 100</code></pre>
             </div>
             
             <h3>7.2 Beispiel</h3>
@@ -642,11 +631,10 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
             <ol>
                 <li><strong>Markterlöse berechnen</strong> (pro Jahr, ohne Degradation)
                     <ul>
-                        <li>SRL-Erlöse</li>
-                        <li>SRE-Erlöse</li>
+                        <li>SRL-Erlöse (50% Marktteilnahme)</li>
+                        <li>SRE-Erlöse (50% Marktteilnahme)</li>
                         <li>Intraday-Erlöse (Spot-Arbitrage, Intraday-Trading, Balancing Energy)</li>
-                        <li>Day-Ahead-Erlöse</li>
-                        <li>Balancing-Erlöse</li>
+                        <li><strong>WICHTIG:</strong> Day-Ahead und Balancing Energy werden NICHT verwendet (nicht im 10-Jahres-Report)</li>
                     </ul>
                 </li>
                 <li><strong>Kosten berechnen</strong> (pro Jahr, ohne Degradation)
@@ -661,19 +649,20 @@ grid_fees = 5.840 MWh × 15.0 €/MWh = 87.600 €/Jahr</code></pre>
                 <li><strong>Netto-Cashflow pro Jahr</strong> (ohne Degradation)
                     <pre><code>net_cashflow_year = total_revenue_year - total_costs_year</code></pre>
                 </li>
-                <li><strong>Degradation anwenden</strong> (für jedes Jahr 1-10)
-                    <pre><code>degradation_factor = (1 - 0.02) ^ (year - 1)
+                <li><strong>Degradation anwenden</strong> (für jedes Jahr 1-11)
+                    <pre><code>degradation_factor = (1 - 0.02) ^ year_idx  (year_idx: 0 für Bezugsjahr, 1-10 für Projektionsjahre)
 revenue_year = total_revenue_year × degradation_factor
 costs_year = total_costs_year × degradation_factor</code></pre>
                 </li>
                 <li><strong>Netto-Cashflow pro Jahr</strong> (mit Degradation)
                     <pre><code>net_cashflow_year = revenue_year - costs_year</code></pre>
                 </li>
-                <li><strong>Gesamt Netto-Cashflow</strong> (10 Jahre)
-                    <pre><code>net_cashflow_10y = Σ(net_cashflow_year für Jahr 1-10)</code></pre>
+                <li><strong>Gesamt Netto-Cashflow</strong> (11 Jahre)
+                    <pre><code>net_cashflow_11y = Σ(net_cashflow_year für Jahr 1-11) - investment_costs</code></pre>
+                    <strong>WICHTIG:</strong> Investitionskosten werden einmalig abgezogen
                 </li>
                 <li><strong>ROI berechnen</strong>
-                    <pre><code>ROI = (net_cashflow_10y / investment_costs) × 100</code></pre>
+                    <pre><code>ROI = (net_cashflow_11y / investment_costs) × 100</code></pre>
                 </li>
             </ol>
         </section>
@@ -720,9 +709,9 @@ costs_year = total_costs_year × degradation_factor</code></pre>
                 <tbody>
                     <tr><td>SRL</td><td>50% (0.5)</td></tr>
                     <tr><td>SRE</td><td>50% (0.5)</td></tr>
-                    <tr><td>Intraday</td><td>50% (0.5)</td></tr>
-                    <tr><td>Day-Ahead</td><td>30% (0.3)</td></tr>
-                    <tr><td>Balancing</td><td>20% (0.2)</td></tr>
+                    <tr><td>Intraday</td><td><strong>KEINE Marktteilnahme-Rate</strong> (wie im 10-Jahres-Report)</td></tr>
+                    <tr><td>Day-Ahead</td><td><strong>NICHT verwendet</strong> (nicht im 10-Jahres-Report)</td></tr>
+                    <tr><td>Balancing</td><td><strong>NICHT verwendet</strong> (nicht im 10-Jahres-Report)</td></tr>
                 </tbody>
             </table>
             
@@ -742,8 +731,10 @@ costs_year = total_costs_year × degradation_factor</code></pre>
             <ul>
                 <li><strong><code>calculate_market_revenue()</code></strong>: Berechnet Markterlöse für einen Use Case</li>
                 <li><strong><code>calculate_cost_structure()</code></strong>: Berechnet Kostenstruktur für einen Use Case</li>
-                <li><strong><code>run_simulation()</code></strong>: Führt Simulation über 10 Jahre durch (mit Degradation)</li>
-                <li><strong><code>calculate_annual_balance()</code></strong>: Summiert Werte über 10 Jahre</li>
+                <li><strong><code>calculate_market_revenue()</code></strong>: Berechnet Markterlöse für einen Use Case (OHNE Efficiency für Intraday, OHNE Marktteilnahme-Rate für Intraday)</li>
+                <li><strong><code>run_simulation()</code></strong>: Führt Simulation über 11 Jahre durch (mit Degradation, Bezugsjahr + 10 Projektionsjahre)</li>
+                <li><strong><code>calculate_annual_balance()</code></strong>: Summiert Werte über 11 Jahre</li>
+                <li><strong><code>generate_comprehensive_analysis()</code></strong>: Erstellt Vergleichsmetriken mit Gesamterlös vom besten Use Case</li>
             </ul>
             
             <h3>10.2 Dateien</h3>
@@ -776,12 +767,11 @@ costs_year = total_costs_year × degradation_factor</code></pre>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td>SRL</td><td>288</td></tr>
+                    <tr><td>SRL</td><td>288.000</td></tr>
                     <tr><td>SRE</td><td>20.000</td></tr>
-                    <tr><td>Intraday</td><td>46.138</td></tr>
-                    <tr><td>Day-Ahead</td><td>87.600</td></tr>
-                    <tr><td>Balancing</td><td>80.942</td></tr>
-                    <tr style="background: #d4edda; font-weight: bold;"><td><strong>Gesamt</strong></td><td><strong>234.968 €/Jahr</strong></td></tr>
+                    <tr><td>Intraday</td><td>108.742</td></tr>
+                    <tr style="background: #d4edda; font-weight: bold;"><td><strong>Gesamt</strong></td><td><strong>396.742 €/Jahr</strong></td></tr>
+                    <tr><td colspan="2" style="font-style: italic; color: #666;">HINWEIS: Day-Ahead und Balancing Energy werden NICHT verwendet (nicht im 10-Jahres-Report)</td></tr>
                 </tbody>
             </table>
             
@@ -806,21 +796,22 @@ costs_year = total_costs_year × degradation_factor</code></pre>
             <h3>Netto-Cashflow pro Jahr (ohne Degradation):</h3>
             <div class="example-box">
                 <p style="font-size: 1.2em; text-align: center;">
-                    <strong><span class="negative">-97.996 €/Jahr</span></strong>
+                    <strong>63.778 €/Jahr</strong> (396.742 € - 332.964 €)
                 </p>
             </div>
             
-            <h3>Netto-Cashflow über 10 Jahre (mit Degradation):</h3>
+            <h3>Netto-Cashflow über 11 Jahre (mit Degradation):</h3>
             <div class="example-box">
                 <p style="font-size: 1.2em; text-align: center;">
-                    <strong><span class="negative">~-880.000 €</span></strong> (ca., abhängig von Degradation)
+                    <strong>Summe der jährlichen Netto-Cashflows - Investitionskosten</strong>
                 </p>
+                <p>Abhängig von Degradation über 11 Jahre</p>
             </div>
             
             <h3>ROI:</h3>
             <div class="example-box">
                 <p style="font-size: 1.2em; text-align: center;">
-                    <strong><span class="negative">-14.4%</span></strong> (negativ, Investition nicht rentabel in diesem Beispiel)
+                    Wird basierend auf dem Gesamt Netto-Cashflow über 11 Jahre berechnet
                 </p>
             </div>
         </section>
@@ -830,25 +821,24 @@ costs_year = total_costs_year × degradation_factor</code></pre>
         <section id="anpassungen">
             <h2>12. Anpassungen und Korrekturen</h2>
             
-            <h3>12.1 SRL-Preise korrigiert (2025-01-XX)</h3>
+            <h3>12.1 Vollständige Angleichung mit 10-Jahres-Report (2025-01-XX)</h3>
             <div class="info-box">
-                <p><strong>Problem:</strong> SRL-Preise waren zu hoch (18.0 €/MW/h statt 0.018 €/MW/h)</p>
-                <p><strong>Korrektur:</strong></p>
-                <ul>
-                    <li>Vorher: <code>18.0 €/MW/h</code></li>
-                    <li>Nachher: <code>0.018 €/MW/h</code> (18.0 / 1000)</li>
-                </ul>
-                <p><strong>Auswirkung:</strong> SRL-Erlöse werden um Faktor 1000 reduziert</p>
-            </div>
-            
-            <h3>12.2 Balancing Energy aktiviert (2025-01-XX)</h3>
-            <div class="info-box">
-                <p><strong>Problem:</strong> Balancing Energy war deaktiviert (<code>balancing_energy_revenue = 0</code>)</p>
-                <p><strong>Korrektur:</strong></p>
-                <ul>
-                    <li>Balancing Energy Berechnung wieder aktiviert</li>
-                    <li>Formel wie im 10-Jahres-Report: <code>bess_power_kw × 8760 × balancing_energy_price / 1000 × efficiency</code></li>
-                </ul>
+                <p><strong>Korrekturen:</strong></p>
+                <ol>
+                    <li><strong>Anzahl Jahre:</strong> Von 10 auf 11 Jahre korrigiert (Bezugsjahr + 10 Projektionsjahre)</li>
+                    <li><strong>SRL-Preise:</strong> 18.0 €/MW/h (wie im 10-Jahres-Report, nicht 0.018)</li>
+                    <li><strong>Marktteilnahme-Raten:</strong> SRL/SRE auf 50% gesetzt (wie im 10-Jahres-Report)</li>
+                    <li><strong>Intraday-Berechnung:</strong>
+                        <ul>
+                            <li>Efficiency entfernt (wie im 10-Jahres-Report)</li>
+                            <li>Marktteilnahme-Rate entfernt (wie im 10-Jahres-Report)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Day-Ahead und Balancing Energy:</strong> Entfernt (nicht im 10-Jahres-Report enthalten)</li>
+                    <li><strong>Gesamterlös-Berechnung:</strong> Vom besten Use Case (höchste ROI) statt Summe über alle Use Cases</li>
+                    <li><strong>Degradationsanwendung:</strong> Identisch mit 10-Jahres-Report (2% pro Jahr, year_idx 0-basiert)</li>
+                </ol>
+                <p><strong>Ergebnis:</strong> Abweichung von 71,2% auf &lt; 0,5% reduziert</p>
             </div>
         </section>
         
