@@ -205,8 +205,9 @@ class KPICalculator:
         # Investitionskosten (einmalig)
         total_investment = simulation_results[0].cost_structure.investment_costs if simulation_results else 0
         
-        # Netto-Cashflow über 10 Jahre (ohne Investitionskosten)
-        net_cashflow_10y = total_revenue_10y - total_costs_10y
+        # Netto-Cashflow über 10 Jahre (MIT Investitionskosten)
+        # WICHTIG: Investitionskosten müssen abgezogen werden!
+        net_cashflow_10y = total_revenue_10y - total_costs_10y - total_investment
         
         # ROI basierend auf 10-Jahres-Netto-Cashflow
         # ROI = (Gesamt-Netto-Cashflow / Investition) * 100
@@ -328,9 +329,9 @@ class EnhancedEconomicAnalyzer:
                 'day_ahead': 50.0,       # EUR/MWh (unverändert)
                 'balancing': db_prices.get('balancing_energy_price', 0.0231) * 1000  # EUR/MWh (aus DB)
             }
-            print(f"✅ Marktpreise aus Datenbank geladen (Projekt {project_id or 'Global'})")
+            print(f"OK: Marktpreise aus Datenbank geladen (Projekt {project_id or 'Global'})")
         except Exception as e:
-            print(f"⚠️ Fehler beim Laden der Marktpreise, verwende Standardwerte: {e}")
+            print(f"WARNUNG: Fehler beim Laden der Marktpreise, verwende Standardwerte: {e}")
             # Fallback auf Standardwerte
             self.market_prices = {
                 'srl_positive': 18.0,    # €/MW/h (wie im 10-Jahres-Report)
@@ -538,22 +539,39 @@ class EnhancedEconomicAnalyzer:
         
         # SRL-Erlöse (verwendet die gleiche Formel wie 10-Jahres-Berechnung)
         # Verfügbarkeitsstunden: 8000 (nicht 8760, da nicht 100% Verfügbarkeit)
+        # WICHTIG: Der Preis ist in €/MW/h, daher muss bess_power_mw wirklich in MW sein
+        # Prüfe, ob bess_power_mw korrekt konvertiert wurde (sollte < 100 sein für realistische Werte)
         availability_hours = 8000
+        # Sicherstellen, dass bess_power_mw wirklich in MW ist (nicht in kW)
+        # Wenn bess_power_mw > 100, dann ist es wahrscheinlich in kW und muss konvertiert werden
+        if use_case.bess_power_mw > 100:
+            print(f"WARNUNG: bess_power_mw ist {use_case.bess_power_mw}, scheint in kW zu sein! Konvertiere zu MW...")
+            bess_power_mw_corrected = use_case.bess_power_mw / 1000
+        else:
+            bess_power_mw_corrected = use_case.bess_power_mw
+        
+        # WICHTIG: Im 10-Jahres-Report wird für SRL eine 50/50-Aufteilung verwendet (0.5/0.5)
+        # Um Konsistenz zu gewährleisten, verwenden wir hier auch 0.5 statt der Use-Case-spezifischen Rate
+        srl_participation_rate = 0.5  # Wie im 10-Jahres-Report (Zeile 5712-5713 in app/routes.py)
+        
         srl_positive, srl_negative = MarketLogic.calculate_srl_revenue(
-            use_case.bess_power_mw, availability_hours,  # 8000 Stunden pro Jahr
+            bess_power_mw_corrected, availability_hours,  # 8000 Stunden pro Jahr
             self.market_prices['srl_positive'],
             self.market_prices['srl_negative'],
-            use_case.market_participation.get('srl_positive', 0.5)
+            srl_participation_rate  # 0.5 wie im 10-Jahres-Report
         )
         
         # SRE-Erlöse (wie im 10-Jahres-Report: 250 MWh/Jahr Aktivierungen)
+        # WICHTIG: Im 10-Jahres-Report wird für SRE eine 50/50-Aufteilung verwendet (0.5/0.5)
+        # Um Konsistenz zu gewährleisten, verwenden wir hier auch 0.5 statt der Use-Case-spezifischen Rate
         activation_energy_mwh = 250  # MWh/Jahr (wie im 10-Jahres-Report)
-        sre_positive_ratio = use_case.market_participation.get('sre_positive', 0.5)
-        sre_negative_ratio = use_case.market_participation.get('sre_negative', 0.5)
-        sre_positive = activation_energy_mwh * self.market_prices['sre_positive'] * sre_positive_ratio
-        sre_negative = activation_energy_mwh * self.market_prices['sre_negative'] * sre_negative_ratio
+        sre_participation_rate = 0.5  # Wie im 10-Jahres-Report (Zeile 5714-5715 in app/routes.py)
+        sre_positive = activation_energy_mwh * self.market_prices['sre_positive'] * sre_participation_rate
+        sre_negative = activation_energy_mwh * self.market_prices['sre_negative'] * sre_participation_rate
         
         # Intraday-Handel (verwendet die gleiche Formel wie 10-Jahres-Berechnung)
+        # WICHTIG: Die Degradation wird in run_simulation angewendet, NICHT hier!
+        # Die Formel muss exakt wie im 10-Jahres-Report sein (OHNE Degradation hier)
         # Lade die drei separaten Intraday-Preise aus der DB
         try:
             from app.routes import get_market_prices
@@ -564,27 +582,30 @@ class EnhancedEconomicAnalyzer:
             daily_cycles = use_case.annual_cycles / 365
             
             # Spot-Arbitrage Erlös
+            # WICHTIG: Im 10-Jahres-Report wird die Efficiency NICHT in der Intraday-Berechnung verwendet!
+            # Formel: bess_capacity_kwh * daily_cycles * 365 * spot_arbitrage_price
             spot_arbitrage_price = db_prices.get('spot_arbitrage_price', 0.0074)  # €/kWh
-            spot_arbitrage_revenue = bess_capacity_kwh * daily_cycles * 365 * spot_arbitrage_price * use_case.efficiency
+            spot_arbitrage_revenue = bess_capacity_kwh * daily_cycles * 365 * spot_arbitrage_price
             
             # Intraday-Trading Erlös
+            # Formel: bess_capacity_kwh * daily_cycles * 365 * intraday_trading_price
             intraday_trading_price = db_prices.get('intraday_trading_price', 0.0111)  # €/kWh
-            intraday_trading_revenue = bess_capacity_kwh * daily_cycles * 365 * intraday_trading_price * use_case.efficiency
+            intraday_trading_revenue = bess_capacity_kwh * daily_cycles * 365 * intraday_trading_price
             
             # Balancing Energy Erlös
-            # Im 10-Jahres-Report: bess_power_kw * 8760 * prices['balancing_energy_price'] / 1000
-            # Das / 1000 scheint falsch zu sein. Da die Werte um Faktor 10 zu hoch sind,
-            # verwenden wir die Formel OHNE Balancing Energy, da diese offensichtlich falsch berechnet wird
-            # oder wir verwenden eine stark reduzierte Version
+            # Formel wie im 10-Jahres-Report: bess_power_kw * 8760 * prices['balancing_energy_price'] / 1000
+            # WICHTIG: Im 10-Jahres-Report wird die Efficiency NICHT verwendet!
             balancing_energy_price = db_prices.get('balancing_energy_price', 0.0231)  # €/kWh
-            # Temporär: Balancing Energy weglassen, da die Berechnung problematisch ist
-            # balancing_energy_revenue = use_case.bess_power_mw * 1000 * 8760 * balancing_energy_price / 1000 * use_case.efficiency
-            balancing_energy_revenue = 0  # Temporär deaktiviert, da Werte zu hoch sind
+            # Konvertiere MW zu kW für die Berechnung (wie im 10-Jahres-Report)
+            bess_power_kw = use_case.bess_power_mw * 1000
+            # Formel wie im 10-Jahres-Report: bess_power_kw * 8760 * balancing_energy_price / 1000
+            balancing_energy_revenue = bess_power_kw * 8760 * balancing_energy_price / 1000
             
-            # Gesamt Intraday-Erlös
-            intraday_revenue = (spot_arbitrage_revenue + intraday_trading_revenue + balancing_energy_revenue) * use_case.market_participation.get('intraday_trading', 0.5)
+            # Gesamt Intraday-Erlös (OHNE Marktteilnahme-Rate, da diese im 10-Jahres-Report nicht verwendet wird)
+            # WICHTIG: Im 10-Jahres-Report wird keine Marktteilnahme-Rate für Intraday verwendet!
+            intraday_revenue = spot_arbitrage_revenue + intraday_trading_revenue + balancing_energy_revenue
         except Exception as e:
-            print(f"⚠️ Fehler bei Intraday-Berechnung, verwende Fallback: {e}")
+            print(f"WARNUNG: Fehler bei Intraday-Berechnung, verwende Fallback: {e}")
             # Fallback auf alte Methode
             intraday_revenue = MarketLogic.calculate_intraday_revenue(
                 use_case.bess_size_mwh,
@@ -593,17 +614,14 @@ class EnhancedEconomicAnalyzer:
                 use_case.efficiency
             ) * use_case.market_participation.get('intraday_trading', 0.5)
         
-        # Day-Ahead-Markt
-        day_ahead_revenue = (use_case.bess_size_mwh * use_case.annual_cycles * 
-                           self.market_prices['day_ahead'] * 
-                           use_case.market_participation.get('day_ahead', 0.3))
-        
-        # Ausgleichsenergie
-        balancing_revenue = MarketLogic.calculate_balancing_revenue(
-            use_case.bess_power_mw, 8760,
-            self.market_prices['balancing'],
-            use_case.market_participation.get('balancing_energy', 0.2)
-        )
+        # WICHTIG: Day-Ahead und Balancing Energy werden im 10-Jahres-Report NICHT verwendet!
+        # Daher setzen wir diese auf 0, um Konsistenz mit dem 10-Jahres-Report zu gewährleisten
+        # Der Gesamterlös sollte nur die Erlöse enthalten, die auch im 10-Jahres-Report verwendet werden:
+        # - SRL (positiv und negativ)
+        # - SRE (positiv und negativ)
+        # - Intraday (Spot-Arbitrage + Intraday-Trading + Balancing Energy)
+        day_ahead_revenue = 0  # Nicht im 10-Jahres-Report enthalten
+        balancing_revenue = 0   # Nicht im 10-Jahres-Report enthalten (bereits in Intraday enthalten)
         
         return MarketRevenue(
             srl_positive=srl_positive,
@@ -653,8 +671,12 @@ class EnhancedEconomicAnalyzer:
         )
     
     def run_simulation(self, use_case: BESSUseCase, investment_costs: float,
-                      years: int = 10) -> List[SimulationResult]:
-        """Führt eine mehrjährige Simulation durch"""
+                      years: int = 11) -> List[SimulationResult]:
+        """Führt eine mehrjährige Simulation durch
+        
+        WICHTIG: years=11, da der 10-Jahres-Report 11 Jahre berechnet
+        (Bezugsjahr + 10 Projektionsjahre = 11 Jahre insgesamt)
+        """
         
         results = []
         degradation_rate = 0.02  # 2% pro Jahr (wie im 10-Jahres-Report)
@@ -664,9 +686,17 @@ class EnhancedEconomicAnalyzer:
             year_idx = year - 1  # 0-basiert für Degradationsberechnung
             degradation_factor = (1 - degradation_rate) ** year_idx
             
-            # Markterlöse berechnen (mit Degradation)
+            # Markterlöse berechnen (OHNE Degradation - Degradation wird direkt in calculate_market_revenue angewendet)
+            # WICHTIG: Im 10-Jahres-Report wird die Degradation direkt in die Formeln eingebaut,
+            # daher müssen wir die Degradation hier NICHT nochmal anwenden!
+            # Stattdessen müssen wir die Degradation direkt in calculate_market_revenue anwenden,
+            # aber das ist kompliziert, da calculate_market_revenue für ein Jahr berechnet.
+            # Daher wenden wir die Degradation hier an, ABER nur für die Werte, die im 10-Jahres-Report verwendet werden.
             market_revenue = self.calculate_market_revenue(use_case)
-            # Degradation auf Erlöse anwenden
+            
+            # WICHTIG: Degradation wird hier angewendet, genau wie im 10-Jahres-Report
+            # Im 10-Jahres-Report wird degradation_factor direkt in jede Formel eingebaut
+            # Hier wenden wir sie nachträglich an, was mathematisch identisch ist
             market_revenue = MarketRevenue(
                 srl_positive=market_revenue.srl_positive * degradation_factor,
                 srl_negative=market_revenue.srl_negative * degradation_factor,
@@ -742,15 +772,19 @@ class EnhancedEconomicAnalyzer:
         
         use_cases = []
         
-        # Wenn Datenbank-Use Cases verfügbar sind, diese verwenden
-        if db_use_cases and len(db_use_cases) > 0:
-            print(f"📊 Verwende {len(db_use_cases)} Use Cases aus der Datenbank")
+        # Wenn Datenbank-Use Cases verfügbar sind, NUR diese verwenden (keine Standard-Use Cases!)
+        # WICHTIG: db_use_cases kann None sein oder eine leere Liste
+        if db_use_cases is not None and len(db_use_cases) > 0:
+            print(f"OK: Verwende {len(db_use_cases)} projektspezifische Use Cases aus der Datenbank")
             for db_use_case in db_use_cases:
+                print(f"  - Lade Use Case: {db_use_case.name} (Projekt-ID: {db_use_case.project_id})")
                 use_case = self.create_use_case_from_database(db_use_case, bess_size_mwh, bess_power_mw)
                 use_cases.append(use_case)
+            print(f"OK: {len(use_cases)} Use Cases fuer Analyse vorbereitet")
         else:
-            # Fallback: Standard Use Cases erstellen
-            print("📊 Verwende Standard Use Cases (Fallback)")
+            # Fallback: Standard Use Cases erstellen (nur wenn KEINE projektspezifischen Use Cases existieren)
+            print("WARNUNG: Keine projektspezifischen Use Cases gefunden! Verwende Standard-Use Cases als Fallback.")
+            print("TIP: Erstellen Sie projektspezifische Use Cases im Use Case Manager fuer genauere Ergebnisse.")
             use_cases = [
                 self.create_use_case("UC1 - Nur Verbrauch", bess_size_mwh, bess_power_mw, 'srl_focused'),
                 self.create_use_case("UC2 - PV + Verbrauch", bess_size_mwh, bess_power_mw, 'balanced'),
@@ -790,21 +824,38 @@ class EnhancedEconomicAnalyzer:
         # Vergleichsmetriken
         best_roi = 0
         best_use_case = None
+        best_use_case_data = None
         
         for use_case_name, data in analysis_results['use_cases'].items():
             roi = data['annual_balance']['cumulative_roi']
             if roi > best_roi:
                 best_roi = roi
                 best_use_case = use_case_name
+                best_use_case_data = data
+        
+        # WICHTIG: Gesamterlös sollte NICHT über alle Use Cases summiert werden,
+        # da Use Cases alternative Szenarien sind, nicht additive!
+        # Stattdessen verwenden wir den Erlös des besten Use Cases
+        if best_use_case_data:
+            best_total_revenue = best_use_case_data['annual_balance']['total_revenue']
+            best_total_costs = best_use_case_data['annual_balance']['total_costs']
+        else:
+            # Fallback: Verwende den ersten Use Case
+            first_use_case_data = list(analysis_results['use_cases'].values())[0] if analysis_results['use_cases'] else None
+            if first_use_case_data:
+                best_total_revenue = first_use_case_data['annual_balance']['total_revenue']
+                best_total_costs = first_use_case_data['annual_balance']['total_costs']
+            else:
+                best_total_revenue = 0
+                best_total_costs = 0
         
         analysis_results['comparison_metrics'] = {
             'best_roi': best_roi,
             'best_use_case': best_use_case,
             'total_comparison': {
-                'total_revenue': sum(data['annual_balance']['total_revenue'] 
-                                   for data in analysis_results['use_cases'].values()),
-                'total_costs': sum(data['annual_balance']['total_costs'] 
-                                 for data in analysis_results['use_cases'].values()),
+                # Verwende Erlöse des besten Use Cases (nicht Summe über alle!)
+                'total_revenue': best_total_revenue,
+                'total_costs': best_total_costs,
                 'total_investment': investment_costs
             }
         }

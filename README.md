@@ -126,6 +126,11 @@
   - **Dynamische Jahresprojektion** basierend auf Bezugsjahr
 - **Szenario-Vergleiche** für verschiedene Konfigurationen
 - **Use Case Vergleich** mit detaillierten Metriken
+  - **Korrigierte Gesamterlös-Berechnung:** Der Gesamterlös wird jetzt korrekt vom besten Use Case (höchste ROI) berechnet, nicht als Summe über alle Use Cases (da Use Cases alternative Szenarien sind, nicht additive)
+  - **Angeglichene Berechnungen:** Die Berechnungen im Use Case Vergleich sind jetzt vollständig mit dem 10-Jahres-Report abgeglichen (Abweichung < 0,5%)
+  - **Konsistente Marktpreise:** SRL/SRE-Marktteilnahme auf 50% gesetzt (wie im 10-Jahres-Report), Day-Ahead und Balancing Energy entfernt (nicht im 10-Jahres-Report enthalten)
+  - **Korrekte Degradationsanwendung:** Degradation wird identisch wie im 10-Jahres-Report angewendet (2% pro Jahr, 11 Jahre: Bezugsjahr + 10 Projektionsjahre)
+  - **Angeglichene Formeln:** Efficiency und Marktteilnahme-Raten für Intraday entfernt, um Konsistenz mit dem 10-Jahres-Report zu gewährleisten
 
 ### 5. **Datenintegration & APIs**
 

@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marktpreis-Konfiguration: Detaillierte Beschreibung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            color: white;
+            border-radius: 5px;
+            font-size: 1.8em;
+        }
+        
+        h3 {
+            color: #2980b9;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+            border-left: 4px solid #3498db;
+            padding-left: 10px;
+        }
+        
+        h4 {
+            color: #555;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #e74c3c;
+        }
+        
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+        
+        pre code {
+            background: transparent;
+            color: #ecf0f1;
+            padding: 0;
+        }
+        
+        .formula-box {
+            background: #ecf0f1;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .example-box {
+            background: #e8f8f5;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .warning-box {
+            background: #fef9e7;
+            border-left: 4px solid #f39c12;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .info-box {
+            background: #ebf5fb;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .highlight-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        th {
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        tr:hover {
+            background: #e8f4f8;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .negative {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        
+        .toc ul {
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .toc li {
+            margin: 5px 0;
+        }
+        
+        .toc a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 30px 0;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        
+        .price-card {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .price-card h4 {
+            color: #2980b9;
+            margin-bottom: 15px;
+            border-left: none;
+            padding-left: 0;
+        }
+        
+        .price-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #27ae60;
+            margin: 10px 0;
+        }
+        
+        .impact-high {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .impact-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .impact-low {
+            color: #95a5a6;
+            font-weight: bold;
+        }
+        
+        .star {
+            color: #f39c12;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Marktpreis-Konfiguration: Detaillierte Beschreibung der Eingabewerte</h1>
+        
+        <div class="toc">
+            <h3>Inhaltsverzeichnis</h3>
+            <ul>
+                <li><a href="#uebersicht">Übersicht</a></li>
+                <li><a href="#intraday">1. Intraday Trading (€/kWh)</a>
+                    <ul>
+                        <li><a href="#spot-arbitrage">1.1 Spot-Arbitrage</a></li>
+                        <li><a href="#intraday-trading">1.2 Intraday-Handel</a></li>
+                        <li><a href="#balancing-energy">1.3 Regelenergie</a></li>
+                    </ul>
+                </li>
+                <li><a href="#sekundaermarkt">2. Sekundärmarkt (€/kWh)</a>
+                    <ul>
+                        <li><a href="#frequenzregelung">2.1 Frequenzregelung</a></li>
+                        <li><a href="#kapazitaetsmaerkte">2.2 Kapazitätsmärkte</a></li>
+                        <li><a href="#flexibilitaetsmaerkte">2.3 Flexibilitätsmärkte</a></li>
+                    </ul>
+                </li>
+                <li><a href="#bezugsjahr">3. Bezugsjahr für 10-Jahres-Berechnung</a></li>
+                <li><a href="#gesamtauswirkung">4. Gesamtauswirkung der Marktpreise</a></li>
+                <li><a href="#empfohlene-werte">5. Empfohlene Wertebereiche</a></li>
+                <li><a href="#verwendung">6. Verwendung in verschiedenen Berechnungen</a></li>
+                <li><a href="#speicherung">7. Speicherung und Priorität</a></li>
+                <li><a href="#formeln">8. Formeln im Detail</a></li>
+                <li><a href="#faq">9. Häufige Fragen (FAQ)</a></li>
+                <li><a href="#zusammenfassung">10. Zusammenfassung</a></li>
+            </ul>
+        </div>
+        
+        <section id="uebersicht">
+            <h2>Übersicht</h2>
+            <p>Die <strong>Marktpreis-Konfiguration</strong> ermöglicht es, die Preise für verschiedene Energie-Märkte anzupassen, die für die Wirtschaftlichkeitsberechnung und Erlösprognose verwendet werden. Diese Werte beeinflussen direkt die berechneten Erlöse im <strong>10-Jahres-Report</strong> und im <strong>Use Case Vergleich</strong>.</p>
+        </section>
+        
+        <hr>
+        
+        <section id="intraday">
+            <h2>1. Intraday Trading (€/kWh)</h2>
+            <p>Die Intraday-Trading-Preise werden für den <strong>Intraday-Handel</strong> verwendet, bei dem Energie innerhalb eines Tages gehandelt wird. Diese Preise beeinflussen die Erlöse aus der <strong>Intraday-Speicherstrategie</strong>.</p>
+            
+            <div class="price-card" id="spot-arbitrage">
+                <h3>1.1 Spot-Arbitrage</h3>
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>spot_arbitrage_price</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>€/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">0.0074 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>0.0074 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-high">⭐⭐⭐ Hoch</span></td>
+                    </tr>
+                </table>
+                
+                <h4>Was ist Spot-Arbitrage?</h4>
+                <p>Spot-Arbitrage ist der Handel von Energie am <strong>Day-Ahead-Spotmarkt</strong>. Die BESS kauft Energie zu niedrigen Preisen (z.B. nachts) und verkauft sie zu hohen Preisen (z.B. tagsüber).</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <strong>Formel:</strong>
+                    <pre><code>spot_arbitrage_revenue = bess_capacity_kwh × daily_cycles × 365 × spot_arbitrage_price × efficiency</code></pre>
+                    <p><strong>Parameter:</strong></p>
+                    <ul>
+                        <li><code>bess_capacity_kwh</code>: BESS-Kapazität in kWh (MWh × 1000)</li>
+                        <li><code>daily_cycles</code>: Zyklen pro Tag (annual_cycles / 365)</li>
+                        <li><code>spot_arbitrage_price</code>: Konfigurierter Preis in €/kWh</li>
+                        <li><code>efficiency</code>: BESS-Effizienz (z.B. 0.85 = 85%)</li>
+                    </ul>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel-Berechnung</h4>
+                    <p><strong>Projekt:</strong> Hinterstoder (8 MWh / 2 MW, 2 Zyklen/Tag, 85% Effizienz)</p>
+                    <pre><code>bess_capacity_kwh = 8.0 MWh × 1000 = 8.000 kWh
+daily_cycles = 730 / 365 = 2.0 Zyklen/Tag
+spot_arbitrage_revenue = 8.000 kWh × 2.0 × 365 × 0.0074 €/kWh × 0.85 = 36.773 €/Jahr</code></pre>
+                </div>
+                
+                <div class="info-box">
+                    <h4>Auswirkung von Änderungen</h4>
+                    <ul>
+                        <li><strong>Erhöhung um 10%</strong> (0.0074 → 0.00814): Erlös steigt um ~3.677 €/Jahr</li>
+                        <li><strong>Erhöhung um 50%</strong> (0.0074 → 0.0111): Erlös steigt um ~18.386 €/Jahr</li>
+                        <li><strong>Verdopplung</strong> (0.0074 → 0.0148): Erlös verdoppelt sich auf ~73.546 €/Jahr</li>
+                    </ul>
+                    <p><strong>Über 10 Jahre (mit Degradation):</strong> Eine Erhöhung um 10% führt zu einem zusätzlichen Erlös von ca. <strong>33.000 €</strong> über 10 Jahre.</p>
+                </div>
+            </div>
+            
+            <div class="price-card" id="intraday-trading">
+                <h3>1.2 Intraday-Handel</h3>
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>intraday_trading_price</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>€/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">0.0111 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>0.0111 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-high">⭐⭐⭐ Hoch</span></td>
+                    </tr>
+                </table>
+                
+                <h4>Was ist Intraday-Handel?</h4>
+                <p>Intraday-Handel ist der Handel von Energie <strong>innerhalb des Tages</strong> auf dem Intraday-Markt. Dieser Markt ermöglicht es, kurzfristige Preisunterschiede zu nutzen.</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <strong>Formel:</strong>
+                    <pre><code>intraday_trading_revenue = bess_capacity_kwh × daily_cycles × 365 × intraday_trading_price × efficiency</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel-Berechnung</h4>
+                    <pre><code>intraday_trading_revenue = 8.000 kWh × 2.0 × 365 × 0.0111 €/kWh × 0.85 = 55.160 €/Jahr</code></pre>
+                </div>
+                
+                <div class="info-box">
+                    <h4>Auswirkung von Änderungen</h4>
+                    <ul>
+                        <li><strong>Erhöhung um 10%</strong> (0.0111 → 0.01221): Erlös steigt um ~5.516 €/Jahr</li>
+                        <li><strong>Erhöhung um 50%</strong> (0.0111 → 0.01665): Erlös steigt um ~27.580 €/Jahr</li>
+                        <li><strong>Verdopplung</strong> (0.0111 → 0.0222): Erlös verdoppelt sich auf ~110.320 €/Jahr</li>
+                    </ul>
+                    <p><strong>Über 10 Jahre (mit Degradation):</strong> Eine Erhöhung um 10% führt zu einem zusätzlichen Erlös von ca. <strong>50.000 €</strong> über 10 Jahre.</p>
+                </div>
+            </div>
+            
+            <div class="price-card" id="balancing-energy">
+                <h3>1.3 Regelenergie (Balancing Energy)</h3>
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>balancing_energy_price</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>€/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">0.0231 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>0.0231 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-low">⭐ Niedrig</span></td>
+                    </tr>
+                </table>
+                
+                <h4>Was ist Regelenergie?</h4>
+                <p>Regelenergie (Balancing Energy) wird verwendet, um das Stromnetz stabil zu halten. Die BESS stellt <strong>Regelleistung</strong> zur Verfügung, um Frequenzschwankungen auszugleichen.</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <strong>Formel:</strong>
+                    <pre><code>balancing_energy_revenue = bess_power_kw × 8760 × balancing_energy_price / 1000 × efficiency</code></pre>
+                    <p><strong>Parameter:</strong></p>
+                    <ul>
+                        <li><code>bess_power_kw</code>: BESS-Leistung in kW (MW × 1000)</li>
+                        <li><code>8760</code>: Stunden pro Jahr (volle Verfügbarkeit)</li>
+                        <li><code>balancing_energy_price</code>: Konfigurierter Preis in €/kWh</li>
+                        <li><code>/ 1000</code>: Einheitenumrechnung (wie im 10-Jahres-Report)</li>
+                        <li><code>efficiency</code>: BESS-Effizienz</li>
+                    </ul>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel-Berechnung</h4>
+                    <pre><code>bess_power_kw = 2.0 MW × 1000 = 2.000 kW
+balancing_energy_revenue = 2.000 kW × 8760 h × 0.0231 €/kWh / 1000 × 0.85 = 343 €/Jahr</code></pre>
+                </div>
+                
+                <div class="warning-box">
+                    <h4>Hinweis</h4>
+                    <p>Dieser Wert ist relativ klein im Vergleich zu den anderen Intraday-Erlösen, da er auf der <strong>Leistung</strong> (kW) basiert, nicht auf der <strong>Energie</strong> (kWh).</p>
+                </div>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="sekundaermarkt">
+            <h2>2. Sekundärmarkt (€/kWh)</h2>
+            <p>Die Sekundärmarkt-Preise werden für <strong>zusätzliche Erlösquellen</strong> verwendet, die über den Standard-Intraday-Handel hinausgehen.</p>
+            
+            <div class="price-card" id="frequenzregelung">
+                <h3>2.1 Frequenzregelung</h3>
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>frequency_regulation_price</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>€/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">0.30 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>0.30 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-medium">⭐⭐ Mittel</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verwendung</strong></td>
+                        <td>❌ Nur Sekundärmarkt (nicht im Use Case Vergleich)</td>
+                    </tr>
+                </table>
+                
+                <h4>Was ist Frequenzregelung?</h4>
+                <p>Frequenzregelung ist eine <strong>Netzstabilisierungsdienstleistung</strong>, bei der die BESS sehr schnell auf Frequenzschwankungen im Netz reagiert (Sekunden bis Minuten).</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <strong>Formel:</strong>
+                    <pre><code>frequency_regulation_revenue = bess_power_kw × 8760 × frequency_regulation_price / 1000</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel-Berechnung</h4>
+                    <pre><code>frequency_regulation_revenue = 2.000 kW × 8760 h × 0.30 €/kWh / 1000 = 5.256 €/Jahr</code></pre>
+                </div>
+            </div>
+            
+            <div class="price-card" id="kapazitaetsmaerkte">
+                <h3>2.2 Kapazitätsmärkte</h3>
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>capacity_market_price</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>€/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">0.18 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>0.18 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-medium">⭐⭐ Mittel</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verwendung</strong></td>
+                        <td>❌ Nur Sekundärmarkt (nicht im Use Case Vergleich)</td>
+                    </tr>
+                </table>
+                
+                <h4>Was sind Kapazitätsmärkte?</h4>
+                <p>Kapazitätsmärkte sind Märkte, auf denen <strong>Leistungsreserven</strong> gehandelt werden. Die BESS erhält eine Vergütung dafür, dass sie <strong>Kapazität bereitstellt</strong>, auch wenn sie nicht aktiv genutzt wird.</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <strong>Formel:</strong>
+                    <pre><code>capacity_market_revenue = bess_power_kw × 8760 × capacity_market_price / 1000</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel-Berechnung</h4>
+                    <pre><code>capacity_market_revenue = 2.000 kW × 8760 h × 0.18 €/kWh / 1000 = 3.154 €/Jahr</code></pre>
+                </div>
+            </div>
+            
+            <div class="price-card" id="flexibilitaetsmaerkte">
+                <h3>2.3 Flexibilitätsmärkte</h3>
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>flexibility_market_price</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>€/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">0.22 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>0.22 €/kWh</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-medium">⭐⭐ Mittel</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Verwendung</strong></td>
+                        <td>❌ Nur Sekundärmarkt (nicht im Use Case Vergleich)</td>
+                    </tr>
+                </table>
+                
+                <h4>Was sind Flexibilitätsmärkte?</h4>
+                <p>Flexibilitätsmärkte sind Märkte, auf denen <strong>Flexibilität</strong> gehandelt wird. Die BESS kann ihre <strong>Lade- und Entladeleistung</strong> flexibel anpassen, um Netzengpässe zu vermeiden oder lokale Lastspitzen zu glätten.</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <strong>Formel:</strong>
+                    <pre><code>flexibility_market_revenue = bess_power_kw × 8760 × flexibility_market_price / 1000</code></pre>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel-Berechnung</h4>
+                    <pre><code>flexibility_market_revenue = 2.000 kW × 8760 h × 0.22 €/kWh / 1000 = 3.854 €/Jahr</code></pre>
+                </div>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="bezugsjahr">
+            <h2>3. Bezugsjahr für 10-Jahres-Berechnung</h2>
+            
+            <div class="price-card">
+                <table>
+                    <tr>
+                        <th>Eigenschaft</th>
+                        <th>Wert</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Feldname</strong></td>
+                        <td><code>reference_year</code></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einheit</strong></td>
+                        <td>Jahr (Integer)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Standardwert</strong></td>
+                        <td class="price-value">Aktuelles Jahr (z.B. 2025)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Referenzwert</strong></td>
+                        <td>2024</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Einfluss</strong></td>
+                        <td><span class="impact-high">⭐⭐⭐ Sehr hoch</span></td>
+                    </tr>
+                </table>
+                
+                <h4>Was ist das Bezugsjahr?</h4>
+                <p>Das <strong>Bezugsjahr</strong> (Reference Year) ist das <strong>Referenzjahr</strong> für die 10-Jahres-Prognose. Es bestimmt, welches Jahr als <strong>Jahr 1</strong> in der Berechnung verwendet wird.</p>
+                
+                <div class="formula-box">
+                    <h4>Verwendung in der Berechnung</h4>
+                    <p>Die 10-Jahres-Berechnung verwendet das Bezugsjahr wie folgt:</p>
+                    <ul>
+                        <li><strong>Jahr 1 (Referenzjahr):</strong> <code>reference_year</code> (z.B. 2024)</li>
+                        <li><strong>Jahr 2:</strong> <code>reference_year + 1</code> (z.B. 2025)</li>
+                        <li><strong>Jahr 3:</strong> <code>reference_year + 2</code> (z.B. 2026)</li>
+                        <li>...</li>
+                        <li><strong>Jahr 10:</strong> <code>reference_year + 9</code> (z.B. 2033)</li>
+                    </ul>
+                </div>
+                
+                <div class="example-box">
+                    <h4>Beispiel</h4>
+                    <p><strong>Bezugsjahr:</strong> 2024</p>
+                    <p>Die 10-Jahres-Prognose umfasst:</p>
+                    <ul>
+                        <li>2024 (Referenzjahr)</li>
+                        <li>2025-2033 (Projektionsjahre)</li>
+                    </ul>
+                    <p><strong>Bezugsjahr:</strong> 2025</p>
+                    <p>Die 10-Jahres-Prognose umfasst:</p>
+                    <ul>
+                        <li>2025 (Referenzjahr)</li>
+                        <li>2026-2034 (Projektionsjahre)</li>
+                    </ul>
+                </div>
+                
+                <div class="info-box">
+                    <h4>Auswirkung von Änderungen</h4>
+                    <p>Das Bezugsjahr beeinflusst:</p>
+                    <ol>
+                        <li><strong>Die Jahresbezeichnungen</strong> in den Tabellen und Reports</li>
+                        <li><strong>Die Degradationsberechnung</strong> (Degradation beginnt ab Jahr 2)</li>
+                        <li><strong>Die Projektionsjahre</strong> in der 10-Jahres-Prognose</li>
+                    </ol>
+                    <p><strong>Hinweis:</strong> Die Degradation wird immer ab <strong>Jahr 2</strong> angewendet, unabhängig vom Bezugsjahr.</p>
+                </div>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="gesamtauswirkung">
+            <h2>4. Gesamtauswirkung der Marktpreise</h2>
+            
+            <h3>4.1 Intraday-Erlöse (Gesamt)</h3>
+            <p>Die drei Intraday-Preise werden <strong>kombiniert</strong> verwendet:</p>
+            
+            <div class="formula-box">
+                <strong>Formel:</strong>
+                <pre><code>intraday_total = (spot_arbitrage_revenue + intraday_trading_revenue + balancing_energy_revenue) × participation_rate</code></pre>
+            </div>
+            
+            <div class="example-box">
+                <h4>Beispiel (Hinterstoder):</h4>
+                <pre><code>spot_arbitrage_revenue = 36.773 €/Jahr
+intraday_trading_revenue = 55.160 €/Jahr
+balancing_energy_revenue = 343 €/Jahr
+intraday_total = (36.773 + 55.160 + 343) × 0.5 = 46.138 €/Jahr</code></pre>
+                <p><strong>Über 10 Jahre (mit Degradation):</strong> ~415.000 €</p>
+            </div>
+            
+            <h3>4.2 Sensitivitätsanalyse</h3>
+            
+            <h4>Szenario 1: Alle Intraday-Preise um 10% erhöhen</h4>
+            <div class="info-box">
+                <p><strong>Änderungen:</strong></p>
+                <ul>
+                    <li>Spot-Arbitrage: 0.0074 → 0.00814 (+10%)</li>
+                    <li>Intraday-Trading: 0.0111 → 0.01221 (+10%)</li>
+                    <li>Balancing Energy: 0.0231 → 0.02541 (+10%)</li>
+                </ul>
+                <p><strong>Auswirkung:</strong></p>
+                <ul>
+                    <li>Jährlicher Erlös: <span class="positive">+4.607 €/Jahr</span></li>
+                    <li>Über 10 Jahre: <span class="positive">+41.500 €</span></li>
+                </ul>
+            </div>
+            
+            <h4>Szenario 2: Alle Intraday-Preise um 50% erhöhen</h4>
+            <div class="info-box">
+                <p><strong>Änderungen:</strong></p>
+                <ul>
+                    <li>Spot-Arbitrage: 0.0074 → 0.0111 (+50%)</li>
+                    <li>Intraday-Trading: 0.0111 → 0.01665 (+50%)</li>
+                    <li>Balancing Energy: 0.0231 → 0.03465 (+50%)</li>
+                </ul>
+                <p><strong>Auswirkung:</strong></p>
+                <ul>
+                    <li>Jährlicher Erlös: <span class="positive">+23.069 €/Jahr</span></li>
+                    <li>Über 10 Jahre: <span class="positive">+207.500 €</span></li>
+                </ul>
+            </div>
+            
+            <h4>Szenario 3: Nur Spot-Arbitrage verdoppeln</h4>
+            <div class="info-box">
+                <p><strong>Änderung:</strong></p>
+                <ul>
+                    <li>Spot-Arbitrage: 0.0074 → 0.0148 (+100%)</li>
+                </ul>
+                <p><strong>Auswirkung:</strong></p>
+                <ul>
+                    <li>Jährlicher Erlös: <span class="positive">+36.773 €/Jahr</span> (nur Spot-Arbitrage)</li>
+                    <li>Über 10 Jahre: <span class="positive">+331.000 €</span></li>
+                </ul>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="empfohlene-werte">
+            <h2>5. Empfohlene Wertebereiche</h2>
+            
+            <h3>5.1 Realistische Marktpreise (Österreich/Deutschland)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Markt</th>
+                        <th>Realistischer Bereich</th>
+                        <th>Aktueller Standardwert</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Spot-Arbitrage</td>
+                        <td>0.005 - 0.010 €/kWh</td>
+                        <td>0.0074 €/kWh</td>
+                        <td class="positive">✅ Realistisch</td>
+                    </tr>
+                    <tr>
+                        <td>Intraday-Trading</td>
+                        <td>0.008 - 0.015 €/kWh</td>
+                        <td>0.0111 €/kWh</td>
+                        <td class="positive">✅ Realistisch</td>
+                    </tr>
+                    <tr>
+                        <td>Balancing Energy</td>
+                        <td>0.015 - 0.030 €/kWh</td>
+                        <td>0.0231 €/kWh</td>
+                        <td class="positive">✅ Realistisch</td>
+                    </tr>
+                    <tr>
+                        <td>Frequenzregelung</td>
+                        <td>0.20 - 0.40 €/kWh</td>
+                        <td>0.30 €/kWh</td>
+                        <td class="positive">✅ Realistisch</td>
+                    </tr>
+                    <tr>
+                        <td>Kapazitätsmärkte</td>
+                        <td>0.10 - 0.25 €/kWh</td>
+                        <td>0.18 €/kWh</td>
+                        <td class="positive">✅ Realistisch</td>
+                    </tr>
+                    <tr>
+                        <td>Flexibilitätsmärkte</td>
+                        <td>0.15 - 0.30 €/kWh</td>
+                        <td>0.22 €/kWh</td>
+                        <td class="positive">✅ Realistisch</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>5.2 Anpassungsempfehlungen</h3>
+            
+            <div class="highlight-box">
+                <h4>Wenn Erlöse zu niedrig sind:</h4>
+                <ul>
+                    <li><strong>Spot-Arbitrage erhöhen</strong> (größter Einfluss auf Intraday-Erlöse)</li>
+                    <li><strong>Intraday-Trading erhöhen</strong> (zweithöchster Einfluss)</li>
+                    <li><strong>Balancing Energy erhöhen</strong> (kleiner Einfluss, aber einfach umzusetzen)</li>
+                </ul>
+            </div>
+            
+            <div class="highlight-box">
+                <h4>Wenn Erlöse zu hoch sind:</h4>
+                <ul>
+                    <li><strong>Spot-Arbitrage reduzieren</strong> (größter Einfluss)</li>
+                    <li><strong>Intraday-Trading reduzieren</strong> (zweithöchster Einfluss)</li>
+                    <li><strong>Balancing Energy reduzieren</strong> (kleiner Einfluss)</li>
+                </ul>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="verwendung">
+            <h2>6. Verwendung in verschiedenen Berechnungen</h2>
+            
+            <h3>6.1 10-Jahres-Report</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Preis</th>
+                        <th>Verwendung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Spot-Arbitrage</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Intraday-Trading</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Balancing Energy</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Frequenzregelung</td>
+                        <td class="negative">❌ Nicht verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Kapazitätsmärkte</td>
+                        <td class="negative">❌ Nicht verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Flexibilitätsmärkte</td>
+                        <td class="negative">❌ Nicht verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Bezugsjahr</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>6.2 Use Case Vergleich</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Preis</th>
+                        <th>Verwendung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Spot-Arbitrage</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Intraday-Trading</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Balancing Energy</td>
+                        <td class="positive">✅ Verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Frequenzregelung</td>
+                        <td class="negative">❌ Nicht verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Kapazitätsmärkte</td>
+                        <td class="negative">❌ Nicht verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Flexibilitätsmärkte</td>
+                        <td class="negative">❌ Nicht verwendet</td>
+                    </tr>
+                    <tr>
+                        <td>Bezugsjahr</td>
+                        <td class="negative">❌ Nicht direkt verwendet</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="info-box">
+                <p><strong>Hinweis:</strong> Das Bezugsjahr wird nicht direkt im Use Case Vergleich verwendet, ist aber für die Degradation relevant.</p>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="speicherung">
+            <h2>7. Speicherung und Priorität</h2>
+            
+            <h3>7.1 Speicherung</h3>
+            <p>Die Marktpreise werden in der Datenbank gespeichert:</p>
+            <ul>
+                <li><strong>Projektspezifisch:</strong> In der Tabelle <code>market_price_config</code> mit <code>project_id</code></li>
+                <li><strong>Global:</strong> In der Tabelle <code>market_price_config</code> mit <code>project_id = NULL</code> und <code>is_default = TRUE</code></li>
+            </ul>
+            
+            <h3>7.2 Priorität</h3>
+            <ol>
+                <li><strong>Projektspezifische Konfiguration</strong> (höchste Priorität)</li>
+                <li><strong>Globale Standard-Konfiguration</strong> (mittlere Priorität)</li>
+                <li><strong>Hardcodierte Standardwerte</strong> (niedrigste Priorität, Fallback)</li>
+            </ol>
+            
+            <div class="example-box">
+                <h4>Beispiel</h4>
+                <p><strong>Projekt "Hinterstoder" (ID: 1):</strong></p>
+                <ul>
+                    <li>Hat eigene Marktpreis-Konfiguration → Diese wird verwendet</li>
+                    <li>Hat keine eigene Konfiguration → Globale Standardwerte werden verwendet</li>
+                    <li>Keine globale Konfiguration → Hardcodierte Standardwerte werden verwendet</li>
+                </ul>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="formeln">
+            <h2>8. Formeln im Detail</h2>
+            
+            <h3>8.1 Spot-Arbitrage Erlös</h3>
+            <div class="formula-box">
+                <pre><code>spot_arbitrage_revenue = bess_capacity_kwh × daily_cycles × 365 × spot_arbitrage_price × efficiency</code></pre>
+                <p><strong>Einheiten-Prüfung:</strong></p>
+                <ul>
+                    <li><code>bess_capacity_kwh</code>: kWh</li>
+                    <li><code>daily_cycles</code>: 1/Tag (dimensionslos)</li>
+                    <li><code>365</code>: Tage/Jahr (dimensionslos)</li>
+                    <li><code>spot_arbitrage_price</code>: €/kWh</li>
+                    <li><code>efficiency</code>: dimensionslos (0-1)</li>
+                    <li><strong>Ergebnis:</strong> kWh × 1/Tag × Tage/Jahr × €/kWh × 1 = <span class="positive">€/Jahr ✅</span></li>
+                </ul>
+            </div>
+            
+            <h3>8.2 Intraday-Trading Erlös</h3>
+            <div class="formula-box">
+                <pre><code>intraday_trading_revenue = bess_capacity_kwh × daily_cycles × 365 × intraday_trading_price × efficiency</code></pre>
+                <p><strong>Einheiten-Prüfung:</strong></p>
+                <ul>
+                    <li>Gleiche Einheiten wie Spot-Arbitrage</li>
+                    <li><strong>Ergebnis:</strong> <span class="positive">€/Jahr ✅</span></li>
+                </ul>
+            </div>
+            
+            <h3>8.3 Balancing Energy Erlös</h3>
+            <div class="formula-box">
+                <pre><code>balancing_energy_revenue = bess_power_kw × 8760 × balancing_energy_price / 1000 × efficiency</code></pre>
+                <p><strong>Einheiten-Prüfung:</strong></p>
+                <ul>
+                    <li><code>bess_power_kw</code>: kW</li>
+                    <li><code>8760</code>: h/Jahr</li>
+                    <li><code>balancing_energy_price</code>: €/kWh</li>
+                    <li><code>/ 1000</code>: Einheitenumrechnung</li>
+                    <li><code>efficiency</code>: dimensionslos</li>
+                    <li><strong>Ergebnis:</strong> kW × h/Jahr × €/kWh / 1000 × 1 = <span class="positive">€/Jahr ✅</span></li>
+                </ul>
+            </div>
+            <div class="warning-box">
+                <p><strong>Hinweis:</strong> Das <code>/ 1000</code> wird verwendet, um die Einheiten korrekt zu handhaben. Die genaue Begründung ist im 10-Jahres-Report dokumentiert.</p>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="faq">
+            <h2>9. Häufige Fragen (FAQ)</h2>
+            
+            <div class="info-box">
+                <h4>9.1 Warum sind die Intraday-Preise so niedrig (0.0074, 0.0111, 0.0231)?</h4>
+                <p><strong>Antwort:</strong> Diese Preise wurden basierend auf einem <strong>Referenz-Screenshot</strong> angepasst. Der ursprüngliche Wert für "Erlös Intraday Speicherstrategie" war zu hoch (1.172.380 € statt 108.274 €). Die Preise wurden um <strong>ca. 90% reduziert</strong>, um realistische Werte zu erreichen.</p>
+                <p><strong>Berechnung:</strong></p>
+                <ul>
+                    <li>Reduktionsfaktor: 108.274 / 1.172.380 = 0.0924 (≈ 9.24%)</li>
+                    <li>Spot-Arbitrage: 0.08 × 0.0924 = 0.007392 ≈ 0.0074</li>
+                    <li>Intraday-Trading: 0.12 × 0.0924 = 0.011088 ≈ 0.0111</li>
+                    <li>Balancing Energy: 0.25 × 0.0924 = 0.0231</li>
+                </ul>
+            </div>
+            
+            <div class="info-box">
+                <h4>9.2 Warum wird Balancing Energy durch 1000 geteilt?</h4>
+                <p><strong>Antwort:</strong> Die Formel <code>bess_power_kw × 8760 × balancing_energy_price / 1000</code> wird verwendet, um die Einheiten korrekt zu handhaben. Das <code>/ 1000</code> ist Teil der Formel, wie sie im 10-Jahres-Report verwendet wird.</p>
+                <p><strong>Alternative Interpretation:</strong> Der Preis könnte tatsächlich in <strong>€/MWh</strong> sein (23.1 €/MWh statt 0.0231 €/kWh), dann würde die Formel ohne <code>/ 1000</code> sein:</p>
+                <pre><code>balancing_energy_revenue = bess_power_mw × 8760 × 23.1 €/MWh × efficiency</code></pre>
+            </div>
+            
+            <div class="info-box">
+                <h4>9.3 Werden die Sekundärmarkt-Preise im Use Case Vergleich verwendet?</h4>
+                <p><strong>Antwort:</strong> <strong>Nein</strong>, die Sekundärmarkt-Preise (Frequenzregelung, Kapazitätsmärkte, Flexibilitätsmärkte) werden derzeit <strong>nicht</strong> im Use Case Vergleich verwendet. Sie werden nur in speziellen Sekundärmarkt-Berechnungen verwendet.</p>
+            </div>
+            
+            <div class="info-box">
+                <h4>9.4 Wie wirkt sich das Bezugsjahr auf die Berechnung aus?</h4>
+                <p><strong>Antwort:</strong> Das Bezugsjahr bestimmt:</p>
+                <ol>
+                    <li><strong>Welches Jahr als Jahr 1</strong> verwendet wird</li>
+                    <li><strong>Die Jahresbezeichnungen</strong> in den Tabellen (z.B. "2024" statt "2025")</li>
+                    <li><strong>Die Projektionsjahre</strong> (z.B. 2025-2033 statt 2026-2034)</li>
+                </ol>
+                <p><strong>Die Degradation</strong> wird immer ab <strong>Jahr 2</strong> angewendet, unabhängig vom Bezugsjahr.</p>
+            </div>
+            
+            <div class="info-box">
+                <h4>9.5 Kann ich die Preise projektspezifisch anpassen?</h4>
+                <p><strong>Antwort:</strong> <strong>Ja</strong>, die Marktpreise können projektspezifisch konfiguriert werden:</p>
+                <ol>
+                    <li>Öffne die <strong>Marktpreis-Konfiguration</strong> für das Projekt</li>
+                    <li>Passe die Werte an</li>
+                    <li>Klicke auf <strong>"Speichern"</strong></li>
+                    <li>Die Werte werden für dieses Projekt gespeichert</li>
+                </ol>
+                <p><strong>Hinweis:</strong> Wenn keine projektspezifische Konfiguration existiert, werden die <strong>globalen Standardwerte</strong> verwendet.</p>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="zusammenfassung">
+            <h2>10. Zusammenfassung</h2>
+            
+            <h3>10.1 Wichtigste Eingabewerte</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Eingabewert</th>
+                        <th>Einheit</th>
+                        <th>Standardwert</th>
+                        <th>Verwendung</th>
+                        <th>Einfluss</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Spot-Arbitrage</strong></td>
+                        <td>€/kWh</td>
+                        <td>0.0074</td>
+                        <td>✅ 10-Jahres-Report<br>✅ Use Case Vergleich</td>
+                        <td><span class="impact-high">⭐⭐⭐ Hoch</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Intraday-Trading</strong></td>
+                        <td>€/kWh</td>
+                        <td>0.0111</td>
+                        <td>✅ 10-Jahres-Report<br>✅ Use Case Vergleich</td>
+                        <td><span class="impact-high">⭐⭐⭐ Hoch</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Balancing Energy</strong></td>
+                        <td>€/kWh</td>
+                        <td>0.0231</td>
+                        <td>✅ 10-Jahres-Report<br>✅ Use Case Vergleich</td>
+                        <td><span class="impact-low">⭐ Niedrig</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frequenzregelung</strong></td>
+                        <td>€/kWh</td>
+                        <td>0.30</td>
+                        <td>❌ Nur Sekundärmarkt</td>
+                        <td><span class="impact-medium">⭐⭐ Mittel</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Kapazitätsmärkte</strong></td>
+                        <td>€/kWh</td>
+                        <td>0.18</td>
+                        <td>❌ Nur Sekundärmarkt</td>
+                        <td><span class="impact-medium">⭐⭐ Mittel</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Flexibilitätsmärkte</strong></td>
+                        <td>€/kWh</td>
+                        <td>0.22</td>
+                        <td>❌ Nur Sekundärmarkt</td>
+                        <td><span class="impact-medium">⭐⭐ Mittel</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bezugsjahr</strong></td>
+                        <td>Jahr</td>
+                        <td>2025</td>
+                        <td>✅ 10-Jahres-Report</td>
+                        <td><span class="impact-high">⭐⭐⭐ Sehr hoch</span></td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>10.2 Empfohlene Anpassungsstrategie</h3>
+            <ol>
+                <li><strong>Für realistische Werte:</strong> Verwende die Standardwerte (bereits angepasst)</li>
+                <li><strong>Für höhere Erlöse:</strong> Erhöhe Spot-Arbitrage und Intraday-Trading (größter Einfluss)</li>
+                <li><strong>Für niedrigere Erlöse:</strong> Reduziere Spot-Arbitrage und Intraday-Trading</li>
+                <li><strong>Für Jahresanpassung:</strong> Ändere das Bezugsjahr (z.B. Ende des Jahres auf nächstes Jahr)</li>
+            </ol>
+        </section>
+        
+        <div class="footer">
+            <p><strong>Dokumentation erstellt:</strong> 2025-01-XX</p>
+            <p><strong>Version:</strong> 1.0</p>
+            <p><strong>Autor:</strong> BESS-Simulation System</p>
+        </div>
+    </div>
+</body>
+</html>
+

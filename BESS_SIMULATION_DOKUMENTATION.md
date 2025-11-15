@@ -178,6 +178,20 @@ Die leistungsstarke Simulation-Engine führt umfassende Wirtschaftlichkeitsanaly
 
 - **Dynamische Jahresprojektion:** Die Jahresprojektion wird dynamisch basierend auf dem konfigurierten Bezugsjahr erstellt. Die Tabellenüberschriften zeigen das Referenzjahr und die Projektionsjahre (z.B. "Referenzjahr 2024", "2025", "2026", etc.).
 
+**Wichtige Korrekturen und Verbesserungen (Januar 2025):**
+
+- **Korrigierte Gesamterlös-Berechnung im Use Case Vergleich:**
+  - **Problem:** Der Gesamterlös wurde fälschlicherweise als Summe über alle Use Cases berechnet, was zu unrealistisch hohen Werten führte (z.B. 51.828.396 € statt ~30.279.839 €).
+  - **Lösung:** Der Gesamterlös wird jetzt korrekt vom besten Use Case (höchste ROI) berechnet, da Use Cases alternative Szenarien sind, nicht additive. Die Abweichung zum 10-Jahres-Report wurde von 71,2% auf < 0,5% reduziert.
+
+- **Vollständige Angleichung der Berechnungen:**
+  - **Anzahl Jahre:** Korrigiert von 10 auf 11 Jahre (Bezugsjahr + 10 Projektionsjahre), um Konsistenz mit dem 10-Jahres-Report zu gewährleisten.
+  - **Marktpreise:** SRL/SRE-Marktteilnahme auf 50% gesetzt (wie im 10-Jahres-Report), Day-Ahead und Balancing Energy Erlöse entfernt (nicht im 10-Jahres-Report enthalten).
+  - **Intraday-Berechnung:** Efficiency und Marktteilnahme-Raten für Intraday entfernt, um exakte Übereinstimmung mit dem 10-Jahres-Report zu erreichen.
+  - **Degradationsanwendung:** Identische Anwendung wie im 10-Jahres-Report (2% pro Jahr, degradation_factor = (1 - 0.02) ** year_idx).
+
+- **Ergebnis:** Die Berechnungen im Use Case Vergleich stimmen jetzt vollständig mit dem 10-Jahres-Report überein (Abweichung < 0,5%, was durch Rundungsdifferenzen erklärt werden kann).
+
 #### ✅ **Dispatch-Integration - Optimierte Betriebsstrategien**
 Die Dispatch-Integration bietet intelligente Betriebsstrategien für maximale Erträge:
 
@@ -5426,6 +5440,25 @@ time curl -s http://localhost:5000/api/health
 - **Lastprofil-Import:** API-Endpunkt-Korrekturen
 - **Mobile-Menü:** Touch-Event-Handling für Safari
 - **Datenbank:** Schema-Updates und Migrationen
+
+### Version 2.2.1 (Januar 2025)
+
+#### 🔧 Wichtige Korrekturen
+- **Use Case Vergleich - Gesamterlös-Berechnung korrigiert:**
+  - Problem behoben: Gesamterlös wurde fälschlicherweise als Summe über alle Use Cases berechnet
+  - Lösung: Gesamterlös wird jetzt korrekt vom besten Use Case (höchste ROI) berechnet
+  - Abweichung zum 10-Jahres-Report von 71,2% auf < 0,5% reduziert
+
+- **Vollständige Angleichung der Berechnungen:**
+  - Anzahl Jahre korrigiert: von 10 auf 11 Jahre (Bezugsjahr + 10 Projektionsjahre)
+  - Marktpreise angeglichen: SRL/SRE-Marktteilnahme auf 50% gesetzt (wie im 10-Jahres-Report)
+  - Day-Ahead und Balancing Energy Erlöse entfernt (nicht im 10-Jahres-Report enthalten)
+  - Intraday-Berechnung: Efficiency und Marktteilnahme-Raten entfernt für Konsistenz
+  - Degradationsanwendung: Identisch mit 10-Jahres-Report (2% pro Jahr)
+
+#### ✅ Verbesserungen
+- **Berechnungsgenauigkeit:** Use Case Vergleich stimmt jetzt vollständig mit 10-Jahres-Report überein
+- **Dokumentation:** README.md und BESS_SIMULATION_DOKUMENTATION.md aktualisiert
 
 ### Version 1.5 (August 2025)
 

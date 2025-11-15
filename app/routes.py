@@ -2835,13 +2835,24 @@ def api_economic_analysis(project_id):
                         'hp_power': project.hp_power or 0
                     }
                     
-                    # Use Cases aus der Datenbank laden
+                    # Use Cases aus der Datenbank laden (NUR für dieses Projekt!)
                     from models import UseCase
-                    db_use_cases = UseCase.query.all()
-                    print(f"🔍 {len(db_use_cases)} Use Cases für erweiterte Analyse geladen")
+                    db_use_cases = UseCase.query.filter_by(project_id=project_id).all()
+                    print(f"OK: {len(db_use_cases)} Use Cases fuer Projekt {project_id} (Name: {project.name}) aus der Datenbank geladen")
                     
-                    # Erweiterte Analyse durchführen
-                    enhanced_analyzer = EnhancedEconomicAnalyzer()
+                    # Debug: Zeige alle gefundenen Use Cases
+                    if db_use_cases:
+                        for uc in db_use_cases:
+                            print(f"  - Use Case: {uc.name} (ID: {uc.id}, Projekt-ID: {uc.project_id})")
+                    else:
+                        print(f"WARNUNG: Keine Use Cases fuer Projekt {project_id} gefunden! Verwende Standard-Use Cases als Fallback.")
+                    
+                    # WICHTIG: db_use_cases explizit als Liste uebergeben (auch wenn leer)
+                    if db_use_cases is None:
+                        db_use_cases = []
+                    
+                    # Erweiterte Analyse durchführen (mit project_id für Marktpreise)
+                    enhanced_analyzer = EnhancedEconomicAnalyzer(project_id=project_id)
                     enhanced_analysis_results = enhanced_analyzer.generate_comprehensive_analysis(project_data, db_use_cases)
                     
                     # Erweiterte Ergebnisse zur Response hinzufügen (reduzierte Datenmenge)
@@ -2956,10 +2967,23 @@ def api_enhanced_economic_analysis(project_id):
             'hp_power': project.hp_power or 0
         }
         
-        # Use Cases aus der Datenbank laden
+        # Use Cases aus der Datenbank laden (NUR für dieses Projekt!)
         from models import UseCase
-        db_use_cases = UseCase.query.all()
-        print(f"🔍 {len(db_use_cases)} Use Cases aus der Datenbank geladen")
+        db_use_cases = UseCase.query.filter_by(project_id=project_id).all()
+        print(f"OK: {len(db_use_cases)} Use Cases fuer Projekt {project_id} (Name: {project.name}) aus der Datenbank geladen")
+        
+        # Debug: Zeige alle gefundenen Use Cases
+        if db_use_cases:
+            for uc in db_use_cases:
+                print(f"  - Use Case: {uc.name} (ID: {uc.id}, Projekt-ID: {uc.project_id})")
+        else:
+            print(f"WARNUNG: Keine Use Cases fuer Projekt {project_id} gefunden! Verwende Standard-Use Cases als Fallback.")
+            print(f"TIP: Erstellen Sie projektspezifische Use Cases im Use Case Manager fuer genauere Ergebnisse.")
+        
+        # WICHTIG: db_use_cases explizit als Liste uebergeben (auch wenn leer)
+        # Dies stellt sicher, dass die Logik in generate_comprehensive_analysis korrekt funktioniert
+        if db_use_cases is None:
+            db_use_cases = []
         
         # Erweiterte Analyse durchführen (mit project_id für Marktpreise)
         from enhanced_economic_analysis import EnhancedEconomicAnalyzer
@@ -6348,24 +6372,53 @@ def api_create_use_case():
         if not project:
             return jsonify({'success': False, 'error': 'Projekt nicht gefunden'}), 404
         
+        # Validierung: Name ist erforderlich
+        if not data.get('name') or not data.get('name').strip():
+            return jsonify({'success': False, 'error': 'Use Case Name ist erforderlich'}), 400
+        
+        # Prüfen, ob bereits ein Use Case mit diesem Namen für dieses Projekt existiert
+        existing_use_case = UseCase.query.filter_by(
+            project_id=project_id,
+            name=data['name'].strip()
+        ).first()
+        if existing_use_case:
+            return jsonify({'success': False, 'error': f'Ein Use Case mit dem Namen "{data["name"]}" existiert bereits für dieses Projekt'}), 400
+        
+        # Numerische Werte sicher konvertieren
+        try:
+            pv_power_mwp = float(data.get('pv_power_mwp', 0.0) or 0.0)
+            hydro_power_kw = float(data.get('hydro_power_kw', 0.0) or 0.0)
+            hydro_energy_mwh_year = float(data.get('hydro_energy_mwh_year', 0.0) or 0.0)
+            wind_power_kw = float(data.get('wind_power_kw', 0.0) or 0.0)
+            bess_size_mwh = float(data.get('bess_size_mwh', 0.0) or 0.0)
+            bess_power_mw = float(data.get('bess_power_mw', 0.0) or 0.0)
+        except (ValueError, TypeError) as e:
+            return jsonify({'success': False, 'error': f'Ungültige numerische Werte: {str(e)}'}), 400
+        
         use_case = UseCase(
             project_id=project_id,
-            name=data['name'],
-            description=data.get('description', ''),
+            name=data['name'].strip(),
+            description=data.get('description', '').strip(),
             scenario_type=data.get('scenario_type', 'consumption_only'),
-            pv_power_mwp=data.get('pv_power_mwp', 0.0),
-            hydro_power_kw=data.get('hydro_power_kw', 0.0),
-            hydro_energy_mwh_year=data.get('hydro_energy_mwh_year', 0.0),
-            wind_power_kw=data.get('wind_power_kw', 0.0),
-            bess_size_mwh=data.get('bess_size_mwh', 0.0),
-            bess_power_mw=data.get('bess_power_mw', 0.0)
+            pv_power_mwp=pv_power_mwp,
+            hydro_power_kw=hydro_power_kw,
+            hydro_energy_mwh_year=hydro_energy_mwh_year,
+            wind_power_kw=wind_power_kw,
+            bess_size_mwh=bess_size_mwh,
+            bess_power_mw=bess_power_mw
         )
         db.session.add(use_case)
         db.session.commit()
+        
+        print(f"✅ Use Case erfolgreich erstellt: ID={use_case.id}, Name={use_case.name}, Projekt={project_id}")
         return jsonify({'success': True, 'id': use_case.id}), 201
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': f'Fehler beim Erstellen des Use Cases: {str(e)}'}), 500
+        error_msg = str(e)
+        print(f"❌ Fehler beim Erstellen des Use Cases: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Fehler beim Erstellen des Use Cases: {error_msg}'}), 500
 
 @main_bp.route('/api/use-cases/<int:use_case_id>')
 def api_get_use_case(use_case_id):

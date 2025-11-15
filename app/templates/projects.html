@@ -410,10 +410,41 @@ function openUseCaseManagerForProject(projectId) {
     if (modal) {
         modal.classList.remove('hidden');
         loadExistingUseCases();
+        
+        // Projekt-Daten laden und in Formular vorausfüllen
+        loadProjectDataForUseCase(projectId);
+        
         console.log('Modal für Projekt', projectId, 'geöffnet');
     } else {
         console.error('Modal nicht gefunden!');
     }
+}
+
+function loadProjectDataForUseCase(projectId) {
+    // Lade Projekt-Daten und fülle BESS-Parameter vor
+    fetch(`/api/projects/${projectId}`)
+        .then(response => response.json())
+        .then(project => {
+            if (project && project.success !== false) {
+                // BESS-Parameter vorausfüllen (wenn vorhanden)
+                const bessSizeField = document.getElementById('bessSize');
+                const bessPowerField = document.getElementById('bessPower');
+                
+                if (bessSizeField && project.bess_size) {
+                    // Konvertiere kWh zu MWh
+                    bessSizeField.value = (project.bess_size / 1000).toFixed(1);
+                }
+                if (bessPowerField && project.bess_power) {
+                    // Konvertiere kW zu MW
+                    bessPowerField.value = (project.bess_power / 1000).toFixed(1);
+                }
+                
+                console.log('Projekt-Daten für Use Case geladen:', project);
+            }
+        })
+        .catch(error => {
+            console.warn('Konnte Projekt-Daten nicht laden (nicht kritisch):', error);
+        });
 }
 
 function openUseCaseManager() {
@@ -567,8 +598,17 @@ function loadExistingUseCases() {
 function createUseCase(event) {
     event.preventDefault();
     
+    // Prüfen, ob ein Projekt ausgewählt ist
+    if (!currentProjectId) {
+        alert('Bitte wählen Sie zuerst ein Projekt aus, bevor Sie einen Use Case erstellen.');
+        return;
+    }
+    
     const formData = new FormData(event.target);
     const useCaseData = Object.fromEntries(formData.entries());
+    
+    // Projekt-ID hinzufügen (WICHTIG!)
+    useCaseData.project_id = currentProjectId;
     
     // Numerische Werte konvertieren
     useCaseData.pv_power_mwp = parseFloat(useCaseData.pv_power_mwp) || 0.0;
@@ -577,6 +617,10 @@ function createUseCase(event) {
     useCaseData.bess_size_mwh = parseFloat(useCaseData.bess_size_mwh) || 0.0;
     useCaseData.bess_power_mw = parseFloat(useCaseData.bess_power_mw) || 0.0;
     
+    console.log('Erstelle Use Case für Projekt:', currentProjectId, 'Daten:', useCaseData);
+    
+    console.log('Sende Use Case Daten:', useCaseData);
+    
     fetch('/api/use-cases', {
         method: 'POST',
         headers: {
@@ -584,7 +628,15 @@ function createUseCase(event) {
         },
         body: JSON.stringify(useCaseData)
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('API Response Status:', response.status);
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('Use Case erfolgreich erstellt!');
@@ -597,12 +649,12 @@ function createUseCase(event) {
                 loadProjects();
             }
         } else {
-            alert('Fehler beim Erstellen des Use Cases: ' + data.error);
+            alert('Fehler beim Erstellen des Use Cases: ' + (data.error || 'Unbekannter Fehler'));
         }
     })
     .catch(error => {
-        console.error('Fehler:', error);
-        alert('Fehler beim Erstellen des Use Cases');
+        console.error('Fehler beim Erstellen des Use Cases:', error);
+        alert('Fehler beim Erstellen des Use Cases: ' + error.message);
     });
 }
 
