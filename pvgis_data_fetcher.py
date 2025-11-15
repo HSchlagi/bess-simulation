@@ -414,7 +414,28 @@ class PVGISDataFetcher:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            # Tabelle erstellen falls nicht vorhanden
+            # Prüfe ob Tabelle existiert und welche Struktur sie hat
+            cursor.execute("""
+                SELECT name FROM sqlite_master 
+                WHERE type='table' AND name='solar_data'
+            """)
+            table_exists = cursor.fetchone()
+            
+            if table_exists:
+                # Prüfe welche Spalten die Tabelle hat
+                cursor.execute("PRAGMA table_info(solar_data)")
+                columns = cursor.fetchall()
+                column_names = [col[1] for col in columns]
+                
+                # Prüfe ob location_key Spalte existiert (PVGIS-Struktur)
+                if 'location_key' not in column_names:
+                    print(f"⚠️ solar_data Tabelle hat falsche Struktur (SQLAlchemy-Modell). Erstelle neue Tabelle...")
+                    # Alte Tabelle umbenennen (Backup)
+                    cursor.execute("ALTER TABLE solar_data RENAME TO solar_data_old_sqlalchemy")
+                    conn.commit()
+                    print(f"✅ Alte Tabelle umbenannt zu 'solar_data_old_sqlalchemy'")
+            
+            # Tabelle erstellen falls nicht vorhanden (mit korrekter PVGIS-Struktur)
             cursor.execute('''
                 CREATE TABLE IF NOT EXISTS solar_data (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,

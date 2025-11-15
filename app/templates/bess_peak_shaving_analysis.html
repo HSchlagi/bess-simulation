@@ -2385,28 +2385,59 @@ async function loadSolarData() {
     }
     
     try {
-        console.log(`🔄 Lade Solar-Daten für ${locationKey}, Jahr ${year}...`);
+        console.log(`🔄 Lade Solar-Daten von PVGIS für ${locationKey}, Jahr ${year}...`);
         
-        const response = await fetch(`/api/pvgis/solar-data/${locationKey}/${year}`);
+        // Zuerst: Daten von PVGIS holen und in Datenbank speichern (POST)
+        const fetchResponse = await fetch('/api/pvgis/fetch-solar-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                location_key: locationKey,
+                year: year
+            })
+        });
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const fetchData = await fetchResponse.json();
+        console.log('📥 Antwort vom PVGIS-Import:', fetchData);
+        
+        if (!fetchResponse.ok || !fetchData.success) {
+            const errorMsg = fetchData.error || `HTTP ${fetchResponse.status}: ${fetchResponse.statusText}`;
+            console.error('❌ Server-Fehler beim Import:', errorMsg);
+            showNotification(`❌ Fehler beim Laden der Solar-Daten: ${errorMsg}`, 'error');
+            return;
         }
         
+        console.log(`✅ ${fetchData.records || 0} Solar-Datenpunkte von PVGIS importiert`);
+        
+        // Dann: Daten aus Datenbank abrufen und anzeigen (GET)
+        const response = await fetch(`/api/pvgis/solar-data/${encodeURIComponent(locationKey)}/${year}`);
+        
         const data = await response.json();
+        console.log('📥 Antwort vom Server (Datenabruf):', data);
+        
+        if (!response.ok) {
+            const errorMsg = data.error || `HTTP ${response.status}: ${response.statusText}`;
+            console.error('❌ Server-Fehler beim Abruf:', errorMsg);
+            showNotification(`❌ Fehler beim Abruf der Solar-Daten: ${errorMsg}`, 'error');
+            return;
+        }
         
         if (data.success && data.data && data.data.length > 0) {
             console.log(`✅ ${data.records} Solar-Datenpunkte geladen`);
             createSolarChart(data.data, locationKey, year);
             showNotification(`✅ ${data.records} Solar-Datenpunkte geladen!`, 'success');
         } else {
-            console.log('Keine Solar-Daten verfügbar');
-            showNotification('Keine Solar-Daten für diesen Standort verfügbar', 'warning');
+            const errorMsg = data.error || 'Keine Solar-Daten verfügbar';
+            console.log('⚠️ Keine Solar-Daten verfügbar:', errorMsg);
+            showNotification(`⚠️ ${errorMsg}`, 'warning');
         }
         
     } catch (error) {
-        console.error('Fehler beim Laden der Solar-Daten:', error);
-        showNotification('Fehler beim Laden der Solar-Daten', 'error');
+        console.error('❌ Fehler beim Laden der Solar-Daten:', error);
+        const errorMsg = error.message || 'Netzwerkfehler oder ungültige Antwort vom Server';
+        showNotification(`❌ Fehler beim Laden der Solar-Daten: ${errorMsg}`, 'error');
     }
 }
 
@@ -2645,12 +2676,13 @@ async function simulateBESSWithSolarData() {
     
     try {
         console.log(`🔄 Starte BESS-Simulation mit Solar-Daten...`);
+        console.log(`📊 Parameter:`, { locationKey, year, pvCapacity, bessSize, bessPower });
         
         const response = await fetch('/api/bess/simulation-with-solar', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             },
             body: JSON.stringify({
                 location_key: locationKey,
@@ -2661,22 +2693,29 @@ async function simulateBESSWithSolarData() {
             })
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
         const data = await response.json();
+        console.log('📥 Antwort vom Server:', data);
+        
+        if (!response.ok) {
+            const errorMsg = data.error || `HTTP ${response.status}: ${response.statusText}`;
+            console.error('❌ Server-Fehler:', errorMsg);
+            showNotification(`❌ Fehler bei der BESS-Simulation: ${errorMsg}`, 'error');
+            return;
+        }
         
         if (data.success) {
             displayBESSResults(data.simulation_results, data.parameters);
             showNotification('✅ BESS-Simulation erfolgreich abgeschlossen!', 'success');
         } else {
-            showNotification('Fehler bei der BESS-Simulation: ' + data.error, 'error');
+            const errorMsg = data.error || 'Unbekannter Fehler';
+            console.error('❌ Simulation fehlgeschlagen:', errorMsg);
+            showNotification(`❌ Fehler bei der BESS-Simulation: ${errorMsg}`, 'error');
         }
         
     } catch (error) {
-        console.error('Fehler bei BESS-Simulation:', error);
-        showNotification('Fehler bei der BESS-Simulation', 'error');
+        console.error('❌ Fehler bei BESS-Simulation:', error);
+        const errorMsg = error.message || 'Netzwerkfehler oder ungültige Antwort vom Server';
+        showNotification(`❌ Fehler bei der BESS-Simulation: ${errorMsg}`, 'error');
     }
 }
 

@@ -7955,16 +7955,81 @@ def api_pvgis_fetch_solar_data():
 @main_bp.route('/api/pvgis/solar-data/<location_key>/<int:year>')
 def api_pvgis_get_solar_data(location_key, year):
     """Solar-Daten aus Datenbank abrufen"""
+    conn = None
     try:
         print(f"🔄 Lade Solar-Daten für {location_key}, Jahr {year}...")
         
-        # Direkte Datenbankabfrage
+        # Prüfe ob solar_data Tabelle existiert und welche Struktur sie hat
         conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT name FROM sqlite_master 
+            WHERE type='table' AND name='solar_data'
+        """)
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            if conn:
+                conn.close()
+            return jsonify({
+                'success': False,
+                'error': 'Die solar_data Tabelle existiert noch nicht. Bitte klicken Sie zuerst auf "Solar-Daten laden", um die PVGIS-Daten zu importieren.'
+            }), 404
+        
+        # Prüfe welche Spalten die Tabelle hat
+        cursor.execute("PRAGMA table_info(solar_data)")
+        columns = cursor.fetchall()
+        column_names = [col[1] for col in columns]
+        
+        print(f"📊 solar_data Tabelle Spalten: {column_names}")
+        
+        # Prüfe ob location_key Spalte existiert - wenn nicht, korrigiere die Tabelle automatisch
+        if 'location_key' not in column_names:
+            print(f"⚠️ solar_data Tabelle hat falsche Struktur (SQLAlchemy-Modell). Korrigiere automatisch...")
+            try:
+                # Alte Tabelle umbenennen (Backup)
+                cursor.execute("ALTER TABLE solar_data RENAME TO solar_data_old_sqlalchemy")
+                conn.commit()
+                print(f"✅ Alte Tabelle umbenannt zu 'solar_data_old_sqlalchemy'")
+                
+                # Neue Tabelle mit korrekter PVGIS-Struktur erstellen
+                cursor.execute('''
+                    CREATE TABLE solar_data (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        location_key TEXT NOT NULL,
+                        year INTEGER NOT NULL,
+                        datetime TEXT NOT NULL,
+                        global_irradiance REAL,
+                        beam_irradiance REAL,
+                        diffuse_irradiance REAL,
+                        sun_height REAL,
+                        temperature_2m REAL,
+                        wind_speed_10m REAL,
+                        metadata TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(location_key, year, datetime)
+                    )
+                ''')
+                conn.commit()
+                print(f"✅ Neue solar_data Tabelle mit korrekter Struktur erstellt")
+            except Exception as e:
+                conn.rollback()
+                if conn:
+                    conn.close()
+                return jsonify({
+                    'success': False,
+                    'error': f'Fehler beim Korrigieren der Tabellenstruktur: {str(e)}. Bitte laden Sie die Solar-Daten neu über "Solar-Daten laden".'
+                }), 500
+        
+        # Direkte Datenbankabfrage
         df = pd.read_sql_query('''
             SELECT * FROM solar_data 
             WHERE location_key = ? AND year = ?
             ORDER BY datetime
         ''', conn, params=(location_key, year))
+        
+        if conn:
+            conn.close()
         
         if not df.empty:
             print(f"✅ {len(df)} Datensätze gefunden")
@@ -7993,12 +8058,32 @@ def api_pvgis_get_solar_data(location_key, year):
             print(f"❌ Keine Daten gefunden für {location_key} ({year})")
             return jsonify({
                 'success': False,
-                'error': f'Keine Solar-Daten gefunden für {location_key} ({year})'
+                'error': f'Keine Solar-Daten gefunden für {location_key}, Jahr {year}. Bitte laden Sie zuerst die Solar-Daten über "Solar-Daten laden".'
             }), 404
             
+    except pd.errors.DatabaseError as db_error:
+        print(f"❌ Datenbankfehler beim Laden der Solar-Daten: {db_error}")
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.close()
+        return jsonify({
+            'success': False,
+            'error': f'Datenbankfehler: {str(db_error)}'
+        }), 500
     except Exception as e:
         print(f"❌ Fehler beim Laden der Solar-Daten: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        if conn:
+            conn.close()
+        return jsonify({
+            'success': False,
+            'error': f'Fehler beim Laden der Solar-Daten: {str(e)}'
+        }), 500
+    finally:
+        if conn:
+            conn.close()
 
 @main_bp.route('/api/pvgis/expand-locations/<int:project_id>', methods=['POST'])
 def api_pvgis_expand_locations(project_id):
@@ -8168,27 +8253,60 @@ def api_pvgis_solar_statistics(location_key, year):
 @main_bp.route('/api/bess/simulation-with-solar', methods=['POST'])
 def api_bess_simulation_with_solar():
     """BESS-Simulation mit Solar-Daten durchführen"""
+    conn = None
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Keine Daten empfangen'}), 400
+        
         location_key = data.get('location_key')
         year = data.get('year', 2020)
-        pv_capacity = data.get('pv_capacity', 1950)  # kWp
-        bess_size = data.get('bess_size', 1000)      # kWh
-        bess_power = data.get('bess_power', 500)     # kW
+        pv_capacity = float(data.get('pv_capacity', 1950))  # kWp
+        bess_size = float(data.get('bess_size', 1000))      # kWh
+        bess_power = float(data.get('bess_power', 500))     # kW
         
-        print(f"🔄 BESS-Simulation mit Solar-Daten: {location_key}, {pv_capacity} kWp, {bess_size} kWh")
+        if not location_key:
+            return jsonify({'success': False, 'error': 'location_key fehlt'}), 400
+        
+        print(f"🔄 BESS-Simulation mit Solar-Daten: {location_key}, {pv_capacity} kWp, {bess_size} kWh, {bess_power} kW")
         
         # Solar-Daten abrufen
         conn = get_db()
-        df = pd.read_sql_query('''
-            SELECT datetime, global_irradiance, temperature_2m
-            FROM solar_data 
-            WHERE location_key = ? AND year = ?
-            ORDER BY datetime
-        ''', conn, params=(location_key, year))
+        try:
+            df = pd.read_sql_query('''
+                SELECT datetime, global_irradiance, temperature_2m
+                FROM solar_data 
+                WHERE location_key = ? AND year = ?
+                ORDER BY datetime
+            ''', conn, params=(location_key, year))
+        except Exception as db_error:
+            print(f"❌ Datenbankfehler: {db_error}")
+            import traceback
+            traceback.print_exc()
+            if conn:
+                conn.close()
+            return jsonify({
+                'success': False, 
+                'error': f'Datenbankfehler beim Laden der Solar-Daten: {str(db_error)}'
+            }), 500
+        
+        if conn:
+            conn.close()
         
         if df.empty:
-            return jsonify({'success': False, 'error': 'Keine Solar-Daten verfügbar'}), 404
+            return jsonify({
+                'success': False, 
+                'error': f'Keine Solar-Daten verfügbar für {location_key}, Jahr {year}'
+            }), 404
+        
+        # Prüfe ob erforderliche Spalten vorhanden sind
+        required_columns = ['datetime', 'global_irradiance', 'temperature_2m']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            return jsonify({
+                'success': False,
+                'error': f'Fehlende Spalten in Solar-Daten: {", ".join(missing_columns)}'
+            }), 400
         
         # PV-Erzeugung berechnen (vereinfacht)
         df['pv_generation'] = df['global_irradiance'] * pv_capacity * 0.75 / 1000  # kW
@@ -8223,14 +8341,25 @@ def api_bess_simulation_with_solar():
         total_pv_energy = df['pv_generation'].sum() / 1000  # MWh
         total_grid_import = sum(grid_import) / 1000  # MWh
         total_grid_export = sum(grid_export) / 1000  # MWh
-        self_consumption_rate = (total_pv_energy - total_grid_export) / total_pv_energy * 100
+        
+        # Division durch Null vermeiden
+        if total_pv_energy > 0:
+            self_consumption_rate = (total_pv_energy - total_grid_export) / total_pv_energy * 100
+        else:
+            self_consumption_rate = 0.0
+        
+        # Division durch Null vermeiden
+        if bess_power > 0:
+            bess_utilization_hours = round(total_grid_import / bess_power * 1000, 0)
+        else:
+            bess_utilization_hours = 0
         
         results = {
             'total_pv_energy_mwh': round(total_pv_energy, 2),
             'total_grid_import_mwh': round(total_grid_import, 2),
             'total_grid_export_mwh': round(total_grid_export, 2),
             'self_consumption_rate_percent': round(self_consumption_rate, 1),
-            'bess_utilization_hours': round(total_grid_import / bess_power * 1000, 0),
+            'bess_utilization_hours': bess_utilization_hours,
             'data_points': len(df)
         }
         
@@ -8246,9 +8375,26 @@ def api_bess_simulation_with_solar():
             }
         })
         
+    except ValueError as ve:
+        print(f"❌ Wertfehler bei BESS-Simulation: {ve}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False, 
+            'error': f'Ungültige Eingabewerte: {str(ve)}'
+        }), 400
     except Exception as e:
         print(f"❌ Fehler bei BESS-Simulation: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        import traceback
+        traceback.print_exc()
+        error_msg = str(e)
+        return jsonify({
+            'success': False, 
+            'error': f'Fehler bei BESS-Simulation: {error_msg}'
+        }), 500
+    finally:
+        if conn:
+            conn.close()
 
 # ============================================================================
 # NEUE API-ENDPUNKTE FÜR INTRADAY-ARBITRAGE UND ÖSTERREICHISCHE MÄRKTE
