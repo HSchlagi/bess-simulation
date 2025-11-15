@@ -3,6 +3,43 @@
 {% block title %}BESS-Simulation Erweitert - Projekt & Use Case Analyse{% endblock %}
 
 {% block content %}
+<style>
+/* Stufe-Sektionen Aus-/Einklapp-Funktionalität */
+.stufe-content {
+    max-height: 5000px;
+    overflow: visible;
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+    opacity: 1;
+    display: block !important;
+}
+
+.stufe-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    display: none;
+}
+
+.stufe-content.expanded {
+    max-height: 5000px;
+    opacity: 1;
+    display: block;
+    overflow: visible;
+}
+
+/* Chevron-Icon Rotation */
+.fa-chevron-down {
+    transition: transform 0.3s ease;
+}
+
+.fa-chevron-down.rotated {
+    transform: rotate(180deg);
+}
+</style>
 <div class="container mx-auto px-4 py-8">
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-4">BESS-Simulation Erweitert</h1>
@@ -61,33 +98,11 @@
         <div id="useCaseSection" class="hidden">
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-900 mb-4">Use Case Auswahl für <span id="projectNameHeader">Projekt</span></h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC1')">
-                        <h3 class="font-semibold text-lg text-blue-600">UC1</h3>
-                        <p class="text-sm text-gray-600 mb-2">Verbrauch ohne Eigenerzeugung</p>
-                        <ul class="text-xs text-gray-500">
-                            <li>• PV: 0 MWp</li>
-                            <li>• Wasserkraft: 0 kW</li>
-                            <li>• Nur BESS-Optimierung</li>
-                        </ul>
-                    </div>
-                    <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC2')">
-                        <h3 class="font-semibold text-lg text-green-600">UC2</h3>
-                        <p class="text-sm text-gray-600 mb-2">Verbrauch + PV (1,95 MWp)</p>
-                        <ul class="text-xs text-gray-500">
-                            <li>• PV: 1,95 MWp</li>
-                            <li>• Wasserkraft: 0 kW</li>
-                            <li>• PV + BESS-Optimierung</li>
-                        </ul>
-                    </div>
-                    <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC3')">
-                        <h3 class="font-semibold text-lg text-purple-600">UC3</h3>
-                        <p class="text-sm text-gray-600 mb-2">Verbrauch + PV + Wasserkraft</p>
-                        <ul class="text-xs text-gray-500">
-                            <li>• PV: 1,95 MWp</li>
-                            <li>• Wasserkraft: 650 kW</li>
-                            <li>• Vollständige Optimierung</li>
-                        </ul>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="useCaseCards">
+                    <!-- Use Cases werden dynamisch geladen -->
+                    <div class="text-center p-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p>Lade Use Cases...</p>
                     </div>
                 </div>
             </div>
@@ -100,9 +115,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Use Case</label>
                         <select id="useCaseSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">Use Case auswählen...</option>
-                            <option value="UC1">UC1 - Verbrauch ohne Eigenerzeugung</option>
-                            <option value="UC2">UC2 - Verbrauch + PV (1,95 MWp)</option>
-                            <option value="UC3">UC3 - Verbrauch + PV + Wasserkraft</option>
+                            <!-- Use Cases werden dynamisch geladen -->
                         </select>
                     </div>
                     <div>
@@ -178,6 +191,270 @@
                         <div class="text-2xl font-bold text-teal-600" id="netCashflow">-</div>
                         <div class="text-sm text-gray-600">Net Cashflow (EUR/a)</div>
                     </div>
+                </div>
+            </div>
+
+            <!-- STUFE 1: Erweiterte Kennzahlen -->
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-md p-6 mb-8 border-2 border-purple-200">
+                <div class="flex items-center mb-4 cursor-pointer" onclick="toggleStufeSection('stufe1Section', 'stufe1Icon')">
+                    <i class="fas fa-chart-line text-purple-600 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold text-gray-900">Stufe 1 - Erweiterte Kennzahlen</h2>
+                    <span class="ml-auto px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">NEU</span>
+                    <i class="fas fa-chevron-down text-purple-600 text-xl ml-3 transition-transform" id="stufe1Icon"></i>
+                </div>
+                <div id="stufe1Section" class="stufe-content">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                    <!-- State of Health -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-purple-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-battery-three-quarters text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="stateOfHealth">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">State of Health (SoH)</div>
+                        <div class="text-xs text-gray-500 mt-1">Batterie-Zustand</div>
+                    </div>
+                    
+                    <!-- Aktuelle Kapazität -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-bolt text-blue-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-blue-600" id="currentCapacity">-</div>
+                            <span class="text-lg text-gray-500 ml-1">kWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Aktuelle Kapazität</div>
+                        <div class="text-xs text-gray-500 mt-1">Nach Degradation</div>
+                    </div>
+                    
+                    <!-- Kapazitätsverlust -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-orange-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-down text-orange-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-orange-600" id="capacityLoss">-</div>
+                            <span class="text-lg text-gray-500 ml-1">kWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Kapazitätsverlust</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch Alterung</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Erlösverlust durch Restriktionen -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-red-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-red-600" id="revenueLossRestrictions">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Erlösverlust (Restriktionen)</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch Netzrestriktionen</div>
+                    </div>
+                    
+                    <!-- Second-Life Status -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200" id="secondLifeCard">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-recycle text-gray-600 text-xl mr-2" id="secondLifeIcon"></i>
+                            <div class="text-xl font-bold text-gray-600" id="secondLifeStatus">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Second-Life Batterie</div>
+                        <div class="text-xs text-gray-500 mt-1" id="secondLifeInfo">-</div>
+                    </div>
+                    
+                    <!-- Kostenvorteil Second-Life -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200" id="secondLifeCostCard">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-euro-sign text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="secondLifeCostReduction">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Kostenvorteil</div>
+                        <div class="text-xs text-gray-500 mt-1">Second-Life Ersparnis</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- STUFE 2.1: Co-Location PV + BESS Kennzahlen -->
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg shadow-md p-6 mb-8 border-2 border-green-200" id="coLocationSection">
+                <div class="flex items-center mb-4 cursor-pointer" onclick="toggleStufeSection('stufe21Section', 'stufe21Icon')">
+                    <i class="fas fa-solar-panel text-green-600 text-2xl mr-3"></i>
+                    <h2 class="text-xl font-semibold text-gray-900">Stufe 2.1 - Co-Location PV + BESS</h2>
+                    <span class="ml-auto px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">NEU</span>
+                    <i class="fas fa-chevron-down text-green-600 text-xl ml-3 transition-transform" id="stufe21Icon"></i>
+                </div>
+                <div id="stufe21Section" class="stufe-content">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <!-- Co-Location Status -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200" id="coLocationStatusCard">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-link text-gray-600 text-xl mr-2" id="coLocationIcon"></i>
+                            <div class="text-xl font-bold text-gray-600" id="coLocationStatus">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Co-Location</div>
+                        <div class="text-xs text-gray-500 mt-1" id="coLocationInfo">-</div>
+                    </div>
+                    
+                    <!-- PV-Ausnutzung -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-sun text-blue-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-blue-600" id="pvUtilization">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">PV-Ausnutzung</div>
+                        <div class="text-xs text-gray-500 mt-1">Nach Curtailment</div>
+                    </div>
+                    
+                    <!-- Vermiedene Curtailment -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-shield-alt text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="avoidedCurtailment">-</div>
+                            <span class="text-lg text-gray-500 ml-1">kW</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Vermiedene Curtailment</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch BESS</div>
+                    </div>
+                    
+                    <!-- Eigenverbrauchsquote -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-purple-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-home text-purple-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-purple-600" id="selfConsumptionRate">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Eigenverbrauchsquote</div>
+                        <div class="text-xs text-gray-500 mt-1">Mit Co-Location</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Co-Location Erlöszuwachs -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-up text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="coLocationRevenueIncrease">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Erlöszuwachs</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch Co-Location</div>
+                    </div>
+                    
+                    <!-- Co-Location Kosteneinsparung -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-piggy-bank text-blue-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-blue-600" id="coLocationCostSavings">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Kosteneinsparung</div>
+                        <div class="text-xs text-gray-500 mt-1">Grid-Fee-Ersparnis</div>
+                    </div>
+                    
+                    <!-- Gesamtnutzen -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-emerald-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-chart-line text-emerald-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-emerald-600" id="coLocationTotalBenefit">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Gesamtnutzen</div>
+                        <div class="text-xs text-gray-500 mt-1">Erlöse + Einsparungen</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- STUFE 2.2: Optimierte Regelstrategien Kennzahlen -->
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg shadow-md p-6 mb-8 border-2 border-purple-200" id="optimizationSection" style="display: block !important;">
+                <div class="flex items-center mb-4">
+                    <div class="flex items-center flex-1 cursor-pointer" onclick="toggleStufeSection('stufe22Section', 'stufe22Icon')">
+                        <i class="fas fa-brain text-purple-600 text-2xl mr-3"></i>
+                        <h2 class="text-xl font-semibold text-gray-900">Stufe 2.2 - Optimierte Regelstrategien</h2>
+                    </div>
+                    <!-- Optimierung Toggle Switch -->
+                    <div class="flex items-center mx-4">
+                        <span class="text-sm text-gray-600 mr-2">Optimierung:</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="optimizationToggle" class="sr-only peer" onchange="toggleOptimization()">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700" id="optimizationToggleLabel">Aktivieren</span>
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">NEU</span>
+                        <i class="fas fa-chevron-down text-purple-600 text-xl ml-3 transition-transform cursor-pointer" id="stufe22Icon" onclick="toggleStufeSection('stufe22Section', 'stufe22Icon')"></i>
+                    </div>
+                </div>
+                <div id="stufe22Section" class="stufe-content expanded" style="display: block !important;">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <!-- Optimierung Status -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200" id="optimizationStatusCard">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-cog text-gray-600 text-xl mr-2" id="optimizationIcon"></i>
+                            <div class="text-xl font-bold text-gray-600" id="optimizationStatus">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Optimierung</div>
+                        <div class="text-xs text-gray-500 mt-1" id="optimizationInfo">-</div>
+                    </div>
+                    
+                    <!-- Strategie -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-chess text-blue-600 text-xl mr-2"></i>
+                            <div class="text-lg font-bold text-blue-600" id="optimizationStrategy">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Strategie</div>
+                        <div class="text-xs text-gray-500 mt-1">Aktive Optimierung</div>
+                    </div>
+                    
+                    <!-- Erlös-Boost -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-chart-line text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="optimizationRevenueBoost">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Erlös-Boost</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch Optimierung</div>
+                    </div>
+                    
+                    <!-- Preis-Volatilität -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-orange-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-wave-square text-orange-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-orange-600" id="optimizationPriceVolatility">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Preis-Volatilität</div>
+                        <div class="text-xs text-gray-500 mt-1">Markt-Schwankungen</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Optimierungs-Benefit -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-purple-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-euro-sign text-purple-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-purple-600" id="optimizationBenefit">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Optimierungs-Benefit</div>
+                        <div class="text-xs text-gray-500 mt-1">Zusätzlicher Erlös/Jahr</div>
+                    </div>
+                    
+                    <!-- Strategie-Details -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-indigo-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-info-circle text-indigo-600 text-xl mr-2"></i>
+                            <div class="text-sm font-medium text-indigo-600" id="optimizationDetails">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Strategie-Details</div>
+                        <div class="text-xs text-gray-500 mt-1" id="optimizationDescription">-</div>
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -371,6 +648,246 @@
                 </div>
             </div>
 
+            <!-- STUFE 1: Erweiterte Kennzahlen im Dashboard -->
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl shadow-lg border-2 border-purple-200 p-6 mb-8">
+                <div class="flex items-center mb-4 cursor-pointer" onclick="toggleStufeSection('dashboardStufe1Section', 'dashboardStufe1Icon')">
+                    <i class="fas fa-chart-line text-purple-600 text-2xl mr-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-900">Stufe 1 - Erweiterte Kennzahlen</h3>
+                    <span class="ml-auto px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">NEU</span>
+                    <i class="fas fa-chevron-down text-purple-600 text-xl ml-3 transition-transform" id="dashboardStufe1Icon"></i>
+                </div>
+                <div id="dashboardStufe1Section" class="stufe-content">
+                
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <!-- State of Health -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <i class="fas fa-battery-three-quarters text-green-600 text-2xl mb-2"></i>
+                        <div class="text-2xl font-bold text-green-600" id="dashboardStateOfHealth">--</div>
+                        <div class="text-xs text-gray-600 mt-1">SoH (%)</div>
+                    </div>
+                    
+                    <!-- Aktuelle Kapazität -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <i class="fas fa-bolt text-blue-600 text-2xl mb-2"></i>
+                        <div class="text-2xl font-bold text-blue-600" id="dashboardCurrentCapacity">--</div>
+                        <div class="text-xs text-gray-600 mt-1">Kapazität (kWh)</div>
+                    </div>
+                    
+                    <!-- Kapazitätsverlust -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-orange-200">
+                        <i class="fas fa-arrow-down text-orange-600 text-2xl mb-2"></i>
+                        <div class="text-2xl font-bold text-orange-600" id="dashboardCapacityLoss">--</div>
+                        <div class="text-xs text-gray-600 mt-1">Verlust (kWh)</div>
+                    </div>
+                    
+                    <!-- Erlösverlust Restriktionen -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-red-200">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl mb-2"></i>
+                        <div class="text-xl font-bold text-red-600" id="dashboardRevenueLoss">--</div>
+                        <div class="text-xs text-gray-600 mt-1">Restriktionen (€)</div>
+                    </div>
+                    
+                    <!-- Second-Life Status -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200" id="dashboardSecondLifeCard">
+                        <i class="fas fa-recycle text-gray-600 text-2xl mb-2" id="dashboardSecondLifeIcon"></i>
+                        <div class="text-xl font-bold text-gray-600" id="dashboardSecondLifeStatus">--</div>
+                        <div class="text-xs text-gray-600 mt-1">Second-Life</div>
+                    </div>
+                    
+                    <!-- Kostenvorteil -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200" id="dashboardCostReductionCard">
+                        <i class="fas fa-euro-sign text-green-600 text-2xl mb-2"></i>
+                        <div class="text-xl font-bold text-green-600" id="dashboardCostReduction">--</div>
+                        <div class="text-xs text-gray-600 mt-1">Ersparnis (%)</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- STUFE 2.1: Co-Location PV + BESS Kennzahlen im Dashboard -->
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-lg border-2 border-green-200 p-6 mb-8" id="dashboardCoLocationSection">
+                <div class="flex items-center mb-4 cursor-pointer" onclick="toggleStufeSection('dashboardStufe21Section', 'dashboardStufe21Icon')">
+                    <i class="fas fa-solar-panel text-green-600 text-2xl mr-3"></i>
+                    <h3 class="text-xl font-semibold text-gray-900">Stufe 2.1 - Co-Location PV + BESS</h3>
+                    <span class="ml-auto px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">NEU</span>
+                    <i class="fas fa-chevron-down text-green-600 text-xl ml-3 transition-transform" id="dashboardStufe21Icon"></i>
+                </div>
+                <div id="dashboardStufe21Section" class="stufe-content">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <!-- Co-Location Status -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200" id="dashboardCoLocationStatusCard">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-link text-gray-600 text-xl mr-2" id="dashboardCoLocationIcon"></i>
+                            <div class="text-xl font-bold text-gray-600" id="dashboardCoLocationStatus">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Co-Location</div>
+                        <div class="text-xs text-gray-500 mt-1" id="dashboardCoLocationInfo">-</div>
+                    </div>
+                    
+                    <!-- PV-Ausnutzung -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-sun text-blue-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-blue-600" id="dashboardPvUtilization">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">PV-Ausnutzung</div>
+                        <div class="text-xs text-gray-500 mt-1">Nach Curtailment</div>
+                    </div>
+                    
+                    <!-- Vermiedene Curtailment -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-shield-alt text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="dashboardAvoidedCurtailment">-</div>
+                            <span class="text-lg text-gray-500 ml-1">kW</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Vermiedene Curtailment</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch BESS</div>
+                    </div>
+                    
+                    <!-- Eigenverbrauchsquote -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-purple-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-home text-purple-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-purple-600" id="dashboardSelfConsumptionRate">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Eigenverbrauchsquote</div>
+                        <div class="text-xs text-gray-500 mt-1">Mit Co-Location</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Co-Location Erlöszuwachs -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-up text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="dashboardCoLocationRevenueIncrease">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Erlöszuwachs</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch Co-Location</div>
+                    </div>
+                    
+                    <!-- Co-Location Kosteneinsparung -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-piggy-bank text-blue-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-blue-600" id="dashboardCoLocationCostSavings">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Kosteneinsparung</div>
+                        <div class="text-xs text-gray-500 mt-1">Grid-Fee-Ersparnis</div>
+                    </div>
+                    
+                    <!-- Gesamtnutzen -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-emerald-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-chart-line text-emerald-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-emerald-600" id="dashboardCoLocationTotalBenefit">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Gesamtnutzen</div>
+                        <div class="text-xs text-gray-500 mt-1">Erlöse + Einsparungen</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <!-- STUFE 2.2: Optimierte Regelstrategien Kennzahlen im Dashboard -->
+            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl shadow-lg border-2 border-purple-200 p-6 mb-8" id="dashboardOptimizationSection" style="display: block !important;">
+                <div class="flex items-center mb-4">
+                    <div class="flex items-center flex-1 cursor-pointer" onclick="toggleStufeSection('dashboardStufe22Section', 'dashboardStufe22Icon')">
+                        <i class="fas fa-brain text-purple-600 text-2xl mr-3"></i>
+                        <h3 class="text-xl font-semibold text-gray-900">Stufe 2.2 - Optimierte Regelstrategien</h3>
+                    </div>
+                    <!-- Optimierung Toggle Switch -->
+                    <div class="flex items-center mx-4">
+                        <span class="text-sm text-gray-600 mr-2">Optimierung:</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="dashboardOptimizationToggle" class="sr-only peer" onchange="toggleDashboardOptimization()">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700" id="dashboardOptimizationToggleLabel">Aktivieren</span>
+                        </label>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">NEU</span>
+                        <i class="fas fa-chevron-down text-purple-600 text-xl ml-3 transition-transform cursor-pointer" id="dashboardStufe22Icon" onclick="toggleStufeSection('dashboardStufe22Section', 'dashboardStufe22Icon')"></i>
+                    </div>
+                </div>
+                <div id="dashboardStufe22Section" class="stufe-content expanded" style="display: block !important;">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <!-- Optimierung Status -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200" id="dashboardOptimizationStatusCard">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-cog text-gray-600 text-xl mr-2" id="dashboardOptimizationIcon"></i>
+                            <div class="text-xl font-bold text-gray-600" id="dashboardOptimizationStatus">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Optimierung</div>
+                        <div class="text-xs text-gray-500 mt-1" id="dashboardOptimizationInfo">-</div>
+                    </div>
+                    
+                    <!-- Strategie -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-chess text-blue-600 text-xl mr-2"></i>
+                            <div class="text-lg font-bold text-blue-600" id="dashboardOptimizationStrategy">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Strategie</div>
+                        <div class="text-xs text-gray-500 mt-1">Aktive Optimierung</div>
+                    </div>
+                    
+                    <!-- Erlös-Boost -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-chart-line text-green-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-green-600" id="dashboardOptimizationRevenueBoost">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Erlös-Boost</div>
+                        <div class="text-xs text-gray-500 mt-1">Durch Optimierung</div>
+                    </div>
+                    
+                    <!-- Preis-Volatilität -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-orange-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-wave-square text-orange-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-orange-600" id="dashboardOptimizationPriceVolatility">-</div>
+                            <span class="text-lg text-gray-500 ml-1">%</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Preis-Volatilität</div>
+                        <div class="text-xs text-gray-500 mt-1">Markt-Schwankungen</div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Optimierungs-Benefit -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-purple-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-euro-sign text-purple-600 text-xl mr-2"></i>
+                            <div class="text-2xl font-bold text-purple-600" id="dashboardOptimizationBenefit">-</div>
+                            <span class="text-lg text-gray-500 ml-1">€</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Optimierungs-Benefit</div>
+                        <div class="text-xs text-gray-500 mt-1">Zusätzlicher Erlös/Jahr</div>
+                    </div>
+                    
+                    <!-- Strategie-Details -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-indigo-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-info-circle text-indigo-600 text-xl mr-2"></i>
+                            <div class="text-sm font-medium text-indigo-600" id="dashboardOptimizationDetails">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Strategie-Details</div>
+                        <div class="text-xs text-gray-500 mt-1" id="dashboardOptimizationDescription">-</div>
+                    </div>
+                </div>
+                </div>
+            </div>
+
             <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <div class="bg-white rounded-lg shadow-md p-6">
@@ -520,15 +1037,234 @@ async function loadProjectDetails() {
             document.getElementById('bessPower').value = project.bess_power;
         }
         
-        // Automatisch UC1 auswählen wenn Projekt geladen wird
-        if (!selectedUseCase) {
-            selectUseCase('UC1');
-            console.log('🔄 Automatisch UC1 ausgewählt für neues Projekt');
-        }
+        // Use Cases für dieses Projekt laden
+        await loadUseCasesForProject(projectId);
+        
+        // Initialisiere Roadmap Stufe 1 Werte mit Projekt-Daten (vor Simulation)
+        initializeRoadmapStufe1Metrics(project);
+        
+        // ROADMAP STUFE 2.2: Lade Optimierungs-Konfiguration und initialisiere Toggle
+        loadOptimizationConfig(projectId);
         
     } catch (error) {
         console.error('Fehler beim Laden der Projektdetails:', error);
     }
+}
+
+// Initialisiere Roadmap Stufe 1 Metriken mit Projekt-Daten
+function initializeRoadmapStufe1Metrics(project) {
+    // Initialwerte setzen (vor Simulation)
+    // bess_size aus Projekt - prüfe ob in MWh oder kWh
+    let bessSizeKwh = project.bess_size || 0;
+    
+    // Wenn bess_size < 1000, könnte es MWh sein (z.B. 40 MWh = 40000 kWh)
+    // Wenn bess_size >= 1000, ist es wahrscheinlich bereits in kWh
+    // Aber: 40 MWh könnte auch als 40 gespeichert sein
+    // Prüfe auch die Eingabefelder für Hinweise
+    const bessSizeInput = document.getElementById('bessSize');
+    if (bessSizeInput && bessSizeInput.value) {
+        const inputValue = parseFloat(bessSizeInput.value);
+        // Wenn das Eingabefeld einen großen Wert hat (z.B. 40000), ist es wahrscheinlich kWh
+        // Wenn das Eingabefeld einen kleinen Wert hat (z.B. 40), könnte es MWh sein
+        if (inputValue > 0) {
+            if (inputValue < 1000) {
+                // Wahrscheinlich MWh, konvertiere zu kWh
+                bessSizeKwh = inputValue * 1000;
+            } else {
+                // Wahrscheinlich bereits in kWh
+                bessSizeKwh = inputValue;
+            }
+        }
+    } else if (bessSizeKwh > 0 && bessSizeKwh < 1000) {
+        // Fallback: Wenn bess_size < 1000, könnte es MWh sein
+        bessSizeKwh = bessSizeKwh * 1000;
+    }
+    
+    const initialData = {
+        state_of_health: 100.0,
+        current_capacity_kwh: bessSizeKwh,
+        capacity_loss_kwh: 0,
+        revenue_loss_restrictions: 0,
+        is_second_life: false,
+        second_life_cost_reduction_percent: 0,
+        bess_size: bessSizeKwh,  // Für Fallback in displayRoadmapStufe1Metrics
+        bess_size_kwh: bessSizeKwh  // Für Fallback in displayRoadmapStufe1Metrics
+    };
+    
+    console.log('🔄 Initialisiere Roadmap Stufe 1 Metriken mit Projekt-Daten:', {
+        project_bess_size: project.bess_size,
+        calculated_bessSizeKwh: bessSizeKwh,
+        initialData
+    });
+    displayRoadmapStufe1Metrics(initialData);
+}
+
+// Use Cases für ein Projekt laden
+async function loadUseCasesForProject(projectId) {
+    try {
+        const response = await fetch(`/api/projects/${projectId}/use-cases`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const useCases = await response.json();
+        console.log('📊 Use Cases geladen:', useCases);
+        
+        // Use Case-Karten rendern
+        renderUseCaseCards(useCases);
+        
+        // Use Case-Dropdown aktualisieren
+        updateUseCaseSelect(useCases);
+        
+        // Automatisch ersten Use Case auswählen wenn vorhanden
+        if (useCases.length > 0 && !selectedUseCase) {
+            const firstUseCase = useCases[0].name;
+            selectUseCase(firstUseCase);
+            console.log(`🔄 Automatisch ${firstUseCase} ausgewählt für neues Projekt`);
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Use Cases:', error);
+        // Fallback: Standard-Use Cases anzeigen
+        renderUseCaseCardsFallback();
+    }
+}
+
+// Use Case-Karten rendern
+function renderUseCaseCards(useCases) {
+    const container = document.getElementById('useCaseCards');
+    if (!container) return;
+    
+    // Sortiere Use Cases nach Name (UC1, UC2, UC3)
+    const sortedUseCases = useCases.sort((a, b) => a.name.localeCompare(b.name));
+    
+    if (sortedUseCases.length === 0) {
+        container.innerHTML = `
+            <div class="col-span-3 text-center p-8 text-gray-500">
+                <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                <p>Keine Use Cases für dieses Projekt gefunden.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Use Case-Farben und Icons (mit vollständigen Tailwind-Klassen)
+    const useCaseStyles = {
+        'UC1': { colorClass: 'text-blue-600', borderClass: 'border-blue-200', icon: 'fa-bolt' },
+        'UC2': { colorClass: 'text-green-600', borderClass: 'border-green-200', icon: 'fa-sun' },
+        'UC3': { colorClass: 'text-purple-600', borderClass: 'border-purple-200', icon: 'fa-water' }
+    };
+    
+    container.innerHTML = sortedUseCases.map(uc => {
+        const style = useCaseStyles[uc.name] || { colorClass: 'text-gray-600', borderClass: 'border-gray-200', icon: 'fa-cog' };
+        const pvPower = uc.pv_power_mwp ? `${uc.pv_power_mwp.toFixed(2)} MWp` : '0 MWp';
+        const hydroPower = uc.hydro_power_kw ? `${uc.hydro_power_kw.toFixed(0)} kW` : '0 kW';
+        
+        // Beschreibung basierend auf Use Case
+        let description = uc.description || '';
+        if (!description) {
+            if (uc.name === 'UC1') {
+                description = 'Verbrauch ohne Eigenerzeugung';
+            } else if (uc.name === 'UC2') {
+                description = `Verbrauch + PV (${pvPower})`;
+            } else if (uc.name === 'UC3') {
+                description = `Verbrauch + PV + Wasserkraft`;
+            }
+        }
+        
+        return `
+            <div class="border ${style.borderClass} rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-all" 
+                 onclick="selectUseCase('${uc.name}')" 
+                 id="useCaseCard-${uc.name}">
+                <h3 class="font-semibold text-lg ${style.colorClass} mb-2">
+                    <i class="fas ${style.icon} mr-2"></i>${uc.name}
+                </h3>
+                <p class="text-sm text-gray-600 mb-2">${description}</p>
+                <ul class="text-xs text-gray-500 space-y-1">
+                    <li>• PV: ${pvPower}</li>
+                    <li>• Wasserkraft: ${hydroPower}</li>
+                    <li>• ${uc.name === 'UC1' ? 'Nur BESS-Optimierung' : uc.name === 'UC2' ? 'PV + BESS-Optimierung' : 'Vollständige Optimierung'}</li>
+                </ul>
+            </div>
+        `;
+    }).join('');
+}
+
+// Fallback: Standard-Use Cases anzeigen (wenn API-Fehler)
+function renderUseCaseCardsFallback() {
+    const container = document.getElementById('useCaseCards');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC1')">
+            <h3 class="font-semibold text-lg text-blue-600">UC1</h3>
+            <p class="text-sm text-gray-600 mb-2">Verbrauch ohne Eigenerzeugung</p>
+            <ul class="text-xs text-gray-500">
+                <li>• PV: 0 MWp</li>
+                <li>• Wasserkraft: 0 kW</li>
+                <li>• Nur BESS-Optimierung</li>
+            </ul>
+        </div>
+        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC2')">
+            <h3 class="font-semibold text-lg text-green-600">UC2</h3>
+            <p class="text-sm text-gray-600 mb-2">Verbrauch + PV</p>
+            <ul class="text-xs text-gray-500">
+                <li>• PV: Variabel</li>
+                <li>• Wasserkraft: 0 kW</li>
+                <li>• PV + BESS-Optimierung</li>
+            </ul>
+        </div>
+        <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer" onclick="selectUseCase('UC3')">
+            <h3 class="font-semibold text-lg text-purple-600">UC3</h3>
+            <p class="text-sm text-gray-600 mb-2">Verbrauch + PV + Wasserkraft</p>
+            <ul class="text-xs text-gray-500">
+                <li>• PV: Variabel</li>
+                <li>• Wasserkraft: Variabel</li>
+                <li>• Vollständige Optimierung</li>
+            </ul>
+        </div>
+    `;
+}
+
+// Use Case-Dropdown aktualisieren
+function updateUseCaseSelect(useCases) {
+    const select = document.getElementById('useCaseSelect');
+    if (!select) return;
+    
+    // Sortiere Use Cases nach Name
+    const sortedUseCases = useCases.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Lösche alte Optionen (außer der ersten "auswählen..." Option)
+    select.innerHTML = '<option value="">Use Case auswählen...</option>';
+    
+    // Füge Use Cases hinzu
+    sortedUseCases.forEach(uc => {
+        const option = document.createElement('option');
+        option.value = uc.name;
+        
+        // Beschreibung für Option
+        let description = uc.description || '';
+        if (!description) {
+            if (uc.name === 'UC1') {
+                description = 'Verbrauch ohne Eigenerzeugung';
+            } else if (uc.name === 'UC2') {
+                const pvPower = uc.pv_power_mwp ? `${uc.pv_power_mwp.toFixed(2)} MWp` : '0 MWp';
+                description = `Verbrauch + PV (${pvPower})`;
+            } else if (uc.name === 'UC3') {
+                description = 'Verbrauch + PV + Wasserkraft';
+            }
+        }
+        
+        option.textContent = `${uc.name} - ${description}`;
+        select.appendChild(option);
+    });
+    
+    // Event Listener für Dropdown-Änderung
+    select.onchange = function() {
+        if (this.value) {
+            selectUseCase(this.value);
+        }
+    };
 }
 
 // Use Case auswählen
@@ -542,14 +1278,23 @@ function selectUseCase(useCase) {
     }
     
     // Visueller Feedback für alle Use Case Karten
-    document.querySelectorAll('[onclick^="selectUseCase"]').forEach(el => {
-        el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50');
+    document.querySelectorAll('[onclick^="selectUseCase"], [id^="useCaseCard-"]').forEach(el => {
+        el.classList.remove('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-500');
+        el.classList.add('border-gray-200');
     });
     
     // Aktuelle Karte hervorheben
-    const currentCard = event.target.closest('[onclick^="selectUseCase"]');
+    const currentCard = document.getElementById(`useCaseCard-${useCase}`);
     if (currentCard) {
-        currentCard.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50');
+        currentCard.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-500');
+        currentCard.classList.remove('border-gray-200');
+    } else {
+        // Fallback: Suche nach onclick-Attribut
+        const fallbackCard = event?.target?.closest('[onclick^="selectUseCase"]');
+        if (fallbackCard) {
+            fallbackCard.classList.add('ring-2', 'ring-blue-500', 'bg-blue-50', 'border-blue-500');
+            fallbackCard.classList.remove('border-gray-200');
+        }
     }
     
     // Debug-Log
@@ -571,12 +1316,45 @@ async function runSimulation() {
         return;
     }
     
+    // Extrahiere nur den Use Case-Namen (z.B. "UC2" aus "BORBET UC2 Batterie + PV - Beschreibung")
+    let useCaseName = selectedUseCase.trim();
+    
+    // Versuche, UC1, UC2 oder UC3 aus dem Text zu extrahieren
+    const ucMatch = useCaseName.match(/\b(UC[123])\b/i);
+    if (ucMatch) {
+        useCaseName = ucMatch[1].toUpperCase(); // UC1, UC2 oder UC3
+    } else if (useCaseName.includes(' - ')) {
+        // Fallback: Nimm den Teil vor " - "
+        useCaseName = useCaseName.split(' - ')[0].trim();
+        // Versuche nochmal, UC1/UC2/UC3 zu finden
+        const ucMatch2 = useCaseName.match(/\b(UC[123])\b/i);
+        if (ucMatch2) {
+            useCaseName = ucMatch2[1].toUpperCase();
+        }
+    }
+    
+    // Validiere, dass es ein gültiger Use Case ist
+    if (!['UC1', 'UC2', 'UC3'].includes(useCaseName)) {
+        alert(`Ungültiger Use Case: "${selectedUseCase}" (extrahiert: "${useCaseName}"). Bitte wählen Sie UC1, UC2 oder UC3.`);
+        console.error('❌ Use Case-Extraktion fehlgeschlagen:', {
+            original: selectedUseCase,
+            extracted: useCaseName
+        });
+        return;
+    }
+    
+    console.log('🚀 Simulation gestartet:', {
+        projectId: selectedProject.id,
+        useCase: useCaseName,
+        originalUseCase: selectedUseCase
+    });
+    
     showLoading();
     
     try {
         const simulationData = {
             project_id: selectedProject.id,
-            use_case: selectedUseCase,
+            use_case: useCaseName,  // Verwende den extrahierten Use Case-Namen
             simulation_year: document.getElementById('simulationYear').value,
             bess_size: parseFloat(document.getElementById('bessSize').value),
             bess_power: parseFloat(document.getElementById('bessPower').value)
@@ -591,6 +1369,16 @@ async function runSimulation() {
         });
         
         const results = await response.json();
+        
+        console.log('📊 Vollständige Simulation-Ergebnisse:', results);
+        console.log('📊 Roadmap Stufe 1 Werte:', {
+            state_of_health: results.state_of_health,
+            current_capacity_kwh: results.current_capacity_kwh,
+            capacity_loss_kwh: results.capacity_loss_kwh,
+            revenue_loss_restrictions: results.revenue_loss_restrictions,
+            is_second_life: results.is_second_life,
+            second_life_cost_reduction_percent: results.second_life_cost_reduction_percent
+        });
         
         // Speichere Ergebnisse für Export
         window.currentSimulationResults = {
@@ -627,12 +1415,45 @@ async function run10YearAnalysis() {
         return;
     }
     
+    // Extrahiere nur den Use Case-Namen (z.B. "UC2" aus "BORBET UC2 Batterie + PV - Beschreibung")
+    let useCaseName = selectedUseCase.trim();
+    
+    // Versuche, UC1, UC2 oder UC3 aus dem Text zu extrahieren
+    const ucMatch = useCaseName.match(/\b(UC[123])\b/i);
+    if (ucMatch) {
+        useCaseName = ucMatch[1].toUpperCase(); // UC1, UC2 oder UC3
+    } else if (useCaseName.includes(' - ')) {
+        // Fallback: Nimm den Teil vor " - "
+        useCaseName = useCaseName.split(' - ')[0].trim();
+        // Versuche nochmal, UC1/UC2/UC3 zu finden
+        const ucMatch2 = useCaseName.match(/\b(UC[123])\b/i);
+        if (ucMatch2) {
+            useCaseName = ucMatch2[1].toUpperCase();
+        }
+    }
+    
+    // Validiere, dass es ein gültiger Use Case ist
+    if (!['UC1', 'UC2', 'UC3'].includes(useCaseName)) {
+        alert(`Ungültiger Use Case: "${selectedUseCase}" (extrahiert: "${useCaseName}"). Bitte wählen Sie UC1, UC2 oder UC3.`);
+        console.error('❌ Use Case-Extraktion fehlgeschlagen:', {
+            original: selectedUseCase,
+            extracted: useCaseName
+        });
+        return;
+    }
+    
+    console.log('🚀 10-Jahres-Analyse gestartet:', {
+        projectId: selectedProject.id,
+        useCase: useCaseName,
+        originalUseCase: selectedUseCase
+    });
+    
     showLoading();
     
     try {
         const analysisData = {
             project_id: selectedProject.id,
-            use_case: selectedUseCase,
+            use_case: useCaseName,  // Verwende den extrahierten Use Case-Namen
             bess_size: parseFloat(document.getElementById('bessSize').value),
             bess_power: parseFloat(document.getElementById('bessPower').value)
         };
@@ -682,24 +1503,467 @@ async function run10YearAnalysis() {
 
 // Ergebnisse anzeigen
 function displayResults(data) {
+    console.log('📊 displayResults aufgerufen mit Daten:', data);
+    
     // Jahresbilanz
-    document.getElementById('annualConsumption').textContent = data.annual_consumption?.toFixed(1) || '-';
-    document.getElementById('annualGeneration').textContent = data.annual_generation?.toFixed(1) || '-';
-    document.getElementById('annualRevenues').textContent = formatCurrency(data.annual_revenues) || '-';
-    document.getElementById('annualCosts').textContent = formatCurrency(data.annual_costs) || '-';
+    const annualConsumptionEl = document.getElementById('annualConsumption');
+    const annualGenerationEl = document.getElementById('annualGeneration');
+    const annualRevenuesEl = document.getElementById('annualRevenues');
+    const annualCostsEl = document.getElementById('annualCosts');
+    
+    if (annualConsumptionEl) {
+        annualConsumptionEl.textContent = data.annual_consumption?.toFixed(1) || '-';
+    }
+    if (annualGenerationEl) {
+        annualGenerationEl.textContent = data.annual_generation?.toFixed(1) || '-';
+    }
+    if (annualRevenuesEl) {
+        annualRevenuesEl.textContent = formatCurrency(data.annual_revenues) || '-';
+    }
+    if (annualCostsEl) {
+        annualCostsEl.textContent = formatCurrency(data.annual_costs) || '-';
+    }
     
     // Wirtschaftlichkeitsmetriken
-    document.getElementById('roiPercent').textContent = data.roi_percent?.toFixed(1) || '-';
-    document.getElementById('paybackYears').textContent = data.payback_years?.toFixed(1) || '-';
-    document.getElementById('totalInvestment').textContent = formatCurrency(data.total_investment) || '-';
-    document.getElementById('netCashflow').textContent = formatCurrency(data.net_cashflow) || '-';
+    const roiPercentEl = document.getElementById('roiPercent');
+    const paybackYearsEl = document.getElementById('paybackYears');
+    const totalInvestmentEl = document.getElementById('totalInvestment');
+    const netCashflowEl = document.getElementById('netCashflow');
+    
+    if (roiPercentEl) {
+        roiPercentEl.textContent = data.roi_percent?.toFixed(1) || '-';
+    }
+    if (paybackYearsEl) {
+        paybackYearsEl.textContent = data.payback_years?.toFixed(1) || '-';
+    }
+    if (totalInvestmentEl) {
+        totalInvestmentEl.textContent = formatCurrency(data.total_investment) || '-';
+    }
+    if (netCashflowEl) {
+        netCashflowEl.textContent = formatCurrency(data.net_cashflow) || '-';
+    }
+    
+    // ROADMAP STUFE 1: Erweiterte Kennzahlen anzeigen
+    displayRoadmapStufe1Metrics(data);
+    
+    // ROADMAP STUFE 2.1: Co-Location Kennzahlen anzeigen
+    displayCoLocationMetrics(data);
+    
+    // ROADMAP STUFE 2.2: Optimierte Regelstrategien Kennzahlen anzeigen
+    displayOptimizationMetrics(data);
     
     // Charts erstellen
     createAnnualBalanceChart(data);
     createRevenueComponentsChart(data);
     
     // Ergebnisse anzeigen
-    document.getElementById('results').classList.remove('hidden');
+    const resultsEl = document.getElementById('results');
+    if (resultsEl) {
+        resultsEl.classList.remove('hidden');
+    }
+}
+
+// ROADMAP STUFE 1: Erweiterte Kennzahlen anzeigen
+function displayRoadmapStufe1Metrics(data) {
+    console.log('📊 Roadmap Stufe 1 Daten:', data);
+    
+    // State of Health
+    const soh = data.state_of_health || data.stateOfHealth || 100.0;
+    if (document.getElementById('stateOfHealth')) {
+        document.getElementById('stateOfHealth').textContent = soh.toFixed(1);
+    }
+    
+    // Aktuelle Kapazität - prüfe verschiedene mögliche Felder
+    let currentCapacity = data.current_capacity_kwh || data.currentCapacity || data.current_capacity || 0;
+    // Falls 0, versuche aus bess_size zu berechnen
+    if (currentCapacity === 0 && data.bess_size_kwh) {
+        currentCapacity = data.bess_size_kwh;
+    } else if (currentCapacity === 0 && data.bess_size) {
+        // bess_size könnte in MWh sein, konvertiere zu kWh
+        currentCapacity = data.bess_size > 1000 ? data.bess_size : data.bess_size * 1000;
+    } else if (currentCapacity === 0 && selectedProject && selectedProject.bess_size) {
+        // Projekt bess_size könnte in MWh sein, konvertiere zu kWh
+        const projectSize = selectedProject.bess_size;
+        currentCapacity = projectSize > 1000 ? projectSize : projectSize * 1000;
+    }
+    
+    if (document.getElementById('currentCapacity')) {
+        document.getElementById('currentCapacity').textContent = currentCapacity.toFixed(0);
+    }
+    
+    // Kapazitätsverlust
+    let capacityLoss = data.capacity_loss_kwh || data.capacityLoss || data.capacity_loss || 0;
+    // Falls 0, aber SoH < 100%, berechne Verlust
+    if (capacityLoss === 0 && soh < 100.0 && currentCapacity > 0) {
+        const initialCapacity = currentCapacity / (soh / 100.0);
+        capacityLoss = initialCapacity - currentCapacity;
+    }
+    
+    if (document.getElementById('capacityLoss')) {
+        document.getElementById('capacityLoss').textContent = capacityLoss.toFixed(0);
+    }
+    
+    // Erlösverlust durch Restriktionen
+    const revenueLoss = data.revenue_loss_restrictions || data.revenueLossRestrictions || data.revenue_loss || 0;
+    if (document.getElementById('revenueLossRestrictions')) {
+        document.getElementById('revenueLossRestrictions').textContent = formatCurrency(revenueLoss) || '0 €';
+    }
+    
+    // Second-Life Status
+    const isSecondLife = data.is_second_life || data.isSecondLife || false;
+    const secondLifeCard = document.getElementById('secondLifeCard');
+    const secondLifeIcon = document.getElementById('secondLifeIcon');
+    const secondLifeStatus = document.getElementById('secondLifeStatus');
+    const secondLifeInfo = document.getElementById('secondLifeInfo');
+    
+    if (isSecondLife) {
+        secondLifeCard.classList.remove('border-gray-200');
+        secondLifeCard.classList.add('border-green-300', 'bg-green-50');
+        secondLifeIcon.classList.remove('text-gray-600');
+        secondLifeIcon.classList.add('text-green-600');
+        secondLifeStatus.textContent = 'Ja';
+        secondLifeStatus.classList.remove('text-gray-600');
+        secondLifeStatus.classList.add('text-green-600');
+        secondLifeInfo.textContent = 'Second-Life Batterie aktiv';
+    } else {
+        secondLifeCard.classList.remove('border-green-300', 'bg-green-50');
+        secondLifeCard.classList.add('border-gray-200');
+        secondLifeIcon.classList.remove('text-green-600');
+        secondLifeIcon.classList.add('text-gray-600');
+        secondLifeStatus.textContent = 'Nein';
+        secondLifeStatus.classList.remove('text-green-600');
+        secondLifeStatus.classList.add('text-gray-600');
+        secondLifeInfo.textContent = 'Standard-Batterie';
+    }
+    
+    // Kostenvorteil Second-Life
+    const costReduction = data.second_life_cost_reduction_percent || 0;
+    const costCard = document.getElementById('secondLifeCostCard');
+    if (costReduction > 0) {
+        document.getElementById('secondLifeCostReduction').textContent = costReduction.toFixed(1);
+        costCard.classList.remove('border-gray-200');
+        costCard.classList.add('border-green-300', 'bg-green-50');
+    } else {
+        document.getElementById('secondLifeCostReduction').textContent = '0.0';
+        costCard.classList.remove('border-green-300', 'bg-green-50');
+        costCard.classList.add('border-gray-200');
+    }
+}
+
+// ROADMAP STUFE 2.1: Co-Location Kennzahlen anzeigen
+function displayCoLocationMetrics(data) {
+    const isCoLocation = data.is_co_location || false;
+    const coLocationSection = document.getElementById('coLocationSection');
+    const coLocationStatusCard = document.getElementById('coLocationStatusCard');
+    const coLocationIcon = document.getElementById('coLocationIcon');
+    const coLocationStatus = document.getElementById('coLocationStatus');
+    const coLocationInfo = document.getElementById('coLocationInfo');
+    
+    if (!coLocationSection) return; // Sektion existiert nicht
+    
+    if (isCoLocation) {
+        // Co-Location aktiviert - Sektion anzeigen
+        coLocationSection.classList.remove('hidden');
+        
+        // Status-Karte aktualisieren
+        if (coLocationStatusCard && coLocationIcon && coLocationStatus && coLocationInfo) {
+            coLocationStatusCard.classList.remove('border-gray-200');
+            coLocationStatusCard.classList.add('border-green-300', 'bg-green-50');
+            coLocationIcon.classList.remove('text-gray-600');
+            coLocationIcon.classList.add('text-green-600');
+            coLocationStatus.textContent = 'Aktiv';
+            coLocationStatus.classList.remove('text-gray-600');
+            coLocationStatus.classList.add('text-green-600');
+            coLocationInfo.textContent = 'PV + BESS Co-Location';
+        }
+        
+        // PV-Ausnutzung
+        const pvUtilization = data.pv_utilization_percent || 100.0;
+        if (document.getElementById('pvUtilization')) {
+            document.getElementById('pvUtilization').textContent = pvUtilization.toFixed(1);
+        }
+        
+        // Vermiedene Curtailment
+        const avoidedCurtailment = data.avoided_curtailment_kw || 0.0;
+        if (document.getElementById('avoidedCurtailment')) {
+            document.getElementById('avoidedCurtailment').textContent = avoidedCurtailment.toFixed(0);
+        }
+        
+        // Eigenverbrauchsquote
+        const selfConsumptionRate = data.self_consumption_rate_percent || 0.0;
+        if (document.getElementById('selfConsumptionRate')) {
+            document.getElementById('selfConsumptionRate').textContent = selfConsumptionRate.toFixed(1);
+        }
+        
+        // Erlöszuwachs
+        const revenueIncrease = data.co_location_revenue_increase_eur || 0.0;
+        if (document.getElementById('coLocationRevenueIncrease')) {
+            document.getElementById('coLocationRevenueIncrease').textContent = formatCurrency(revenueIncrease) || '0 €';
+        }
+        
+        // Kosteneinsparung
+        const costSavings = data.co_location_cost_savings_eur || 0.0;
+        if (document.getElementById('coLocationCostSavings')) {
+            document.getElementById('coLocationCostSavings').textContent = formatCurrency(costSavings) || '0 €';
+        }
+        
+        // Gesamtnutzen
+        const totalBenefit = data.co_location_total_benefit_eur || 0.0;
+        if (document.getElementById('coLocationTotalBenefit')) {
+            document.getElementById('coLocationTotalBenefit').textContent = formatCurrency(totalBenefit) || '0 €';
+        }
+    } else {
+        // Co-Location nicht aktiviert - Sektion ausblenden
+        coLocationSection.classList.add('hidden');
+    }
+}
+
+// ROADMAP STUFE 2.2: Optimierte Regelstrategien Kennzahlen anzeigen (Simulation Tab)
+function displayOptimizationMetrics(data) {
+    console.log('📊 Aktualisiere Optimierungs-Metriken:', data);
+    
+    const isOptimizationEnabled = data.optimization_enabled || false;
+    const strategy = data.optimization_strategy || 'none';
+    const revenueBoost = data.optimization_revenue_boost_percent || 0.0;
+    const priceVolatility = data.optimization_price_volatility || 0.0;
+    const optimizationBenefit = data.optimization_benefit_eur || 0.0;
+    
+    // Optimierungs-Sektion
+    const optimizationSection = document.getElementById('optimizationSection');
+    if (!optimizationSection) {
+        console.log('⚠️ optimizationSection nicht gefunden');
+        return;
+    }
+    
+    if (isOptimizationEnabled) {
+        optimizationSection.classList.remove('hidden');
+        
+        // Optimierung Status
+        const statusCard = document.getElementById('optimizationStatusCard');
+        const statusIcon = document.getElementById('optimizationIcon');
+        const statusText = document.getElementById('optimizationStatus');
+        const statusInfo = document.getElementById('optimizationInfo');
+        
+        if (statusCard && statusIcon && statusText && statusInfo) {
+            statusCard.classList.remove('border-gray-200');
+            statusCard.classList.add('border-purple-300', 'bg-purple-50');
+            statusIcon.classList.remove('text-gray-600');
+            statusIcon.classList.add('text-purple-600');
+            statusText.textContent = 'Aktiv';
+            statusText.classList.remove('text-gray-600');
+            statusText.classList.add('text-purple-600');
+            
+            // Strategie-Namen für Info
+            const strategyNames = {
+                'pso': 'Particle Swarm Optimization',
+                'multi_objective': 'Multi-Objective Optimierung',
+                'cycle_optimization': 'Zyklenoptimierung',
+                'cluster_dispatch': 'Cluster-Based Dispatch',
+                'none': 'Keine Optimierung'
+            };
+            statusInfo.textContent = strategyNames[strategy] || 'Optimierung aktiv';
+        }
+        
+        // Strategie anzeigen
+        if (document.getElementById('optimizationStrategy')) {
+            const strategyLabels = {
+                'pso': 'PSO',
+                'multi_objective': 'Multi-Obj',
+                'cycle_optimization': 'Cycle Opt',
+                'cluster_dispatch': 'Cluster',
+                'none': '-'
+            };
+            document.getElementById('optimizationStrategy').textContent = strategyLabels[strategy] || strategy;
+        }
+        
+        // Erlös-Boost
+        if (document.getElementById('optimizationRevenueBoost')) {
+            document.getElementById('optimizationRevenueBoost').textContent = revenueBoost.toFixed(1);
+        }
+        
+        // Preis-Volatilität
+        if (document.getElementById('optimizationPriceVolatility')) {
+            document.getElementById('optimizationPriceVolatility').textContent = priceVolatility.toFixed(1);
+        }
+        
+        // Optimierungs-Benefit
+        if (document.getElementById('optimizationBenefit')) {
+            document.getElementById('optimizationBenefit').textContent = formatCurrency(optimizationBenefit) || '0';
+        }
+        
+        // Strategie-Details - Beschreibung in optimizationDetails
+        if (document.getElementById('optimizationDetails')) {
+            const strategyDescriptions = {
+                'pso': 'Schwarm-basierte Optimierung',
+                'multi_objective': 'Erlös + Degradation',
+                'cycle_optimization': 'Battery Health',
+                'cluster_dispatch': 'Preis-Cluster',
+                'none': 'Keine Details'
+            };
+            document.getElementById('optimizationDetails').textContent = strategyDescriptions[strategy] || 'Optimierung aktiv';
+        }
+        
+        // Strategie-Details - Beschreibung in optimizationDescription
+        if (document.getElementById('optimizationDescription')) {
+            document.getElementById('optimizationDescription').textContent = 
+                `+${revenueBoost.toFixed(1)}% Mehrertrag durch intelligente Strategien`;
+        }
+    } else {
+        optimizationSection.classList.add('hidden');
+        
+        // Status auf "Inaktiv" setzen
+        const statusCard = document.getElementById('optimizationStatusCard');
+        const statusIcon = document.getElementById('optimizationIcon');
+        const statusText = document.getElementById('optimizationStatus');
+        const statusInfo = document.getElementById('optimizationInfo');
+        
+        if (statusCard && statusIcon && statusText && statusInfo) {
+            statusCard.classList.remove('border-purple-300', 'bg-purple-50');
+            statusCard.classList.add('border-gray-200');
+            statusIcon.classList.remove('text-purple-600');
+            statusIcon.classList.add('text-gray-600');
+            statusText.textContent = 'Inaktiv';
+            statusText.classList.remove('text-purple-600');
+            statusText.classList.add('text-gray-600');
+            statusInfo.textContent = 'Optimierung deaktiviert';
+        }
+    }
+    
+    // Toggle Switch aktualisieren
+    const toggle = document.getElementById('optimizationToggle');
+    const toggleLabel = document.getElementById('optimizationToggleLabel');
+    if (toggle) {
+        toggle.checked = isOptimizationEnabled;
+    }
+    if (toggleLabel) {
+        toggleLabel.textContent = isOptimizationEnabled ? 'Aktiv' : 'Inaktiv';
+    }
+    
+    console.log('✅ Optimierungs-Metriken aktualisiert');
+}
+
+// Optimierung aktivieren/deaktivieren (Simulation Tab)
+async function toggleOptimization() {
+    const projectId = getCurrentProjectId();
+    if (!projectId) {
+        alert('Bitte wählen Sie zuerst ein Projekt aus');
+        const toggle = document.getElementById('optimizationToggle');
+        if (toggle) toggle.checked = !toggle.checked; // Rückgängig machen
+        return;
+    }
+    
+    const toggle = document.getElementById('optimizationToggle');
+    const isEnabled = toggle.checked;
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}/optimization-config`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                optimization_enabled: isEnabled
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const toggleLabel = document.getElementById('optimizationToggleLabel');
+            if (toggleLabel) {
+                toggleLabel.textContent = isEnabled ? 'Aktiv' : 'Inaktiv';
+            }
+            
+            // Erfolgsmeldung
+            showSuccessMessage(isEnabled ? 'Optimierung aktiviert' : 'Optimierung deaktiviert');
+            
+            // Metriken neu laden, wenn Simulation bereits gelaufen ist
+            if (window.currentSimulationResults) {
+                // Lade aktualisierte Konfiguration
+                const configResponse = await fetch(`/api/projects/${projectId}/optimization-config`);
+                const configData = await configResponse.json();
+                if (configData.success) {
+                    // Aktualisiere Anzeige
+                    displayOptimizationMetrics({
+                        optimization_enabled: isEnabled,
+                        optimization_strategy: configData.config.preferred_strategy || 'none',
+                        optimization_revenue_boost_percent: 0.0,
+                        optimization_price_volatility: 0.0,
+                        optimization_benefit_eur: 0.0
+                    });
+                }
+            }
+        } else {
+            alert('Fehler beim Aktualisieren der Optimierung: ' + (data.error || 'Unbekannter Fehler'));
+            toggle.checked = !isEnabled; // Rückgängig machen
+        }
+    } catch (error) {
+        console.error('Fehler beim Aktivieren/Deaktivieren der Optimierung:', error);
+        alert('Fehler beim Aktivieren/Deaktivieren der Optimierung');
+        toggle.checked = !isEnabled; // Rückgängig machen
+    }
+}
+
+// Optimierung aktivieren/deaktivieren (Dashboard Tab)
+async function toggleDashboardOptimization() {
+    const projectId = getCurrentProjectId();
+    if (!projectId) {
+        alert('Bitte wählen Sie zuerst ein Projekt aus');
+        const toggle = document.getElementById('dashboardOptimizationToggle');
+        if (toggle) toggle.checked = !toggle.checked; // Rückgängig machen
+        return;
+    }
+    
+    const toggle = document.getElementById('dashboardOptimizationToggle');
+    const isEnabled = toggle.checked;
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}/optimization-config`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                optimization_enabled: isEnabled
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const toggleLabel = document.getElementById('dashboardOptimizationToggleLabel');
+            if (toggleLabel) {
+                toggleLabel.textContent = isEnabled ? 'Aktiv' : 'Inaktiv';
+            }
+            
+            // Erfolgsmeldung
+            showSuccessMessage(isEnabled ? 'Optimierung aktiviert' : 'Optimierung deaktiviert');
+            
+            // Metriken neu laden, wenn Dashboard bereits geladen ist
+            if (window.currentDashboardResults) {
+                // Lade aktualisierte Konfiguration
+                const configResponse = await fetch(`/api/projects/${projectId}/optimization-config`);
+                const configData = await configResponse.json();
+                if (configData.success) {
+                    // Aktualisiere Anzeige
+                    updateDashboardOptimizationMetrics({
+                        optimization_enabled: isEnabled,
+                        optimization_strategy: configData.config.preferred_strategy || 'none',
+                        optimization_revenue_boost_percent: 0.0,
+                        optimization_price_volatility: 0.0,
+                        optimization_benefit_eur: 0.0
+                    });
+                }
+            }
+        } else {
+            alert('Fehler beim Aktualisieren der Optimierung: ' + (data.error || 'Unbekannter Fehler'));
+            toggle.checked = !isEnabled; // Rückgängig machen
+        }
+    } catch (error) {
+        console.error('Fehler beim Aktivieren/Deaktivieren der Optimierung:', error);
+        alert('Fehler beim Aktivieren/Deaktivieren der Optimierung');
+        toggle.checked = !isEnabled; // Rückgängig machen
+    }
 }
 
 // 10-Jahres-Analyse anzeigen
@@ -710,12 +1974,75 @@ function display10YearAnalysis(data) {
     document.getElementById('npv').textContent = formatCurrency(data.npv) || '-';
     document.getElementById('irr').textContent = data.irr?.toFixed(1) || '-';
     
+    // ROADMAP STUFE 1: Erweiterte Kennzahlen aus 10-Jahres-Analyse
+    if (data.roadmap_stufe1) {
+        displayRoadmapStufe1Summary(data.roadmap_stufe1);
+    }
+    
     // Charts erstellen
     createCashflowChart(data);
     createDegradationChart(data);
     
     // 10-Jahres-Analyse anzeigen
     document.getElementById('tenYearAnalysis').classList.remove('hidden');
+}
+
+// ROADMAP STUFE 1: Zusammenfassung der 10-Jahres-Analyse anzeigen
+function displayRoadmapStufe1Summary(roadmapData) {
+    // Erstelle oder aktualisiere Zusammenfassungs-Sektion
+    let summarySection = document.getElementById('roadmapStufe1Summary');
+    if (!summarySection) {
+        summarySection = document.createElement('div');
+        summarySection.id = 'roadmapStufe1Summary';
+        summarySection.className = 'bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg shadow-md p-6 mb-8 border-2 border-purple-200';
+        summarySection.innerHTML = `
+            <div class="flex items-center mb-4">
+                <i class="fas fa-chart-line text-purple-600 text-2xl mr-3"></i>
+                <h3 class="text-lg font-semibold text-gray-900">10-Jahres-Zusammenfassung (Roadmap Stufe 1)</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-red-200">
+                    <div class="text-2xl font-bold text-red-600" id="totalRevenueLoss10y">-</div>
+                    <div class="text-sm text-gray-600 font-medium">Erlösverlust (10J)</div>
+                    <div class="text-xs text-gray-500 mt-1">Durch Restriktionen</div>
+                </div>
+                <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                    <div class="text-2xl font-bold text-green-600" id="finalSoH">-</div>
+                    <div class="text-sm text-gray-600 font-medium">Finaler SoH</div>
+                    <div class="text-xs text-gray-500 mt-1">Nach 10 Jahren</div>
+                </div>
+                <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                    <div class="text-2xl font-bold text-blue-600" id="finalCapacity">-</div>
+                    <div class="text-sm text-gray-600 font-medium">Finale Kapazität</div>
+                    <div class="text-xs text-gray-500 mt-1">Nach 10 Jahren</div>
+                </div>
+                <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-orange-200">
+                    <div class="text-2xl font-bold text-orange-600" id="totalCapacityLoss10y">-</div>
+                    <div class="text-sm text-gray-600 font-medium">Gesamtverlust (10J)</div>
+                    <div class="text-xs text-gray-500 mt-1">Kapazitätsverlust</div>
+                </div>
+            </div>
+        `;
+        // Füge vor den Charts ein
+        const tenYearSection = document.getElementById('tenYearAnalysis');
+        if (tenYearSection) {
+            tenYearSection.insertBefore(summarySection, tenYearSection.firstChild);
+        }
+    }
+    
+    // Werte aktualisieren
+    if (document.getElementById('totalRevenueLoss10y')) {
+        document.getElementById('totalRevenueLoss10y').textContent = formatCurrency(roadmapData.total_revenue_loss_restrictions_10y || 0) || '0 €';
+    }
+    if (document.getElementById('finalSoH')) {
+        document.getElementById('finalSoH').textContent = (roadmapData.final_state_of_health || 0).toFixed(1) + '%';
+    }
+    if (document.getElementById('finalCapacity')) {
+        document.getElementById('finalCapacity').textContent = (roadmapData.final_capacity_kwh || 0).toFixed(0) + ' kWh';
+    }
+    if (document.getElementById('totalCapacityLoss10y')) {
+        document.getElementById('totalCapacityLoss10y').textContent = (roadmapData.total_capacity_loss_kwh || 0).toFixed(0) + ' kWh';
+    }
 }
 
 // Chart-Funktionen
@@ -931,14 +2258,69 @@ async function loadDashboardProjects() {
 }
 
 // Dashboard-Projekt laden
-function loadDashboardProject() {
+async function loadDashboardProject() {
     const projectId = document.getElementById('dashboardProjectSelect').value;
     if (projectId) {
         document.getElementById('enhancedDashboard').classList.remove('hidden');
+        
+        // Use Cases für Dashboard-Projekt laden
+        await loadDashboardUseCases(projectId);
+        
+        // ROADMAP STUFE 2.2: Lade Optimierungs-Konfiguration und initialisiere Toggle
+        loadOptimizationConfig(projectId);
+        
         // Dashboard mit Standarddaten initialisieren
         initializeDashboard();
     } else {
         document.getElementById('enhancedDashboard').classList.add('hidden');
+    }
+}
+
+// Use Cases für Dashboard-Projekt laden
+async function loadDashboardUseCases(projectId) {
+    try {
+        const response = await fetch(`/api/projects/${projectId}/use-cases`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const useCases = await response.json();
+        console.log('📊 Dashboard Use Cases geladen:', useCases);
+        
+        // Use Case-Dropdown im Dashboard aktualisieren
+        const dashboardUseCaseSelect = document.getElementById('dashboardUseCase');
+        if (dashboardUseCaseSelect) {
+            // Sortiere Use Cases nach Name
+            const sortedUseCases = useCases.sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Lösche alte Optionen
+            dashboardUseCaseSelect.innerHTML = '<option value="">Use Case auswählen...</option>';
+            
+            // Füge Use Cases hinzu
+            sortedUseCases.forEach(uc => {
+                const option = document.createElement('option');
+                option.value = uc.name;
+                
+                // Beschreibung für Option
+                let description = uc.description || '';
+                if (!description) {
+                    if (uc.name === 'UC1') {
+                        description = 'Verbrauch ohne Eigenerzeugung';
+                    } else if (uc.name === 'UC2') {
+                        const pvPower = uc.pv_power_mwp ? `${uc.pv_power_mwp.toFixed(2)} MWp` : '0 MWp';
+                        description = `PV + Verbrauch (${pvPower})`;
+                    } else if (uc.name === 'UC3') {
+                        description = 'PV + Hydro + Verbrauch';
+                    }
+                }
+                
+                option.textContent = `${uc.name} - ${description}`;
+                dashboardUseCaseSelect.appendChild(option);
+            });
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Dashboard Use Cases:', error);
     }
 }
 
@@ -1285,7 +2667,8 @@ function initializeRevenueChart(colors) {
 // Dashboard-Simulation starten
 async function runDashboardSimulation() {
     const projectId = document.getElementById('dashboardProjectSelect').value;
-    const useCase = document.getElementById('dashboardUseCase').value;
+    const useCaseSelect = document.getElementById('dashboardUseCase');
+    const useCase = useCaseSelect ? useCaseSelect.value : '';
     const bessMode = document.getElementById('dashboardBessMode').value;
     const optimizationTarget = document.getElementById('dashboardOptimizationTarget').value;
     const spotPriceScenario = document.getElementById('dashboardSpotPriceScenario').value;
@@ -1295,9 +2678,46 @@ async function runDashboardSimulation() {
         return;
     }
     
+    if (!useCase || useCase.trim() === '') {
+        alert('Bitte wählen Sie einen Use Case aus.');
+        return;
+    }
+    
+    // Extrahiere nur den Use Case-Namen (z.B. "UC2" aus "BORBET UC2 Batterie + PV - Beschreibung")
+    let useCaseName = useCase.trim();
+    
+    // Versuche, UC1, UC2 oder UC3 aus dem Text zu extrahieren
+    // Mögliche Formate:
+    // - "UC2" (direkt)
+    // - "BORBET UC2 Batterie + PV - Beschreibung"
+    // - "UC2 - Beschreibung"
+    const ucMatch = useCaseName.match(/\b(UC[123])\b/i);
+    if (ucMatch) {
+        useCaseName = ucMatch[1].toUpperCase(); // UC1, UC2 oder UC3
+    } else if (useCaseName.includes(' - ')) {
+        // Fallback: Nimm den Teil vor " - "
+        useCaseName = useCaseName.split(' - ')[0].trim();
+        // Versuche nochmal, UC1/UC2/UC3 zu finden
+        const ucMatch2 = useCaseName.match(/\b(UC[123])\b/i);
+        if (ucMatch2) {
+            useCaseName = ucMatch2[1].toUpperCase();
+        }
+    }
+    
+    // Validiere, dass es ein gültiger Use Case ist
+    if (!['UC1', 'UC2', 'UC3'].includes(useCaseName)) {
+        alert(`Ungültiger Use Case: "${useCase}" (extrahiert: "${useCaseName}"). Bitte wählen Sie UC1, UC2 oder UC3.`);
+        console.error('❌ Use Case-Extraktion fehlgeschlagen:', {
+            original: useCase,
+            extracted: useCaseName
+        });
+        return;
+    }
+    
     console.log('🚀 Dashboard-Simulation gestartet:', {
         projectId,
-        useCase,
+        useCase: useCaseName,
+        originalUseCase: useCase,
         bessMode,
         optimizationTarget,
         spotPriceScenario
@@ -1313,7 +2733,7 @@ async function runDashboardSimulation() {
         // 2. Führe normale Simulation durch
         const simulationData = {
             project_id: projectId,
-            use_case: useCase,
+            use_case: useCaseName,  // Verwende den validierten Use Case-Namen
             simulation_year: new Date().getFullYear(),
             bess_size: project.bess_size || 1000,
             bess_power: project.bess_power || 500,
@@ -1330,12 +2750,26 @@ async function runDashboardSimulation() {
             body: JSON.stringify(simulationData)
         });
         
+        if (!simulationResponse.ok) {
+            const errorData = await simulationResponse.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+            const errorMessage = errorData.error || `HTTP ${simulationResponse.status}: ${simulationResponse.statusText}`;
+            console.error('❌ Simulation-Fehler:', errorMessage);
+            throw new Error(errorMessage);
+        }
+        
         const simulationResults = await simulationResponse.json();
+        
+        if (simulationResults.error) {
+            console.error('❌ Simulation-Ergebnis-Fehler:', simulationResults.error);
+            throw new Error(simulationResults.error);
+        }
+        
+        console.log('✅ Simulation erfolgreich:', simulationResults);
         
         // 3. Führe 10-Jahres-Analyse durch
         const analysisData = {
             project_id: projectId,
-            use_case: useCase,
+            use_case: useCaseName,  // Verwende den validierten Use Case-Namen
             bess_size: project.bess_size || 1000,
             bess_power: project.bess_power || 500,
             bess_mode: bessMode,
@@ -1351,7 +2785,16 @@ async function runDashboardSimulation() {
             body: JSON.stringify(analysisData)
         });
         
+        if (!analysisResponse.ok) {
+            const errorData = await analysisResponse.json().catch(() => ({ error: 'Unbekannter Fehler' }));
+            throw new Error(errorData.error || `HTTP ${analysisResponse.status}: ${analysisResponse.statusText}`);
+        }
+        
         const analysisResults = await analysisResponse.json();
+        
+        if (analysisResults.error) {
+            throw new Error(analysisResults.error);
+        }
         
         // 4. Kombiniere Ergebnisse und aktualisiere Dashboard
         const combinedResults = {
@@ -1393,7 +2836,8 @@ async function runDashboardSimulation() {
         
     } catch (error) {
         console.error('Fehler bei der Dashboard-Simulation:', error);
-        alert('Fehler bei der Dashboard-Simulation. Bitte versuchen Sie es erneut.');
+        const errorMessage = error.message || 'Unbekannter Fehler';
+        alert(`Fehler bei der Dashboard-Simulation:\n\n${errorMessage}\n\nBitte versuchen Sie es erneut oder kontaktieren Sie den Support.`);
     } finally {
         hideLoading();
     }
@@ -1419,6 +2863,9 @@ function updateDashboard(useCase) {
     document.getElementById('dashboardEigenverbrauchsquote').textContent = data.eigenverbrauchsquote.toFixed(1);
     document.getElementById('dashboardCo2Savings').textContent = data.co2_savings.toLocaleString();
     document.getElementById('dashboardNettoErloes').textContent = data.netto_erloes.toLocaleString();
+    
+    // ROADMAP STUFE 1: Erweiterte Kennzahlen im Dashboard anzeigen
+    updateDashboardRoadmapStufe1Metrics(data);
     document.getElementById('dashboardBessEfficiency').textContent = data.bess_efficiency.toFixed(1);
     document.getElementById('dashboardSpotRevenue').textContent = data.spot_revenue.toLocaleString();
     document.getElementById('dashboardRegelreserveRevenue').textContent = data.regelreserve_revenue.toLocaleString();
@@ -1461,11 +2908,324 @@ function updateEnhancedDashboard(results, project) {
             `↗ ${formatCurrency(tenYear.total_net_cashflow || 0)}`;
     }
     
+    // ROADMAP STUFE 1: Erweiterte Kennzahlen im Dashboard anzeigen
+    updateDashboardRoadmapStufe1Metrics(results);
+    
+    // ROADMAP STUFE 2.1: Co-Location Kennzahlen im Dashboard anzeigen
+    updateDashboardCoLocationMetrics(results);
+    
+    // ROADMAP STUFE 2.2: Optimierte Regelstrategien Kennzahlen im Dashboard anzeigen
+    updateDashboardOptimizationMetrics(results);
+    
     // BESS-Modus spezifische Anpassungen
     updateBessModeSpecificData(results.bess_mode, results);
     
     // Charts mit echten Daten aktualisieren
     updateEnhancedDashboardCharts(results, project);
+}
+
+// ROADMAP STUFE 1: Erweiterte Kennzahlen im Dashboard aktualisieren
+function updateDashboardRoadmapStufe1Metrics(data) {
+    // State of Health
+    const soh = data.state_of_health || 100.0;
+    if (document.getElementById('dashboardStateOfHealth')) {
+        document.getElementById('dashboardStateOfHealth').textContent = soh.toFixed(1);
+    }
+    
+    // Aktuelle Kapazität
+    const currentCapacity = data.current_capacity_kwh || data.bess_size || 0;
+    if (document.getElementById('dashboardCurrentCapacity')) {
+        document.getElementById('dashboardCurrentCapacity').textContent = currentCapacity.toLocaleString('de-DE', {maximumFractionDigits: 0});
+    }
+    
+    // Kapazitätsverlust
+    const capacityLoss = data.capacity_loss_kwh || 0;
+    if (document.getElementById('dashboardCapacityLoss')) {
+        document.getElementById('dashboardCapacityLoss').textContent = capacityLoss.toLocaleString('de-DE', {maximumFractionDigits: 0});
+    }
+    
+    // Erlösverlust durch Restriktionen
+    const revenueLoss = data.revenue_loss_restrictions || 0;
+    if (document.getElementById('dashboardRevenueLoss')) {
+        document.getElementById('dashboardRevenueLoss').textContent = formatCurrency(revenueLoss) || '0 €';
+    }
+    
+    // Second-Life Status
+    const isSecondLife = data.is_second_life || false;
+    const secondLifeCard = document.getElementById('dashboardSecondLifeCard');
+    const secondLifeIcon = document.getElementById('dashboardSecondLifeIcon');
+    const secondLifeStatus = document.getElementById('dashboardSecondLifeStatus');
+    
+    if (secondLifeCard && secondLifeIcon && secondLifeStatus) {
+        if (isSecondLife) {
+            secondLifeCard.classList.remove('border-gray-200');
+            secondLifeCard.classList.add('border-green-300', 'bg-green-50');
+            secondLifeIcon.classList.remove('text-gray-600');
+            secondLifeIcon.classList.add('text-green-600');
+            secondLifeStatus.textContent = 'Ja';
+            secondLifeStatus.classList.remove('text-gray-600');
+            secondLifeStatus.classList.add('text-green-600');
+        } else {
+            secondLifeCard.classList.remove('border-green-300', 'bg-green-50');
+            secondLifeCard.classList.add('border-gray-200');
+            secondLifeIcon.classList.remove('text-green-600');
+            secondLifeIcon.classList.add('text-gray-600');
+            secondLifeStatus.textContent = 'Nein';
+            secondLifeStatus.classList.remove('text-green-600');
+            secondLifeStatus.classList.add('text-gray-600');
+        }
+    }
+    
+    // Kostenvorteil Second-Life
+    const costReduction = data.second_life_cost_reduction_percent || 0;
+    const costCard = document.getElementById('dashboardCostReductionCard');
+    if (costCard && document.getElementById('dashboardCostReduction')) {
+        if (costReduction > 0) {
+            document.getElementById('dashboardCostReduction').textContent = costReduction.toFixed(1);
+            costCard.classList.remove('border-gray-200');
+            costCard.classList.add('border-green-300', 'bg-green-50');
+        } else {
+            document.getElementById('dashboardCostReduction').textContent = '0.0';
+            costCard.classList.remove('border-green-300', 'bg-green-50');
+            costCard.classList.add('border-gray-200');
+        }
+    }
+}
+
+// ROADMAP STUFE 2.1: Co-Location Kennzahlen im Dashboard aktualisieren
+function updateDashboardCoLocationMetrics(data) {
+    console.log('📊 Aktualisiere Dashboard Co-Location Metriken:', data);
+    
+    const isCoLocation = data.is_co_location || false;
+    
+    // Co-Location-Sektion im Dashboard (falls vorhanden)
+    const coLocationSection = document.getElementById('dashboardCoLocationSection');
+    if (!coLocationSection) {
+        // Sektion existiert nicht im Dashboard - das ist OK, Co-Location wird nur im Simulation-Tab angezeigt
+        console.log('⚠️ dashboardCoLocationSection nicht gefunden');
+        return;
+    }
+    
+    if (isCoLocation) {
+        coLocationSection.classList.remove('hidden');
+        
+        // Co-Location Status
+        const statusCard = document.getElementById('dashboardCoLocationStatusCard');
+        const statusIcon = document.getElementById('dashboardCoLocationIcon');
+        const statusText = document.getElementById('dashboardCoLocationStatus');
+        const statusInfo = document.getElementById('dashboardCoLocationInfo');
+        
+        if (statusCard && statusIcon && statusText && statusInfo) {
+            statusCard.classList.remove('border-gray-200');
+            statusCard.classList.add('border-green-300', 'bg-green-50');
+            statusIcon.classList.remove('text-gray-600');
+            statusIcon.classList.add('text-green-600');
+            statusText.textContent = 'Aktiv';
+            statusText.classList.remove('text-gray-600');
+            statusText.classList.add('text-green-600');
+            statusInfo.textContent = 'PV + BESS Co-Location';
+        }
+        
+        // Kennzahlen aktualisieren
+        if (document.getElementById('dashboardPvUtilization')) {
+            document.getElementById('dashboardPvUtilization').textContent = (data.pv_utilization_percent || 100.0).toFixed(1);
+        }
+        if (document.getElementById('dashboardAvoidedCurtailment')) {
+            document.getElementById('dashboardAvoidedCurtailment').textContent = (data.avoided_curtailment_kw || 0.0).toFixed(0);
+        }
+        if (document.getElementById('dashboardSelfConsumptionRate')) {
+            document.getElementById('dashboardSelfConsumptionRate').textContent = (data.self_consumption_rate_percent || 0.0).toFixed(1);
+        }
+        if (document.getElementById('dashboardCoLocationRevenueIncrease')) {
+            document.getElementById('dashboardCoLocationRevenueIncrease').textContent = formatCurrency(data.co_location_revenue_increase_eur || 0.0) || '0';
+        }
+        if (document.getElementById('dashboardCoLocationCostSavings')) {
+            document.getElementById('dashboardCoLocationCostSavings').textContent = formatCurrency(data.co_location_cost_savings_eur || 0.0) || '0';
+        }
+        if (document.getElementById('dashboardCoLocationTotalBenefit')) {
+            document.getElementById('dashboardCoLocationTotalBenefit').textContent = formatCurrency(data.co_location_total_benefit_eur || 0.0) || '0';
+        }
+    } else {
+        coLocationSection.classList.add('hidden');
+        
+        // Status auf "Inaktiv" setzen
+        const statusCard = document.getElementById('dashboardCoLocationStatusCard');
+        const statusIcon = document.getElementById('dashboardCoLocationIcon');
+        const statusText = document.getElementById('dashboardCoLocationStatus');
+        const statusInfo = document.getElementById('dashboardCoLocationInfo');
+        
+        if (statusCard && statusIcon && statusText && statusInfo) {
+            statusCard.classList.remove('border-green-300', 'bg-green-50');
+            statusCard.classList.add('border-gray-200');
+            statusIcon.classList.remove('text-green-600');
+            statusIcon.classList.add('text-gray-600');
+            statusText.textContent = 'Inaktiv';
+            statusText.classList.remove('text-green-600');
+            statusText.classList.add('text-gray-600');
+            statusInfo.textContent = 'Keine Co-Location';
+        }
+    }
+    
+    console.log('✅ Dashboard Co-Location Metriken aktualisiert');
+}
+
+// ROADMAP STUFE 2.2: Optimierte Regelstrategien Kennzahlen im Dashboard aktualisieren
+function updateDashboardOptimizationMetrics(data) {
+    console.log('📊 Aktualisiere Dashboard Optimierungs-Metriken:', data);
+    
+    const isOptimizationEnabled = data.optimization_enabled || false;
+    const strategy = data.optimization_strategy || 'none';
+    const revenueBoost = data.optimization_revenue_boost_percent || 0.0;
+    const priceVolatility = data.optimization_price_volatility || 0.0;
+    const optimizationBenefit = data.optimization_benefit_eur || 0.0;
+    
+    // Optimierungs-Sektion im Dashboard
+    const optimizationSection = document.getElementById('dashboardOptimizationSection');
+    if (!optimizationSection) {
+        console.log('⚠️ dashboardOptimizationSection nicht gefunden');
+        return;
+    }
+    
+    if (isOptimizationEnabled) {
+        optimizationSection.classList.remove('hidden');
+        
+        // Optimierung Status
+        const statusCard = document.getElementById('dashboardOptimizationStatusCard');
+        const statusIcon = document.getElementById('dashboardOptimizationIcon');
+        const statusText = document.getElementById('dashboardOptimizationStatus');
+        const statusInfo = document.getElementById('dashboardOptimizationInfo');
+        
+        if (statusCard && statusIcon && statusText && statusInfo) {
+            statusCard.classList.remove('border-gray-200');
+            statusCard.classList.add('border-purple-300', 'bg-purple-50');
+            statusIcon.classList.remove('text-gray-600');
+            statusIcon.classList.add('text-purple-600');
+            statusText.textContent = 'Aktiv';
+            statusText.classList.remove('text-gray-600');
+            statusText.classList.add('text-purple-600');
+            
+            // Strategie-Namen für Info
+            const strategyNames = {
+                'pso': 'Particle Swarm Optimization',
+                'multi_objective': 'Multi-Objective Optimierung',
+                'cycle_optimization': 'Zyklenoptimierung',
+                'cluster_dispatch': 'Cluster-Based Dispatch',
+                'none': 'Keine Optimierung'
+            };
+            statusInfo.textContent = strategyNames[strategy] || 'Optimierung aktiv';
+        }
+        
+        // Strategie anzeigen
+        if (document.getElementById('dashboardOptimizationStrategy')) {
+            const strategyLabels = {
+                'pso': 'PSO',
+                'multi_objective': 'Multi-Obj',
+                'cycle_optimization': 'Cycle Opt',
+                'cluster_dispatch': 'Cluster',
+                'none': '-'
+            };
+            document.getElementById('dashboardOptimizationStrategy').textContent = strategyLabels[strategy] || strategy;
+        }
+        
+        // Erlös-Boost
+        if (document.getElementById('dashboardOptimizationRevenueBoost')) {
+            document.getElementById('dashboardOptimizationRevenueBoost').textContent = revenueBoost.toFixed(1);
+        }
+        
+        // Preis-Volatilität
+        if (document.getElementById('dashboardOptimizationPriceVolatility')) {
+            document.getElementById('dashboardOptimizationPriceVolatility').textContent = priceVolatility.toFixed(1);
+        }
+        
+        // Optimierungs-Benefit
+        if (document.getElementById('dashboardOptimizationBenefit')) {
+            document.getElementById('dashboardOptimizationBenefit').textContent = formatCurrency(optimizationBenefit) || '0';
+        }
+        
+        // Strategie-Details
+        if (document.getElementById('dashboardOptimizationDetails')) {
+            const strategyDescriptions = {
+                'pso': 'Schwarm-basierte Optimierung',
+                'multi_objective': 'Erlös + Degradation',
+                'cycle_optimization': 'Battery Health',
+                'cluster_dispatch': 'Preis-Cluster',
+                'none': 'Keine Details'
+            };
+            document.getElementById('dashboardOptimizationDetails').textContent = strategyDescriptions[strategy] || 'Optimierung aktiv';
+        }
+        
+        if (document.getElementById('dashboardOptimizationDescription')) {
+            document.getElementById('dashboardOptimizationDescription').textContent = 
+                `+${revenueBoost.toFixed(1)}% Mehrertrag durch intelligente Strategien`;
+        }
+    } else {
+        optimizationSection.classList.add('hidden');
+        
+        // Status auf "Inaktiv" setzen
+        const statusCard = document.getElementById('dashboardOptimizationStatusCard');
+        const statusIcon = document.getElementById('dashboardOptimizationIcon');
+        const statusText = document.getElementById('dashboardOptimizationStatus');
+        const statusInfo = document.getElementById('dashboardOptimizationInfo');
+        
+        if (statusCard && statusIcon && statusText && statusInfo) {
+            statusCard.classList.remove('border-purple-300', 'bg-purple-50');
+            statusCard.classList.add('border-gray-200');
+            statusIcon.classList.remove('text-purple-600');
+            statusIcon.classList.add('text-gray-600');
+            statusText.textContent = 'Inaktiv';
+            statusText.classList.remove('text-purple-600');
+            statusText.classList.add('text-gray-600');
+            statusInfo.textContent = 'Optimierung deaktiviert';
+        }
+    }
+    
+    // Toggle Switch aktualisieren
+    const toggle = document.getElementById('dashboardOptimizationToggle');
+    const toggleLabel = document.getElementById('dashboardOptimizationToggleLabel');
+    if (toggle) {
+        toggle.checked = isOptimizationEnabled;
+    }
+    if (toggleLabel) {
+        toggleLabel.textContent = isOptimizationEnabled ? 'Aktiv' : 'Inaktiv';
+    }
+    
+    console.log('✅ Dashboard Optimierungs-Metriken aktualisiert');
+}
+
+// Lade Optimierungs-Konfiguration und initialisiere Toggle
+async function loadOptimizationConfig(projectId) {
+    if (!projectId) return;
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}/optimization-config`);
+        const data = await response.json();
+        
+        if (data.success && data.config) {
+            const isEnabled = data.config.optimization_enabled || false;
+            
+            // Toggle Switch im Simulation Tab
+            const toggle = document.getElementById('optimizationToggle');
+            const toggleLabel = document.getElementById('optimizationToggleLabel');
+            if (toggle) {
+                toggle.checked = isEnabled;
+            }
+            if (toggleLabel) {
+                toggleLabel.textContent = isEnabled ? 'Aktiv' : 'Inaktiv';
+            }
+            
+            // Toggle Switch im Dashboard Tab
+            const dashboardToggle = document.getElementById('dashboardOptimizationToggle');
+            const dashboardToggleLabel = document.getElementById('dashboardOptimizationToggleLabel');
+            if (dashboardToggle) {
+                dashboardToggle.checked = isEnabled;
+            }
+            if (dashboardToggleLabel) {
+                dashboardToggleLabel.textContent = isEnabled ? 'Aktiv' : 'Inaktiv';
+            }
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Optimierungs-Konfiguration:', error);
+    }
 }
 
 // BESS-Modus spezifische Daten anpassen
@@ -2543,5 +4303,57 @@ function showSuccessMessage(message) {
         successDiv.remove();
     }, 3000);
 }
+
+// Stufe-Sektionen Aus-/Einklapp-Funktion
+function toggleStufeSection(sectionId, iconId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(iconId);
+    
+    if (!section || !icon) {
+        console.warn(`⚠️ Sektion oder Icon nicht gefunden: ${sectionId} / ${iconId}`);
+        return;
+    }
+    
+    // Toggle collapsed/expanded
+    if (section.classList.contains('collapsed')) {
+        section.classList.remove('collapsed');
+        section.classList.add('expanded');
+        icon.classList.remove('rotated');
+    } else {
+        section.classList.remove('expanded');
+        section.classList.add('collapsed');
+        icon.classList.add('rotated');
+    }
+}
+
+// Initialisiere alle Stufe-Sektionen als ausgeklappt beim Laden
+document.addEventListener('DOMContentLoaded', function() {
+    // Alle Stufe-Sektionen standardmäßig ausgeklappt
+    const stufeSections = [
+        'stufe1Section', 'stufe21Section', 'stufe22Section',
+        'dashboardStufe1Section', 'dashboardStufe21Section', 'dashboardStufe22Section'
+    ];
+    
+    stufeSections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.classList.add('expanded');
+            section.classList.remove('collapsed');
+        }
+    });
+    
+    // Alle Icons standardmäßig nicht rotiert (nach oben zeigend = ausgeklappt)
+    const stufeIcons = [
+        'stufe1Icon', 'stufe21Icon', 'stufe22Icon',
+        'dashboardStufe1Icon', 'dashboardStufe21Icon', 'dashboardStufe22Icon'
+    ];
+    
+    stufeIcons.forEach(iconId => {
+        const icon = document.getElementById(iconId);
+        if (icon) {
+            icon.classList.remove('rotated');
+        }
+    });
+});
 </script>
 {% endblock %} 

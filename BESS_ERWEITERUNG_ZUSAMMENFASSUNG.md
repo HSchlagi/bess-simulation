@@ -137,14 +137,262 @@ ORDER BY year_month;
 - [ ] Use Case Switcher entwickeln
 - [ ] Responsive Design optimieren
 
-### **Phase 4: Integration & Testing (1-2 Wochen)**
+### **Phase 4: Roadmap 2025 - Stufe 1 (Top-Priorität) (2-3 Wochen)**
+- [x] **Netzrestriktionen einbauen** (Ramp-Rate, Exportlimits, 100-h-Regel)
+- [x] **Degradation-Modell** (Cycle Count, DoD, Temperatur, SoH Tracking)
+- [x] **Second-Life-Batterien** (Economy-Szenario mit reduzierter Kapazität)
+- [x] Datenbank-Erweiterungen für neue Parameter
+- [x] Kennzahlen für Erlösverluste durch Restriktionen
+
+### **Phase 5: Roadmap 2025 - Stufe 2 (Essentiell) (2-3 Wochen)**
+- [x] **Co-Location PV+BESS** (Gemeinsamer Netzanschluss, Curtailment-Vermeidung)
+- [x] **Optimierte Regelstrategien** (PSO, Multi-Objective, Zyklenoptimierung)
+- [ ] **Extrempreis-Szenarien** (Negative Preise, Peaks, Zyklenbegrenzung)
+- [ ] Intraday-Preisverteilung (Volatility-Modell)
+
+### **Phase 6: Integration & Testing (1-2 Wochen)**
 - [ ] End-to-End Tests durchführen
 - [ ] Performance-Optimierung
+- [ ] Validierung der neuen Features
 - [ ] Dokumentation vervollständigen
-- **Phase 5: Deployment & Monitoring (1 Woche)**
+
+### **Phase 7: Deployment & Monitoring (1 Woche)**
 - [ ] Produktions-Deployment
 - [ ] Monitoring einrichten
 - [ ] Benutzer-Schulung
+- [ ] Roadmap Stufe 3 (LDES, Nachhaltigkeit) vorbereiten
+
+---
+
+## 🗺️ **Roadmap 2025 - Neue Erweiterungen**
+
+Basierend auf der `BESS_Simulation_Roadmap_2025.md` wurden folgende neue Punkte priorisiert und strukturiert:
+
+---
+
+### **🔴 Stufe 1 - Top-Priorität (sofort integrieren)**
+
+#### **1.1 Regulierungs- & Netzrestriktionen** ⚠️
+**Wirtschaftlicher Einfluss:** Bis zu 40-50% Erlösbeeinflussung durch neue Grid-Regeln
+
+**Zu simulieren:**
+- **Ramp-Rate Limits**: Max. 10% Leistungsänderung pro Minute
+- **Exportlimits**: Je nach Netzebene (NE5/NE6/NE7)
+- **100-h-Regel (EEG/DE)**: Stundenweise Einspeisebegrenzung
+- **Einspeiseleistungsbegrenzung**: Am Netzanschlusspunkt
+- **Hüllkurvenregelungen**: APG, ENTSO-E Vorgaben
+
+**Implementierung:**
+```python
+# Neue Parameterfelder
+max_discharge_kw: float      # Max. Entladeleistung
+max_charge_kw: float         # Max. Ladeleistung
+ramp_rate_percent: float     # % pro Minute
+export_limit_kw: float       # Exportlimit am Netzanschlusspunkt
+
+# Algorithmus pro 15-Minuten-Periode
+actual_power = MIN(planned_power, restrictions)
+revenue_loss = (planned_power - actual_power) * price
+```
+
+**Kennzahlen:**
+- Erlösverlust durch Netzrestriktionen (EUR/Jahr)
+- Theoretischer vs. realer Arbitragegewinn
+- Auslastungsgrad der BESS-Kapazität
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+#### **1.2 Batterie-Degradation** 🔋
+**Wichtig für:** Realistische Langzeit-Wirtschaftlichkeit
+
+**Zu simulieren:**
+- **Cycle Count**: Full Cycle Equivalent (FCE)
+- **DoD-Abhängige Alterung**: Tiefe Entladung = höhere Degradation
+- **Temperaturfaktor**: Optional, aber wichtig für Genauigkeit
+- **Kapazitätsverlust pro Jahr**: %-Verlust basierend auf Zyklen
+- **Lebensdauer bis 80% SoH**: State of Health Tracking
+
+**Datenmodell:**
+```python
+class DegradationModel:
+    cycle_number: int
+    dod: float              # Depth of Discharge (0-1)
+    efficiency: float       # Aktuelle Effizienz
+    cap_loss_kwh: float    # Kapazitätsverlust
+    temperature: float     # Betriebstemperatur (°C)
+    
+    def calculate_degradation(self) -> float:
+        # Formel: Cap_t+1 = Cap_t - f(Cycles, DoD, Temp)
+        pass
+```
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+#### **1.3 Second-Life-Batterien** ♻️
+**Wichtig für:** Economy-Szenario mit niedrigen CAPEX
+
+**Zu simulieren:**
+- **Startkapazität**: 70-85% (statt 100%)
+- **Lebensdauer**: 3-7 Jahre (statt 10-15 Jahre)
+- **Kostenvorteil**: 40-60% günstiger als neue Batterien
+- **Höhere Degradation**: Schnellerer Kapazitätsverlust
+
+**Dashboard-Kennzahlen:**
+- CAPEX/kWh Vergleich (Neu vs. Second-Life)
+- LCOE BESS Vergleich
+- TCO über 10-15 Jahre
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+### **🟡 Stufe 2 - Essentiell (nächste Wochen)**
+
+#### **2.1 Co-Location PV + BESS** ☀️🔋
+**Wichtig für:** Reduziert Netzkosten & erhöht Eigenverbrauch/Export
+
+**Simulation:**
+- **Gemeinsamer Netzverknüpfungspunkt**: PV und BESS teilen Anschluss
+- **Curtailment-Vermeidung**: PV-Abschaltung vermeiden durch BESS
+- **PV-geführtes Peak-Shaving**: BESS reagiert auf PV-Überschuss
+
+**Berechnungen:**
+```python
+# Curtailment-Losses berechnen
+curtailment_losses = MAX(0, pv_generation - export_limit - bess_charge)
+pv_mehrproduktion = (pv_with_bess - pv_without_bess) / pv_without_bess * 100
+```
+
+**Kennzahl:** PV-Mehrproduktion durch BESS (%/kWh)
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+#### **2.2 Optimierte Regelstrategien** 🎯
+**Wichtig für:** +5-15% Mehrertrag möglich
+
+**Strategien:**
+- **Particle Swarm Optimization (PSO)**: Schwarm-basierte Optimierung
+- **Cluster-Based Dispatch**: Gruppenbasierte Lastverteilung
+- **Multi-Objective Optimierung**: Ertrag maximieren + Degradation minimieren
+- **Zyklenoptimierung**: Battery Health schützen
+
+**Erweiterte Logik:**
+```python
+# Basis-Logik (bestehend)
+if price < low_threshold:
+    charge()
+elif price > high_threshold:
+    discharge()
+else:
+    idle()
+
+# Erweitert zu:
+def optimize_dispatch():
+    maximize(revenue - degradation_penalty)
+    subject_to: SOC_min < SOC < SOC_max
+    subject_to: ramp_rate_constraints
+    subject_to: export_limits
+```
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen, UI-Toggle)
+
+---
+
+### **🟢 Stufe 3 - Wirtschaftlich stark (Integration empfohlen)**
+
+#### **3.1 Extrempreis-Szenarien** 📈📉
+**Wichtig für:** Realistische Arbitrage-Simulation
+
+**Simulation:**
+- **Negative Preise**: Voll-Ladung bei negativen Preisen
+- **Positive Peaks**: Voll-Entladung bei extremen Preisspitzen
+- **Zyklenbegrenzung**: Berücksichtigung der maximalen Zyklenzahl
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+#### **3.2 Intraday-Preisverteilung (Volatility-Modell)** 📊
+**Parameter:**
+- **Volatility Index**: Maß für Preisschwankungen
+- **Spread Width**: Differenz zwischen Min/Max
+- **Reaktionsgeschwindigkeit**: BESS Response Time
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+### **🔵 Stufe 4 - Langfristig (Zukunftstechnologien)**
+
+#### **4.1 LDES - Long Duration Energy Storage** ⏱️
+**Simulation für:**
+- **6-12h Entladezeit**: Längere Speicherdauer
+- **Neue Batterietechnologien**: Na-Ion, Zn-Ion, Flow-Batterien
+- **Andere Effizienzkennlinien**: Technologie-spezifische Kurven
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+#### **4.2 Nachhaltigkeit & Recycling** 🌱
+**Neue Kennzahlen:**
+- **CO₂-Ersparnis pro kWh throughput**: Umweltbilanz
+- **Recyclingquote**: Materialwiederverwertung
+- **Materialkostenmodell**: Lebenszyklus-Kosten
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+### **🔧 n8n-Integration - Workflow-Schablone**
+
+#### **6.1 Inputs**
+- PV-Daten (PVGIS)
+- Verbrauch
+- Intraday-Preise (aWATTar, EPEX)
+- Netzrestriktionen
+- Degradationsmodell
+
+#### **6.2 Kern-Workflow**
+1. **Load Data Node** (Excel/CSV)
+2. **Degradation Module** (Function Node)
+3. **Dispatch Optimizer** (LangChain / Python Node)
+4. **Restrictions Handler** (Function Node)
+5. **Economics Engine** (Excel Node oder Python)
+6. **Dashboard Output** (Grafana/HTML/PDF)
+
+#### **6.3 Output**
+- PDF Report
+- Excel Dashboard
+- JSON für API
+- Grafiken (SOC, Powerflow, Revenue)
+
+**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+
+---
+
+## 📋 **Priorisierte ToDo-Liste (Roadmap 2025)**
+
+### **🔴 Stufe 1 – sofort**
+- [x] **1. Netzrestriktionen einbauen** (Top-Priorität)
+- [x] **2. Degradation-Modell** (Essentiell)
+- [x] **3. Second-Life-Szenario** (Economy-Option)
+
+### **🟡 Stufe 2 – in den nächsten Wochen**
+- [x] **4. Co-Location PV+BESS** (Wirtschaftlich stark)
+- [x] **5. Optimierte Regelstrategien** (Mehrertrag +5-15%)
+- [ ] **6. Extrempreis-Szenarien** (Realistische Arbitrage)
+
+### **🟢 Stufe 3 – Zukunft**
+- [ ] **7. LDES Modell** (Long Duration Storage)
+- [ ] **8. Nachhaltigkeit/CO₂ Kennzahlen** (Umweltbilanz)
+- [ ] **9. n8n-Integration** (Workflow-Automatisierung)
 
 ---
 

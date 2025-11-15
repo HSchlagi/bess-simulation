@@ -534,3 +534,261 @@ class MarketPriceConfig(db.Model):
     
     def __repr__(self):
         return f'<MarketPriceConfig {self.name or "Standard"} (Project: {self.project_id or "Global"})>'
+
+# === ROADMAP STUFE 1: NETZRESTRIKTIONEN & DEGRADATION ===
+
+class NetworkRestrictions(db.Model):
+    """Netzrestriktionen für BESS-Projekte (Roadmap Stufe 1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='network_restrictions')
+    
+    # Leistungsrestriktionen
+    max_discharge_kw = db.Column(db.Float, default=0.0)  # Max. Entladeleistung
+    max_charge_kw = db.Column(db.Float, default=0.0)  # Max. Ladeleistung
+    ramp_rate_percent = db.Column(db.Float, default=10.0)  # Ramp-Rate (% pro Minute)
+    export_limit_kw = db.Column(db.Float, default=0.0)  # Exportlimit am Netzanschlusspunkt
+    
+    # Netzebene
+    network_level = db.Column(db.String(10), default='NE5')  # NE5/NE6/NE7
+    
+    # 100-h-Regel (EEG/DE)
+    eeg_100h_rule_enabled = db.Column(db.Boolean, default=False)
+    eeg_100h_hours_per_year = db.Column(db.Integer, default=100)
+    eeg_100h_used_hours = db.Column(db.Integer, default=0)
+    
+    # Hüllkurvenregelung
+    hull_curve_enabled = db.Column(db.Boolean, default=False)
+    hull_curve_data = db.Column(db.Text)  # JSON-String
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<NetworkRestrictions Project {self.project_id}: {self.network_level}>'
+
+
+class BatteryDegradationAdvanced(db.Model):
+    """Erweiterte Batterie-Degradation (Roadmap Stufe 1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='battery_degradation_advanced')
+    
+    # Kapazität
+    initial_capacity_kwh = db.Column(db.Float, nullable=False)
+    current_capacity_kwh = db.Column(db.Float, nullable=False)
+    
+    # Zyklen
+    cycle_number = db.Column(db.Integer, default=0)
+    dod = db.Column(db.Float, default=0.0)  # Depth of Discharge (0-1)
+    
+    # Effizienz und Zustand
+    efficiency = db.Column(db.Float, default=0.85)
+    temperature = db.Column(db.Float, default=25.0)  # °C
+    state_of_health = db.Column(db.Float, default=100.0)  # SoH (%)
+    
+    # Degradationsparameter
+    degradation_rate_per_cycle = db.Column(db.Float, default=0.0001)  # 0.01% pro Zyklus
+    calendar_aging_rate = db.Column(db.Float, default=0.02)  # 2% pro Jahr
+    
+    # Second-Life
+    is_second_life = db.Column(db.Boolean, default=False)
+    second_life_start_capacity = db.Column(db.Float, default=0.85)  # 85% Startkapazität
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<BatteryDegradationAdvanced Project {self.project_id}: SoH {self.state_of_health:.1f}%>'
+
+
+class SecondLifeConfig(db.Model):
+    """Second-Life-Batterie Konfiguration (Roadmap Stufe 1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='second_life_config')
+    
+    is_second_life = db.Column(db.Boolean, default=False)
+    start_capacity_percent = db.Column(db.Float, default=85.0)  # Startkapazität (70-85%)
+    lifetime_years = db.Column(db.Integer, default=5)  # Lebensdauer (3-7 Jahre)
+    cost_reduction_percent = db.Column(db.Float, default=50.0)  # Kostenvorteil (40-60%)
+    degradation_multiplier = db.Column(db.Float, default=1.5)  # Höhere Degradation
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<SecondLifeConfig Project {self.project_id}: {self.is_second_life}>'
+
+
+class RestrictionsHistory(db.Model):
+    """Historie der Netzrestriktionen (Roadmap Stufe 1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='restrictions_history')
+    simulation_id = db.Column(db.Integer, nullable=True)
+    
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
+    planned_power_kw = db.Column(db.Float, nullable=False)
+    actual_power_kw = db.Column(db.Float, nullable=False)
+    power_loss_kw = db.Column(db.Float, default=0.0)
+    revenue_loss_kwh = db.Column(db.Float, default=0.0)
+    restrictions_applied = db.Column(db.Text)  # JSON-String
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<RestrictionsHistory Project {self.project_id}: {self.timestamp}>'
+
+
+class DegradationHistory(db.Model):
+    """Historie der Degradation (Roadmap Stufe 1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='degradation_history')
+    simulation_id = db.Column(db.Integer, nullable=True)
+    
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
+    cycle_number = db.Column(db.Integer, nullable=False)
+    dod = db.Column(db.Float, default=0.0)
+    temperature = db.Column(db.Float, default=25.0)
+    capacity_loss_kwh = db.Column(db.Float, default=0.0)
+    current_capacity_kwh = db.Column(db.Float, nullable=False)
+    state_of_health = db.Column(db.Float, nullable=False)
+    efficiency = db.Column(db.Float, default=0.85)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<DegradationHistory Project {self.project_id}: Cycle {self.cycle_number}>'
+
+
+# === ROADMAP STUFE 2.1: CO-LOCATION PV + BESS ===
+
+class CoLocationConfig(db.Model):
+    """Co-Location Konfiguration PV + BESS (Roadmap Stufe 2.1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='co_location_config')
+    
+    is_co_location = db.Column(db.Boolean, default=False)  # Co-Location aktiviert?
+    shared_grid_connection_kw = db.Column(db.Float, default=0.0)  # Gemeinsamer Netzanschluss (kW)
+    
+    # Curtailment-Vermeidung
+    curtailment_reduction_percent = db.Column(db.Float, default=80.0)  # % Reduktion durch BESS
+    
+    # PV-geführtes Peak-Shaving
+    pv_guided_peak_shaving = db.Column(db.Boolean, default=True)  # PV-geführtes Peak-Shaving aktiv?
+    self_consumption_boost_percent = db.Column(db.Float, default=15.0)  # % Erhöhung Eigenverbrauch
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<CoLocationConfig Project {self.project_id}: {self.is_co_location}>'
+
+
+class CoLocationHistory(db.Model):
+    """Historie der Co-Location-Berechnungen (Roadmap Stufe 2.1)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='co_location_history')
+    simulation_id = db.Column(db.Integer, nullable=True)
+    
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
+    pv_generation_kw = db.Column(db.Float, nullable=False)
+    consumption_kw = db.Column(db.Float, nullable=False)
+    curtailment_losses_kw = db.Column(db.Float, default=0.0)
+    avoided_curtailment_kw = db.Column(db.Float, default=0.0)
+    pv_utilization_percent = db.Column(db.Float, default=100.0)
+    self_consumption_rate_percent = db.Column(db.Float, default=0.0)
+    peak_shaving_kw = db.Column(db.Float, default=0.0)
+    grid_fee_savings_eur = db.Column(db.Float, default=0.0)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<CoLocationHistory Project {self.project_id}: {self.timestamp}>'
+
+
+# === ROADMAP STUFE 2.2: OPTIMIERTE REGELSTRATEGIEN ===
+
+class OptimizationStrategyConfig(db.Model):
+    """Konfiguration für optimierte Regelstrategien (Roadmap Stufe 2.2)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='optimization_strategy_config')
+    
+    # Aktivierung
+    optimization_enabled = db.Column(db.Boolean, default=False)  # Optimierung aktiviert?
+    preferred_strategy = db.Column(db.String(50), default='multi_objective')  # 'pso', 'multi_objective', 'cycle_optimization', 'cluster_dispatch'
+    
+    # PSO-Parameter
+    pso_enabled = db.Column(db.Boolean, default=True)
+    pso_swarm_size = db.Column(db.Integer, default=30)
+    pso_max_iterations = db.Column(db.Integer, default=50)
+    pso_inertia_weight = db.Column(db.Float, default=0.7)
+    pso_cognitive_weight = db.Column(db.Float, default=1.5)
+    pso_social_weight = db.Column(db.Float, default=1.5)
+    
+    # Multi-Objective Parameter
+    multi_objective_enabled = db.Column(db.Boolean, default=True)
+    revenue_weight = db.Column(db.Float, default=0.7)  # Gewichtung Erlös
+    degradation_weight = db.Column(db.Float, default=0.3)  # Gewichtung Degradation
+    cycle_cost_eur_per_cycle = db.Column(db.Float, default=0.05)  # Kosten pro Zyklus
+    
+    # Zyklenoptimierung Parameter
+    cycle_optimization_enabled = db.Column(db.Boolean, default=True)
+    max_cycles_per_day = db.Column(db.Float, default=2.0)  # Max. Zyklen pro Tag
+    optimal_soc_min = db.Column(db.Float, default=0.3)  # Optimaler SOC-Minimum
+    optimal_soc_max = db.Column(db.Float, default=0.7)  # Optimaler SOC-Maximum
+    deep_discharge_penalty = db.Column(db.Float, default=2.0)  # Strafe für Tiefentladung
+    
+    # Cluster-Based Dispatch Parameter
+    cluster_dispatch_enabled = db.Column(db.Boolean, default=True)
+    num_clusters = db.Column(db.Integer, default=5)
+    cluster_threshold = db.Column(db.Float, default=0.15)  # 15% Preis-Differenz
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<OptimizationStrategyConfig Project {self.project_id}: {self.preferred_strategy}>'
+
+
+class OptimizationHistory(db.Model):
+    """Historie der Optimierungs-Entscheidungen (Roadmap Stufe 2.2)"""
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    project = db.relationship('Project', backref='optimization_history')
+    simulation_id = db.Column(db.Integer, nullable=True)
+    
+    timestamp = db.Column(db.DateTime, nullable=False, index=True)
+    strategy_used = db.Column(db.String(50))  # 'pso', 'multi_objective', etc.
+    
+    # Input-Parameter
+    price_eur_mwh = db.Column(db.Float, nullable=False)
+    soc_before = db.Column(db.Float, nullable=False)  # SOC vor Optimierung
+    capacity_kwh = db.Column(db.Float, nullable=False)
+    power_kw = db.Column(db.Float, nullable=False)
+    
+    # Optimierungs-Ergebnis
+    optimized_power_kw = db.Column(db.Float, nullable=False)  # Optimierte Leistung
+    soc_after = db.Column(db.Float, nullable=False)  # SOC nach Optimierung
+    
+    # Kennzahlen
+    revenue_estimate_eur = db.Column(db.Float, default=0.0)  # Geschätzter Erlös
+    degradation_cost_eur = db.Column(db.Float, default=0.0)  # Degradations-Kosten
+    net_benefit_eur = db.Column(db.Float, default=0.0)  # Netto-Nutzen
+    cycles_today = db.Column(db.Float, default=0.0)  # Zyklen heute
+    
+    # Constraints
+    constraints_applied = db.Column(db.Text)  # JSON-String mit angewendeten Constraints
+    
+    # Optimierungs-Info
+    optimization_info = db.Column(db.Text)  # JSON-String mit detaillierten Infos
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<OptimizationHistory Project {self.project_id}: {self.strategy_used} @ {self.timestamp}>'

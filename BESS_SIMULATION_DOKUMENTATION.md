@@ -1,10 +1,10 @@
 # 📚 BESS Simulation - Vollständige Dokumentation
 
-**Version:** 2.2  
-**Datum:** September 2025  
+**Version:** 2.3  
+**Datum:** Januar 2025  
 **Autor:** Ing. Heinz Schlagintweit  
 **Repository:** https://github.com/HSchlagi/bess-simulation  
-**Letzte Aktualisierung:** Progressive Web App (PWA) Features, Advanced Dispatch & Grid Services, Smart Grid & IoT Integration
+**Letzte Aktualisierung:** Roadmap 2025 - Stufe 1 (Netzrestriktionen, Degradation, Second-Life), Stufe 2.1 (Co-Location PV+BESS), Stufe 2.2 (Optimierte Regelstrategien)
 
 ---
 
@@ -249,6 +249,95 @@ Vollständig responsive Anwendung für optimale Nutzung auf allen Geräten:
 - **Progressive Web App:** PWA-Features für bessere mobile Erfahrung
 - **Offline-Funktionalität:** Grundlegende Funktionen auch ohne Internetverbindung
 - **Performance-Optimierung:** Optimierte Ladezeiten für mobile Geräte  
+
+#### ✅ **Roadmap 2025 Features - Erweiterte Simulation & Optimierung**
+
+Die BESS Simulation wurde um umfassende Roadmap 2025 Features erweitert, die die Realität und Wirtschaftlichkeit von BESS-Projekten deutlich verbessern:
+
+**🔴 Stufe 1 - Top-Priorität (Implementiert):**
+
+- **Netzrestriktionen & Grid Code Compliance:**
+  - **Ramp-Rate Limits:** Max. 10% Leistungsänderung pro Minute zur Einhaltung von Netzstabilitätsanforderungen
+  - **Exportlimits:** Netzebenen-spezifische Limits (NE5/NE6/NE7) für Einspeisung
+  - **100-h-Regel (EEG/DE):** Stundenweise Einspeisebegrenzung nach deutscher EEG-Regelung
+  - **Einspeiseleistungsbegrenzung:** Am Netzanschlusspunkt
+  - **Hüllkurvenregelungen:** APG, ENTSO-E Vorgaben
+  - **Kennzahlen:** Erlösverlust durch Netzrestriktionen (EUR/Jahr), Theoretischer vs. realer Arbitragegewinn, Auslastungsgrad der BESS-Kapazität
+
+- **Erweiterte Batterie-Degradation:**
+  - **Cycle Count Tracking:** Full Cycle Equivalent (FCE) basierte Degradationsberechnung
+  - **DoD-Abhängige Alterung:** Tiefe Entladung führt zu höherer Degradation
+  - **Temperaturfaktor:** Betriebstemperatur-basierte Degradationsanpassung
+  - **Kapazitätsverlust pro Jahr:** %-Verlust basierend auf Zyklen, DoD und Temperatur
+  - **State of Health (SoH) Tracking:** Kontinuierliche Überwachung des Batteriezustands
+  - **Lebensdauer-Prognose:** Berechnung bis 80% SoH-Schwelle
+  - **Frontend-Kennzahlen:** Aktuelle Kapazität, SoH, Kapazitätsverlust, geschätzte Lebensdauer
+
+- **Second-Life-Batterien:**
+  - **Reduzierte Startkapazität:** 70-85% statt 100% für Economy-Szenarien
+  - **Kürzere Lebensdauer:** 3-7 Jahre statt 10-15 Jahre
+  - **Kostenvorteil:** 40-60% günstiger als neue Batterien (CAPEX-Reduktion)
+  - **Höhere Degradation:** Schnellerer Kapazitätsverlust durch Voralterung
+  - **Frontend-Kennzahlen:** CAPEX/kWh Vergleich, LCOE BESS Vergleich, TCO über 10-15 Jahre
+
+**🟡 Stufe 2.1 - Co-Location PV + BESS (Implementiert):**
+
+- **Gemeinsamer Netzanschluss:**
+  - **Shared Grid Connection:** PV und BESS teilen einen Netzanschlusspunkt
+  - **Netzkosten-Reduktion:** Gemeinsame Nutzung reduziert Anschlusskosten
+  - **Kapazitätsoptimierung:** Besserer Auslastungsgrad des Netzanschlusses
+
+- **Curtailment-Vermeidung:**
+  - **PV-Abschaltung vermeiden:** BESS nimmt PV-Überschuss auf, wenn Exportlimit erreicht
+  - **PV-Mehrproduktion:** Berechnung der zusätzlichen PV-Erzeugung durch BESS
+  - **PV-Ausnutzung:** Verbesserte Ausnutzung der PV-Anlage durch BESS-Integration
+  - **Erlöszuwachs:** Vermiedene Curtailment-Verluste werden zu Erlösen
+
+- **PV-geführtes Peak-Shaving:**
+  - **Intelligente Lastverschiebung:** BESS reagiert auf PV-Erzeugung und Verbrauch
+  - **Peak-Reduktion:** Reduzierung von Lastspitzen durch BESS-Entladung bei niedriger PV-Erzeugung
+  - **Eigenverbrauchssteigerung:** Erhöhung des Eigenverbrauchs durch optimierte BESS-Nutzung
+
+- **Frontend-Kennzahlen:**
+  - Curtailment-Verluste (kW), Vermiedene Curtailment (kW)
+  - PV-Ausnutzung (%), Eigenverbrauchsquote (%)
+  - Peak-Shaving (kW), Erlöszuwachs (EUR), Kosteneinsparungen (EUR)
+
+**🟡 Stufe 2.2 - Optimierte Regelstrategien (Implementiert):**
+
+- **Particle Swarm Optimization (PSO):**
+  - **Schwarm-basierte Optimierung:** Intelligente Suche nach optimalen Lade-/Entlade-Entscheidungen
+  - **Mehrertrag:** +5-15% Erlössteigerung durch optimierte Strategien
+  - **Preis-Volatilität:** Nutzung von Preisschwankungen für maximale Arbitrage
+
+- **Multi-Objective Optimierung:**
+  - **Erlös maximieren + Degradation minimieren:** Balance zwischen Ertrag und Batteriegesundheit
+  - **Gewichtete Optimierung:** Konfigurierbare Gewichtung von Erlös vs. Degradationskosten
+  - **Netto-Nutzen:** Berechnung des optimalen Trade-offs
+
+- **Zyklenoptimierung:**
+  - **Battery Health schützen:** Begrenzung der Zyklenzahl pro Tag
+  - **Optimaler SOC-Bereich:** Betrieb innerhalb optimaler State-of-Charge-Grenzen
+  - **Tiefentladungsvermeidung:** Strafe für Tiefentladungen zur Lebensdauerverlängerung
+
+- **Cluster-Based Dispatch:**
+  - **Preis-Cluster-Erkennung:** Identifikation von Hoch- und Niedrigpreisperioden
+  - **Gruppenbasierte Lastverteilung:** Optimierte Dispatch-Entscheidungen basierend auf Preis-Clustern
+  - **Reaktionsgeschwindigkeit:** Schnelle Anpassung an Marktveränderungen
+
+- **UI-Features:**
+  - **Optimierungs-Toggle:** Ein/Aus-Schalter für Optimierung direkt im Dashboard
+  - **Strategie-Auswahl:** Konfigurierbare bevorzugte Strategie (PSO, Multi-Objective, Cycle Optimization, Cluster Dispatch)
+  - **Frontend-Kennzahlen:** Optimierungsstatus, verwendete Strategie, Erlös-Boost (%), Preis-Volatilität (%), Optimierungs-Benefit (EUR)
+
+**Technische Implementierung:**
+- **Datenbank-Erweiterungen:** Neue Tabellen für NetworkRestrictions, BatteryDegradationAdvanced, SecondLifeConfig, CoLocationConfig, OptimizationStrategyConfig
+- **Backend-Integration:** Integration in Simulation-Engine (`app/routes.py`)
+- **Frontend-Integration:** Neue Sektionen in Enhanced Dashboard mit ausklappbaren Bereichen
+- **API-Endpunkte:** Neue Endpunkte für Optimierungs-Konfiguration und Statistiken
+- **Migration-Skripte:** Automatische Datenbank-Migrationen für bestehende Projekte
+
+**Status:** ✅ Alle Stufe 1, 2.1 und 2.2 Features vollständig implementiert und im Frontend sichtbar
 
 ### Zielgruppe
 
@@ -5412,6 +5501,101 @@ time curl -s http://localhost:5000/api/health
 ---
 
 ## 📝 Changelog
+
+### Version 2.3 - Januar 2025
+
+**Roadmap 2025 - Stufe 1, 2.1, 2.2 Implementierung:**
+
+#### 🔴 Stufe 1 - Top-Priorität Features
+- ✅ **Netzrestriktionen & Grid Code Compliance:**
+  - Implementierung von Ramp-Rate Limits (max. 10% pro Minute)
+  - Exportlimits für verschiedene Netzebenen (NE5/NE6/NE7)
+  - 100-h-Regel (EEG/DE) für Stundenweise Einspeisebegrenzung
+  - Einspeiseleistungsbegrenzung am Netzanschlusspunkt
+  - Hüllkurvenregelungen (APG, ENTSO-E)
+  - Frontend-Kennzahlen für Erlösverluste durch Restriktionen
+
+- ✅ **Erweiterte Batterie-Degradation:**
+  - Cycle Count Tracking (Full Cycle Equivalent)
+  - DoD-abhängige Alterung
+  - Temperaturfaktor-Integration
+  - Kapazitätsverlust-Berechnung pro Jahr
+  - State of Health (SoH) Tracking
+  - Lebensdauer-Prognose bis 80% SoH
+  - Frontend-Kennzahlen für Degradations-Metriken
+
+- ✅ **Second-Life-Batterien:**
+  - Reduzierte Startkapazität (70-85%)
+  - Kürzere Lebensdauer (3-7 Jahre)
+  - Kostenvorteil (40-60% CAPEX-Reduktion)
+  - Höhere Degradation durch Voralterung
+  - Frontend-Kennzahlen für Economy-Szenarien
+
+#### 🟡 Stufe 2.1 - Co-Location PV + BESS
+- ✅ **Gemeinsamer Netzanschluss:**
+  - Shared Grid Connection für PV und BESS
+  - Netzkosten-Reduktion durch gemeinsame Nutzung
+  - Kapazitätsoptimierung des Netzanschlusses
+
+- ✅ **Curtailment-Vermeidung:**
+  - PV-Abschaltung vermeiden durch BESS-Integration
+  - PV-Mehrproduktion-Berechnung
+  - Verbesserte PV-Ausnutzung
+  - Erlöszuwachs durch vermiedene Curtailment-Verluste
+
+- ✅ **PV-geführtes Peak-Shaving:**
+  - Intelligente Lastverschiebung basierend auf PV-Erzeugung
+  - Peak-Reduktion durch BESS-Entladung
+  - Eigenverbrauchssteigerung
+
+- ✅ **Frontend-Integration:**
+  - Neue Sektion "Stufe 2.1 - Co-Location PV + BESS" im Enhanced Dashboard
+  - Ausklappbare Bereiche für bessere Übersicht
+  - Detaillierte Kennzahlen-Anzeige
+
+#### 🟡 Stufe 2.2 - Optimierte Regelstrategien
+- ✅ **Particle Swarm Optimization (PSO):**
+  - Schwarm-basierte Optimierung für Lade-/Entlade-Entscheidungen
+  - +5-15% Erlössteigerung möglich
+  - Nutzung von Preis-Volatilität
+
+- ✅ **Multi-Objective Optimierung:**
+  - Balance zwischen Erlös-Maximierung und Degradations-Minimierung
+  - Konfigurierbare Gewichtung
+  - Netto-Nutzen-Berechnung
+
+- ✅ **Zyklenoptimierung:**
+  - Battery Health Schutz durch Zyklenbegrenzung
+  - Optimaler SOC-Bereich
+  - Tiefentladungsvermeidung
+
+- ✅ **Cluster-Based Dispatch:**
+  - Preis-Cluster-Erkennung
+  - Gruppenbasierte Lastverteilung
+  - Schnelle Reaktion auf Marktveränderungen
+
+- ✅ **UI-Features:**
+  - Optimierungs-Toggle-Switch im Dashboard
+  - Strategie-Auswahl-Konfiguration
+  - Frontend-Kennzahlen für Optimierungs-Metriken
+  - Ausklappbare Sektionen für bessere Übersicht
+
+**Technische Verbesserungen:**
+- Neue Datenbank-Tabellen: `network_restrictions`, `battery_degradation_advanced`, `second_life_config`, `co_location_config`, `optimization_strategy_config`
+- Migration-Skripte für bestehende Projekte
+- Backend-Integration in Simulation-Engine
+- Neue API-Endpunkte für Optimierungs-Konfiguration
+- Verbesserte Fehlerbehandlung und Validierung
+
+**Frontend-Verbesserungen:**
+- Ausklappbare Sektionen für alle Stufe-Bereiche
+- Optimierungs-Toggle direkt im Header
+- Verbesserte Kennzahlen-Darstellung
+- Dynamisches Laden von Use Cases basierend auf Projektauswahl
+
+---
+
+## 📝 Changelog (Vorherige Versionen)
 
 ### Version 2.0 (September 2025)
 
