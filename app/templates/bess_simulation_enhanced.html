@@ -455,6 +455,60 @@
                         <div class="text-xs text-gray-500 mt-1" id="optimizationDescription">-</div>
                     </div>
                 </div>
+                
+                <!-- EXTREMPREIS-SZENARIEN & SPREAD WIDTH -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <!-- Spread Width -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrows-alt-h text-blue-600 text-xl mr-2"></i>
+                            <div class="text-xl font-bold text-blue-600" id="spreadWidthEurMwh">-</div>
+                            <span class="text-sm text-gray-500 ml-1">€/MWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Spread Width</div>
+                        <div class="text-xs text-gray-500 mt-1" id="spreadWidthPercent">-</div>
+                    </div>
+                    
+                    <!-- Negative Preise -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-down text-green-600 text-xl mr-2"></i>
+                            <div class="text-xl font-bold text-green-600" id="negativePriceCount">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Negative Preise</div>
+                        <div class="text-xs text-gray-500 mt-1">Voll-Ladungen</div>
+                    </div>
+                    
+                    <!-- Extreme Peaks -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-red-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-up text-red-600 text-xl mr-2"></i>
+                            <div class="text-xl font-bold text-red-600" id="extremePeakCount">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Extreme Peaks</div>
+                        <div class="text-xs text-gray-500 mt-1">Voll-Entladungen</div>
+                    </div>
+                    
+                    <!-- Min Preis -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-down text-gray-600 text-lg mr-2"></i>
+                            <div class="text-lg font-bold text-gray-700" id="minPriceEurMwh">-</div>
+                            <span class="text-sm text-gray-500 ml-1">€/MWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Min Preis</div>
+                    </div>
+                    
+                    <!-- Max Preis -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-up text-gray-600 text-lg mr-2"></i>
+                            <div class="text-lg font-bold text-gray-700" id="maxPriceEurMwh">-</div>
+                            <span class="text-sm text-gray-500 ml-1">€/MWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Max Preis</div>
+                    </div>
+                </div>
                 </div>
             </div>
 
@@ -883,6 +937,60 @@
                         </div>
                         <div class="text-sm text-gray-600 font-medium">Strategie-Details</div>
                         <div class="text-xs text-gray-500 mt-1" id="dashboardOptimizationDescription">-</div>
+                    </div>
+                </div>
+                
+                <!-- EXTREMPREIS-SZENARIEN & SPREAD WIDTH -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <!-- Spread Width -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrows-alt-h text-blue-600 text-xl mr-2"></i>
+                            <div class="text-xl font-bold text-blue-600" id="dashboardSpreadWidthEurMwh">-</div>
+                            <span class="text-sm text-gray-500 ml-1">€/MWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Spread Width</div>
+                        <div class="text-xs text-gray-500 mt-1" id="dashboardSpreadWidthPercent">-</div>
+                    </div>
+                    
+                    <!-- Negative Preise -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-down text-green-600 text-xl mr-2"></i>
+                            <div class="text-xl font-bold text-green-600" id="dashboardNegativePriceCount">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Negative Preise</div>
+                        <div class="text-xs text-gray-500 mt-1">Voll-Ladungen</div>
+                    </div>
+                    
+                    <!-- Extreme Peaks -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-red-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-up text-red-600 text-xl mr-2"></i>
+                            <div class="text-xl font-bold text-red-600" id="dashboardExtremePeakCount">-</div>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Extreme Peaks</div>
+                        <div class="text-xs text-gray-500 mt-1">Voll-Entladungen</div>
+                    </div>
+                    
+                    <!-- Min Preis -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-down text-gray-600 text-lg mr-2"></i>
+                            <div class="text-lg font-bold text-gray-700" id="dashboardMinPriceEurMwh">-</div>
+                            <span class="text-sm text-gray-500 ml-1">€/MWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Min Preis</div>
+                    </div>
+                    
+                    <!-- Max Preis -->
+                    <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-center mb-2">
+                            <i class="fas fa-arrow-up text-gray-600 text-lg mr-2"></i>
+                            <div class="text-lg font-bold text-gray-700" id="dashboardMaxPriceEurMwh">-</div>
+                            <span class="text-sm text-gray-500 ml-1">€/MWh</span>
+                        </div>
+                        <div class="text-sm text-gray-600 font-medium">Max Preis</div>
                     </div>
                 </div>
                 </div>
@@ -1807,6 +1915,40 @@ function displayOptimizationMetrics(data) {
         if (document.getElementById('optimizationDescription')) {
             document.getElementById('optimizationDescription').textContent = 
                 `+${revenueBoost.toFixed(1)}% Mehrertrag durch intelligente Strategien`;
+        }
+        
+        // EXTREMPREIS-SZENARIEN & SPREAD WIDTH Kennzahlen
+        const spreadWidthEurMwh = data.spread_width_eur_mwh || 0.0;
+        const spreadWidthPercent = data.spread_width_percent || 0.0;
+        const negativePriceCount = data.negative_price_count || 0;
+        const extremePeakCount = data.extreme_peak_count || 0;
+        const minPrice = data.min_price_eur_mwh || 0.0;
+        const maxPrice = data.max_price_eur_mwh || 0.0;
+        
+        // Spread Width anzeigen
+        if (document.getElementById('spreadWidthEurMwh')) {
+            document.getElementById('spreadWidthEurMwh').textContent = spreadWidthEurMwh.toFixed(2);
+        }
+        if (document.getElementById('spreadWidthPercent')) {
+            document.getElementById('spreadWidthPercent').textContent = spreadWidthPercent.toFixed(1);
+        }
+        
+        // Negative Preise
+        if (document.getElementById('negativePriceCount')) {
+            document.getElementById('negativePriceCount').textContent = negativePriceCount.toLocaleString('de-DE');
+        }
+        
+        // Extreme Peaks
+        if (document.getElementById('extremePeakCount')) {
+            document.getElementById('extremePeakCount').textContent = extremePeakCount.toLocaleString('de-DE');
+        }
+        
+        // Min/Max Preise
+        if (document.getElementById('minPriceEurMwh')) {
+            document.getElementById('minPriceEurMwh').textContent = minPrice.toFixed(2);
+        }
+        if (document.getElementById('maxPriceEurMwh')) {
+            document.getElementById('maxPriceEurMwh').textContent = maxPrice.toFixed(2);
         }
     } else {
         optimizationSection.classList.add('hidden');
@@ -3157,6 +3299,40 @@ function updateDashboardOptimizationMetrics(data) {
         if (document.getElementById('dashboardOptimizationDescription')) {
             document.getElementById('dashboardOptimizationDescription').textContent = 
                 `+${revenueBoost.toFixed(1)}% Mehrertrag durch intelligente Strategien`;
+        }
+        
+        // EXTREMPREIS-SZENARIEN & SPREAD WIDTH Kennzahlen
+        const spreadWidthEurMwh = data.spread_width_eur_mwh || 0.0;
+        const spreadWidthPercent = data.spread_width_percent || 0.0;
+        const negativePriceCount = data.negative_price_count || 0;
+        const extremePeakCount = data.extreme_peak_count || 0;
+        const minPrice = data.min_price_eur_mwh || 0.0;
+        const maxPrice = data.max_price_eur_mwh || 0.0;
+        
+        // Spread Width anzeigen
+        if (document.getElementById('dashboardSpreadWidthEurMwh')) {
+            document.getElementById('dashboardSpreadWidthEurMwh').textContent = spreadWidthEurMwh.toFixed(2);
+        }
+        if (document.getElementById('dashboardSpreadWidthPercent')) {
+            document.getElementById('dashboardSpreadWidthPercent').textContent = spreadWidthPercent.toFixed(1);
+        }
+        
+        // Negative Preise
+        if (document.getElementById('dashboardNegativePriceCount')) {
+            document.getElementById('dashboardNegativePriceCount').textContent = negativePriceCount.toLocaleString('de-DE');
+        }
+        
+        // Extreme Peaks
+        if (document.getElementById('dashboardExtremePeakCount')) {
+            document.getElementById('dashboardExtremePeakCount').textContent = extremePeakCount.toLocaleString('de-DE');
+        }
+        
+        // Min/Max Preise
+        if (document.getElementById('dashboardMinPriceEurMwh')) {
+            document.getElementById('dashboardMinPriceEurMwh').textContent = minPrice.toFixed(2);
+        }
+        if (document.getElementById('dashboardMaxPriceEurMwh')) {
+            document.getElementById('dashboardMaxPriceEurMwh').textContent = maxPrice.toFixed(2);
         }
     } else {
         optimizationSection.classList.add('hidden');

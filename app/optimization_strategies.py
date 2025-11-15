@@ -53,7 +53,16 @@ class ParticleSwarmOptimization(OptimizationStrategy):
         """
         PSO-Optimierung für optimalen Dispatch
         """
-        if not self.enabled or len(price_data) < 2:
+        if not self.enabled or len(price_data) < 1:
+            # Fallback: Einfache Preis-basierte Strategie
+            return self._simple_price_based_strategy(price_data[0] if price_data else 100.0, soc, capacity_kwh, power_kw, constraints)
+        
+        # EXTREMPREIS-SZENARIEN: Prüfe zuerst auf negative Preise und extreme Peaks
+        extreme_result = self._extreme_price_strategy(price_data, soc, capacity_kwh, power_kw, constraints)
+        if extreme_result[0] != 0.0:  # Extreme Preis-Szenario erkannt
+            return extreme_result
+        
+        if len(price_data) < 2:
             # Fallback: Einfache Preis-basierte Strategie
             return self._simple_price_based_strategy(price_data[0], soc, capacity_kwh, power_kw, constraints)
         
@@ -162,6 +171,67 @@ class ParticleSwarmOptimization(OptimizationStrategy):
     def _idle_strategy(self) -> Tuple[float, float]:
         """Idle-Strategie: Keine Aktion"""
         return 0.0, 0.0
+    
+    def _extreme_price_strategy(self, price_data: List[float], soc: float, capacity_kwh: float,
+                                power_kw: float, constraints: Dict) -> Tuple[float, Dict]:
+        """
+        Extrempreis-Szenarien: Negative Preise (Voll-Ladung) und extreme Peaks (Voll-Entladung)
+        
+        Returns:
+            Tuple: (power_kw, optimization_info)
+        """
+        if not price_data:
+            return 0.0, {}
+        
+        current_price = price_data[0]
+        avg_price = sum(price_data) / len(price_data) if len(price_data) > 1 else current_price
+        
+        # 1. NEGATIVE PREISE: Voll-Ladung bei negativen Preisen
+        if current_price < 0:
+            # Voll-Ladung aktivieren, wenn SOC erlaubt
+            if soc < constraints.get('soc_max', 0.95):
+                # Verfügbare Kapazität berechnen
+                available_capacity_kwh = (constraints.get('soc_max', 0.95) - soc) * capacity_kwh
+                # Maximale Ladeleistung (negativ = Laden)
+                charge_power = min(power_kw, available_capacity_kwh * 4)  # 15-min Intervall
+                
+                # Erlös durch negative Preise (wir bekommen Geld fürs Laden)
+                revenue = abs(charge_power) * 0.25 * abs(current_price) / 1000  # kWh * EUR/MWh
+                
+                return -charge_power, {
+                    'strategy': 'negative_price_charge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_charge',
+                    'extreme_price_type': 'negative'
+                }
+        
+        # 2. EXTREME POSITIVE PEAKS: Voll-Entladung bei extremen Preisspitzen
+        # Extreme Peak = Preis > 200% des Durchschnitts ODER > 150 EUR/MWh
+        extreme_peak_threshold = max(avg_price * 2.0, 150.0)  # 200% oder 150 EUR/MWh
+        
+        if current_price > extreme_peak_threshold:
+            # Voll-Entladung aktivieren, wenn SOC erlaubt
+            if soc > constraints.get('soc_min', 0.1):
+                # Verfügbare Energie berechnen
+                available_energy_kwh = (soc - constraints.get('soc_min', 0.1)) * capacity_kwh
+                # Maximale Entladeleistung (positiv = Entladen)
+                discharge_power = min(power_kw, available_energy_kwh * 4)  # 15-min Intervall
+                
+                # Erlös durch extreme Peaks
+                revenue = discharge_power * 0.25 * current_price / 1000  # kWh * EUR/MWh
+                
+                return discharge_power, {
+                    'strategy': 'extreme_peak_discharge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_discharge',
+                    'extreme_price_type': 'positive_peak',
+                    'peak_threshold': extreme_peak_threshold
+                }
+        
+        # Kein Extrempreis-Szenario
+        return 0.0, {}
 
 
 class MultiObjectiveOptimization(OptimizationStrategy):
@@ -180,6 +250,12 @@ class MultiObjectiveOptimization(OptimizationStrategy):
         """
         if not self.enabled:
             return 0.0, {'strategy': 'multi_objective_disabled'}
+        
+        # EXTREMPREIS-SZENARIEN: Prüfe zuerst auf negative Preise und extreme Peaks
+        if price_data:
+            extreme_result = self._extreme_price_strategy(price_data, soc, capacity_kwh, power_kw, constraints)
+            if extreme_result[0] != 0.0:  # Extreme Preis-Szenario erkannt
+                return extreme_result
         
         # Berechne Erlös-Potenzial
         revenue_potential = self._calculate_revenue_potential(price_data, soc, capacity_kwh, power_kw, constraints)
@@ -246,6 +322,49 @@ class MultiObjectiveOptimization(OptimizationStrategy):
         base_cost = self.cycle_cost_eur_per_cycle * 0.1  # Teilzyklus-Kosten
         
         return base_cost + dod_penalty + overcharge_penalty
+    
+    def _extreme_price_strategy(self, price_data: List[float], soc: float, capacity_kwh: float,
+                                power_kw: float, constraints: Dict) -> Tuple[float, Dict]:
+        """
+        Extrempreis-Szenarien: Negative Preise (Voll-Ladung) und extreme Peaks (Voll-Entladung)
+        """
+        if not price_data:
+            return 0.0, {}
+        
+        current_price = price_data[0]
+        avg_price = sum(price_data) / len(price_data) if len(price_data) > 1 else current_price
+        
+        # 1. NEGATIVE PREISE: Voll-Ladung bei negativen Preisen
+        if current_price < 0:
+            if soc < constraints.get('soc_max', 0.95):
+                available_capacity_kwh = (constraints.get('soc_max', 0.95) - soc) * capacity_kwh
+                charge_power = min(power_kw, available_capacity_kwh * 4)
+                revenue = abs(charge_power) * 0.25 * abs(current_price) / 1000
+                return -charge_power, {
+                    'strategy': 'negative_price_charge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_charge',
+                    'extreme_price_type': 'negative'
+                }
+        
+        # 2. EXTREME POSITIVE PEAKS: Voll-Entladung bei extremen Preisspitzen
+        extreme_peak_threshold = max(avg_price * 2.0, 150.0)
+        if current_price > extreme_peak_threshold:
+            if soc > constraints.get('soc_min', 0.1):
+                available_energy_kwh = (soc - constraints.get('soc_min', 0.1)) * capacity_kwh
+                discharge_power = min(power_kw, available_energy_kwh * 4)
+                revenue = discharge_power * 0.25 * current_price / 1000
+                return discharge_power, {
+                    'strategy': 'extreme_peak_discharge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_discharge',
+                    'extreme_price_type': 'positive_peak',
+                    'peak_threshold': extreme_peak_threshold
+                }
+        
+        return 0.0, {}
 
 
 class CycleOptimization(OptimizationStrategy):
@@ -266,7 +385,15 @@ class CycleOptimization(OptimizationStrategy):
         if not self.enabled:
             return 0.0, {'strategy': 'cycle_optimization_disabled'}
         
-        # Prüfe Zyklen-Limit
+        # EXTREMPREIS-SZENARIEN: Prüfe zuerst auf negative Preise und extreme Peaks
+        # Bei Extrempreisen ist es sinnvoll, auch bei Zyklen-Limit zu handeln
+        if price_data:
+            extreme_result = self._extreme_price_strategy(price_data, soc, capacity_kwh, power_kw, constraints)
+            if extreme_result[0] != 0.0:  # Extreme Preis-Szenario erkannt
+                # Bei Extrempreisen handeln, auch wenn Zyklen-Limit erreicht
+                return extreme_result
+        
+        # Prüfe Zyklen-Limit (nur wenn kein Extrempreis-Szenario)
         if self.cycles_today >= self.max_cycles_per_day:
             return 0.0, {
                 'strategy': 'cycle_optimization_limit_reached',
@@ -310,6 +437,49 @@ class CycleOptimization(OptimizationStrategy):
                     return power_kw * 0.3, {'strategy': 'cycle_optimization_high_value_arbitrage'}
         
         return 0.0, {'strategy': 'cycle_optimization_idle', 'reason': 'soc_optimal'}
+    
+    def _extreme_price_strategy(self, price_data: List[float], soc: float, capacity_kwh: float,
+                                power_kw: float, constraints: Dict) -> Tuple[float, Dict]:
+        """
+        Extrempreis-Szenarien: Negative Preise (Voll-Ladung) und extreme Peaks (Voll-Entladung)
+        """
+        if not price_data:
+            return 0.0, {}
+        
+        current_price = price_data[0]
+        avg_price = sum(price_data) / len(price_data) if len(price_data) > 1 else current_price
+        
+        # 1. NEGATIVE PREISE: Voll-Ladung bei negativen Preisen
+        if current_price < 0:
+            if soc < constraints.get('soc_max', 0.95):
+                available_capacity_kwh = (constraints.get('soc_max', 0.95) - soc) * capacity_kwh
+                charge_power = min(power_kw, available_capacity_kwh * 4)
+                revenue = abs(charge_power) * 0.25 * abs(current_price) / 1000
+                return -charge_power, {
+                    'strategy': 'negative_price_charge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_charge',
+                    'extreme_price_type': 'negative'
+                }
+        
+        # 2. EXTREME POSITIVE PEAKS: Voll-Entladung bei extremen Preisspitzen
+        extreme_peak_threshold = max(avg_price * 2.0, 150.0)
+        if current_price > extreme_peak_threshold:
+            if soc > constraints.get('soc_min', 0.1):
+                available_energy_kwh = (soc - constraints.get('soc_min', 0.1)) * capacity_kwh
+                discharge_power = min(power_kw, available_energy_kwh * 4)
+                revenue = discharge_power * 0.25 * current_price / 1000
+                return discharge_power, {
+                    'strategy': 'extreme_peak_discharge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_discharge',
+                    'extreme_price_type': 'positive_peak',
+                    'peak_threshold': extreme_peak_threshold
+                }
+        
+        return 0.0, {}
 
 
 class ClusterBasedDispatch(OptimizationStrategy):
@@ -325,7 +495,15 @@ class ClusterBasedDispatch(OptimizationStrategy):
         """
         Cluster-Based Dispatch: Gruppiert Preise und optimiert pro Cluster
         """
-        if not self.enabled or len(price_data) < 3:
+        if not self.enabled or len(price_data) < 1:
+            return 0.0, {'strategy': 'cluster_dispatch_disabled'}
+        
+        # EXTREMPREIS-SZENARIEN: Prüfe zuerst auf negative Preise und extreme Peaks
+        extreme_result = self._extreme_price_strategy(price_data, soc, capacity_kwh, power_kw, constraints)
+        if extreme_result[0] != 0.0:  # Extreme Preis-Szenario erkannt
+            return extreme_result
+        
+        if len(price_data) < 3:
             return 0.0, {'strategy': 'cluster_dispatch_disabled'}
         
         # Erstelle Preis-Cluster
@@ -382,6 +560,49 @@ class ClusterBasedDispatch(OptimizationStrategy):
             return 'high'
         else:
             return 'medium'
+    
+    def _extreme_price_strategy(self, price_data: List[float], soc: float, capacity_kwh: float,
+                                power_kw: float, constraints: Dict) -> Tuple[float, Dict]:
+        """
+        Extrempreis-Szenarien: Negative Preise (Voll-Ladung) und extreme Peaks (Voll-Entladung)
+        """
+        if not price_data:
+            return 0.0, {}
+        
+        current_price = price_data[0]
+        avg_price = sum(price_data) / len(price_data) if len(price_data) > 1 else current_price
+        
+        # 1. NEGATIVE PREISE: Voll-Ladung bei negativen Preisen
+        if current_price < 0:
+            if soc < constraints.get('soc_max', 0.95):
+                available_capacity_kwh = (constraints.get('soc_max', 0.95) - soc) * capacity_kwh
+                charge_power = min(power_kw, available_capacity_kwh * 4)
+                revenue = abs(charge_power) * 0.25 * abs(current_price) / 1000
+                return -charge_power, {
+                    'strategy': 'negative_price_charge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_charge',
+                    'extreme_price_type': 'negative'
+                }
+        
+        # 2. EXTREME POSITIVE PEAKS: Voll-Entladung bei extremen Preisspitzen
+        extreme_peak_threshold = max(avg_price * 2.0, 150.0)
+        if current_price > extreme_peak_threshold:
+            if soc > constraints.get('soc_min', 0.1):
+                available_energy_kwh = (soc - constraints.get('soc_min', 0.1)) * capacity_kwh
+                discharge_power = min(power_kw, available_energy_kwh * 4)
+                revenue = discharge_power * 0.25 * current_price / 1000
+                return discharge_power, {
+                    'strategy': 'extreme_peak_discharge',
+                    'revenue_estimate': revenue,
+                    'price_eur_mwh': current_price,
+                    'action': 'full_discharge',
+                    'extreme_price_type': 'positive_peak',
+                    'peak_threshold': extreme_peak_threshold
+                }
+        
+        return 0.0, {}
 
 
 class OptimizationManager:

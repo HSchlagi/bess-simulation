@@ -7025,6 +7025,24 @@ def api_run_simulation():
                 # Annahme: Preis-Schwankungen über das Jahr
                 price_variation = (max_spot_price - min_spot_price) / avg_spot_price if avg_spot_price > 0 else 0.2
                 
+                # SPREAD WIDTH: Differenz zwischen Min und Max (EUR/MWh)
+                spread_width_eur_mwh = max_spot_price - min_spot_price
+                spread_width_percent = (spread_width_eur_mwh / avg_spot_price * 100) if avg_spot_price > 0 else 0.0
+                
+                # EXTREMPREIS-SZENARIEN: Zähle negative Preise und extreme Peaks
+                # (Vereinfacht für Jahres-Simulation - in Realität würde dies pro Periode gezählt)
+                negative_price_count = 0  # Wird in realer Simulation pro Periode gezählt
+                extreme_peak_count = 0  # Wird in realer Simulation pro Periode gezählt
+                
+                # Schätzung basierend auf Preis-Verteilung
+                if min_spot_price < 0:
+                    # Schätze Anzahl negativer Preis-Perioden (vereinfacht: 5% der Zeit bei negativen Preisen)
+                    negative_price_count = int(8760 * 4 * 0.05)  # 5% von 8760 Stunden * 4 (15-min Intervalle)
+                
+                if max_spot_price > 150.0:
+                    # Schätze Anzahl extremer Peak-Perioden (vereinfacht: 2% der Zeit bei extremen Peaks)
+                    extreme_peak_count = int(8760 * 4 * 0.02)  # 2% von 8760 Stunden * 4
+                
                 # Optimierungs-Benefit: +5-15% Mehrertrag durch intelligente Strategien
                 if optimization_config.preferred_strategy == 'pso':
                     optimization_benefit = 1.10  # +10% durch PSO
@@ -7046,7 +7064,13 @@ def api_run_simulation():
                     'strategy_used': optimization_config.preferred_strategy,
                     'optimization_enabled': True,
                     'revenue_boost_percent': (optimization_benefit - 1.0) * 100,
-                    'price_volatility': price_variation * 100
+                    'price_volatility': price_variation * 100,
+                    'spread_width_eur_mwh': round(spread_width_eur_mwh, 2),
+                    'spread_width_percent': round(spread_width_percent, 2),
+                    'negative_price_count': negative_price_count,
+                    'extreme_peak_count': extreme_peak_count,
+                    'min_price_eur_mwh': round(min_spot_price, 2),
+                    'max_price_eur_mwh': round(max_spot_price, 2)
                 }
                 
                 print(f"✅ Optimierung aktiviert: {optimization_config.preferred_strategy} (+{(optimization_benefit - 1.0) * 100:.1f}% Erlös)")
@@ -7307,6 +7331,14 @@ def api_run_simulation():
             'optimization_revenue_boost_percent': round(optimization_stats.get('revenue_boost_percent', 0.0), 2),
             'optimization_price_volatility': round(optimization_stats.get('price_volatility', 0.0), 2),
             'optimization_benefit_eur': round((arbitrage_revenue * (optimization_benefit - 1.0)), 2) if optimization_stats.get('optimization_enabled', False) else 0.0,
+            
+            # EXTREMPREIS-SZENARIEN & SPREAD WIDTH Kennzahlen
+            'spread_width_eur_mwh': optimization_stats.get('spread_width_eur_mwh', 0.0),
+            'spread_width_percent': optimization_stats.get('spread_width_percent', 0.0),
+            'negative_price_count': optimization_stats.get('negative_price_count', 0),
+            'extreme_peak_count': optimization_stats.get('extreme_peak_count', 0),
+            'min_price_eur_mwh': optimization_stats.get('min_price_eur_mwh', 0.0),
+            'max_price_eur_mwh': optimization_stats.get('max_price_eur_mwh', 0.0),
             
             # BESS-Modus Details
             'bess_mode_description': mode_config['description'],

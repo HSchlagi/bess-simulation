@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.2-blue)
+![Version](https://img.shields.io/badge/version-2.4-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-green)
 ![Flask](https://img.shields.io/badge/flask-2.3.3-lightgrey)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
@@ -47,6 +47,7 @@
 - ✅ **CO₂-Tracking & ESG-Reporting** mit Carbon Credits Trading
 - ✅ **Progressive Web App (PWA)** für mobile Nutzung
 - ✅ **Export-Funktionen** (PDF, Excel, CSV)
+- ✅ **Roadmap 2025 Features** - Netzrestriktionen, Degradation, Co-Location, Optimierte Regelstrategien, Extrempreis-Szenarien, Spread Width
 
 ---
 
@@ -67,6 +68,17 @@
   - Zyklenlebensdauer und Degradationsmodelle
   - Ladewirkungsgrad und Entladewirkungsgrad
   - State of Charge (SoC) Management
+  - **Erweiterte Degradation (Roadmap Stufe 1)** ⭐ NEU
+    - Cycle Count Tracking (Full Cycle Equivalent)
+    - DoD-abhängige Alterung
+    - Temperaturfaktor-Integration
+    - State of Health (SoH) Tracking
+    - Lebensdauer-Prognose bis 80% SoH
+  - **Second-Life-Batterien (Roadmap Stufe 1)** ⭐ NEU
+    - Reduzierte Startkapazität (70-85%)
+    - Kürzere Lebensdauer (3-7 Jahre)
+    - Kostenvorteil (40-60% CAPEX-Reduktion)
+    - Economy-Szenarien-Support
 
 - **Peak Shaving Analyse**
   - Lastspitzen-Reduktion
@@ -100,8 +112,105 @@
   - Österreichische Netzanschlussbedingungen
   - Frequenz-/Spannungsüberwachung
   - Response-Zeit-Compliance
+  - **Netzrestriktionen (Roadmap Stufe 1)** ⭐ NEU
+    - Ramp-Rate Limits (max. 10% pro Minute)
+    - Exportlimits für verschiedene Netzebenen (NE5/NE6/NE7)
+    - 100-h-Regel (EEG/DE) für Stundenweise Einspeisebegrenzung
+    - Einspeiseleistungsbegrenzung am Netzanschlusspunkt
+    - Hüllkurvenregelungen (APG, ENTSO-E)
+    - Erlösverlust-Berechnung durch Restriktionen
 
-### 4. **Wirtschaftlichkeitsanalyse**
+### 4. **Roadmap 2025 Features** ⭐ NEU
+
+#### **Stufe 1 - Netzrestriktionen & Degradation**
+- **Netzrestriktionen & Grid Code Compliance:**
+  - Ramp-Rate Limits zur Einhaltung von Netzstabilitätsanforderungen
+  - Exportlimits für verschiedene Netzebenen
+  - 100-h-Regel (EEG/DE) für Stundenweise Einspeisebegrenzung
+  - Erlösverlust-Berechnung durch Netzrestriktionen
+
+- **Erweiterte Batterie-Degradation:**
+  - Cycle Count Tracking mit Full Cycle Equivalent (FCE)
+  - DoD-abhängige Alterung (Tiefe Entladung = höhere Degradation)
+  - Temperaturfaktor-Integration für realistische Modellierung
+  - State of Health (SoH) Tracking mit kontinuierlicher Überwachung
+  - Lebensdauer-Prognose bis 80% SoH-Schwelle
+
+- **Second-Life-Batterien:**
+  - Economy-Szenarien mit reduzierter Startkapazität (70-85%)
+  - Kürzere Lebensdauer (3-7 Jahre statt 10-15 Jahre)
+  - Kostenvorteil (40-60% CAPEX-Reduktion)
+  - Frontend-Kennzahlen für CAPEX/kWh, LCOE und TCO-Vergleiche
+
+#### **Stufe 2.1 - Co-Location PV + BESS**
+- **Gemeinsamer Netzanschluss:**
+  - Shared Grid Connection für PV und BESS
+  - Netzkosten-Reduktion durch gemeinsame Nutzung
+  - Kapazitätsoptimierung des Netzanschlusses
+
+- **Curtailment-Vermeidung:**
+  - PV-Abschaltung vermeiden durch BESS-Integration
+  - PV-Mehrproduktion-Berechnung
+  - Verbesserte PV-Ausnutzung
+  - Erlöszuwachs durch vermiedene Curtailment-Verluste
+
+- **PV-geführtes Peak-Shaving:**
+  - Intelligente Lastverschiebung basierend auf PV-Erzeugung
+  - Peak-Reduktion durch BESS-Entladung
+  - Eigenverbrauchssteigerung
+
+#### **Stufe 2.2 - Optimierte Regelstrategien**
+- **Particle Swarm Optimization (PSO):**
+  - Schwarm-basierte Optimierung für Lade-/Entlade-Entscheidungen
+  - +5-15% Erlössteigerung möglich
+  - Nutzung von Preis-Volatilität
+
+- **Multi-Objective Optimierung:**
+  - Balance zwischen Erlös-Maximierung und Degradations-Minimierung
+  - Konfigurierbare Gewichtung
+  - Netto-Nutzen-Berechnung
+
+- **Zyklenoptimierung:**
+  - Battery Health Schutz durch Zyklenbegrenzung
+  - Optimaler SOC-Bereich
+  - Tiefentladungsvermeidung
+
+- **Cluster-Based Dispatch:**
+  - Preis-Cluster-Erkennung
+  - Gruppenbasierte Lastverteilung
+  - Schnelle Reaktion auf Marktveränderungen
+
+- **Extrempreis-Szenarien:** ⭐ NEU
+  - **Negative Preise**: Automatische Voll-Ladung bei negativen Preisen
+    - Erkennung in allen Optimierungs-Strategien
+    - Erlösberechnung für negative Preis-Perioden
+    - Frontend-Kennzahl: Anzahl negativer Preis-Perioden
+  - **Positive Peaks**: Automatische Voll-Entladung bei extremen Preisspitzen
+    - Erkennung bei >200% Durchschnitt oder >150 EUR/MWh
+    - Erlösberechnung für extreme Peak-Perioden
+    - Frontend-Kennzahl: Anzahl extremer Peak-Perioden
+  - **Zyklenbegrenzung**: Bereits in Cycle Optimization implementiert
+    - Bei Extrempreisen wird Zyklen-Limit überschrieben (höhere Priorität)
+
+- **Intraday-Preisverteilung (Volatility-Modell):** ⭐ NEU
+  - **Spread Width**: Differenz zwischen Min/Max Preis
+    - Berechnung: `max_price - min_price` (EUR/MWh)
+    - Prozentuale Berechnung: `(spread_width / avg_price) * 100`
+    - Frontend-Kennzahlen: Spread Width in EUR/MWh und Prozent
+  - **Volatility Index**: Maß für Preisschwankungen
+    - Berechnung: `(max_price - min_price) / avg_price * 100`
+    - Integration in Optimierungs-Benefit-Anpassung
+    - Frontend-Kennzahl: Preis-Volatilität in Prozent
+  - **Min/Max Preis-Kennzahlen**: Zusätzliche Marktinformationen
+
+- **UI-Features:**
+  - Optimierungs-Toggle-Switch im Dashboard
+  - Strategie-Auswahl-Konfiguration
+  - Frontend-Kennzahlen für Optimierungs-Metriken
+  - Extrempreis-Kennzahlen (Spread Width, Negative Preise, Extreme Peaks)
+  - Ausklappbare Sektionen für bessere Übersicht
+
+### 5. **Wirtschaftlichkeitsanalyse**
 
 - **ROI-Berechnung** mit Kapitalwertmethode
 - **NPV (Net Present Value)** mit Diskontierung
@@ -132,7 +241,7 @@
   - **Korrekte Degradationsanwendung:** Degradation wird identisch wie im 10-Jahres-Report angewendet (2% pro Jahr, 11 Jahre: Bezugsjahr + 10 Projektionsjahre)
   - **Angeglichene Formeln:** Efficiency und Marktteilnahme-Raten für Intraday entfernt, um Konsistenz mit dem 10-Jahres-Report zu gewährleisten
 
-### 5. **Datenintegration & APIs**
+### 6. **Datenintegration & APIs**
 
 #### **Strompreise**
 - **aWattar API** - Österreichische Spot-Preise (stündlich)
@@ -157,7 +266,7 @@
 - **Blockchain-Energiehandel** (P2P Trading Simulation)
 - **Smart Meter Integration**
 
-### 6. **Machine Learning & KI** 🤖
+### 7. **Machine Learning & KI** 🤖
 
 - **Advanced ML Dashboard**
   - Lastprognosen (Random Forest, XGBoost, ARIMA)
@@ -171,7 +280,7 @@
   - CursorAI Integration
   - Intelligente Empfehlungen
 
-### 7. **Nachhaltigkeit & CO₂**
+### 8. **Nachhaltigkeit & CO₂**
 
 - **CO₂-Tracking Dashboard**
   - CO₂-Fußabdruck-Berechnung
@@ -194,7 +303,7 @@
   - Green Bonds
   - ESG-Scores
 
-### 8. **Export & Reporting**
+### 9. **Export & Reporting**
 
 - **PDF-Export** mit professionellem Layout
   - **10-Jahres-Erlöspotenzial-Report** als PDF (A4 Querformat, optimiert für eine Seite)
@@ -207,7 +316,7 @@
 - **Automatische Berichte** (täglich, wöchentlich, monatlich)
 - **Individualisierbare Templates**
 
-### 9. **Progressive Web App (PWA)**
+### 10. **Progressive Web App (PWA)**
 
 - **Offline-Fähigkeit**
 - **Install-Button** für Desktop/Mobile
@@ -580,10 +689,18 @@ bess-simulation/
 │   ├── auth_routes.py           # Authentifizierung
 │   ├── climate_routes.py        # CO₂ & Klima
 │   ├── dispatch_integration.py  # Advanced Dispatch
+│   ├── network_restrictions.py  # Roadmap Stufe 1: Netzrestriktionen
+│   ├── degradation_model.py      # Roadmap Stufe 1: Degradation
+│   ├── co_location.py           # Roadmap Stufe 2.1: Co-Location
+│   ├── optimization_strategies.py # Roadmap Stufe 2.2: Optimierung
+│   ├── roadmap_stufe1_integration.py  # Stufe 1 Integration
+│   ├── roadmap_stufe2_integration.py   # Stufe 2.1 Integration
+│   ├── roadmap_stufe2_2_integration.py # Stufe 2.2 Integration
 │   └── templates/               # HTML-Templates
 │       ├── base.html
 │       ├── dashboard.html
 │       ├── projects.html
+│       ├── bess_simulation_enhanced.html  # Enhanced Dashboard mit Roadmap Features
 │       └── ...
 │
 ├── models/                       # Datenbank-Modelle
@@ -616,6 +733,11 @@ bess-simulation/
 ├── awattar_data_fetcher.py      # aWattar Integration
 ├── ehyd_data_fetcher.py         # eHYD Integration
 ├── pvgis_data_fetcher.py        # PVGIS Integration
+│
+├── migrate_roadmap_stufe1.py    # Migration: Roadmap Stufe 1
+├── migrate_roadmap_stufe2.py    # Migration: Roadmap Stufe 2.1
+├── migrate_roadmap_stufe2_2.py  # Migration: Roadmap Stufe 2.2
+├── update_optimization_defaults.py  # Update: Optimierungs-Standardwerte
 │
 ├── config.py                     # Konfiguration
 ├── run.py                        # Startskript
@@ -839,7 +961,29 @@ Diese Software und die zugehörige Dokumentation sind urheberrechtlich geschütz
 
 ## 🗺️ Roadmap
 
-### Version 2.3 (Q2 2025)
+### Version 2.4 (Januar 2025) ✅ IMPLEMENTIERT
+
+- **Extrempreis-Szenarien:**
+  - Automatische Voll-Ladung bei negativen Preisen
+  - Automatische Voll-Entladung bei extremen Preisspitzen (>200% Durchschnitt oder >150 EUR/MWh)
+  - Integration in alle Optimierungs-Strategien (PSO, Multi-Objective, Cycle Optimization, Cluster Dispatch)
+  - Frontend-Kennzahlen: Anzahl negativer Preis-Perioden, Anzahl extremer Peak-Perioden
+  - Zyklenbegrenzung wird bei Extrempreisen überschrieben (höhere Priorität)
+
+- **Intraday-Preisverteilung (Volatility-Modell):**
+  - Spread Width Berechnung (Differenz zwischen Min/Max Preis)
+  - Volatility Index Integration
+  - Min/Max Preis-Kennzahlen
+  - Frontend-Anzeige in beiden Tabs (Simulation & Enhanced Dashboard)
+
+### Version 2.3 (Januar 2025) ✅ IMPLEMENTIERT
+- [x] **Roadmap 2025 Stufe 1:** Netzrestriktionen, Erweiterte Degradation, Second-Life-Batterien
+- [x] **Roadmap 2025 Stufe 2.1:** Co-Location PV + BESS mit Curtailment-Vermeidung
+- [x] **Roadmap 2025 Stufe 2.2:** Optimierte Regelstrategien (PSO, Multi-Objective, Zyklenoptimierung, Cluster-Based Dispatch)
+- [x] **UI-Integration:** Ausklappbare Sektionen, Optimierungs-Toggle, Frontend-Kennzahlen
+- [x] **Dokumentation:** Vollständige Dokumentation aller neuen Features
+
+### Version 2.4 (Q2 2025)
 - [ ] Erweiterter VPP-Modus mit Flottenmanagement
 - [ ] Integration zusätzlicher europäischer Märkte
 - [ ] Mobile App (iOS/Android)

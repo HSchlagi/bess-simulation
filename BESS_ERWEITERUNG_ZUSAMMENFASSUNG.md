@@ -120,22 +120,22 @@ ORDER BY year_month;
 ## 🚀 **Implementierungsplan**
 
 ### **Phase 1: Grundlagen (1-2 Wochen)**
-- [ ] Erweiterte Datenbankstruktur implementieren
-- [ ] EnhancedSimulationResult-Klasse integrieren
-- [ ] Automatische Tests einrichten
-- [ ] Basis-API-Endpunkte erstellen
+- [x] Erweiterte Datenbankstruktur implementieren
+- [x] EnhancedSimulationResult-Klasse integrieren
+- [x] Automatische Tests einrichten
+- [x] Basis-API-Endpunkte erstellen
 
 ### **Phase 2: API & Backend (2-3 Wochen)**
-- [ ] Vollständige API v2 implementieren
-- [ ] CO₂-Berechnungen integrieren
-- [ ] Monatsauswertungen implementieren
-- [ ] Optimierungsalgorithmen entwickeln
+- [x] Vollständige API v2 implementieren
+- [x] CO₂-Berechnungen integrieren
+- [x] Monatsauswertungen implementieren
+- [x] Optimierungsalgorithmen entwickeln
 
 ### **Phase 3: Frontend & Dashboard (2-3 Wochen)**
-- [ ] Interaktives Dashboard erstellen
-- [ ] Chart.js Visualisierungen implementieren
-- [ ] Use Case Switcher entwickeln
-- [ ] Responsive Design optimieren
+- [x] Interaktives Dashboard erstellen
+- [x] Chart.js Visualisierungen implementieren
+- [x] Use Case Switcher entwickeln
+- [x] Responsive Design optimieren
 
 ### **Phase 4: Roadmap 2025 - Stufe 1 (Top-Priorität) (2-3 Wochen)**
 - [x] **Netzrestriktionen einbauen** (Ramp-Rate, Exportlimits, 100-h-Regel)
@@ -147,8 +147,8 @@ ORDER BY year_month;
 ### **Phase 5: Roadmap 2025 - Stufe 2 (Essentiell) (2-3 Wochen)**
 - [x] **Co-Location PV+BESS** (Gemeinsamer Netzanschluss, Curtailment-Vermeidung)
 - [x] **Optimierte Regelstrategien** (PSO, Multi-Objective, Zyklenoptimierung)
-- [ ] **Extrempreis-Szenarien** (Negative Preise, Peaks, Zyklenbegrenzung)
-- [ ] Intraday-Preisverteilung (Volatility-Modell)
+- [x] **Extrempreis-Szenarien** (Negative Preise, Peaks, Zyklenbegrenzung)
+- [x] **Intraday-Preisverteilung** (Spread Width, Volatility Index)
 
 ### **Phase 6: Integration & Testing (1-2 Wochen)**
 - [ ] End-to-End Tests durchführen
@@ -311,20 +311,48 @@ def optimize_dispatch():
 
 **Simulation:**
 - **Negative Preise**: Voll-Ladung bei negativen Preisen
+  - Automatische Erkennung negativer Preise in allen Optimierungs-Strategien
+  - Voll-Ladung bei `price < 0` mit Erlösberechnung
+  - Frontend-Kennzahl: Anzahl negativer Preis-Perioden
 - **Positive Peaks**: Voll-Entladung bei extremen Preisspitzen
+  - Automatische Erkennung extremer Peaks (>200% Durchschnitt oder >150 EUR/MWh)
+  - Voll-Entladung bei extremen Preisspitzen mit Erlösberechnung
+  - Frontend-Kennzahl: Anzahl extremer Peak-Perioden
 - **Zyklenbegrenzung**: Berücksichtigung der maximalen Zyklenzahl
+  - Bereits in Cycle Optimization implementiert
+  - Bei Extrempreisen wird Zyklen-Limit überschrieben (höhere Priorität)
 
-**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+**Technische Details:**
+- Implementiert in allen Optimierungs-Strategien (PSO, Multi-Objective, Cycle Optimization, Cluster Dispatch)
+- Integration in `_extreme_price_strategy()` Methode
+- Priorität: Extrempreis-Szenarien werden vor normaler Optimierung geprüft
+- Fallback-Strategie (`simple_price_based_dispatch`) ebenfalls erweitert
+
+**Status:** ✅ Vollständig implementiert (Optimierungs-Strategien, Simulation-Logik, Frontend-Kennzahlen)
 
 ---
 
 #### **3.2 Intraday-Preisverteilung (Volatility-Modell)** 📊
 **Parameter:**
 - **Volatility Index**: Maß für Preisschwankungen
+  - Berechnung: `(max_price - min_price) / avg_price * 100`
+  - Integration in Optimierungs-Benefit-Anpassung
+  - Frontend-Kennzahl: Preis-Volatilität in Prozent
 - **Spread Width**: Differenz zwischen Min/Max
+  - Berechnung: `max_price - min_price` (EUR/MWh)
+  - Prozentuale Berechnung: `(spread_width / avg_price) * 100`
+  - Frontend-Kennzahlen: Spread Width in EUR/MWh und Prozent
 - **Reaktionsgeschwindigkeit**: BESS Response Time
+  - ⚠️ Noch nicht implementiert als separater Parameter
+  - System-Response-Time vorhanden, aber nicht als BESS-Trading-Parameter
 
-**Status:** ✅ Implementiert (Datenmodell, Integration in Simulation, Frontend-Kennzahlen)
+**Technische Details:**
+- Spread Width und Volatility Index werden in `routes.py` berechnet
+- Integration in Optimierungs-Statistiken
+- Frontend-Anzeige in beiden Tabs (Simulation & Enhanced Dashboard)
+- Min/Max Preis-Kennzahlen ebenfalls verfügbar
+
+**Status:** ⚠️ Teilweise implementiert (Spread Width ✅, Volatility Index ✅, Response Time ❌)
 
 ---
 
@@ -387,7 +415,7 @@ def optimize_dispatch():
 ### **🟡 Stufe 2 – in den nächsten Wochen**
 - [x] **4. Co-Location PV+BESS** (Wirtschaftlich stark)
 - [x] **5. Optimierte Regelstrategien** (Mehrertrag +5-15%)
-- [ ] **6. Extrempreis-Szenarien** (Realistische Arbitrage)
+- [x] **6. Extrempreis-Szenarien** (Realistische Arbitrage) ✅ Implementiert
 
 ### **🟢 Stufe 3 – Zukunft**
 - [ ] **7. LDES Modell** (Long Duration Storage)

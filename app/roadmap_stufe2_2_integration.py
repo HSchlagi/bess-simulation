@@ -182,6 +182,23 @@ def simple_price_based_dispatch(price: float, soc: float, capacity_kwh: float,
     """Einfache Preis-basierte Dispatch-Strategie (Fallback)"""
     avg_price = 100.0  # Fallback-Durchschnittspreis
     
+    # EXTREMPREIS-SZENARIEN: Prüfe zuerst auf negative Preise und extreme Peaks
+    # 1. NEGATIVE PREISE: Voll-Ladung bei negativen Preisen
+    if price < 0:
+        if soc < constraints.get('soc_max', 0.95):
+            available_capacity_kwh = (constraints.get('soc_max', 0.95) - soc) * capacity_kwh
+            charge_power = min(power_kw, available_capacity_kwh * 4)  # 15-min Intervall
+            return -charge_power  # Voll-Ladung
+    
+    # 2. EXTREME POSITIVE PEAKS: Voll-Entladung bei extremen Preisspitzen
+    extreme_peak_threshold = max(avg_price * 2.0, 150.0)  # 200% oder 150 EUR/MWh
+    if price > extreme_peak_threshold:
+        if soc > constraints.get('soc_min', 0.1):
+            available_energy_kwh = (soc - constraints.get('soc_min', 0.1)) * capacity_kwh
+            discharge_power = min(power_kw, available_energy_kwh * 4)  # 15-min Intervall
+            return discharge_power  # Voll-Entladung
+    
+    # Normale Preis-basierte Strategie
     if price < avg_price * 0.8 and soc < constraints.get('soc_max', 0.95):
         return -power_kw * 0.5  # Lade bei niedrigen Preisen
     elif price > avg_price * 1.2 and soc > constraints.get('soc_min', 0.1):
