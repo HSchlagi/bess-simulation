@@ -243,3 +243,6 @@ def create_standard_degradation_model(initial_capacity_kwh: float,
         calendar_aging_rate=0.02  # 2% pro Jahr
     )
 
+
+
+

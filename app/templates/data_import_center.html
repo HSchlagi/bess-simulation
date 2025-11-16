@@ -588,10 +588,21 @@ document.addEventListener('DOMContentLoaded', function() {
                      data-file-type="api" data-data-type="weather">
                     <i class="fas fa-cloud-sun text-4xl text-blue-400 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-800 mb-2">Wetter-API</h3>
-                    <p class="text-sm text-gray-600 mb-4">OpenWeatherMap & PVGIS</p>
-                    <p class="text-xs text-blue-600 mb-4">🌤️ Echtzeit & historische Daten</p>
+                    <p class="text-sm text-gray-600 mb-4">OpenWeatherMap &amp; PVGIS</p>
+                    <p class="text-xs text-blue-600 mb-4">🌤️ Echtzeit &amp; historische Daten</p>
                     <button onclick="openWeatherApiModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
                         API abrufen
+                    </button>
+                </div>
+
+                <!-- GeoSphere Wind (Co-Location) -->
+                <div class="border-2 border-dashed border-indigo-300 rounded-lg p-6 text-center">
+                    <i class="fas fa-wind text-4xl text-indigo-400 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-800 mb-2">GeoSphere Wind (Co-Location)</h3>
+                    <p class="text-sm text-gray-600 mb-4">ZAMG/GeoSphere-Winddaten → 15‑Minuten Windleistung</p>
+                    <p class="text-xs text-indigo-600 mb-4">🌬️ Für PV+Wind+BESS Co-Location</p>
+                    <button onclick="openGeoSphereModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md">
+                        GeoSphere API abrufen
                     </button>
                 </div>
 
@@ -5407,6 +5418,442 @@ function openWeatherApiModal() {
     
     // Status laden
     loadWeatherApiStatus();
+}
+
+// ============================================================================
+// GEOSPHERE WIND FUNKTIONEN
+// ============================================================================
+
+function openGeoSphereModal() {
+    if (!document.getElementById('geoSphereModal')) {
+        createGeoSphereModal();
+    }
+    document.getElementById('geoSphereModal').classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeGeoSphereModal() {
+    const modal = document.getElementById('geoSphereModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+}
+
+function createGeoSphereModal() {
+    const modalHTML = `
+    <div id="geoSphereModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between p-6 border-b">
+                    <h3 class="text-xl font-semibold text-gray-900">
+                        <i class="fas fa-wind text-indigo-500 mr-2"></i>
+                        GeoSphere Wind – Co-Location Import
+                    </h3>
+                    <button onclick="closeGeoSphereModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-2">Projekt & Profil</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt</label>
+                                <select id="geoSphereProjectSelect"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">Projekt auswählen...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Windprofil Name</label>
+                                <input type="text" id="geoSphereProfileName"
+                                       placeholder="z.B. GeoSphere Wind 2024"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-2">GeoSphere Konfiguration</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Base URL</label>
+                                <input type="text" id="geoSphereBaseUrl"
+                                       value="https://dataset.api.hub.geosphere.at/v1"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Resource ID</label>
+                                <input type="text" id="geoSphereResourceId"
+                                       value="klima-v1-10min"
+                                       placeholder="z.B. klima-v1-10min, klima-v1-1h"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <p class="text-xs text-gray-500 mt-1">
+                                    💡 <strong>Wichtig:</strong> Resource ID muss zur Station ID passen!<br>
+                                    ✅ <strong>Empfohlen:</strong> <code>klima-v1-10min</code> für historische Winddaten (10-Minuten-Daten)<br>
+                                    Weitere Resource IDs:<br>
+                                    - <strong>klima-v1-1h</strong> (Stunden-Daten)<br>
+                                    - <strong>synop-v1-1h</strong> (Synop-Daten, Stunden)<br>
+                                    ⚠️ <code>tawes-v1-10min</code> hat keine historischen Daten (alle Werte null)!<br>
+                                    💡 Prüfen Sie verfügbare Kombinationen: <code>/station/historical/{resource_id}/metadata</code>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Station auswählen</label>
+                                <div class="flex gap-2">
+                                    <select id="geoSphereStationId"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="">Lade Stationen...</option>
+                                    </select>
+                                    <button type="button" onclick="loadGeoSphereStations()" 
+                                            class="px-3 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 border border-gray-300"
+                                            title="Stationen aktualisieren">
+                                        <i class="fas fa-sync-alt"></i>
+                                    </button>
+                                </div>
+                                <div id="geoSphereStationInfo" class="text-xs text-gray-500 mt-1 hidden">
+                                    <span id="geoSphereStationName"></span>
+                                    <span id="geoSphereStationCoords" class="ml-2"></span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    💡 Wählen Sie eine Station in der Nähe Ihres Windrad-Standorts aus.<br>
+                                    Die Stationen werden automatisch basierend auf der Resource ID geladen.<br>
+                                    <button type="button" onclick="loadGeoSphereStations()" class="text-indigo-600 hover:text-indigo-800 underline">
+                                        Stationen aktualisieren
+                                    </button>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Parameter</label>
+                                <input type="text" id="geoSphereParameters"
+                                       value="FF"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Start (ISO8601)</label>
+                                <input type="text" id="geoSphereStart"
+                                       placeholder="2024-01-01T00:00:00Z"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Ende (ISO8601)</label>
+                                <input type="text" id="geoSphereEnd"
+                                       placeholder="2024-12-31T23:45:00Z"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-lg font-medium text-gray-900 mb-2">Windturbinen-Parameter</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Hubhöhe [m]</label>
+                                <input type="number" id="geoSphereHubHeight" value="120"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Alpha</label>
+                                <input type="number" step="0.01" id="geoSphereAlpha" value="0.18"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">P_rated [kW]</label>
+                                <input type="number" id="geoSphereRatedPower" value="4200"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Verluste gesamt [%]</label>
+                                <input type="number" step="1" id="geoSphereLossFactor" value="15"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t">
+                        <div id="geoSphereStatus" class="text-sm text-gray-500">
+                            GeoSphere-Konfiguration bereit. Import noch nicht gestartet.
+                        </div>
+                        <div class="space-x-3">
+                            <button onclick="closeGeoSphereModal()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                                Abbrechen
+                            </button>
+                            <button onclick="importGeoSphereWindData()" class="px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                                Import starten
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Projekte in Dropdown übernehmen
+    const projectSelect = document.getElementById('weatherProjectSelect');
+    const geoSphereSelect = document.getElementById('geoSphereProjectSelect');
+    if (projectSelect && geoSphereSelect) {
+        geoSphereSelect.innerHTML = projectSelect.innerHTML;
+        geoSphereSelect.value = projectSelect.value;
+    }
+
+    // Profilname und Datum vorbelegen (letztes vollständiges Jahr für historische Daten)
+    // GeoSphere hat für das aktuelle Jahr möglicherweise noch keine vollständigen Daten
+    const lastCompleteYear = new Date().getFullYear() - 1; // z.B. 2024 für 2025
+    
+    const profileInput = document.getElementById('geoSphereProfileName');
+    if (profileInput) {
+        profileInput.value = 'GeoSphere Wind ' + lastCompleteYear;
+    }
+
+    // Start- und End-Datum automatisch setzen
+    const startInput = document.getElementById('geoSphereStart');
+    const endInput = document.getElementById('geoSphereEnd');
+    if (startInput && !startInput.value) {
+        startInput.value = `${lastCompleteYear}-01-01T00:00:00Z`;
+    }
+    if (endInput && !endInput.value) {
+        endInput.value = `${lastCompleteYear}-12-31T23:45:00Z`;
+    }
+    
+    // Stationen laden, wenn Modal geöffnet wird
+    loadGeoSphereStations();
+    
+    // Event-Listener für Resource ID Änderung
+    const resourceIdInput = document.getElementById('geoSphereResourceId');
+    if (resourceIdInput) {
+        resourceIdInput.addEventListener('change', function() {
+            loadGeoSphereStations();
+        });
+    }
+    
+    // Event-Listener für Station-Auswahl
+    const stationSelect = document.getElementById('geoSphereStationId');
+    if (stationSelect) {
+        stationSelect.addEventListener('change', function() {
+            updateStationInfo(this.value);
+        });
+    }
+}
+
+async function loadGeoSphereStations() {
+    const resourceId = document.getElementById('geoSphereResourceId')?.value || 'klima-v1-10min';
+    const baseUrl = document.getElementById('geoSphereBaseUrl')?.value || 'https://dataset.api.hub.geosphere.at/v1';
+    const stationSelect = document.getElementById('geoSphereStationId');
+    const stationInfo = document.getElementById('geoSphereStationInfo');
+    const stationName = document.getElementById('geoSphereStationName');
+    const stationCoords = document.getElementById('geoSphereStationCoords');
+    
+    if (!stationSelect) return;
+    
+    // Loading-State
+    stationSelect.innerHTML = '<option value="">Lade Stationen...</option>';
+    stationSelect.disabled = true;
+    if (stationInfo) stationInfo.classList.add('hidden');
+    
+    try {
+        const response = await fetch(`/api/geosphere/stations?resource_id=${encodeURIComponent(resourceId)}&base_url=${encodeURIComponent(baseUrl)}`);
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error || 'Fehler beim Laden der Stationen');
+        }
+        
+        // Dropdown füllen
+        stationSelect.innerHTML = '<option value="">-- Station auswählen --</option>';
+        
+        if (data.stations && data.stations.length > 0) {
+            data.stations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station.id;
+                option.textContent = `${station.name} (ID: ${station.id})`;
+                if (station.altitude) {
+                    option.textContent += ` - ${station.altitude}m`;
+                }
+                option.dataset.stationName = station.name;
+                option.dataset.coordinates = station.coordinates ? JSON.stringify(station.coordinates) : '';
+                stationSelect.appendChild(option);
+            });
+            
+            // Standard-Station setzen (falls vorhanden: 5904 für Wien)
+            const defaultStation = stationSelect.querySelector('option[value="5904"]');
+            if (defaultStation) {
+                stationSelect.value = '5904';
+                updateStationInfo('5904');
+            }
+        } else {
+            stationSelect.innerHTML = '<option value="">Keine Stationen gefunden</option>';
+        }
+        
+        stationSelect.disabled = false;
+        
+    } catch (error) {
+        console.error('Fehler beim Laden der Stationen:', error);
+        stationSelect.innerHTML = `<option value="">Fehler: ${error.message}</option>`;
+        stationSelect.disabled = false;
+        showNotification('Fehler beim Laden der Stationen: ' + error.message, 'error');
+    }
+}
+
+function updateStationInfo(stationId) {
+    const stationSelect = document.getElementById('geoSphereStationId');
+    const stationInfo = document.getElementById('geoSphereStationInfo');
+    const stationName = document.getElementById('geoSphereStationName');
+    const stationCoords = document.getElementById('geoSphereStationCoords');
+    
+    if (!stationSelect || !stationInfo) return;
+    
+    const selectedOption = stationSelect.querySelector(`option[value="${stationId}"]`);
+    if (selectedOption) {
+        const name = selectedOption.dataset.stationName || '';
+        const coordsStr = selectedOption.dataset.coordinates || '';
+        
+        if (name) {
+            stationName.textContent = name;
+            stationInfo.classList.remove('hidden');
+            
+            if (coordsStr) {
+                try {
+                    const coords = JSON.parse(coordsStr);
+                    stationCoords.textContent = `📍 ${coords.latitude.toFixed(4)}°N, ${coords.longitude.toFixed(4)}°E`;
+                } catch (e) {
+                    stationCoords.textContent = '';
+                }
+            } else {
+                stationCoords.textContent = '';
+            }
+        } else {
+            stationInfo.classList.add('hidden');
+        }
+    } else {
+        stationInfo.classList.add('hidden');
+    }
+}
+
+async function importGeoSphereWindData() {
+    const projectId = document.getElementById('geoSphereProjectSelect')?.value;
+    const profileName = document.getElementById('geoSphereProfileName')?.value || 'GeoSphere Windprofil';
+
+    if (!projectId) {
+        showNotification('Bitte zuerst ein Projekt auswählen.', 'error');
+        return;
+    }
+
+    // Validierung: Pflichtfelder prüfen
+    const stationId = document.getElementById('geoSphereStationId')?.value?.trim() || '';
+    const start = document.getElementById('geoSphereStart')?.value?.trim() || '';
+    const end = document.getElementById('geoSphereEnd')?.value?.trim() || '';
+
+    if (!stationId) {
+        showNotification('Bitte geben Sie eine Station ID ein (z.B. 11035).', 'error');
+        return;
+    }
+
+    if (!start) {
+        showNotification('Bitte geben Sie ein Start-Datum ein (Format: 2024-01-01T00:00:00Z).', 'error');
+        return;
+    }
+
+    if (!end) {
+        showNotification('Bitte geben Sie ein End-Datum ein (Format: 2024-12-31T23:45:00Z).', 'error');
+        return;
+    }
+
+    const geosphereConfig = {
+        base_url: document.getElementById('geoSphereBaseUrl')?.value || 'https://dataset.api.hub.geosphere.at/v1',
+        resource_id: document.getElementById('geoSphereResourceId')?.value || 'tawes-v1-10min',
+        station_id: stationId,
+        parameters: (document.getElementById('geoSphereParameters')?.value || 'FF').split(',').map(p => p.trim()),
+        start: start,
+        end: end,
+    };
+
+    const windTurbineConfig = {
+        hub_height_m: parseFloat(document.getElementById('geoSphereHubHeight')?.value || '120'),
+        alpha: parseFloat(document.getElementById('geoSphereAlpha')?.value || '0.18'),
+        rated_power_kw: parseFloat(document.getElementById('geoSphereRatedPower')?.value || '4200'),
+        loss_factor_total: (parseFloat(document.getElementById('geoSphereLossFactor')?.value || '15') / 100.0),
+    };
+
+    const timeResolutionConfig = {
+        target_freq: '15min',
+    };
+
+    const statusEl = document.getElementById('geoSphereStatus');
+    if (statusEl) {
+        statusEl.textContent = 'Import läuft... GeoSphere-Daten werden abgerufen und verarbeitet.';
+    }
+
+    try {
+        const response = await fetch('/api/geosphere/wind/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: parseInt(projectId, 10),
+                profile_name: profileName,
+                geosphere: geosphereConfig,
+                wind_turbine: windTurbineConfig,
+                time_resolution: timeResolutionConfig,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            // Fehlermeldung zusammenstellen (kann mehrzeilig sein)
+            const msg = result.error || result.message || 'Unbekannter Fehler beim GeoSphere-Import.';
+            const errorMsg = msg.replace(/\n/g, '<br>'); // Zeilenumbrüche für HTML
+            
+            showNotification(msg, 'error');
+            if (statusEl) {
+                statusEl.innerHTML = '<span class="text-red-600 font-semibold">Fehler beim GeoSphere-Import:</span><br>' + errorMsg;
+            }
+            return;
+        }
+
+        let previewText = `Windprofil erfolgreich importiert.\nDatensätze: ${result.records}\n`;
+        if (result.time_start && result.time_end) {
+            previewText += `Zeitraum: ${result.time_start} – ${result.time_end}\n`;
+        }
+        if (typeof result.E_year_kWh !== 'undefined') {
+            const mwh = (result.E_year_kWh / 1000.0).toFixed(2);
+            previewText += `Jahresertrag: ${mwh} MWh\n`;
+        }
+        if (typeof result.full_load_hours !== 'undefined') {
+            previewText += `Vollbenutzungsstunden: ${result.full_load_hours.toFixed(0)} h\n`;
+        }
+
+        const weatherPreview = document.getElementById('weatherPreview');
+        if (weatherPreview) {
+            weatherPreview.textContent = previewText;
+        }
+
+        showNotification('GeoSphere-Windprofil erfolgreich importiert.', 'success');
+        if (statusEl) {
+            statusEl.innerHTML = '<span class="text-green-600 font-semibold">✅ GeoSphere-Import erfolgreich abgeschlossen!</span><br>' + 
+                                `Datensätze: ${result.records}<br>` +
+                                (result.time_start && result.time_end ? `Zeitraum: ${result.time_start} – ${result.time_end}<br>` : '') +
+                                (typeof result.E_year_kWh !== 'undefined' ? `Jahresertrag: ${(result.E_year_kWh / 1000.0).toFixed(2)} MWh<br>` : '') +
+                                (typeof result.full_load_hours !== 'undefined' ? `Vollbenutzungsstunden: ${result.full_load_hours.toFixed(0)} h` : '');
+        }
+
+        // Modal nach 2 Sekunden automatisch schließen
+        setTimeout(() => {
+            closeGeoSphereModal();
+        }, 2000);
+    } catch (error) {
+        console.error('GeoSphere-Import Fehler:', error);
+        showNotification('Fehler beim GeoSphere-Import: ' + error, 'error');
+        if (statusEl) {
+            statusEl.textContent = 'Fehler beim GeoSphere-Import: ' + error;
+        }
+    }
 }
 
 // Wetter-API Modal erstellen

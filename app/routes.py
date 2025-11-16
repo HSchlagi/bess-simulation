@@ -9,12 +9,15 @@ from pathlib import Path
 import sqlite3
 import pandas as pd
 import time
+import requests
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue, BatteryConfig, MarketPriceConfig, NetworkRestrictions, BatteryDegradationAdvanced, SecondLifeConfig, OptimizationStrategyConfig
+from models import Project, LoadProfile, LoadValue, Customer, InvestmentCost, ReferencePrice, SpotPrice, UseCase, RevenueModel, RevenueActivation, GridTariff, LegalCharges, RenewableSubsidy, BatteryDegradation, RegulatoryChanges, GridConstraints, LoadShiftingPlan, LoadShiftingValue, BatteryConfig, MarketPriceConfig, NetworkRestrictions, BatteryDegradationAdvanced, SecondLifeConfig, OptimizationStrategyConfig, WindData, WindValue
 from datetime import datetime, timedelta
 import random
 import math
 import numpy as np
+from geosphere.geosphere_wind_engine import run_wind_pipeline
+from data_importers import WindProfileImporter
 from .notification_routes import create_notification, send_simulation_complete_notification, send_system_alert_notification, send_welcome_notification
 from .roadmap_stufe1_integration import load_network_restrictions, load_degradation_model, calculate_degradation_for_year, get_second_life_cost_reduction
 from .roadmap_stufe2_integration import load_co_location_config, calculate_co_location_benefits_for_simulation
@@ -3912,7 +3915,8 @@ def get_project_data(project_id, data_type):
             'solar_radiation': 'solar_value',
             'water_level': 'hydro_value',
             'pvsol_export': 'solar_value',
-            'weather': 'weather_value'
+            'weather': 'weather_value',
+            'wind': 'wind_value'
         }
         
         table_name = table_mapping.get(data_type)
@@ -3948,6 +3952,14 @@ def get_project_data(project_id, data_type):
             FROM weather_data 
             WHERE project_id = ? {time_filter}
             ORDER BY timestamp
+            """
+        elif data_type == 'wind':
+            query = f"""
+            SELECT wv.timestamp, wv.power_kw as value 
+            FROM {table_name} wv
+            JOIN wind_data wd ON wv.wind_data_id = wd.id
+            WHERE wd.project_id = ? {time_filter}
+            ORDER BY wv.timestamp
             """
         else:
             query = f"""
@@ -4084,29 +4096,48 @@ def api_data_overview(project_id):
     try:
         cursor = get_db().cursor()
         
-        # Lastprofile zählen (aus load_profile Tabelle)
-        cursor.execute("""
-            SELECT COUNT(*) FROM load_profile WHERE project_id = ?
-        """, (project_id,))
-        load_profiles = cursor.fetchone()[0]
+        # Hilfsfunktion zum sicheren Zählen mit Fehlerbehandlung
+        def safe_count(table_name, project_id_col='project_id'):
+            try:
+                # Prüfen, ob Tabelle existiert
+                cursor.execute("""
+                    SELECT name FROM sqlite_master 
+                    WHERE type='table' AND name=?
+                """, (table_name,))
+                if not cursor.fetchone():
+                    return 0
+                
+                # Prüfen, ob Spalte existiert
+                cursor.execute(f"PRAGMA table_info({table_name})")
+                columns = [row[1] for row in cursor.fetchall()]
+                if project_id_col not in columns:
+                    # Falls keine project_id Spalte, zähle alle Einträge
+                    cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+                    return cursor.fetchone()[0]
+                
+                # Normale Abfrage mit project_id
+                cursor.execute(f"""
+                    SELECT COUNT(*) FROM {table_name} WHERE {project_id_col} = ?
+                """, (project_id,))
+                return cursor.fetchone()[0]
+            except Exception as e:
+                print(f"⚠️ Fehler beim Zählen von {table_name}: {e}")
+                return 0
         
-        # Solar-Daten zählen (aus solar_data Tabelle)
-        cursor.execute("""
-            SELECT COUNT(*) FROM solar_data WHERE project_id = ?
-        """, (project_id,))
-        solar_data = cursor.fetchone()[0]
+        # Lastprofile zählen
+        load_profiles = safe_count('load_profile')
         
-        # Hydro-Daten zählen (aus hydro_data Tabelle)
-        cursor.execute("""
-            SELECT COUNT(*) FROM hydro_data WHERE project_id = ?
-        """, (project_id,))
-        hydro_data = cursor.fetchone()[0]
+        # Solar-Daten zählen
+        solar_data = safe_count('solar_data')
         
-        # Wetter-Daten zählen (aus weather_data Tabelle)
-        cursor.execute("""
-            SELECT COUNT(*) FROM weather_data WHERE project_id = ?
-        """, (project_id,))
-        weather_data = cursor.fetchone()[0]
+        # Hydro-Daten zählen
+        hydro_data = safe_count('hydro_data')
+        
+        # Wetter-Daten zählen
+        weather_data = safe_count('weather_data')
+        
+        # Wind-Daten zählen (neu hinzugefügt)
+        wind_data = safe_count('wind_data')
         
         # PVSol-Daten sind die gleichen wie Solar-Daten
         pvsol_data = solar_data
@@ -4116,6 +4147,7 @@ def api_data_overview(project_id):
         print(f"  - Solar-Daten: {solar_data}")
         print(f"  - Hydro-Daten: {hydro_data}")
         print(f"  - Wetter-Daten: {weather_data}")
+        print(f"  - Wind-Daten: {wind_data}")
         print(f"  - PVSol-Daten: {pvsol_data}")
         
         return jsonify({
@@ -4124,6 +4156,7 @@ def api_data_overview(project_id):
             'solar_data': solar_data,
             'hydro_data': hydro_data,
             'weather_data': weather_data,
+            'wind_data': wind_data,
             'pvsol_data': pvsol_data
         })
         
@@ -4760,6 +4793,202 @@ def api_10year_revenue_potential(project_id):
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+@main_bp.route('/api/geosphere/stations', methods=['GET'])
+@login_required
+def api_geosphere_stations():
+    """Gibt verfügbare GeoSphere-Stationen für eine Resource ID zurück."""
+    try:
+        resource_id = request.args.get('resource_id', 'klima-v1-10min')
+        base_url = request.args.get('base_url', 'https://dataset.api.hub.geosphere.at/v1')
+        
+        # Metadata-Endpunkt aufrufen
+        metadata_url = f"{base_url}/station/historical/{resource_id}/metadata"
+        
+        headers = {
+            'User-Agent': 'Phoenyra-BESS-Simulation/1.0 (Python requests)',
+            'Accept': 'application/json',
+        }
+        
+        resp = requests.get(metadata_url, headers=headers, timeout=30)
+        resp.raise_for_status()
+        
+        data = resp.json()
+        stations = data.get('stations', [])
+        
+        # Stationen formatieren für Frontend
+        stations_list = []
+        for station in stations:
+            station_id = station.get('id', '')
+            station_name = station.get('name', 'N/A')
+            altitude = station.get('altitude')
+            geometry = station.get('geometry', {})
+            coordinates = None
+            
+            # Koordinaten extrahieren (falls vorhanden)
+            if geometry and 'coordinates' in geometry:
+                coords = geometry['coordinates']
+                if isinstance(coords, list) and len(coords) >= 2:
+                    coordinates = {
+                        'longitude': coords[0],
+                        'latitude': coords[1]
+                    }
+            
+            stations_list.append({
+                'id': station_id,
+                'name': station_name,
+                'altitude': altitude,
+                'coordinates': coordinates
+            })
+        
+        # Nach Name sortieren
+        stations_list.sort(key=lambda x: x['name'])
+        
+        return jsonify({
+            'success': True,
+            'resource_id': resource_id,
+            'stations': stations_list,
+            'count': len(stations_list)
+        })
+        
+    except requests.exceptions.HTTPError as e:
+        status_code = e.response.status_code if hasattr(e, 'response') and e.response is not None else None
+        error_msg = f"GeoSphere-API Fehler: {str(e)}"
+        
+        if status_code == 404:
+            error_msg = f"Resource ID '{resource_id}' nicht gefunden. Verfügbare Resource IDs: klima-v1-10min, klima-v1-1h, synop-v1-1h"
+        elif status_code == 403:
+            error_msg = "Zugriff auf GeoSphere-API verweigert. Bitte prüfen Sie die API-Konfiguration."
+        
+        return jsonify({'success': False, 'error': error_msg}), status_code or 400
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f"Unerwarteter Fehler: {str(e)}"}), 500
+
+@main_bp.route('/api/geosphere/wind/import', methods=['POST'])
+@login_required
+def api_geosphere_wind_import():
+    """Importiert GeoSphere-Winddaten als Windprofil für ein Projekt."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Kein JSON-Body übergeben.'}), 400
+
+        project_id = data.get('project_id')
+        profile_name = data.get('profile_name') or 'GeoSphere Windprofil'
+        description = data.get('description', '')
+
+        if not project_id:
+            return jsonify({'error': 'project_id wird benötigt.'}), 400
+
+        if not data.get('geosphere') or not data.get('wind_turbine') or not data.get('time_resolution'):
+            return jsonify({'error': 'geosphere, wind_turbine und time_resolution Konfiguration sind erforderlich.'}), 400
+
+        # Validierung: Pflichtfelder in geosphere-Config prüfen
+        geosphere = data.get('geosphere', {})
+        if not geosphere.get('station_id') or not geosphere.get('station_id').strip():
+            return jsonify({'error': 'station_id ist erforderlich (z.B. 11035).'}), 400
+        if not geosphere.get('start') or not geosphere.get('start').strip():
+            return jsonify({'error': 'start (ISO8601) ist erforderlich (z.B. 2024-01-01T00:00:00Z).'}), 400
+        if not geosphere.get('end') or not geosphere.get('end').strip():
+            return jsonify({'error': 'end (ISO8601) ist erforderlich (z.B. 2024-12-31T23:45:00Z).'}), 400
+
+        try:
+            df, kpis = run_wind_pipeline(data)
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if hasattr(e, 'response') and e.response is not None else None
+            error_msg = f"GeoSphere-API Fehler: {str(e)}"
+            
+            if status_code == 400:
+                error_msg = (
+                    f"GeoSphere-API Bad Request (400).\n"
+                    f"Die Station ID ist möglicherweise nicht für die gewählte Resource ID verfügbar.\n\n"
+                    f"Mögliche Lösungen:\n"
+                    f"- Verwenden Sie Station 11035 (Wien/Hohe Warte) mit tawes-v1-10min\n"
+                    f"- Oder prüfen Sie verfügbare Stationen über: /station/historical/{data.get('geosphere', {}).get('resource_id', '')}/metadata\n"
+                    f"- Die Fehlermeldung enthält Details zu verfügbaren Stationen."
+                )
+            elif status_code == 403:
+                error_msg = (
+                    f"GeoSphere-API Zugriff verweigert (403 Forbidden).\n"
+                    f"Die API blockiert die Anfrage. Mögliche Ursachen:\n"
+                    f"- Die API erfordert Authentifizierung oder einen API-Key\n"
+                    f"- Die API blockiert automatische Requests\n"
+                    f"- Die URL-Struktur ist nicht korrekt\n\n"
+                    f"Bitte testen Sie die URL manuell im Browser oder kontaktieren Sie GeoSphere-Support."
+                )
+            elif status_code == 422:
+                error_msg += " Möglicherweise sind für den angegebenen Zeitraum keine Daten verfügbar (z.B. zukünftige Jahre). Bitte verwenden Sie ein Jahr mit verfügbaren historischen Daten (z.B. 2024)."
+            elif status_code == 404:
+                error_msg += " Station ID oder Resource ID nicht gefunden. Bitte überprüfen Sie die Eingaben."
+            
+            return jsonify({'success': False, 'error': error_msg}), 400
+        except ValueError as e:
+            # ValueError enthält bereits detaillierte Fehlermeldungen aus der Engine
+            error_msg = str(e)
+            # URL aus der Fehlermeldung extrahieren, falls vorhanden
+            if "URL:" in error_msg:
+                # URL ist bereits in der Fehlermeldung enthalten
+                pass
+            else:
+                # URL manuell zusammenbauen für Debugging
+                geosphere = data.get('geosphere', {})
+                params_str = ",".join(geosphere.get('parameters', ['FF']))
+                debug_url = (
+                    f"{geosphere.get('base_url', '')}/station/historical/{geosphere.get('resource_id', '')}"
+                    f"?parameters={params_str}"
+                    f"&station_ids={geosphere.get('station_id', '')}"
+                    f"&start={geosphere.get('start', '')}"
+                    f"&end={geosphere.get('end', '')}"
+                    f"&format=csv"
+                )
+                error_msg += f"\n\nDebug-URL (kann manuell im Browser getestet werden):\n{debug_url}"
+            return jsonify({'success': False, 'error': error_msg}), 400
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({'success': False, 'error': f"Unerwarteter Fehler: {str(e)}"}), 500
+
+        # Prüfen, ob DataFrame leer ist
+        if df is None or df.empty:
+            return jsonify({
+                'success': False,
+                'error': 'GeoSphere-API hat keine Daten zurückgegeben. Mögliche Ursachen:\n'
+                         '- Der angegebene Zeitraum hat keine verfügbaren Daten (z.B. zukünftige Jahre)\n'
+                         '- Station ID ist nicht korrekt\n'
+                         '- Resource ID ist nicht verfügbar\n'
+                         'Bitte verwenden Sie ein Jahr mit historischen Daten (z.B. 2024).'
+            }), 400
+
+        importer = WindProfileImporter(project_id=project_id)
+        success, message, wind_data = importer.import_geosphere_df(
+            df,
+            name=profile_name,
+            description=description,
+            time_resolution=15,
+            meta={
+                'geosphere': data.get('geosphere'),
+                'wind_turbine': data.get('wind_turbine'),
+                'time_resolution': data.get('time_resolution'),
+                'kpis': kpis,
+            },
+        )
+
+        if not success:
+            return jsonify({'success': False, 'message': message, 'error': message}), 400
+
+        response = {
+            'success': True,
+            'message': message,
+            'wind_data_id': wind_data.id if wind_data else None,
+        }
+        response.update(kpis)
+        return jsonify(response)
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @main_bp.route('/api/economic-analysis/<int:project_id>/export-10year-pdf')
 def export_10year_pdf(project_id):

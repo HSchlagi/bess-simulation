@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.4-blue)
+![Version](https://img.shields.io/badge/version-2.5-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-green)
 ![Flask](https://img.shields.io/badge/flask-2.3.3-lightgrey)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
@@ -48,6 +48,7 @@
 - ✅ **Progressive Web App (PWA)** für mobile Nutzung
 - ✅ **Export-Funktionen** (PDF, Excel, CSV)
 - ✅ **Roadmap 2025 Features** - Netzrestriktionen, Degradation, Co-Location, Optimierte Regelstrategien, Extrempreis-Szenarien, Spread Width
+- ✅ **GeoSphere-Wind-Integration** - Automatischer Import von Winddaten (15-Minuten-Werte) für Co-Location PV+Wind+BESS
 
 ---
 
@@ -260,6 +261,16 @@
 - **PVGIS** - Solarstrahlungsdaten
 - **Wetter-APIs** (OpenWeatherMap)
 - **PV-Leistungsprognosen**
+
+#### **Windenergie** ⭐ NEU
+- **GeoSphere Austria API** - Historische Winddaten (15-Minuten-Werte)
+  - Automatischer Import von Windgeschwindigkeitsdaten
+  - Hubhöhen-Umrechnung und Power-Curve-Anwendung
+  - Windleistungsberechnung mit Verlustfaktoren
+  - Stationen-Auswahl basierend auf Standort
+  - Integration für Co-Location PV+Wind+BESS
+  - Unterstützte Resource IDs: `klima-v1-10min`, `klima-v1-1h`, `synop-v1-1h`
+  - Verfügbare Stationen: 260+ österreichische Messstationen
 
 #### **Smart Grid & IoT**
 - **IoT-Sensor-Integration** für Real-time Monitoring
@@ -733,6 +744,11 @@ bess-simulation/
 ├── awattar_data_fetcher.py      # aWattar Integration
 ├── ehyd_data_fetcher.py         # eHYD Integration
 ├── pvgis_data_fetcher.py        # PVGIS Integration
+├── geosphere/                   # GeoSphere-Wind-Integration
+│   ├── __init__.py
+│   ├── geosphere_wind_engine.py # Winddaten-Engine
+│   ├── GeoSphere_BESS_Integration.md
+│   └── Wind_BESS_Modell.md
 │
 ├── migrate_roadmap_stufe1.py    # Migration: Roadmap Stufe 1
 ├── migrate_roadmap_stufe2.py    # Migration: Roadmap Stufe 2.1
@@ -960,6 +976,17 @@ Diese Software und die zugehörige Dokumentation sind urheberrechtlich geschütz
 ---
 
 ## 🗺️ Roadmap
+
+### Version 2.5 (Januar 2025) ✅ IMPLEMENTIERT
+
+- **GeoSphere-Wind-Integration:**
+  - Automatischer Import von Winddaten über GeoSphere Austria API
+  - 15-Minuten-Windleistungszeitreihen für Co-Location-Simulationen
+  - Hubhöhen-Umrechnung und Power-Curve-Anwendung
+  - Stationen-Auswahl basierend auf Windrad-Standort
+  - Integration in Datenvorschau mit Statistiken und Visualisierung
+  - Unterstützung für 260+ österreichische Messstationen
+  - Resource IDs: `klima-v1-10min`, `klima-v1-1h`, `synop-v1-1h`
 
 ### Version 2.4 (Januar 2025) ✅ IMPLEMENTIERT
 

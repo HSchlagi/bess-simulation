@@ -72,7 +72,6 @@
 | **BESS-Simulation** | `/bess_simulation_enhanced` | Batteriespeicher-Simulation |
 | **C-Rate Config** | `/battery_crate_config` | C-Rate Konfiguration |
 | **Peak Shaving Analyse** | `/bess_peak_shaving_analysis` | Peak Shaving Analyse |
-| **Erweiterte Simulation & Dashboard** | `/bess_simulation_enhanced` | Erweiterte Simulationsfunktionen |
 
 ---
 

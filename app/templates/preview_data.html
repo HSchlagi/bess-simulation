@@ -33,6 +33,7 @@
                     <option value="water_level">Wasserstände</option>
                     <option value="pvsol_export">PV-Export</option>
                     <option value="weather">Wetterdaten</option>
+                    <option value="wind">Winddaten (GeoSphere)</option>
                     <option value="overlay">Last & Erzeugung Overlay</option>
                 </select>
             </div>
@@ -202,6 +203,13 @@ const dataTypes = {
         color: 'gray',
         unit: '°C',
         description: 'Temperatur, Luftfeuchtigkeit und Wetterdaten'
+    },
+    'wind': {
+        name: 'Winddaten (GeoSphere)',
+        icon: 'fas fa-wind',
+        color: 'indigo',
+        unit: 'kW',
+        description: 'Windleistung und Windgeschwindigkeit (GeoSphere)'
     }
 };
 
@@ -253,6 +261,12 @@ function loadDataTypes() {
         option.textContent = config.name;
         dataTypeSelect.appendChild(option);
     });
+    
+    // Overlay-Option hinzufügen (nicht in dataTypes)
+    const overlayOption = document.createElement('option');
+    overlayOption.value = 'overlay';
+    overlayOption.textContent = 'Last & Erzeugung Overlay';
+    dataTypeSelect.appendChild(overlayOption);
     
     dataTypeSelect.disabled = false;
     timeRangeSelect.disabled = false;

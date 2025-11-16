@@ -1,10 +1,10 @@
 # 📚 BESS Simulation - Vollständige Dokumentation
 
-**Version:** 2.3  
+**Version:** 2.4  
 **Datum:** Januar 2025  
 **Autor:** Ing. Heinz Schlagintweit  
 **Repository:** https://github.com/HSchlagi/bess-simulation  
-**Letzte Aktualisierung:** Roadmap 2025 - Stufe 1 (Netzrestriktionen, Degradation, Second-Life), Stufe 2.1 (Co-Location PV+BESS), Stufe 2.2 (Optimierte Regelstrategien)
+**Letzte Aktualisierung:** Roadmap 2025 - Stufe 1 (Netzrestriktionen, Degradation, Second-Life), Stufe 2.1 (Co-Location PV+BESS), Stufe 2.2 (Optimierte Regelstrategien), GeoSphere-Wind-Integration
 
 ---
 
@@ -1416,43 +1416,77 @@ Das **ML & KI Dashboard** bietet intelligente Analysen und Vorhersagen für opti
 - **Real-time Monitoring:** Kontinuierliche Überwachung aller BESS-Komponenten
 - **Demo-Modus:** Vollständige Funktionalität auch ohne API-Keys
 - **Rate Limiting:** Intelligente API-Anfragen mit automatischem Throttling
-- **Speicherung:** SQLite-Datenbank (BatterySensorData, PVSensorData, GridSensorData, EnvironmentalSensorData)
-- **Scheduler:** Python `schedule` Library für automatische Abrufe
 
-**Zeitplan:**
-- **Batterie-Sensoren:** alle 5 Minuten (BESS Monitoring)
-- **PV-Sensoren:** alle 10 Minuten (Photovoltaik-Monitoring)
-- **Grid-Sensoren:** alle 15 Minuten (Netz-Monitoring)
-- **Umgebungs-Sensoren:** alle 30 Minuten (Wetter & Umwelt)
-- **Alle Sensoren:** täglich 00:00 Uhr (Vollständiger Import)
-- **API-Test:** alle 4 Stunden
-- **Bereinigung:** Montag 02:00 Uhr
+#### 2.4 GeoSphere-Wind-Integration ⭐ NEU
 
-**Frontend-Features:**
-- **Status-Cards:** Übersichtliche Anzeige aller wichtigen Metriken
-- **Chart.js Integration:** Interaktive Preisverlauf-Darstellung
-- **Real-time Updates:** Automatische Aktualisierung der Anzeige
-- **Error Handling:** Robuste Fehlerbehandlung mit Benutzer-Feedback
+**Navigation:** Daten → Datenimport-Center → Wetterdaten → GeoSphere Wind (Co-Location)
 
-**Scheduler-Konfiguration:**
+**Funktionen:**
+- **Automatischer Import:** Historische Winddaten von GeoSphere Austria API
+- **15-Minuten-Werte:** Präzise Windleistungszeitreihen für Co-Location-Simulationen
+- **Stationen-Auswahl:** Intelligente Auswahl basierend auf Windrad-Standort
+- **Windleistungsberechnung:** Hubhöhen-Umrechnung, Power-Curve, Verlustfaktoren
+- **Datenvorschau:** Vollständige Integration in Datenvorschau mit Statistiken und Charts
 
-**Lokaler Scheduler:**
-```bash
-# Scheduler starten (läuft nur wenn Rechner eingeschaltet ist)
-python awattar_scheduler.py
-```
+**Schritte:**
+1. **Projekt auswählen** im Datenimport-Center
+2. **Tab "Wetterdaten"** öffnen
+3. **"GeoSphere Wind (Co-Location)"** Kachel anklicken
+4. **Konfiguration eingeben:**
+   - Resource ID (z.B. `klima-v1-10min`)
+   - Station aus Dropdown auswählen (automatisch geladen)
+   - Parameter: `FF` (Windgeschwindigkeit)
+   - Zeitraum: Start- und End-Datum (ISO8601-Format)
+   - Turbinen-Parameter: Hubhöhe, Alpha, Nennleistung, Verluste
+5. **"Import starten"** klicken
+6. **Erfolgs-Benachrichtigung** mit KPIs prüfen
 
-**Hetzner-Server Scheduler (Empfohlen für 24/7 Betrieb):**
-```bash
-# Auf Hetzner-Server für kontinuierlichen Betrieb
-sudo systemctl start bess
-sudo systemctl enable bess
-```
+**Technische Details:**
+- **API-Endpoint:** `https://dataset.api.hub.geosphere.at/v1/station/historical/{resource_id}`
+- **Unterstützte Resource IDs:**
+  - `klima-v1-10min` - 10-Minuten-Daten (empfohlen)
+  - `klima-v1-1h` - Stunden-Daten
+  - `synop-v1-1h` - Synop-Daten (Stunden)
+- **Verfügbare Stationen:** 260+ österreichische Messstationen
+- **Datenformat:** GeoJSON mit `timestamps[]` und `features[].properties.parameters.FF.data[]`
+- **Speicherung:** SQLite-Datenbank (`wind_data`, `wind_value` Tabellen)
+- **Berechnung:** Hubhöhen-Umrechnung → Power-Curve → Verluste → Energie
 
-**Scheduler-Optionen:**
-- **Lokal:** Nur wenn Rechner läuft, manuelle Kontrolle
-- **Hetzner:** 24/7 Betrieb, automatische Imports auch bei Rechner-Ausfall
-- **Hybrid:** Beide Systeme parallel für Maximum-Sicherheit
+**Windleistungsberechnung:**
+1. **Hubhöhen-Umrechnung:** `v_hub = v_10m * (hub_height / 10)^alpha`
+2. **Power-Curve-Anwendung:** Interpolation basierend auf Windgeschwindigkeit
+3. **Verlustfaktoren:** Nettoleistung = Rohleistung * (1 - Verlustfaktor)
+4. **Energieberechnung:** `E_kWh = P_net_kW * (Zeitintervall_in_Stunden)`
+
+**Stationen-Auswahl:**
+- **Automatisches Laden:** Stationen werden basierend auf Resource ID geladen
+- **Koordinaten-Anzeige:** Latitude/Longitude zur Standortprüfung
+- **Höhen-Information:** Station-Höhe wird angezeigt
+- **Empfohlene Stationen:**
+  - `5904` - Wien-Hohe Warte
+  - `11301` - Graz/Schröcken
+  - `5000` - Hörsching
+  - `6300` - Salzburg-Flughafen
+  - `11804` - Innsbruck-Flughafen
+
+**Datenvorschau:**
+- **Navigation:** Daten → Datenvorschau
+- **Auswahl:** Projekt → Datenart "Winddaten (GeoSphere)" → Zeitraum
+- **Anzeige:**
+  - Statistiken: Max, Durchschnitt, Min, Datensätze
+  - Chart-Visualisierung über Zeit
+  - Rohdaten-Tabelle mit Export-Funktion
+
+**Fehlerbehandlung:**
+- Detaillierte Fehlermeldungen bei API-Fehlern
+- Diagnose-Informationen (Anzahl Zeitstempel, null-Werte)
+- Hinweise zu verfügbaren Stationen und Resource IDs
+- Debug-URLs für manuelles Testen
+
+**API-Endpunkte:**
+- `POST /api/geosphere/wind/import` - Winddaten-Import
+- `GET /api/geosphere/stations?resource_id={id}` - Verfügbare Stationen
+- `POST /api/projects/{id}/data/wind` - Winddaten abrufen
 
 **API-Endpunkte:**
 - `GET /api/awattar/status` - System-Status und Statistiken
@@ -5501,6 +5535,61 @@ time curl -s http://localhost:5000/api/health
 ---
 
 ## 📝 Changelog
+
+### Version 2.4 - Januar 2025
+
+**GeoSphere-Wind-Integration für Co-Location PV+Wind+BESS:**
+
+#### ✅ GeoSphere-Wind-Integration
+- **Automatischer Import von Winddaten:**
+  - Integration der GeoSphere Austria API für historische Winddaten
+  - 15-Minuten-Windleistungszeitreihen für präzise Co-Location-Simulationen
+  - Unterstützung für 260+ österreichische Messstationen
+  - Verfügbare Resource IDs: `klima-v1-10min`, `klima-v1-1h`, `synop-v1-1h`
+
+- **Windleistungsberechnung:**
+  - Hubhöhen-Umrechnung von 10m auf Nabenhöhe (konfigurierbarer Alpha-Faktor)
+  - Power-Curve-Anwendung für Windturbinen
+  - Verlustfaktoren-Integration (Gesamtverluste konfigurierbar)
+  - Energieberechnung aus Windleistung (15-Minuten-Intervalle)
+
+- **Intelligente Stationen-Auswahl:**
+  - Dynamisches Laden verfügbarer Stationen basierend auf Resource ID
+  - Dropdown-Auswahl mit Station-Name, ID und Höhe
+  - Koordinaten-Anzeige zur Standortprüfung
+  - Automatische Aktualisierung bei Resource ID-Änderung
+
+- **Datenvorschau & Visualisierung:**
+  - Winddaten in der Datenvorschau (`/preview_data`)
+  - Statistiken: Max, Durchschnitt, Min, Datensätze
+  - Chart-Visualisierung über Zeit
+  - Rohdaten-Tabelle mit Export-Funktion
+
+- **Backend-Integration:**
+  - Neue API-Route: `/api/geosphere/wind/import` für Winddaten-Import
+  - Neue API-Route: `/api/geosphere/stations` für verfügbare Stationen
+  - Neue API-Route: `/api/projects/<id>/data/wind` für Datenabfrage
+  - Erweiterte Datenbank-Modelle: `power_kw` und `energy_kwh` in `WindValue`
+
+- **Frontend-Integration:**
+  - GeoSphere-Wind-Kachel im Datenimport-Center
+  - Konfigurations-Modal mit GeoSphere- und Turbinen-Parametern
+  - Fehlerbehandlung mit detaillierten Diagnose-Informationen
+  - Erfolgs-Benachrichtigungen mit KPIs (Jahresertrag, Volllaststunden)
+
+**Technische Verbesserungen:**
+- Neue Module: `geosphere/geosphere_wind_engine.py` für Winddaten-Verarbeitung
+- Erweiterte `WindProfileImporter`-Klasse in `data_importers.py`
+- GeoJSON-Parsing für GeoSphere-API-Antworten
+- Robuste Fehlerbehandlung für API-Fehler (400, 403, 404, 422)
+- Automatische Datenbank-Migration für neue Spalten
+
+**Dokumentation:**
+- GeoSphere-Integrations-Guide: `geosphere/GeoSphere_BESS_Integration.md`
+- Wind-BESS-Modell-Dokumentation: `geosphere/Wind_BESS_Modell.md`
+- Aktualisierte README.md und BESS_SIMULATION_DOKUMENTATION.md
+
+---
 
 ### Version 2.3 - Januar 2025
 

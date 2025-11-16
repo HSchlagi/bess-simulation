@@ -19,6 +19,81 @@ class DataImporter:
         project = Project.query.get(self.project_id)
         return project is not None
 
+
+class WindProfileImporter(DataImporter):
+    """Importiert Windleistungs- und Energiewerte (z.B. GeoSphere-Windprofile)"""
+
+    def import_geosphere_df(
+        self,
+        df: pd.DataFrame,
+        name: str,
+        description: str = "",
+        time_resolution: int = 15,
+        meta: Optional[Dict[str, any]] = None,
+    ) -> Tuple[bool, str, Optional[WindData]]:
+        """
+        Importiert ein GeoSphere-Windprofil in die bestehenden Tabellen WindData/WindValue.
+
+        Erwartetes DataFrame-Format:
+        - Index: timestamp (DatetimeIndex)
+        - Spalten: 'v_hub', 'P_net_kW', 'E_kWh'
+        """
+        try:
+            if df is None or df.empty:
+                return False, "Keine Winddaten übergeben.", None
+
+            if not isinstance(df.index, pd.DatetimeIndex):
+                return False, "Winddaten müssen einen DatetimeIndex besitzen.", None
+
+            # Pflichtspalte P_net_kW
+            if "P_net_kW" not in df.columns:
+                return False, "Spalte 'P_net_kW' fehlt in den Winddaten.", None
+
+            project = Project.query.get(self.project_id)
+            if not project:
+                return False, "Projekt für Wind-Import nicht gefunden.", None
+
+            wind_data = WindData(
+                project_id=self.project_id,
+                name=name,
+                description=description,
+            )
+
+            # Einfache Metadaten als JSON-Text im Description-Feld ergänzen (ohne Schemaänderung)
+            if meta:
+                try:
+                    meta_json = json.dumps(meta, ensure_ascii=False)
+                    wind_data.description = (description + "\n\n" + meta_json).strip()
+                except Exception:
+                    # Wenn Meta nicht serialisiert werden kann, ignorieren wir sie
+                    pass
+
+            db.session.add(wind_data)
+            db.session.flush()
+
+            # Werte importieren
+            created = 0
+            for ts, row in df.iterrows():
+                wind_value = WindValue(
+                    wind_data_id=wind_data.id,
+                    timestamp=ts.to_pydatetime(),
+                    wind_speed=float(row.get("v_hub", 0.0)),
+                    power_kw=float(row.get("P_net_kW", 0.0)),
+                    energy_kwh=float(row.get("E_kWh", 0.0)) if pd.notna(row.get("E_kWh")) else None,
+                )
+                db.session.add(wind_value)
+                created += 1
+
+            db.session.commit()
+            return (
+                True,
+                f"Windprofil '{name}' erfolgreich importiert ({created} Datensätze).",
+                wind_data,
+            )
+        except Exception as e:
+            db.session.rollback()
+            return False, f"Fehler beim Wind-Import: {str(e)}", None
+
 class LoadProfileImporter(DataImporter):
     """Importiert Lastprofile aus verschiedenen Formaten"""
     

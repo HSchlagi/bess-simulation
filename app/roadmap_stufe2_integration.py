@@ -101,3 +101,6 @@ def calculate_co_location_benefits_for_simulation(
         'grid_fee_savings_eur': benefits['grid_fee_savings_eur']
     }
 
+
+
+

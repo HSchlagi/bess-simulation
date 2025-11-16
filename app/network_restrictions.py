@@ -222,3 +222,6 @@ def create_default_restrictions(project_power_kw: float,
         hull_curve_enabled=False
     )
 
+
+
+

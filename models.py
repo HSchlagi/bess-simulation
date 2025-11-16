@@ -258,6 +258,8 @@ class WindValue(db.Model):
     wind_speed = db.Column(db.Float)  # m/s
     wind_direction = db.Column(db.Float)  # °
     pressure = db.Column(db.Float)  # hPa
+    power_kw = db.Column(db.Float)  # kW - Windleistung
+    energy_kwh = db.Column(db.Float)  # kWh - Windenergie
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # === NEUE TABELLEN FÜR BESS-SIMULATION ERWEITERUNG ===

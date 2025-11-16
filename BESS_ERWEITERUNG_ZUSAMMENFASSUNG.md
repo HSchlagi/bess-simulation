@@ -356,6 +356,90 @@ def optimize_dispatch():
 
 ---
 
+#### **3.3 GeoSphere-Windintegration & Co-Location PV+Wind+BESS** 🌬️☀️🔋
+
+**Ziel:**
+- Integration von **GeoSphere Austria (dataset.api.hub.geosphere.at)** als Quelle für Windzeitreihen.
+- Erzeugung einer **15‑Minuten-Windleistungszeitreihe** (kW/kWh) kompatibel mit der bestehenden BESS-Engine.
+- Nutzung der Windleistung in der **Co-Location-Simulation** gemeinsam mit PV, Last und ggf. Wasserkraft.
+
+**Datenfluss & Modell (Wind_BESS_Modell):**
+- Input (GeoSphere):
+  - Zeitreihe mit `timestamp` und `v_10m` (Windgeschwindigkeit auf 10 m).
+  - Abruf über `station/historical/<resource_id>` mit Parametern (`FF`, `station_id`, `start`, `end`).
+- Hochrechnung auf Hubhöhe:
+  - Formel: `v_hub = v_10m * (hub_height / 10)^alpha`
+  - `alpha` je nach Standort (0.12–0.30, frei konfigurierbar im Importcenter).
+- Power-Curve:
+  - Herstellerkurve: Stützpunkte `v [m/s] → P [kW]`, lineare Interpolation.
+  - Cut-In, Rated, Cut-Out Verhalten gemäß `Wind_BESS_Modell`.
+- Nettoleistung & Energie:
+  - Gesamtverluste über einen Verlustfaktor `total_losses` (z.B. 15 %).
+  - `P_net_kW = P_raw_kW * (1 - total_losses)`.
+  - `E_15min_kWh = P_net_kW * 0.25` (für 15‑Minuten-Raster).
+- Jahresertrag & KPIs:
+  - `E_year_kWh = SUM(E_15min_kWh)`; Vollbenutzungsstunden `VBH = E_year_kWh / P_rated`.
+  - Speicherung von Jahresertrag und VBH im Profil für schnelle Auswertungen.
+
+**Implementierung im Backend:** ✅
+- Neues Modul `geosphere_wind_engine.py`:
+  - Lädt GeoSphere-Daten per HTTP (GeoJSON/CSV), erkennt Zeit- und Windspalte.
+  - Rechnet Windgeschwindigkeit auf Hubhöhe hoch, wendet Power-Curve und Verluste an.
+  - Resampling auf `15min` und Berechnung von `P_net_kW` und `E_15min_kWh`.
+  - Gibt DataFrame + KPIs (Ertrag, VBH, min/mean/max Leistung) an Flask-API zurück.
+  - Robuste Fehlerbehandlung für API-Fehler (400, 403, 404, 422).
+- Datenbank: ✅
+  - Nutzung der bestehenden Modelle `WindData` und `WindValue` als Speicherort für GeoSphere-Windprofile:
+    - `WindData`: Metadaten (Projekt, Name, Quelle `geosphere`, Hubhöhe, alpha, P_rated, Verlustfaktor).
+    - `WindValue`: Zeitreihe mit `timestamp`, `wind_speed` (optional), `power_kw` (= `P_net_kW`), `energy_kwh` (= `E_15min_kWh`).
+  - Import erfolgt über einen dedizierten `WindProfileImporter` in `data_importers.py`.
+  - Datenbank-Migration für `power_kw` und `energy_kwh` Spalten durchgeführt.
+- Flask-API: ✅
+  - Neuer Endpunkt `POST /api/geosphere/wind/import`:
+    - Request: JSON mit `project_id`, `profile_name`, GeoSphere‑Konfiguration und Windturbinen‑Parametern.
+    - Ablauf: GeoSphere-Engine ausführen, DataFrame in `WindData/WindValue` speichern, KPIs berechnen.
+    - Response: `success`, `message`, `records`, `time_start`, `time_end`, `E_year_kWh`, `full_load_hours`.
+  - Neuer Endpunkt `GET /api/geosphere/stations?resource_id={id}`:
+    - Lädt verfügbare Stationen basierend auf Resource ID.
+    - Response: Liste mit Station-ID, Name, Höhe, Koordinaten.
+  - Neuer Endpunkt `GET /api/projects/{id}/data/wind`:
+    - Abruf von Winddaten für Datenvorschau.
+
+**Integration im Datenimport-Center:** ✅
+- Tab **„Wetterdaten"**:
+  - Neue Kachel **„GeoSphere Wind (Co-Location)"** mit Button „GeoSphere API abrufen".
+  - GeoSphere-Modal:
+    - Projekt- und Wetterprofil-Auswahl.
+    - Felder für `resource_id`, `station_id` (Dropdown mit automatischem Laden), Zeitraum (`start`, `end`), Parameter (`FF`).
+    - Windmodell-Parameter: Hubhöhe, `alpha`, Nennleistung `P_rated`, Gesamtverlustfaktor.
+    - Stationen-Auswahl: Dynamisches Dropdown mit Station-Name, ID, Höhe, Koordinaten-Anzeige.
+    - Option „Für Co-Location verwenden", um das Profil im Simulations-Setup anzubieten.
+  - JS-Workflow:
+    - `openGeoSphereModal()` öffnet das Modal mit vorausgefüllten Projekt-/Profilwerten.
+    - `loadGeoSphereStations()` lädt verfügbare Stationen basierend auf Resource ID.
+    - `importGeoSphereWindData()` sendet die Konfiguration an `/api/geosphere/wind/import`,
+      zeigt Statusmeldungen und aktualisiert eine Wetter-/Wind-Vorschau
+      (Zeitraum, min/mean/max `P_net_kW`, Jahresertrag, VBH).
+
+**Co-Location PV + Wind + BESS:** ✅
+- Erweiterte Bilanzgleichung:
+  - `P_total(t) = PV(t) + Wind(t) + Hydro(t) - Load(t)`.
+- Die BESS-Engine nutzt `P_wind_kW(t)` zusätzlich zu PV- und Lastprofil, um:
+  - PV‑Curtailment zu reduzieren (Überschüsse aus PV + Wind laden BESS).
+  - Netzbezug weiter zu senken und zusätzliche Erlös‑/Eigenverbrauchsszenarien zu simulieren.
+- Im Simulations-Setup:
+  - Auswahl eines GeoSphere-Windprofils als Erzeugungsquelle.
+  - Anzeige der wichtigsten Wind-KPIs (Jahresertrag, VBH, max/min Leistung) im Dashboard.
+- **Datenvorschau:** ✅
+  - Winddaten in `/preview_data` verfügbar.
+  - Statistiken: Max, Durchschnitt, Min, Datensätze.
+  - Chart-Visualisierung über Zeit.
+  - Rohdaten-Tabelle mit Export-Funktion.
+
+**Status:** ✅ Vollständig implementiert (GeoSphere-Windengine, Datenimport-Center, Stationen-Auswahl, Datenvorschau, Co-Location-Integration)
+
+---
+
 ### **🔵 Stufe 4 - Langfristig (Zukunftstechnologien)**
 
 #### **4.1 LDES - Long Duration Energy Storage** ⏱️
@@ -416,11 +500,12 @@ def optimize_dispatch():
 - [x] **4. Co-Location PV+BESS** (Wirtschaftlich stark)
 - [x] **5. Optimierte Regelstrategien** (Mehrertrag +5-15%)
 - [x] **6. Extrempreis-Szenarien** (Realistische Arbitrage) ✅ Implementiert
+- [x] **7. GeoSphere-Wind-Integration** (Co-Location PV+Wind+BESS) ✅ Implementiert
 
 ### **🟢 Stufe 3 – Zukunft**
-- [ ] **7. LDES Modell** (Long Duration Storage)
-- [ ] **8. Nachhaltigkeit/CO₂ Kennzahlen** (Umweltbilanz)
-- [ ] **9. n8n-Integration** (Workflow-Automatisierung)
+- [ ] **8. LDES Modell** (Long Duration Storage)
+- [ ] **9. Nachhaltigkeit/CO₂ Kennzahlen** (Umweltbilanz)
+- [ ] **10. n8n-Integration** (Workflow-Automatisierung)
 
 ---
 
