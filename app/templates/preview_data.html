@@ -31,6 +31,7 @@
                     <option value="">Bitte wählen...</option>
                     <option value="load_profile">Lastprofile</option>
                     <option value="water_level">Wasserstände</option>
+                    <option value="solar_radiation">PVGIS-Solardaten</option>
                     <option value="pvsol_export">PV-Export</option>
                     <option value="weather">Wetterdaten</option>
                     <option value="wind">Winddaten (GeoSphere)</option>
@@ -315,8 +316,11 @@ function loadDataPreview() {
         console.log('📡 Response Status:', response.status);
         return response.json();
     })
-    .then(result => {
+        .then(result => {
         console.log('📊 API Response:', result);
+        
+        // API-Response für PV-Kapazität speichern
+        window.lastAPIResponse = result;
         
         if (result.success && result.data.length > 0) {
             console.log('✅ Daten erfolgreich geladen:', result.data.length, 'Datensätze');
@@ -402,25 +406,183 @@ function updateStatistics() {
         }
     }
     
+    // Gesamtenergie für PVGIS-Solardaten berechnen (Jahresertrag in kWh)
+    let totalPVEnergy = 0;
+    let annualPVEnergy = 0;
+    let pvCapacityKw = 0;
+    if (currentDataType === 'solar_radiation') {
+        // PV-Kapazität aus API-Response holen (falls verfügbar)
+        if (window.lastAPIResponse && window.lastAPIResponse.pv_capacity_kw) {
+            pvCapacityKw = window.lastAPIResponse.pv_capacity_kw;
+        }
+        
+        // Summiere alle pv_energy_kwh Werte
+        totalPVEnergy = currentData
+            .map(item => parseFloat(item.pv_energy_kwh || 0))
+            .filter(v => !isNaN(v))
+            .reduce((a, b) => a + b, 0);
+        
+        // Falls pv_energy_kwh nicht vorhanden, berechne aus global_irradiance
+        if (totalPVEnergy === 0 && pvCapacityKw > 0) {
+            // PV-Energie = global_irradiance (W/m²) * pv_capacity (kWp) * 0.75 / 1000
+            // Für stündliche Daten: direkt in kWh
+            totalPVEnergy = currentData
+                .map(item => {
+                    const irradiance = parseFloat(item.value || 0);
+                    return (irradiance * pvCapacityKw * 0.75) / 1000.0;
+                })
+                .filter(v => !isNaN(v))
+                .reduce((a, b) => a + b, 0);
+        }
+        
+        // Berechne Jahresertrag (extrapoliert basierend auf Zeitraum)
+        if (currentData.length > 0) {
+            const firstDate = new Date(currentData[0].timestamp);
+            const lastDate = new Date(currentData[currentData.length - 1].timestamp);
+            const daysInData = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+            if (daysInData > 0) {
+                annualPVEnergy = (totalPVEnergy / daysInData) * 365;
+            }
+        }
+    }
+    
+    // Gesamtenergie für Wasserkraft-Daten berechnen (Jahresertrag in kWh)
+    let totalHydroEnergy = 0;
+    let annualHydroEnergy = 0;
+    let hydroPowerKw = 0;
+    if (currentDataType === 'water_level') {
+        // Hydro-Parameter aus API-Response holen (falls verfügbar)
+        if (window.lastAPIResponse && window.lastAPIResponse.hydro_power_kw) {
+            hydroPowerKw = window.lastAPIResponse.hydro_power_kw;
+        }
+        
+        // Summiere alle hydro_energy_kwh Werte
+        totalHydroEnergy = currentData
+            .map(item => parseFloat(item.hydro_energy_kwh || 0))
+            .filter(v => !isNaN(v))
+            .reduce((a, b) => a + b, 0);
+        
+        // Berechne Jahresertrag (extrapoliert basierend auf Zeitraum)
+        if (currentData.length > 0) {
+            const firstDate = new Date(currentData[0].timestamp);
+            const lastDate = new Date(currentData[currentData.length - 1].timestamp);
+            const daysInData = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+            if (daysInData > 0) {
+                annualHydroEnergy = (totalHydroEnergy / daysInData) * 365;
+            }
+        }
+    }
+    
+    // Gesamtenergie für Winddaten berechnen (Jahresertrag in kWh)
+    let totalWindEnergy = 0;
+    let annualWindEnergy = 0;
+    if (currentDataType === 'wind') {
+        // Summiere alle energy_kwh Werte
+        totalWindEnergy = currentData
+            .map(item => parseFloat(item.energy_kwh || 0))
+            .filter(v => !isNaN(v))
+            .reduce((a, b) => a + b, 0);
+        
+        // Berechne Jahresertrag (extrapoliert basierend auf Zeitraum)
+        if (currentData.length > 0) {
+            const firstDate = new Date(currentData[0].timestamp);
+            const lastDate = new Date(currentData[currentData.length - 1].timestamp);
+            const daysInData = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+            if (daysInData > 0) {
+                annualWindEnergy = (totalWindEnergy / daysInData) * 365;
+            }
+        }
+    }
+    
     const statsGrid = document.getElementById('statisticsGrid');
-    statsGrid.innerHTML = `
-        <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">${maxValue.toFixed(2)} ${config.unit}</div>
-            <div class="text-sm text-gray-600">Maximum</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600">${avgValue.toFixed(2)} ${config.unit}</div>
-            <div class="text-sm text-gray-600">Durchschnitt</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-orange-600">${minValue.toFixed(2)} ${config.unit}</div>
-            <div class="text-sm text-gray-600">Minimum</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-purple-600">${currentDataType === 'load_profile' ? totalEnergy.toFixed(2) + ' kWh' : currentData.length}</div>
-            <div class="text-sm text-gray-600">${currentDataType === 'load_profile' ? 'Gesamtenergie' : 'Datensätze'}</div>
-        </div>
-    `;
+    
+    // Spezielle Anzeige für PVGIS-Solardaten mit Jahresertrag
+    if (currentDataType === 'solar_radiation') {
+        statsGrid.innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${maxValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Max. Einstrahlung</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">${avgValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Ø Einstrahlung</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">${(totalPVEnergy / 1000).toFixed(2)} MWh</div>
+                <div class="text-sm text-gray-600">Gesamtenergie (Zeitraum)</div>
+                ${pvCapacityKw > 0 ? `<div class="text-xs text-gray-500 mt-1">PV-Kapazität: ${pvCapacityKw.toFixed(1)} kWp</div>` : ''}
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-yellow-600">${(annualPVEnergy / 1000).toFixed(2)} MWh/a</div>
+                <div class="text-sm text-gray-600">PV-Jahresertrag (extrapoliert)</div>
+                <div class="text-xs text-gray-500 mt-1">${(annualPVEnergy).toFixed(0)} kWh/Jahr</div>
+            </div>
+        `;
+    }
+    // Spezielle Anzeige für Wasserkraft-Daten mit Jahresertrag
+    else if (currentDataType === 'water_level') {
+        statsGrid.innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${maxValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Max. Wasserstand</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">${avgValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Ø Wasserstand</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">${(totalHydroEnergy / 1000).toFixed(2)} MWh</div>
+                <div class="text-sm text-gray-600">Gesamtenergie (Zeitraum)</div>
+                ${hydroPowerKw > 0 ? `<div class="text-xs text-gray-500 mt-1">Hydro-Kapazität: ${hydroPowerKw.toFixed(1)} kW</div>` : ''}
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-cyan-600">${(annualHydroEnergy / 1000).toFixed(2)} MWh/a</div>
+                <div class="text-sm text-gray-600">Hydro-Jahresertrag (extrapoliert)</div>
+                <div class="text-xs text-gray-500 mt-1">${(annualHydroEnergy).toFixed(0)} kWh/Jahr</div>
+            </div>
+        `;
+    }
+    // Spezielle Anzeige für Winddaten mit Jahresertrag
+    else if (currentDataType === 'wind') {
+        statsGrid.innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${maxValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Max. Windleistung</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">${avgValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Ø Windleistung</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">${(totalWindEnergy / 1000).toFixed(2)} MWh</div>
+                <div class="text-sm text-gray-600">Gesamtenergie (Zeitraum)</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-indigo-600">${(annualWindEnergy / 1000).toFixed(2)} MWh/a</div>
+                <div class="text-sm text-gray-600">Jahresertrag (extrapoliert)</div>
+                <div class="text-xs text-gray-500 mt-1">${(annualWindEnergy).toFixed(0)} kWh/Jahr</div>
+            </div>
+        `;
+    } else {
+        statsGrid.innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${maxValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Maximum</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">${avgValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Durchschnitt</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-orange-600">${minValue.toFixed(2)} ${config.unit}</div>
+                <div class="text-sm text-gray-600">Minimum</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">${currentDataType === 'load_profile' ? totalEnergy.toFixed(2) + ' kWh' : currentData.length}</div>
+                <div class="text-sm text-gray-600">${currentDataType === 'load_profile' ? 'Gesamtenergie' : 'Datensätze'}</div>
+            </div>
+        `;
+    }
 }
 
 function updateOverlayStatistics() {

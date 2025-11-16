@@ -1,10 +1,10 @@
 # 📚 BESS Simulation - Vollständige Dokumentation
 
-**Version:** 2.4  
+**Version:** 2.5  
 **Datum:** Januar 2025  
 **Autor:** Ing. Heinz Schlagintweit  
 **Repository:** https://github.com/HSchlagi/bess-simulation  
-**Letzte Aktualisierung:** Roadmap 2025 - Stufe 1 (Netzrestriktionen, Degradation, Second-Life), Stufe 2.1 (Co-Location PV+BESS), Stufe 2.2 (Optimierte Regelstrategien), GeoSphere-Wind-Integration
+**Letzte Aktualisierung:** Roadmap 2025 - Stufe 1 (Netzrestriktionen, Degradation, Second-Life), Stufe 2.1 (Co-Location PV+BESS), Stufe 2.2 (Optimierte Regelstrategien), GeoSphere-Wind-Integration, Jahresertrag-Anzeige für PV/Wind/Hydro
 
 ---
 
@@ -1476,6 +1476,7 @@ Das **ML & KI Dashboard** bietet intelligente Analysen und Vorhersagen für opti
   - Statistiken: Max, Durchschnitt, Min, Datensätze
   - Chart-Visualisierung über Zeit
   - Rohdaten-Tabelle mit Export-Funktion
+  - **Jahresertrag-Anzeige:** Automatische Berechnung und Anzeige des Jahresertrags (kWh/Jahr und MWh/a)
 
 **Fehlerbehandlung:**
 - Detaillierte Fehlermeldungen bei API-Fehlern
@@ -5535,6 +5536,36 @@ time curl -s http://localhost:5000/api/health
 ---
 
 ## 📝 Changelog
+
+### Version 2.5 - Januar 2025
+
+#### **Jahresertrag-Anzeige für Erneuerbare Energien** ⭐ NEU
+
+**Datenvorschau-Erweiterung:**
+- **PV-Jahresertrag:** Automatische Berechnung aus PVGIS-Einstrahlungsdaten und PV-Kapazität
+  - Berechnung: Globalstrahlung (W/m²) × PV-Kapazität (kWp) × 0.75 / 1000
+  - Performance Ratio (PR): 75% Standard
+  - Anzeige in kWh/Jahr und MWh/a
+- **Wind-Jahresertrag:** Direkte Anzeige aus GeoSphere-Winddaten
+  - Summierung aller 15-Minuten-Energiewerte
+  - Extrapolation auf Jahresbasis
+  - Anzeige in kWh/Jahr und MWh/a
+- **Hydro-Jahresertrag:** Berechnung aus Wasserstandsdaten und Hydro-Kapazität
+  - Durchflussberechnung: Q = k × H^1.5
+  - Wasserkraft-Formel: P = η × ρ × g × H × Q
+  - Standard-Parameter: Wirkungsgrad 85%, Fallhöhe 15 m
+  - Anzeige in kWh/Jahr und MWh/a
+
+**Technische Verbesserungen:**
+- API-Erweiterung: PV-Kapazität und Hydro-Kapazität werden automatisch aus dem Projekt geladen
+- Clientseitige Berechnung: Alle Jahreserträge werden in JavaScript berechnet
+- Extrapolation: Automatische Jahresertrag-Berechnung basierend auf verfügbarem Zeitraum
+- Statistik-Integration: Max/Min/Durchschnitt-Werte für alle Erzeugungsarten
+
+**Benutzerfreundlichkeit:**
+- Einfache Navigation: Daten → Datenvorschau → Datenart auswählen
+- Klare Anzeige: Jahresertrag wird prominent in der Statistik-Sektion angezeigt
+- Voraussetzungen: PV/Hydro-Kapazität muss im Projekt hinterlegt sein
 
 ### Version 2.4 - Januar 2025
 

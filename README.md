@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.5-blue)
+![Version](https://img.shields.io/badge/version-2.6-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-green)
 ![Flask](https://img.shields.io/badge/flask-2.3.3-lightgrey)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
@@ -49,6 +49,7 @@
 - ✅ **Export-Funktionen** (PDF, Excel, CSV)
 - ✅ **Roadmap 2025 Features** - Netzrestriktionen, Degradation, Co-Location, Optimierte Regelstrategien, Extrempreis-Szenarien, Spread Width
 - ✅ **GeoSphere-Wind-Integration** - Automatischer Import von Winddaten (15-Minuten-Werte) für Co-Location PV+Wind+BESS
+- ✅ **Jahresertrag-Anzeige** - Automatische Berechnung und Anzeige des Jahresertrags (kWh/Jahr) für PV, Wind und Wasserkraft in der Datenvorschau
 
 ---
 
@@ -271,6 +272,26 @@
   - Integration für Co-Location PV+Wind+BESS
   - Unterstützte Resource IDs: `klima-v1-10min`, `klima-v1-1h`, `synop-v1-1h`
   - Verfügbare Stationen: 260+ österreichische Messstationen
+
+#### **Jahresertrag-Anzeige** ⭐ NEU (Version 2.6)
+- **PV-Jahresertrag:** Automatische Berechnung aus PVGIS-Einstrahlungsdaten
+  - Berechnung: Globalstrahlung (W/m²) × PV-Kapazität (kWp) × 0.75 / 1000
+  - Performance Ratio (PR): 75% Standard
+  - Anzeige in kWh/Jahr und MWh/a
+- **Wind-Jahresertrag:** Direkte Anzeige aus GeoSphere-Winddaten
+  - Summierung aller 15-Minuten-Energiewerte
+  - Extrapolation auf Jahresbasis
+  - Anzeige in kWh/Jahr und MWh/a
+- **Hydro-Jahresertrag:** Berechnung aus Wasserstandsdaten
+  - Durchflussberechnung: Q = k × H^1.5
+  - Wasserkraft-Formel: P = η × ρ × g × H × Q
+  - Standard-Parameter: Wirkungsgrad 85%, Fallhöhe 15 m
+  - Anzeige in kWh/Jahr und MWh/a
+- **Datenvorschau-Integration:**
+  - Alle Jahreserträge werden in der Datenvorschau angezeigt
+  - Max/Min/Durchschnitt-Werte für alle Erzeugungsarten
+  - Gesamtenergie für den ausgewählten Zeitraum
+  - Automatische Extrapolation auf Jahresbasis
 
 #### **Smart Grid & IoT**
 - **IoT-Sensor-Integration** für Real-time Monitoring

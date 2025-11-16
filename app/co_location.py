@@ -60,7 +60,8 @@ class CoLocationManager:
     @staticmethod
     def calculate_curtailment_losses(pv_generation_kw: float, export_limit_kw: float, 
                                      bess_charge_capacity_kw: float, consumption_kw: float,
-                                     co_location_config: CoLocationConfig) -> Dict[str, float]:
+                                     co_location_config: CoLocationConfig,
+                                     wind_generation_kw: float = 0.0) -> Dict[str, float]:
         """
         Berechnet Curtailment-Verluste (PV-Abschaltung)
         
@@ -70,6 +71,7 @@ class CoLocationManager:
             bess_charge_capacity_kw: Verfügbare BESS-Ladekapazität in kW
             consumption_kw: Verbrauch in kW
             co_location_config: Co-Location-Konfiguration
+            wind_generation_kw: Wind-Erzeugung in kW (optional, für Co-Location PV+Wind+BESS)
         
         Returns:
             Dict mit curtailment_losses_kw, avoided_curtailment_kw, pv_utilization_percent
@@ -83,31 +85,36 @@ class CoLocationManager:
                 'bess_curtailment_charge_kw': 0.0
             }
         
-        # Netto-PV-Erzeugung (nach Verbrauch)
-        net_pv_generation_kw = max(0.0, pv_generation_kw - consumption_kw)
+        # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS - Gesamterzeugung (PV + Wind)
+        total_generation_kw = pv_generation_kw + wind_generation_kw
+        
+        # Netto-Erzeugung (nach Verbrauch)
+        net_generation_kw = max(0.0, total_generation_kw - consumption_kw)
         
         # Verfügbare Exportkapazität (sicherstellen, dass es nicht None oder negativ ist)
         available_export_kw = max(0.0, export_limit_kw) if export_limit_kw else 0.0
         
-        # BESS kann PV-Überschuss aufnehmen
+        # BESS kann Überschuss (PV + Wind) aufnehmen
         bess_curtailment_charge_kw = min(
             bess_charge_capacity_kw,
-            net_pv_generation_kw - available_export_kw
+            net_generation_kw - available_export_kw
         )
         bess_curtailment_charge_kw = max(0.0, bess_curtailment_charge_kw)
         
-        # Verbleibender PV-Überschuss nach BESS-Ladung
-        remaining_pv_excess_kw = max(0.0, net_pv_generation_kw - available_export_kw - bess_curtailment_charge_kw)
+        # Verbleibender Überschuss nach BESS-Ladung
+        remaining_excess_kw = max(0.0, net_generation_kw - available_export_kw - bess_curtailment_charge_kw)
         
-        # Curtailment-Verluste (PV muss abgeschaltet werden)
-        curtailment_losses_kw = remaining_pv_excess_kw
+        # Curtailment-Verluste (PV + Wind müssen abgeschaltet werden)
+        curtailment_losses_kw = remaining_excess_kw
         
         # Vermiedene Curtailment durch BESS
         avoided_curtailment_kw = bess_curtailment_charge_kw * (co_location_config.curtailment_reduction_percent / 100.0)
         
-        # PV-Ausnutzung (%)
+        # PV-Ausnutzung (%) - basierend auf PV-Anteil
         if pv_generation_kw > 0:
-            utilized_pv_kw = pv_generation_kw - curtailment_losses_kw
+            # Anteiliger Curtailment-Verlust für PV
+            pv_curtailment_losses_kw = curtailment_losses_kw * (pv_generation_kw / total_generation_kw) if total_generation_kw > 0 else 0.0
+            utilized_pv_kw = pv_generation_kw - pv_curtailment_losses_kw
             pv_utilization_percent = (utilized_pv_kw / pv_generation_kw) * 100.0
         else:
             pv_utilization_percent = 100.0
@@ -117,44 +124,52 @@ class CoLocationManager:
             'avoided_curtailment_kw': avoided_curtailment_kw,
             'pv_utilization_percent': pv_utilization_percent,
             'bess_curtailment_charge_kw': bess_curtailment_charge_kw,
-            'net_pv_generation_kw': net_pv_generation_kw,
-            'exported_pv_kw': min(net_pv_generation_kw, available_export_kw)
+            'net_pv_generation_kw': net_generation_kw,  # Enthält jetzt PV + Wind
+            'exported_pv_kw': min(net_generation_kw, available_export_kw),
+            'wind_generation_kw': wind_generation_kw  # Wind-Erzeugung für Rückgabe
         }
     
     @staticmethod
     def calculate_pv_guided_peak_shaving(pv_generation_kw: float, consumption_kw: float,
                                          bess_discharge_capacity_kw: float,
-                                         co_location_config: CoLocationConfig) -> Dict[str, float]:
+                                         co_location_config: CoLocationConfig,
+                                         wind_generation_kw: float = 0.0) -> Dict[str, float]:
         """
-        Berechnet PV-geführtes Peak-Shaving
+        Berechnet PV-geführtes Peak-Shaving (erweitert für Co-Location PV+Wind+BESS)
         
         Args:
             pv_generation_kw: PV-Erzeugung in kW
             consumption_kw: Verbrauch in kW
             bess_discharge_capacity_kw: Verfügbare BESS-Entladekapazität in kW
             co_location_config: Co-Location-Konfiguration
+            wind_generation_kw: Wind-Erzeugung in kW (optional, für Co-Location PV+Wind+BESS)
         
         Returns:
             Dict mit peak_shaving_kw, self_consumption_kw, grid_import_kw
         """
         if not co_location_config.is_co_location or not co_location_config.pv_guided_peak_shaving:
+            # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS - Gesamterzeugung
+            total_generation_kw = pv_generation_kw + wind_generation_kw
             return {
                 'peak_shaving_kw': 0.0,
-                'self_consumption_kw': min(pv_generation_kw, consumption_kw),
-                'grid_import_kw': max(0.0, consumption_kw - pv_generation_kw),
-                'grid_export_kw': max(0.0, pv_generation_kw - consumption_kw)
+                'self_consumption_kw': min(total_generation_kw, consumption_kw),
+                'grid_import_kw': max(0.0, consumption_kw - total_generation_kw),
+                'grid_export_kw': max(0.0, total_generation_kw - consumption_kw)
             }
         
-        # Eigenverbrauch (PV direkt für Verbrauch)
-        direct_self_consumption_kw = min(pv_generation_kw, consumption_kw)
+        # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS - Gesamterzeugung
+        total_generation_kw = pv_generation_kw + wind_generation_kw
         
-        # PV-Überschuss
-        pv_excess_kw = max(0.0, pv_generation_kw - consumption_kw)
+        # Eigenverbrauch (PV + Wind direkt für Verbrauch)
+        direct_self_consumption_kw = min(total_generation_kw, consumption_kw)
         
-        # Verbleibender Verbrauch nach PV
-        remaining_consumption_kw = max(0.0, consumption_kw - pv_generation_kw)
+        # Überschuss (PV + Wind)
+        total_excess_kw = max(0.0, total_generation_kw - consumption_kw)
         
-        # BESS kann PV-Überschuss speichern und später für Peak-Shaving nutzen
+        # Verbleibender Verbrauch nach PV + Wind
+        remaining_consumption_kw = max(0.0, consumption_kw - total_generation_kw)
+        
+        # BESS kann Überschuss (PV + Wind) speichern und später für Peak-Shaving nutzen
         # Vereinfacht: BESS entlädt bei Verbrauchsspitzen
         peak_shaving_kw = min(
             bess_discharge_capacity_kw,
@@ -168,8 +183,8 @@ class CoLocationManager:
         # Netto-Grid-Import
         grid_import_kw = max(0.0, remaining_consumption_kw - peak_shaving_kw)
         
-        # Netto-Grid-Export (PV-Überschuss nach BESS-Ladung)
-        grid_export_kw = max(0.0, pv_excess_kw - peak_shaving_kw)
+        # Netto-Grid-Export (Überschuss nach BESS-Ladung)
+        grid_export_kw = max(0.0, total_excess_kw - peak_shaving_kw)
         
         # Eigenverbrauchs-Boost durch Co-Location
         self_consumption_boost_kw = total_self_consumption_kw * (co_location_config.self_consumption_boost_percent / 100.0)
@@ -188,9 +203,20 @@ class CoLocationManager:
     def calculate_co_location_benefits(annual_pv_generation_mwh: float, annual_consumption_mwh: float,
                                       curtailment_data: Dict[str, float], peak_shaving_data: Dict[str, float],
                                       spot_price_eur_mwh: float, grid_fee_eur_mwh: float,
-                                      co_location_config: CoLocationConfig) -> Dict[str, float]:
+                                      co_location_config: CoLocationConfig,
+                                      annual_wind_generation_mwh: float = 0.0) -> Dict[str, float]:
         """
-        Berechnet die wirtschaftlichen Vorteile der Co-Location
+        Berechnet die wirtschaftlichen Vorteile der Co-Location (erweitert für PV+Wind+BESS)
+        
+        Args:
+            annual_pv_generation_mwh: Jährliche PV-Erzeugung in MWh
+            annual_consumption_mwh: Jährlicher Verbrauch in MWh
+            curtailment_data: Curtailment-Daten (enthält bereits PV+Wind)
+            peak_shaving_data: Peak-Shaving-Daten (enthält bereits PV+Wind)
+            spot_price_eur_mwh: Spot-Preis in EUR/MWh
+            grid_fee_eur_mwh: Netzentgelt in EUR/MWh
+            co_location_config: Co-Location-Konfiguration
+            annual_wind_generation_mwh: Jährliche Wind-Erzeugung in MWh (optional)
         
         Returns:
             Dict mit revenue_increase, cost_savings, total_benefit
@@ -205,11 +231,14 @@ class CoLocationManager:
                 'grid_fee_savings_eur': 0.0
             }
         
-        # Vermiedene Curtailment-Verluste (können verkauft werden)
+        # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS - Gesamterzeugung
+        total_generation_mwh = annual_pv_generation_mwh + annual_wind_generation_mwh
+        
+        # Vermiedene Curtailment-Verluste (PV + Wind können verkauft werden)
         avoided_curtailment_mwh = (curtailment_data['avoided_curtailment_kw'] * 8760) / 1000.0  # Jahreswert
         avoided_curtailment_revenue_eur = avoided_curtailment_mwh * spot_price_eur_mwh
         
-        # Verlorene Curtailment-Verluste (können nicht verkauft werden)
+        # Verlorene Curtailment-Verluste (PV + Wind können nicht verkauft werden)
         curtailment_loss_mwh = (curtailment_data['curtailment_losses_kw'] * 8760) / 1000.0
         curtailment_loss_revenue_eur = curtailment_loss_mwh * spot_price_eur_mwh
         

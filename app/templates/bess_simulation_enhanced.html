@@ -135,6 +135,37 @@
                         <input type="number" id="bessPower" value="0.5" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
+                <!-- Windprofil-Auswahl (Co-Location PV+Wind+BESS) -->
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-wind mr-2 text-blue-500"></i>Windprofil (Co-Location)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Windprofil auswählen</label>
+                            <select id="windProfileSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Kein Windprofil (nur PV)</option>
+                                <!-- Windprofile werden dynamisch geladen -->
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Optional: Für Co-Location PV+Wind+BESS</p>
+                        </div>
+                        <div id="windProfileInfo" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Windprofil-Informationen</label>
+                            <div class="bg-gray-50 rounded-md p-3 text-sm">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <span class="text-gray-600">Jahresertrag:</span>
+                                        <span class="font-medium" id="windAnnualYield">-</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-600">Volllaststunden:</span>
+                                        <span class="font-medium" id="windFullLoadHours">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="mt-4">
                     <button onclick="runSimulation()" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         Simulation starten
@@ -327,6 +358,58 @@
                         </div>
                         <div class="text-sm text-gray-600 font-medium">Eigenverbrauchsquote</div>
                         <div class="text-xs text-gray-500 mt-1">Mit Co-Location</div>
+                    </div>
+                </div>
+                
+                <!-- Wind-KPIs (Co-Location PV+Wind+BESS) -->
+                <div id="windKPISection" class="hidden mt-4 pt-4 border-t border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">
+                        <i class="fas fa-wind mr-2 text-blue-500"></i>Wind-KPIs (Co-Location PV+Wind+BESS)
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <!-- Wind-Jahresertrag -->
+                        <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-blue-200">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-wind text-blue-600 text-xl mr-2"></i>
+                                <div class="text-2xl font-bold text-blue-600" id="windAnnualYieldKPI">-</div>
+                                <span class="text-lg text-gray-500 ml-1">MWh/a</span>
+                            </div>
+                            <div class="text-sm text-gray-600 font-medium">Wind-Jahresertrag</div>
+                            <div class="text-xs text-gray-500 mt-1">GeoSphere-Windprofil</div>
+                        </div>
+                        
+                        <!-- Wind-Volllaststunden -->
+                        <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-green-200">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-clock text-green-600 text-xl mr-2"></i>
+                                <div class="text-2xl font-bold text-green-600" id="windFullLoadHoursKPI">-</div>
+                                <span class="text-lg text-gray-500 ml-1">h</span>
+                            </div>
+                            <div class="text-sm text-gray-600 font-medium">Volllaststunden</div>
+                            <div class="text-xs text-gray-500 mt-1">Windturbine</div>
+                        </div>
+                        
+                        <!-- Wind-Max-Leistung -->
+                        <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-orange-200">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-arrow-up text-orange-600 text-xl mr-2"></i>
+                                <div class="text-2xl font-bold text-orange-600" id="windMaxPowerKPI">-</div>
+                                <span class="text-lg text-gray-500 ml-1">kW</span>
+                            </div>
+                            <div class="text-sm text-gray-600 font-medium">Max. Windleistung</div>
+                            <div class="text-xs text-gray-500 mt-1">Peak-Leistung</div>
+                        </div>
+                        
+                        <!-- Wind-Durchschnittsleistung -->
+                        <div class="text-center p-4 bg-white rounded-lg shadow-sm border border-purple-200">
+                            <div class="flex items-center justify-center mb-2">
+                                <i class="fas fa-chart-line text-purple-600 text-xl mr-2"></i>
+                                <div class="text-2xl font-bold text-purple-600" id="windAvgPowerKPI">-</div>
+                                <span class="text-lg text-gray-500 ml-1">kW</span>
+                            </div>
+                            <div class="text-sm text-gray-600 font-medium">Ø Windleistung</div>
+                            <div class="text-xs text-gray-500 mt-1">Durchschnitt</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -1127,6 +1210,9 @@ async function loadProjectDetails() {
         // Zeige Projektdetails
         document.getElementById('projectName').textContent = project.name;
         document.getElementById('projectLocation').textContent = project.location || '-';
+        
+        // Lade Windprofile für Co-Location
+        await loadWindProfiles(projectId);
         document.getElementById('projectBessSize').textContent = project.bess_size ? `${project.bess_size} MWh` : '-';
         document.getElementById('projectBessPower').textContent = project.bess_power ? `${project.bess_power} MW` : '-';
         
@@ -1205,6 +1291,62 @@ function initializeRoadmapStufe1Metrics(project) {
         initialData
     });
     displayRoadmapStufe1Metrics(initialData);
+}
+
+// Windprofile für ein Projekt laden
+async function loadWindProfiles(projectId) {
+    try {
+        const response = await fetch(`/api/projects/${projectId}/wind-profiles`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        
+        const windProfileSelect = document.getElementById('windProfileSelect');
+        windProfileSelect.innerHTML = '<option value="">Kein Windprofil (nur PV)</option>';
+        
+        if (data.success && data.profiles && data.profiles.length > 0) {
+            data.profiles.forEach(profile => {
+                const option = document.createElement('option');
+                option.value = profile.id;
+                option.textContent = profile.name;
+                option.dataset.kpis = JSON.stringify(profile.kpis || {});
+                windProfileSelect.appendChild(option);
+            });
+        }
+        
+        // Event Listener für Windprofil-Auswahl
+        windProfileSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const windProfileInfo = document.getElementById('windProfileInfo');
+            
+            if (selectedOption.value) {
+                try {
+                    const kpis = JSON.parse(selectedOption.dataset.kpis || '{}');
+                    if (kpis.E_year_kWh) {
+                        document.getElementById('windAnnualYield').textContent = 
+                            `${(kpis.E_year_kWh / 1000).toFixed(1)} MWh/a`;
+                    } else {
+                        document.getElementById('windAnnualYield').textContent = '-';
+                    }
+                    if (kpis.full_load_hours) {
+                        document.getElementById('windFullLoadHours').textContent = 
+                            `${kpis.full_load_hours.toFixed(0)} h`;
+                    } else {
+                        document.getElementById('windFullLoadHours').textContent = '-';
+                    }
+                    windProfileInfo.classList.remove('hidden');
+                } catch (e) {
+                    console.error('Fehler beim Parsen der KPIs:', e);
+                    windProfileInfo.classList.add('hidden');
+                }
+            } else {
+                windProfileInfo.classList.add('hidden');
+            }
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der Windprofile:', error);
+    }
 }
 
 // Use Cases für ein Projekt laden
@@ -1460,12 +1602,15 @@ async function runSimulation() {
     showLoading();
     
     try {
+        const windProfileId = document.getElementById('windProfileSelect').value;
+        
         const simulationData = {
             project_id: selectedProject.id,
             use_case: useCaseName,  // Verwende den extrahierten Use Case-Namen
             simulation_year: document.getElementById('simulationYear').value,
             bess_size: parseFloat(document.getElementById('bessSize').value),
-            bess_power: parseFloat(document.getElementById('bessPower').value)
+            bess_power: parseFloat(document.getElementById('bessPower').value),
+            wind_profile_id: windProfileId || null  // Windprofil-ID für Co-Location
         };
         
         const response = await fetch('/api/simulation/run', {
@@ -1819,6 +1964,40 @@ function displayCoLocationMetrics(data) {
         const totalBenefit = data.co_location_total_benefit_eur || 0.0;
         if (document.getElementById('coLocationTotalBenefit')) {
             document.getElementById('coLocationTotalBenefit').textContent = formatCurrency(totalBenefit) || '0 €';
+        }
+        
+        // Wind-KPIs anzeigen (Co-Location PV+Wind+BESS)
+        const windKPISection = document.getElementById('windKPISection');
+        const windKpis = data.wind_kpis || {};
+        const annualWindGeneration = data.annual_wind_generation || 0.0;
+        
+        if (annualWindGeneration > 0 && windKPISection) {
+            windKPISection.classList.remove('hidden');
+            
+            // Wind-Jahresertrag
+            if (document.getElementById('windAnnualYieldKPI')) {
+                document.getElementById('windAnnualYieldKPI').textContent = annualWindGeneration.toFixed(1);
+            }
+            
+            // Wind-Volllaststunden
+            if (document.getElementById('windFullLoadHoursKPI')) {
+                const fullLoadHours = windKpis.full_load_hours || 0;
+                document.getElementById('windFullLoadHoursKPI').textContent = fullLoadHours.toFixed(0);
+            }
+            
+            // Wind-Max-Leistung
+            if (document.getElementById('windMaxPowerKPI')) {
+                const maxPower = windKpis.p_max_kw || 0;
+                document.getElementById('windMaxPowerKPI').textContent = maxPower.toFixed(0);
+            }
+            
+            // Wind-Durchschnittsleistung
+            if (document.getElementById('windAvgPowerKPI')) {
+                const avgPower = windKpis.p_mean_kw || 0;
+                document.getElementById('windAvgPowerKPI').textContent = avgPower.toFixed(1);
+            }
+        } else if (windKPISection) {
+            windKPISection.classList.add('hidden');
         }
     } else {
         // Co-Location nicht aktiviert - Sektion ausblenden
@@ -2873,6 +3052,8 @@ async function runDashboardSimulation() {
         const project = await projectResponse.json();
         
         // 2. Führe normale Simulation durch
+        const windProfileId = document.getElementById('windProfileSelect')?.value || null;
+        
         const simulationData = {
             project_id: projectId,
             use_case: useCaseName,  // Verwende den validierten Use Case-Namen
@@ -2881,7 +3062,8 @@ async function runDashboardSimulation() {
             bess_power: project.bess_power || 500,
             bess_mode: bessMode,
             optimization_target: optimizationTarget,
-            spot_price_scenario: spotPriceScenario
+            spot_price_scenario: spotPriceScenario,
+            wind_profile_id: windProfileId  // Windprofil-ID für Co-Location
         };
         
         const simulationResponse = await fetch('/api/simulation/run', {

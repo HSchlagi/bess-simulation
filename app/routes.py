@@ -3933,19 +3933,99 @@ def get_project_data(project_id, data_type):
             ORDER BY lv.timestamp
             """
         elif data_type == 'solar_radiation':
+            # PV-Kapazität aus Projekt holen
+            project = Project.query.get(project_id)
+            pv_capacity_kw = project.pv_power if project and project.pv_power else 0.0
+            
             query = f"""
             SELECT timestamp, global_irradiance as value 
             FROM solar_data 
             WHERE project_id = ? {time_filter}
             ORDER BY timestamp
             """
+            cursor = get_db().cursor()
+            cursor.execute(query, (project_id,))
+            rows = cursor.fetchall()
+            
+            # Daten formatieren und PV-Energie berechnen
+            data = []
+            for row in rows:
+                global_irradiance = float(row[1]) if row[1] is not None else 0.0
+                # PV-Energie berechnen: global_irradiance (W/m²) * pv_capacity (kWp) * 0.75 / 1000 = kWh
+                # Annahme: 0.75 ist der Performance Ratio (PR)
+                # Für stündliche Daten: direkt in kWh
+                pv_energy_kwh = (global_irradiance * pv_capacity_kw * 0.75) / 1000.0 if pv_capacity_kw > 0 else 0.0
+                
+                data.append({
+                    'timestamp': row[0],
+                    'value': global_irradiance,  # Einstrahlung in W/m²
+                    'pv_energy_kwh': pv_energy_kwh,  # PV-Energie in kWh
+                    'pv_capacity_kw': pv_capacity_kw  # PV-Kapazität für Frontend
+                })
+            
+            return jsonify({
+                'success': True,
+                'data': data,
+                'count': len(data),
+                'pv_capacity_kw': pv_capacity_kw  # PV-Kapazität für Frontend
+            })
         elif data_type == 'water_level':
+            # Hydro-Power-Parameter aus Projekt holen
+            project = Project.query.get(project_id)
+            hydro_power_kw = project.hydro_power if project and project.hydro_power else 0.0
+            # Standard-Werte für Wasserkraft-Berechnung (falls nicht im Projekt)
+            hydro_efficiency = 0.85  # 85% Wirkungsgrad
+            hydro_head_m = 15.0  # 15m Fallhöhe (Standard)
+            flow_coefficient = 0.8  # m³/s pro m^1.5
+            
             query = f"""
             SELECT timestamp, water_level as value 
             FROM hydro_data 
             WHERE project_id = ? {time_filter}
             ORDER BY timestamp
             """
+            cursor = get_db().cursor()
+            cursor.execute(query, (project_id,))
+            rows = cursor.fetchall()
+            
+            # Daten formatieren und Hydro-Energie berechnen
+            data = []
+            for row in rows:
+                water_level_m = float(row[1]) if row[1] is not None else 0.0
+                
+                # Hydro-Energie berechnen (falls hydro_power vorhanden)
+                hydro_energy_kwh = 0.0
+                if hydro_power_kw > 0 and water_level_m > 0:
+                    # Durchfluss basierend auf Pegelstand: Q = k * H^1.5
+                    flow_m3s = flow_coefficient * (water_level_m ** 1.5)
+                    
+                    # Wasserkraft-Formel: P = η * ρ * g * H * Q
+                    # η = Wirkungsgrad, ρ = Wasserdichte (1000 kg/m³), g = 9.81 m/s²
+                    water_density = 1000  # kg/m³
+                    gravity = 9.81  # m/s²
+                    theoretical_power_w = hydro_efficiency * water_density * gravity * hydro_head_m * flow_m3s
+                    actual_power_w = min(theoretical_power_w, hydro_power_kw * 1000)  # Begrenzt auf Nennleistung
+                    
+                    # Energie für 1 Stunde (stündliche Daten angenommen)
+                    hydro_energy_kwh = (actual_power_w / 1000.0)  # kW * 1h = kWh
+                
+                data.append({
+                    'timestamp': row[0],
+                    'value': water_level_m,  # Wasserstand in m
+                    'hydro_energy_kwh': hydro_energy_kwh,  # Hydro-Energie in kWh
+                    'hydro_power_kw': hydro_power_kw,  # Hydro-Kapazität für Frontend
+                    'hydro_head_m': hydro_head_m,  # Fallhöhe für Frontend
+                    'hydro_efficiency': hydro_efficiency  # Wirkungsgrad für Frontend
+                })
+            
+            return jsonify({
+                'success': True,
+                'data': data,
+                'count': len(data),
+                'hydro_power_kw': hydro_power_kw,  # Hydro-Kapazität für Frontend
+                'hydro_head_m': hydro_head_m,  # Fallhöhe für Frontend
+                'hydro_efficiency': hydro_efficiency  # Wirkungsgrad für Frontend
+            })
         elif data_type == 'weather':
             query = f"""
             SELECT timestamp, temperature_2m as value 
@@ -3955,7 +4035,7 @@ def get_project_data(project_id, data_type):
             """
         elif data_type == 'wind':
             query = f"""
-            SELECT wv.timestamp, wv.power_kw as value 
+            SELECT wv.timestamp, wv.power_kw as value, wv.energy_kwh
             FROM {table_name} wv
             JOIN wind_data wd ON wv.wind_data_id = wd.id
             WHERE wd.project_id = ? {time_filter}
@@ -3976,10 +4056,14 @@ def get_project_data(project_id, data_type):
         # Daten formatieren
         data = []
         for row in rows:
-            data.append({
+            data_item = {
                 'timestamp': row[0],
                 'value': float(row[1]) if row[1] is not None else 0.0
-            })
+            }
+            # Für Winddaten: energy_kwh auch zurückgeben
+            if data_type == 'wind' and len(row) > 2:
+                data_item['energy_kwh'] = float(row[2]) if row[2] is not None else 0.0
+            data.append(data_item)
         
         return jsonify({
             'success': True,
@@ -4866,6 +4950,43 @@ def api_geosphere_stations():
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': f"Unerwarteter Fehler: {str(e)}"}), 500
+
+@main_bp.route('/api/projects/<int:project_id>/wind-profiles', methods=['GET'])
+@login_required
+def api_get_wind_profiles(project_id):
+    """API-Endpoint: Verfügbare Windprofile für ein Projekt abrufen"""
+    try:
+        wind_profiles = WindData.query.filter_by(project_id=project_id).all()
+        
+        profiles = []
+        for profile in wind_profiles:
+            # KPIs aus description extrahieren (falls vorhanden)
+            kpis = {}
+            if profile.description:
+                try:
+                    import json
+                    # Suche nach JSON im Description-String
+                    desc_lines = profile.description.split('\n')
+                    for line in desc_lines:
+                        if line.strip().startswith('{'):
+                            kpis = json.loads(line)
+                            break
+                except:
+                    pass
+            
+            profiles.append({
+                'id': profile.id,
+                'name': profile.name,
+                'created_at': profile.created_at.isoformat() if profile.created_at else None,
+                'kpis': kpis
+            })
+        
+        return jsonify({
+            'success': True,
+            'profiles': profiles
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @main_bp.route('/api/geosphere/wind/import', methods=['POST'])
 @login_required
@@ -7090,7 +7211,46 @@ def api_run_simulation():
         annual_consumption = config['annual_consumption_mwh']
         annual_pv_generation = config['annual_pv_generation_mwh']
         annual_hydro_generation = config['annual_hydro_generation_mwh']
-        annual_generation = annual_pv_generation + annual_hydro_generation
+        
+        # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS - Winddaten laden
+        wind_profile_id = data.get('wind_profile_id')
+        annual_wind_generation = 0.0
+        wind_kpis = {}
+        
+        if wind_profile_id:
+            try:
+                wind_data = WindData.query.filter_by(id=wind_profile_id, project_id=project_id).first()
+                if wind_data:
+                    # KPIs aus description extrahieren
+                    if wind_data.description:
+                        try:
+                            import json
+                            desc_lines = wind_data.description.split('\n')
+                            for line in desc_lines:
+                                if line.strip().startswith('{'):
+                                    kpis_data = json.loads(line)
+                                    if 'kpis' in kpis_data:
+                                        wind_kpis = kpis_data['kpis']
+                                    else:
+                                        wind_kpis = kpis_data
+                                    break
+                        except:
+                            pass
+                    
+                    # Jahresertrag aus KPIs
+                    if 'E_year_kWh' in wind_kpis:
+                        annual_wind_generation = wind_kpis['E_year_kWh'] / 1000.0  # kWh zu MWh
+                    else:
+                        # Fallback: Berechne aus Winddaten
+                        wind_values = WindValue.query.filter_by(wind_data_id=wind_data.id).all()
+                        if wind_values:
+                            annual_wind_generation = sum([v.energy_kwh or 0 for v in wind_values]) / 1000.0
+                    
+                    print(f"🌬️ Windprofil geladen: {wind_data.name}, Jahresertrag: {annual_wind_generation:.2f} MWh")
+            except Exception as e:
+                print(f"⚠️ Fehler beim Laden des Windprofils: {e}")
+        
+        annual_generation = annual_pv_generation + annual_hydro_generation + annual_wind_generation
         
         # BESS-Modus spezifische Konfiguration mit OPTIMIERTEN Erlösmodellen
         bess_mode_config = {
@@ -7368,7 +7528,8 @@ def api_run_simulation():
                     bess_charge_capacity_kw=bess_charge_capacity_kw,
                     bess_discharge_capacity_kw=bess_discharge_capacity_kw,
                     spot_price_eur_mwh=spot_price_eur_mwh,
-                    grid_fee_eur_mwh=50.0  # 50 EUR/MWh = 0.05 EUR/kWh
+                    grid_fee_eur_mwh=50.0,  # 50 EUR/MWh = 0.05 EUR/kWh
+                    annual_wind_generation_mwh=annual_wind_generation  # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS
                 )
                 
                 # Co-Location-Vorteile zu Erlösen hinzufügen
@@ -7520,6 +7681,8 @@ def api_run_simulation():
             'annual_generation': round(annual_generation, 1),
             'annual_pv_generation': round(annual_pv_generation, 1),
             'annual_hydro_generation': round(annual_hydro_generation, 1),
+            'annual_wind_generation': round(annual_wind_generation, 1),  # ROADMAP STUFE 2.1: Co-Location PV+Wind+BESS
+            'wind_kpis': wind_kpis,  # Wind-KPIs (Jahresertrag, Volllaststunden, etc.)
             'energy_stored': round(energy_stored, 1),
             'energy_discharged': round(energy_discharged, 1),
             'annual_cycles': annual_cycles,
