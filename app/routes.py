@@ -3903,7 +3903,33 @@ def get_project_data(project_id, data_type):
             # Für "Letztes Jahr" verwenden wir 2024 als festes Jahr
             time_filter = "AND timestamp >= '2024-01-01' AND timestamp <= '2024-12-31'"
         elif start_date and end_date:
-            time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
+            # Datumsformat konvertieren (von datetime-local zu SQLite-Format)
+            # Frontend sendet: "2024-10-01T22:00" oder "2024-10-01 22:00:00"
+            # SQLite erwartet: "2024-10-01 22:00:00"
+            start_date_sql = start_date.replace('T', ' ')
+            # Sicherstellen, dass Sekunden vorhanden sind
+            if ' ' in start_date_sql:
+                time_part = start_date_sql.split(' ')[1]
+                if time_part.count(':') == 1:
+                    start_date_sql = start_date_sql + ':00'
+                elif ':' not in time_part:
+                    start_date_sql = start_date_sql + ' 00:00:00'
+            else:
+                start_date_sql = start_date_sql + ' 00:00:00'
+            
+            end_date_sql = end_date.replace('T', ' ')
+            # Sicherstellen, dass Sekunden vorhanden sind
+            if ' ' in end_date_sql:
+                time_part = end_date_sql.split(' ')[1]
+                if time_part.count(':') == 1:
+                    end_date_sql = end_date_sql + ':00'
+                elif ':' not in time_part:
+                    end_date_sql = end_date_sql + ' 23:59:59'
+            else:
+                end_date_sql = end_date_sql + ' 23:59:59'
+            
+            time_filter = f"AND timestamp BETWEEN '{start_date_sql}' AND '{end_date_sql}'"
+            print(f"🔍 Zeitfilter für benutzerdefinierten Zeitraum: {start_date_sql} bis {end_date_sql}")
         
         # Spezielle Behandlung für Overlay-Daten
         if data_type == 'overlay':
@@ -4041,6 +4067,8 @@ def get_project_data(project_id, data_type):
             WHERE wd.project_id = ? {time_filter}
             ORDER BY wv.timestamp
             """
+            print(f"🌬️ Winddaten-Query für Projekt {project_id}: {query}")
+            print(f"🌬️ Zeitfilter: {time_filter}")
         else:
             query = f"""
             SELECT timestamp, value 
@@ -4052,6 +4080,58 @@ def get_project_data(project_id, data_type):
         cursor = get_db().cursor()
         cursor.execute(query, (project_id,))
         rows = cursor.fetchall()
+        
+        print(f"📊 Gefundene Datensätze: {len(rows)}")
+        
+        # Wenn keine Daten gefunden, prüfe verfügbaren Zeitraum
+        available_range = None
+        if len(rows) == 0:
+            # Prüfe verfügbaren Zeitraum für diesen Datentyp
+            if data_type == 'wind':
+                debug_query = """
+                SELECT COUNT(*) as count, MIN(timestamp) as min_ts, MAX(timestamp) as max_ts
+                FROM wind_value wv
+                JOIN wind_data wd ON wv.wind_data_id = wd.id
+                WHERE wd.project_id = ?
+                """
+                cursor.execute(debug_query, (project_id,))
+                debug_row = cursor.fetchone()
+                if debug_row and debug_row[0] > 0:
+                    available_range = {
+                        'min': debug_row[1],
+                        'max': debug_row[2],
+                        'count': debug_row[0]
+                    }
+                    print(f"🔍 Debug: Gesamt {debug_row[0]} Winddaten für Projekt {project_id}")
+                    print(f"🔍 Debug: Verfügbarer Zeitraum: {debug_row[1]} bis {debug_row[2]}")
+            elif data_type == 'solar_radiation':
+                debug_query = """
+                SELECT COUNT(*) as count, MIN(timestamp) as min_ts, MAX(timestamp) as max_ts
+                FROM solar_data
+                WHERE project_id = ?
+                """
+                cursor.execute(debug_query, (project_id,))
+                debug_row = cursor.fetchone()
+                if debug_row and debug_row[0] > 0:
+                    available_range = {
+                        'min': debug_row[1],
+                        'max': debug_row[2],
+                        'count': debug_row[0]
+                    }
+            elif data_type == 'water_level':
+                debug_query = """
+                SELECT COUNT(*) as count, MIN(timestamp) as min_ts, MAX(timestamp) as max_ts
+                FROM hydro_data
+                WHERE project_id = ?
+                """
+                cursor.execute(debug_query, (project_id,))
+                debug_row = cursor.fetchone()
+                if debug_row and debug_row[0] > 0:
+                    available_range = {
+                        'min': debug_row[1],
+                        'max': debug_row[2],
+                        'count': debug_row[0]
+                    }
         
         # Daten formatieren
         data = []
@@ -4065,11 +4145,18 @@ def get_project_data(project_id, data_type):
                 data_item['energy_kwh'] = float(row[2]) if row[2] is not None else 0.0
             data.append(data_item)
         
-        return jsonify({
+        response_data = {
             'success': True,
             'data': data,
             'count': len(data)
-        })
+        }
+        
+        # Verfügbaren Zeitraum in Response hinzufügen, wenn keine Daten gefunden
+        if len(data) == 0 and available_range:
+            response_data['available_range'] = available_range
+            response_data['message'] = f"Keine Daten für den gewählten Zeitraum gefunden. Verfügbarer Zeitraum: {available_range['min']} bis {available_range['max']} ({available_range['count']} Datensätze)"
+        
+        return jsonify(response_data)
         
     except Exception as e:
         print(f"Fehler beim Laden der Daten: {e}")
@@ -4087,7 +4174,33 @@ def get_overlay_data(project_id, time_range, start_date, end_date):
         elif time_range == 'year':
             time_filter = "AND timestamp >= '2024-01-01' AND timestamp <= '2024-12-31'"
         elif start_date and end_date:
-            time_filter = f"AND timestamp BETWEEN '{start_date}' AND '{end_date}'"
+            # Datumsformat konvertieren (von datetime-local zu SQLite-Format)
+            # Frontend sendet: "2024-04-01T22:00" oder "2024-04-01 22:00:00"
+            # SQLite erwartet: "2024-04-01 22:00:00"
+            start_date_sql = start_date.replace('T', ' ')
+            # Sicherstellen, dass Sekunden vorhanden sind
+            if ' ' in start_date_sql:
+                time_part = start_date_sql.split(' ')[1]
+                if time_part.count(':') == 1:
+                    start_date_sql = start_date_sql + ':00'
+                elif ':' not in time_part:
+                    start_date_sql = start_date_sql + ' 00:00:00'
+            else:
+                start_date_sql = start_date_sql + ' 00:00:00'
+            
+            end_date_sql = end_date.replace('T', ' ')
+            # Sicherstellen, dass Sekunden vorhanden sind
+            if ' ' in end_date_sql:
+                time_part = end_date_sql.split(' ')[1]
+                if time_part.count(':') == 1:
+                    end_date_sql = end_date_sql + ':00'
+                elif ':' not in time_part:
+                    end_date_sql = end_date_sql + ' 23:59:59'
+            else:
+                end_date_sql = end_date_sql + ' 23:59:59'
+            
+            time_filter = f"AND timestamp BETWEEN '{start_date_sql}' AND '{end_date_sql}'"
+            print(f"🔍 Overlay Zeitfilter für benutzerdefinierten Zeitraum: {start_date_sql} bis {end_date_sql}")
         
         cursor = get_db().cursor()
         
@@ -4099,28 +4212,100 @@ def get_overlay_data(project_id, time_range, start_date, end_date):
         WHERE lp.project_id = ? {time_filter}
         ORDER BY lv.timestamp
         """
-        cursor.execute(load_query, (project_id,))
-        load_data = cursor.fetchall()
+        try:
+            cursor.execute(load_query, (project_id,))
+            load_data = cursor.fetchall()
+            print(f"📊 Overlay: {len(load_data)} Lastprofil-Daten gefunden für Projekt {project_id}")
+            print(f"📊 Overlay: Zeitfilter: {time_filter}")
+            if len(load_data) == 0:
+                # Prüfe ob überhaupt Lastprofil-Daten für dieses Projekt existieren
+                check_query = """
+                SELECT COUNT(*) as count, MIN(lv.timestamp) as min_ts, MAX(lv.timestamp) as max_ts
+                FROM load_value lv
+                JOIN load_profile lp ON lv.load_profile_id = lp.id
+                WHERE lp.project_id = ?
+                """
+                cursor.execute(check_query, (project_id,))
+                check_row = cursor.fetchone()
+                if check_row:
+                    print(f"🔍 Overlay Debug: Gesamt {check_row[0]} Lastprofil-Daten für Projekt {project_id}")
+                    if check_row[0] > 0:
+                        print(f"🔍 Overlay Debug: Verfügbarer Zeitraum: {check_row[1]} bis {check_row[2]}")
+        except Exception as e:
+            print(f"❌ Overlay Fehler beim Laden der Lastprofil-Daten: {e}")
+            import traceback
+            traceback.print_exc()
+            load_data = []
         
         # 2. PV-Daten laden (falls vorhanden)
-        pv_query = f"""
-        SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, power_kw as pv_value
-        FROM pvsol_export 
-        WHERE project_id = ? {time_filter}
-        ORDER BY timestamp
-        """
-        cursor.execute(pv_query, (project_id,))
-        pv_data = cursor.fetchall()
+        # Prüfe zuerst ob pvsol_export Tabelle existiert, sonst verwende solar_data
+        pv_data = []
+        try:
+            # Versuche pvsol_export zuerst
+            pv_query = f"""
+            SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, power_kw as pv_value
+            FROM pvsol_export 
+            WHERE project_id = ? {time_filter}
+            ORDER BY timestamp
+            """
+            cursor.execute(pv_query, (project_id,))
+            pv_data = cursor.fetchall()
+            print(f"📊 Overlay: {len(pv_data)} PV-Daten aus pvsol_export gefunden")
+        except Exception as e:
+            print(f"⚠️ Overlay: pvsol_export nicht verfügbar, versuche solar_data: {e}")
+            # Fallback: Verwende solar_data und berechne PV-Leistung
+            try:
+                project = Project.query.get(project_id)
+                pv_capacity_kw = project.pv_power if project and project.pv_power else 0.0
+                if pv_capacity_kw > 0:
+                    pv_query = f"""
+                    SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, 
+                           (global_irradiance * {pv_capacity_kw} * 0.75 / 1000.0) as pv_value
+                    FROM solar_data 
+                    WHERE project_id = ? {time_filter}
+                    ORDER BY timestamp
+                    """
+                    cursor.execute(pv_query, (project_id,))
+                    pv_data = cursor.fetchall()
+                    print(f"📊 Overlay: {len(pv_data)} PV-Daten aus solar_data berechnet")
+            except Exception as e2:
+                print(f"⚠️ Overlay: Auch solar_data nicht verfügbar: {e2}")
         
         # 3. Wasserkraft-Daten laden (falls vorhanden)
-        hydro_query = f"""
-        SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, power_kw as hydro_value
-        FROM hydro_power 
-        WHERE project_id = ? {time_filter}
-        ORDER BY timestamp
-        """
-        cursor.execute(hydro_query, (project_id,))
-        hydro_data = cursor.fetchall()
+        hydro_data = []
+        try:
+            # Versuche hydro_power zuerst
+            hydro_query = f"""
+            SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp, power_kw as hydro_value
+            FROM hydro_power 
+            WHERE project_id = ? {time_filter}
+            ORDER BY timestamp
+            """
+            cursor.execute(hydro_query, (project_id,))
+            hydro_data = cursor.fetchall()
+            print(f"📊 Overlay: {len(hydro_data)} Hydro-Daten aus hydro_power gefunden")
+        except Exception as e:
+            print(f"⚠️ Overlay: hydro_power nicht verfügbar, versuche hydro_data: {e}")
+            # Fallback: Verwende hydro_data und berechne Hydro-Leistung
+            try:
+                project = Project.query.get(project_id)
+                hydro_power_kw = project.hydro_power if project and project.hydro_power else 0.0
+                if hydro_power_kw > 0:
+                    hydro_efficiency = 0.85
+                    hydro_head_m = 15.0
+                    flow_coefficient = 0.8
+                    hydro_query = f"""
+                    SELECT strftime('%Y-%m-%d %H:%M:%S', timestamp) as timestamp,
+                           (0.85 * 1000 * 9.81 * {hydro_head_m} * {flow_coefficient} * (water_level * SQRT(water_level)) / 1000.0) as hydro_value
+                    FROM hydro_data 
+                    WHERE project_id = ? {time_filter}
+                    ORDER BY timestamp
+                    """
+                    cursor.execute(hydro_query, (project_id,))
+                    hydro_data = cursor.fetchall()
+                    print(f"📊 Overlay: {len(hydro_data)} Hydro-Daten aus hydro_data berechnet")
+            except Exception as e2:
+                print(f"⚠️ Overlay: Auch hydro_data nicht verfügbar: {e2}")
         
         # Daten zusammenführen
         overlay_data = []
@@ -4160,6 +4345,57 @@ def get_overlay_data(project_id, time_range, start_date, end_date):
             }
             overlay_data.append(overlay_point)
         
+        if len(overlay_data) == 0:
+            # Prüfe verfügbaren Zeitraum
+            available_range = None
+            try:
+                # Prüfe Lastprofil
+                debug_query = """
+                SELECT COUNT(*) as count, MIN(lv.timestamp) as min_ts, MAX(lv.timestamp) as max_ts
+                FROM load_value lv
+                JOIN load_profile lp ON lv.load_profile_id = lp.id
+                WHERE lp.project_id = ?
+                """
+                cursor.execute(debug_query, (project_id,))
+                debug_row = cursor.fetchone()
+                if debug_row:
+                    print(f"🔍 Overlay Debug: Gesamt {debug_row[0]} Lastprofil-Daten für Projekt {project_id}")
+                    if debug_row[0] > 0:
+                        available_range = {
+                            'min': str(debug_row[1]) if debug_row[1] else None,
+                            'max': str(debug_row[2]) if debug_row[2] else None,
+                            'count': debug_row[0]
+                        }
+                        print(f"🔍 Overlay Debug: Verfügbarer Zeitraum: {available_range['min']} bis {available_range['max']}")
+                    else:
+                        print(f"⚠️ Overlay Debug: Keine Lastprofil-Daten für Projekt {project_id} vorhanden")
+            except Exception as e:
+                print(f"⚠️ Overlay Debug-Fehler: {e}")
+                import traceback
+                traceback.print_exc()
+            
+            response_data = {
+                'success': True,
+                'data': overlay_data,
+                'count': len(overlay_data),
+                'data_types': {
+                    'load_available': len(load_data) > 0,
+                    'pv_available': len(pv_data) > 0,
+                    'hydro_available': len(hydro_data) > 0
+                }
+            }
+            
+            if available_range and available_range['min'] and available_range['max']:
+                response_data['available_range'] = available_range
+                response_data['message'] = f"Keine Overlay-Daten für den gewählten Zeitraum gefunden. Verfügbarer Zeitraum: {available_range['min']} bis {available_range['max']} ({available_range['count']} Datensätze)"
+            elif len(load_data) == 0:
+                response_data['message'] = "Keine Lastprofil-Daten für dieses Projekt gefunden. Bitte importieren Sie zuerst Lastprofil-Daten."
+            else:
+                response_data['message'] = "Keine Overlay-Daten für den gewählten Zeitraum gefunden."
+            
+            print(f"📤 Overlay Response: {response_data}")
+            return jsonify(response_data)
+        
         return jsonify({
             'success': True,
             'data': overlay_data,
@@ -4173,6 +4409,8 @@ def get_overlay_data(project_id, time_range, start_date, end_date):
         
     except Exception as e:
         print(f"Fehler beim Laden der Overlay-Daten: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)})
 @main_bp.route('/api/projects/<int:project_id>/data-overview')
 def api_data_overview(project_id):

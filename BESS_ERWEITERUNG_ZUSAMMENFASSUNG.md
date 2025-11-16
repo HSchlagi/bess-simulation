@@ -435,8 +435,45 @@ def optimize_dispatch():
   - Statistiken: Max, Durchschnitt, Min, Datensätze.
   - Chart-Visualisierung über Zeit.
   - Rohdaten-Tabelle mit Export-Funktion.
+  - **Jahresertrag-Anzeige:** ✅ Automatische Berechnung und Anzeige des Jahresertrags (kWh/Jahr und MWh/a) für Winddaten.
 
-**Status:** ✅ Vollständig implementiert (GeoSphere-Windengine, Datenimport-Center, Stationen-Auswahl, Datenvorschau, Co-Location-Integration)
+**Status:** ✅ Vollständig implementiert (GeoSphere-Windengine, Datenimport-Center, Stationen-Auswahl, Datenvorschau, Co-Location-Integration, Jahresertrag-Anzeige)
+
+---
+
+#### **3.4 Jahresertrag-Anzeige für Erneuerbare Energien** 📊☀️🌬️💧
+
+**Ziel:**
+- Automatische Berechnung und Anzeige des Jahresertrags (kWh/Jahr) für PV, Wind und Wasserkraft in der Datenvorschau.
+- Ermöglicht es Kunden, schnell zu sehen, wie viel Energie ihre Anlagen im Jahr erzeugen.
+
+**PV-Jahresertrag:** ✅
+- **Berechnung:** Globalstrahlung (W/m²) × PV-Kapazität (kWp) × 0.75 / 1000
+- **Performance Ratio (PR):** 75% Standard
+- **Anzeige:** Max/Min/Durchschnitt Einstrahlung, Gesamtenergie (Zeitraum), PV-Jahresertrag (extrapoliert) in MWh/a und kWh/Jahr
+- **Voraussetzung:** PVGIS-Solardaten müssen importiert sein, PV-Kapazität muss im Projekt hinterlegt sein
+
+**Wind-Jahresertrag:** ✅
+- **Berechnung:** Summierung aller 15-Minuten-Energiewerte (`energy_kwh`)
+- **Extrapolation:** Automatische Jahresertrag-Berechnung basierend auf verfügbarem Zeitraum
+- **Anzeige:** Max/Min/Durchschnitt Windleistung, Gesamtenergie (Zeitraum), Wind-Jahresertrag (extrapoliert) in MWh/a und kWh/Jahr
+- **Voraussetzung:** GeoSphere-Winddaten müssen importiert sein
+
+**Hydro-Jahresertrag:** ✅
+- **Berechnung:** 
+  - Durchfluss: Q = k × H^1.5 (k = 0.8 m³/s pro m^1.5)
+  - Wasserkraft-Formel: P = η × ρ × g × H × Q
+  - Standard-Parameter: Wirkungsgrad 85%, Fallhöhe 15 m
+- **Anzeige:** Max/Min/Durchschnitt Wasserstand, Gesamtenergie (Zeitraum), Hydro-Jahresertrag (extrapoliert) in MWh/a und kWh/Jahr
+- **Voraussetzung:** Wasserstandsdaten müssen importiert sein, Hydro-Kapazität muss im Projekt hinterlegt sein
+
+**Datenvorschau-Integration:** ✅
+- Alle Jahreserträge werden automatisch in der Datenvorschau angezeigt
+- Spezielle Statistik-Sektionen für PV, Wind und Hydro
+- Extrapolation basierend auf ausgewähltem Zeitraum
+- API-Integration: PV/Hydro-Kapazität wird automatisch aus dem Projekt geladen
+
+**Status:** ✅ Vollständig implementiert (PV-Jahresertrag, Wind-Jahresertrag, Hydro-Jahresertrag, Datenvorschau-Integration, Extrapolation)
 
 ---
 
@@ -501,11 +538,12 @@ def optimize_dispatch():
 - [x] **5. Optimierte Regelstrategien** (Mehrertrag +5-15%)
 - [x] **6. Extrempreis-Szenarien** (Realistische Arbitrage) ✅ Implementiert
 - [x] **7. GeoSphere-Wind-Integration** (Co-Location PV+Wind+BESS) ✅ Implementiert
+- [x] **8. Jahresertrag-Anzeige für Erneuerbare Energien** (PV/Wind/Hydro in Datenvorschau) ✅ Implementiert
 
 ### **🟢 Stufe 3 – Zukunft**
-- [ ] **8. LDES Modell** (Long Duration Storage)
-- [ ] **9. Nachhaltigkeit/CO₂ Kennzahlen** (Umweltbilanz)
-- [ ] **10. n8n-Integration** (Workflow-Automatisierung)
+- [ ] **9. LDES Modell** (Long Duration Storage)
+- [ ] **10. Nachhaltigkeit/CO₂ Kennzahlen** (Umweltbilanz)
+- [ ] **11. n8n-Integration** (Workflow-Automatisierung)
 
 ---
 

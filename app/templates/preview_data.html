@@ -27,20 +27,14 @@
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Datenart</label>
-                <select id="dataTypeSelect" onchange="loadDataPreview()" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <select id="dataTypeSelect" onchange="handleDataTypeChange()" class="w-full px-3 py-2 border border-gray-300 rounded-md">
                     <option value="">Bitte wählen...</option>
-                    <option value="load_profile">Lastprofile</option>
-                    <option value="water_level">Wasserstände</option>
-                    <option value="solar_radiation">PVGIS-Solardaten</option>
-                    <option value="pvsol_export">PV-Export</option>
-                    <option value="weather">Wetterdaten</option>
-                    <option value="wind">Winddaten (GeoSphere)</option>
-                    <option value="overlay">Last & Erzeugung Overlay</option>
+                    <!-- Optionen werden dynamisch über loadDataTypes() geladen -->
                 </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Zeitraum</label>
-                <select id="timeRangeSelect" onchange="loadDataPreview()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                <select id="timeRangeSelect" onchange="handleTimeRangeChange()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" disabled>
                     <option value="all">Alle Daten</option>
                     <option value="week">Letzte Woche</option>
                     <option value="month">Letzter Monat</option>
@@ -211,12 +205,19 @@ const dataTypes = {
         color: 'indigo',
         unit: 'kW',
         description: 'Windleistung und Windgeschwindigkeit (GeoSphere)'
+    },
+    'overlay': {
+        name: 'Last & Erzeugung Overlay',
+        icon: 'fas fa-layer-group',
+        color: 'purple',
+        unit: 'kW',
+        description: 'Kombinierte Ansicht von Last, PV-Erzeugung und Wasserkraft'
     }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
     loadProjects();
-    setupTimeRangeHandler();
+    // setupTimeRangeHandler() wird nicht mehr benötigt, da handleTimeRangeChange() direkt verwendet wird
 });
 
 function loadProjects() {
@@ -263,14 +264,74 @@ function loadDataTypes() {
         dataTypeSelect.appendChild(option);
     });
     
-    // Overlay-Option hinzufügen (nicht in dataTypes)
-    const overlayOption = document.createElement('option');
-    overlayOption.value = 'overlay';
-    overlayOption.textContent = 'Last & Erzeugung Overlay';
-    dataTypeSelect.appendChild(overlayOption);
+    // Overlay ist jetzt bereits in dataTypes enthalten, daher keine manuelle Hinzufügung mehr nötig
     
     dataTypeSelect.disabled = false;
     timeRangeSelect.disabled = false;
+    
+    // Daten NICHT automatisch laden - Benutzer soll zuerst Datenart und Zeitraum wählen
+}
+
+function handleDataTypeChange() {
+    const dataType = document.getElementById('dataTypeSelect').value;
+    const timeRange = document.getElementById('timeRangeSelect').value;
+    
+    if (!dataType) {
+        hideDataPreview();
+        return;
+    }
+    
+    // Nur automatisch laden wenn NICHT "Benutzerdefiniert" ausgewählt ist
+    // Bei "Benutzerdefiniert" muss der Benutzer zuerst die Datumsfelder prüfen/anpassen
+    if (timeRange !== 'custom') {
+        loadDataPreview();
+    } else {
+        // Bei "Benutzerdefiniert": Prüfe ob Datumsfelder gefüllt sind
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            // Datumsfelder sind gefüllt, lade Daten
+            loadDataPreview();
+        } else {
+            // Datumsfelder sind leer, zeige nur die Auswahl
+            hideDataPreview();
+        }
+    }
+}
+
+function handleTimeRangeChange() {
+    const timeRange = document.getElementById('timeRangeSelect').value;
+    const customTimeRange = document.getElementById('customTimeRange');
+    
+    if (timeRange === 'custom') {
+        customTimeRange.classList.remove('hidden');
+        // Setze Standard-Datumsbereich (letzter Monat) nur wenn noch nicht gesetzt
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        
+        if (!startDateInput.value || !endDateInput.value) {
+            const now = new Date();
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            const startDate = lastMonth.toISOString().slice(0, 16);
+            const endDate = now.toISOString().slice(0, 16);
+            
+            startDateInput.value = startDate;
+            endDateInput.value = endDate;
+        }
+        
+        // Bei Wechsel zu "Benutzerdefiniert": Lade Daten nur wenn Datenart bereits ausgewählt
+        const dataType = document.getElementById('dataTypeSelect').value;
+        if (dataType && currentProjectId && startDateInput.value && endDateInput.value) {
+            loadDataPreview();
+        }
+    } else {
+        customTimeRange.classList.add('hidden');
+        // Bei anderen Zeiträumen: Automatisch laden wenn Datenart bereits ausgewählt
+        const dataType = document.getElementById('dataTypeSelect').value;
+        if (dataType && currentProjectId) {
+            loadDataPreview();
+        }
+    }
 }
 
 function loadDataPreview() {
@@ -293,7 +354,9 @@ function loadDataPreview() {
         if (startDate && endDate) {
             timeParams = { start_date: startDate, end_date: endDate };
         } else {
+            // Wenn benutzerdefiniert, aber keine Daten eingegeben, nichts tun
             hideLoadingIndicator();
+            hideDataPreview();
             return;
         }
     } else {
@@ -334,7 +397,16 @@ function loadDataPreview() {
         } else {
             console.log('❌ Keine Daten gefunden oder API-Fehler');
             console.log('❌ API Response:', result);
-            showNoDataMessage();
+            
+            // Prüfe ob verfügbarer Zeitraum angegeben ist (für alle Datentypen inkl. Overlay)
+            if (result.available_range) {
+                showNoDataMessageWithRange(result.available_range, result.message);
+            } else if (result.message) {
+                // Zeige benutzerdefinierte Fehlermeldung wenn vorhanden
+                showNoDataMessageWithText(result.message);
+            } else {
+                showNoDataMessage();
+            }
         }
         hideLoadingIndicator();
     })
@@ -365,9 +437,63 @@ function showNoDataMessage() {
     `;
 }
 
+function showNoDataMessageWithRange(availableRange, message) {
+    document.getElementById('dataPreviewContainer').classList.add('hidden');
+    document.getElementById('noDataMessage').classList.remove('hidden');
+    
+    const minDate = new Date(availableRange.min).toLocaleDateString('de-DE');
+    const maxDate = new Date(availableRange.max).toLocaleDateString('de-DE');
+    
+    document.getElementById('noDataMessage').innerHTML = `
+        <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl mb-4"></i>
+        <h3 class="text-lg font-semibold text-yellow-800 mb-2">Keine Daten für den gewählten Zeitraum gefunden</h3>
+        <p class="text-yellow-700 mb-3">${message || 'Für den ausgewählten Zeitraum wurden keine Daten gefunden.'}</p>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+            <h4 class="text-md font-semibold text-blue-800 mb-2">
+                <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                Verfügbarer Zeitraum:
+            </h4>
+            <p class="text-blue-700">
+                <strong>Von:</strong> ${minDate}<br>
+                <strong>Bis:</strong> ${maxDate}<br>
+                <strong>Anzahl Datensätze:</strong> ${availableRange.count.toLocaleString('de-DE')}
+            </p>
+            <p class="text-sm text-blue-600 mt-2">
+                💡 Bitte wählen Sie einen Zeitraum innerhalb des verfügbaren Bereichs.
+            </p>
+        </div>
+    `;
+}
+
+function showNoDataMessageWithText(message) {
+    document.getElementById('dataPreviewContainer').classList.add('hidden');
+    document.getElementById('noDataMessage').classList.remove('hidden');
+    document.getElementById('noDataMessage').innerHTML = `
+        <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl mb-4"></i>
+        <h3 class="text-lg font-semibold text-yellow-800 mb-2">Keine Daten gefunden</h3>
+        <p class="text-yellow-700">${message || 'Für die ausgewählte Kombination wurden keine Daten gefunden.'}</p>
+    `;
+}
+
 function updateDataTypeInfo() {
     const config = dataTypes[currentDataType];
     const infoContainer = document.getElementById('dataTypeInfo');
+    
+    // Prüfe ob config vorhanden ist (für Overlay und andere spezielle Datentypen)
+    if (!config) {
+        console.warn(`⚠️ Keine Konfiguration für Datentyp: ${currentDataType}`);
+        // Fallback für unbekannte Datentypen
+        infoContainer.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-chart-line text-gray-600 text-2xl mr-3"></i>
+                <div>
+                    <h4 class="text-lg font-semibold text-gray-800">${currentDataType}</h4>
+                    <p class="text-gray-700">${currentData.length} Datensätze</p>
+                </div>
+            </div>
+        `;
+        return;
+    }
     
     infoContainer.innerHTML = `
         <div class="flex items-center">
@@ -390,6 +516,10 @@ function updateStatistics() {
     }
     
     const config = dataTypes[currentDataType];
+    if (!config) {
+        console.warn(`⚠️ Keine Konfiguration für Datentyp: ${currentDataType}`);
+        return;
+    }
     const values = currentData.map(item => parseFloat(item.value)).filter(v => !isNaN(v));
     
     const maxValue = Math.max(...values);
@@ -644,6 +774,10 @@ function updateChart() {
     }
     
     const config = dataTypes[currentDataType];
+    if (!config) {
+        console.warn(`⚠️ Keine Konfiguration für Datentyp: ${currentDataType}`);
+        return;
+    }
     const labels = currentData.map(item => new Date(item.timestamp).toLocaleString('de-DE'));
     const values = currentData.map(item => item.value);
     
@@ -690,6 +824,29 @@ function updateChart() {
             }
         }
     });
+}
+
+function getTimeRangeLabelForOverlay() {
+    const timeRange = document.getElementById('timeRangeSelect').value;
+    const timeRangeLabels = {
+        'all': 'Alle Daten',
+        'week': 'Letzte Woche',
+        'month': 'Letzter Monat',
+        'year': 'Letztes Jahr',
+        'custom': 'Benutzerdefiniert'
+    };
+    
+    if (timeRange === 'custom') {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            const start = new Date(startDate).toLocaleDateString('de-DE');
+            const end = new Date(endDate).toLocaleDateString('de-DE');
+            return `${start} - ${end}`;
+        }
+    }
+    
+    return timeRangeLabels[timeRange] || 'Unbekannt';
 }
 
 function updateOverlayChart() {
@@ -764,7 +921,7 @@ function updateOverlayChart() {
             plugins: {
                 title: {
                     display: true,
-                    text: `Last und Erzeugung - ${getTimeRangeLabel()}`
+                    text: `Last und Erzeugung - ${getTimeRangeLabelForOverlay()}`
                 },
                 legend: {
                     display: true,
@@ -819,6 +976,10 @@ function updateDataTable() {
     }
     
     const config = dataTypes[currentDataType];
+    if (!config) {
+        console.warn(`⚠️ Keine Konfiguration für Datentyp: ${currentDataType}`);
+        return;
+    }
     
     // Tabellen-Header
     const header = document.getElementById('tableHeader');
@@ -911,26 +1072,7 @@ function changePage(delta) {
     }
 }
 
-function setupTimeRangeHandler() {
-    const timeRangeSelect = document.getElementById('timeRangeSelect');
-    const customTimeRange = document.getElementById('customTimeRange');
-    
-    timeRangeSelect.addEventListener('change', function() {
-        if (this.value === 'custom') {
-            customTimeRange.classList.remove('hidden');
-            // Setze Standard-Datumsbereich (letzter Monat)
-            const now = new Date();
-            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-            const startDate = lastMonth.toISOString().slice(0, 16);
-            const endDate = now.toISOString().slice(0, 16);
-            
-            document.getElementById('startDate').value = startDate;
-            document.getElementById('endDate').value = endDate;
-        } else {
-            customTimeRange.classList.add('hidden');
-        }
-    });
-}
+// setupTimeRangeHandler() wurde entfernt - die Logik ist jetzt in handleTimeRangeChange()
 
 function handleCustomDateChange() {
     const startDate = document.getElementById('startDate').value;
