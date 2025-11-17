@@ -768,7 +768,11 @@ class EnhancedEconomicAnalyzer:
         # Use Cases erstellen
         bess_size_mwh = project_data.get('bess_size', 1000) / 1000  # kWh zu MWh
         bess_power_mw = project_data.get('bess_power', 500) / 1000  # kW zu MW
-        investment_costs = project_data.get('total_investment', 1000000)
+        total_investment = project_data.get('total_investment', 1000000)
+        # WICHTIG: Für ROI-Berechnung nur BESS-Investition verwenden
+        # (PV/Hydro haben eigene Erlöse, die nicht in BESS-Erlösen enthalten sind)
+        bess_investment = project_data.get('bess_investment', total_investment)
+        investment_costs = bess_investment  # Verwende nur BESS-Investition für ROI
         
         use_cases = []
         

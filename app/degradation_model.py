@@ -246,3 +246,6 @@ def create_standard_degradation_model(initial_capacity_kwh: float,
 
 
 
+
+
+

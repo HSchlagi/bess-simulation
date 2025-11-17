@@ -526,6 +526,21 @@ class MarketPriceConfig(db.Model):
     capacity_market_price = db.Column(db.Float)  # Kapazitätsmärkte
     flexibility_market_price = db.Column(db.Float)  # Flexibilitätsmärkte
     
+    # SRR-Preise (Sekundärregelreserve)
+    srl_negative_price = db.Column(db.Float)  # SRL- Preis (€/MW/h) - Leistungsvorhaltung negativ
+    srl_positive_price = db.Column(db.Float)  # SRL+ Preis (€/MW/h) - Leistungsvorhaltung positiv
+    sre_negative_price = db.Column(db.Float)  # SRE- Preis (€/MWh) - Aktivierungen negativ
+    sre_positive_price = db.Column(db.Float)  # SRE+ Preis (€/MWh) - Aktivierungen positiv
+    # Verfügbarkeitsanteile für SRL (0.0-1.0, z.B. 0.2347 = 23.47% der Zeit)
+    srl_negative_availability_share = db.Column(db.Float)  # SRL- Verfügbarkeitsanteil (z.B. 0.2347 = 23.47%)
+    srl_positive_availability_share = db.Column(db.Float)  # SRL+ Verfügbarkeitsanteil (z.B. 0.4506 = 45.06%)
+    # Aktivierungsanteile für SRE (0.0-1.0, z.B. 0.4518 = 45.18% der Zeit)
+    sre_negative_activation_share = db.Column(db.Float)  # SRE- Aktivierungsanteil (z.B. 0.4518 = 45.18%)
+    sre_positive_activation_share = db.Column(db.Float)  # SRE+ Aktivierungsanteil (z.B. 0.2785 = 27.85%)
+    # Legacy-Felder (für Rückwärtskompatibilität, werden nicht mehr verwendet)
+    sre_activation_energy_mwh = db.Column(db.Float)  # Aktivierungsenergie pro Jahr (MWh/Jahr) - DEPRECATED
+    srl_availability_hours = db.Column(db.Float)  # Verfügbarkeitsstunden für SRR pro Jahr - DEPRECATED
+    
     # Metadaten
     name = db.Column(db.String(100))  # Name der Konfiguration
     description = db.Column(db.Text)  # Beschreibung

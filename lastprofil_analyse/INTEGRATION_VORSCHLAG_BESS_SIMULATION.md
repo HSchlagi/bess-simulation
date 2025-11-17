@@ -824,3 +824,4 @@ numpy  # (bereits als pandas-Dependency vorhanden)
 **Viel Erfolg bei der Integration! 🚀**
 
 
+

@@ -2835,11 +2835,22 @@ def api_economic_analysis(project_id):
                 try:
                     from enhanced_economic_analysis import EnhancedEconomicAnalyzer
                     
+                    # BESS-Investitionskosten separat berechnen (für ROI-Berechnung)
+                    # WICHTIG: ROI sollte nur auf BESS-Investition basieren, da Use Cases hauptsächlich BESS-Erlöse berechnen
+                    bess_investment = sum(cost.cost_eur for cost in investment_costs if cost.component_type == 'bess')
+                    if bess_investment == 0:
+                        # Fallback: Schätze BESS-Investition basierend auf Größe/Leistung
+                        bess_size_mwh = (project.bess_size or 1000) / 1000
+                        bess_power_mw = (project.bess_power or 500) / 1000
+                        # Standardkosten: ~800 €/kWh für Kapazität + ~400 €/kW für Leistung
+                        bess_investment = (project.bess_size or 1000) * 800 + (project.bess_power or 500) * 400
+                    
                     # Projektdaten für erweiterte Analyse vorbereiten
                     project_data = {
                         'bess_size': project.bess_size or 1000,
                         'bess_power': project.bess_power or 500,
                         'total_investment': total_investment,
+                        'bess_investment': bess_investment,  # Nur BESS-Investition für ROI
                         'location': project.location or 'Unbekannt',
                         'pv_power': project.pv_power or 0,
                         'hydro_power': project.hydro_power or 0,
@@ -2967,11 +2978,22 @@ def api_enhanced_economic_analysis(project_id):
         investment_costs = InvestmentCost.query.filter_by(project_id=project_id).all()
         total_investment = sum(cost.cost_eur for cost in investment_costs)
         
+        # BESS-Investitionskosten separat berechnen (für ROI-Berechnung)
+        # WICHTIG: ROI sollte nur auf BESS-Investition basieren, da Use Cases hauptsächlich BESS-Erlöse berechnen
+        bess_investment = sum(cost.cost_eur for cost in investment_costs if cost.component_type == 'bess')
+        if bess_investment == 0:
+            # Fallback: Schätze BESS-Investition basierend auf Größe/Leistung
+            bess_size_mwh = (project.bess_size or 1000) / 1000
+            bess_power_mw = (project.bess_power or 500) / 1000
+            # Standardkosten: ~800 €/kWh für Kapazität + ~400 €/kW für Leistung
+            bess_investment = (project.bess_size or 1000) * 800 + (project.bess_power or 500) * 400
+        
         # Projektdaten für erweiterte Analyse vorbereiten
         project_data = {
             'bess_size': project.bess_size or 1000,
             'bess_power': project.bess_power or 500,
             'total_investment': total_investment,
+            'bess_investment': bess_investment,  # Nur BESS-Investition für ROI
             'location': project.location or 'Unbekannt',
             'pv_power': project.pv_power or 0,
             'hydro_power': project.hydro_power or 0,
@@ -5962,6 +5984,17 @@ def save_market_prices_api(project_id):
         config.frequency_regulation_price = data.get('frequency_regulation_price')
         config.capacity_market_price = data.get('capacity_market_price')
         config.flexibility_market_price = data.get('flexibility_market_price')
+        config.srl_negative_price = data.get('srl_negative_price')
+        config.srl_positive_price = data.get('srl_positive_price')
+        config.sre_negative_price = data.get('sre_negative_price')
+        config.sre_positive_price = data.get('sre_positive_price')
+        config.srl_negative_availability_share = data.get('srl_negative_availability_share')
+        config.srl_positive_availability_share = data.get('srl_positive_availability_share')
+        config.sre_negative_activation_share = data.get('sre_negative_activation_share')
+        config.sre_positive_activation_share = data.get('sre_positive_activation_share')
+        # Legacy-Felder (für Rückwärtskompatibilität)
+        config.sre_activation_energy_mwh = data.get('sre_activation_energy_mwh')
+        config.srl_availability_hours = data.get('srl_availability_hours')
         config.reference_year = data.get('reference_year')
         config.name = data.get('name', f'Marktpreise {project.name}')
         config.description = data.get('description', 'Projektspezifische Marktpreis-Konfiguration')
@@ -6015,6 +6048,17 @@ def save_global_market_prices_api():
         config.frequency_regulation_price = data.get('frequency_regulation_price')
         config.capacity_market_price = data.get('capacity_market_price')
         config.flexibility_market_price = data.get('flexibility_market_price')
+        config.srl_negative_price = data.get('srl_negative_price')
+        config.srl_positive_price = data.get('srl_positive_price')
+        config.sre_negative_price = data.get('sre_negative_price')
+        config.sre_positive_price = data.get('sre_positive_price')
+        config.srl_negative_availability_share = data.get('srl_negative_availability_share')
+        config.srl_positive_availability_share = data.get('srl_positive_availability_share')
+        config.sre_negative_activation_share = data.get('sre_negative_activation_share')
+        config.sre_positive_activation_share = data.get('sre_positive_activation_share')
+        # Legacy-Felder (für Rückwärtskompatibilität)
+        config.sre_activation_energy_mwh = data.get('sre_activation_energy_mwh')
+        config.srl_availability_hours = data.get('srl_availability_hours')
         config.reference_year = data.get('reference_year')
         config.name = data.get('name', 'Globale Standard-Marktpreise')
         config.description = data.get('description', 'Globale Standard-Konfiguration für alle Projekte')
@@ -6666,6 +6710,17 @@ def get_market_prices(project_id=None):
         'frequency_regulation_price': 0.30,  # Frequenzregelung (unverändert)
         'capacity_market_price': 0.18,  # Kapazitätsmärkte (unverändert)
         'flexibility_market_price': 0.22,  # Flexibilitätsmärkte (unverändert)
+        'srl_negative_price': 18.0,  # SRL- Preis (€/MW/h) - Standardwert
+        'srl_positive_price': 18.0,  # SRL+ Preis (€/MW/h) - Standardwert
+        'sre_negative_price': 80.0,  # SRE- Preis (€/MWh) - Standardwert
+        'sre_positive_price': 80.0,  # SRE+ Preis (€/MWh) - Standardwert
+        'srl_negative_availability_share': 0.2347,  # SRL- Verfügbarkeitsanteil (23.47%) - Standardwert
+        'srl_positive_availability_share': 0.4506,  # SRL+ Verfügbarkeitsanteil (45.06%) - Standardwert
+        'sre_negative_activation_share': 0.4518,  # SRE- Aktivierungsanteil (45.18%) - Standardwert
+        'sre_positive_activation_share': 0.2785,  # SRE+ Aktivierungsanteil (27.85%) - Standardwert
+        # Legacy-Felder (für Rückwärtskompatibilität)
+        'sre_activation_energy_mwh': 250.0,  # DEPRECATED - wird nicht mehr verwendet
+        'srl_availability_hours': 8000.0,  # DEPRECATED - wird nicht mehr verwendet
         'reference_year': current_year  # Bezugsjahr (Standard: aktuelles Jahr)
     }
     
@@ -6675,26 +6730,48 @@ def get_market_prices(project_id=None):
             project_config = MarketPriceConfig.query.filter_by(project_id=project_id).first()
             if project_config:
                 return {
-                    'spot_arbitrage_price': project_config.spot_arbitrage_price or default_prices['spot_arbitrage_price'],
-                    'intraday_trading_price': project_config.intraday_trading_price or default_prices['intraday_trading_price'],
-                    'balancing_energy_price': project_config.balancing_energy_price or default_prices['balancing_energy_price'],
-                    'frequency_regulation_price': project_config.frequency_regulation_price or default_prices['frequency_regulation_price'],
-                    'capacity_market_price': project_config.capacity_market_price or default_prices['capacity_market_price'],
-                    'flexibility_market_price': project_config.flexibility_market_price or default_prices['flexibility_market_price'],
-                    'reference_year': project_config.reference_year or default_prices['reference_year']
+                    'spot_arbitrage_price': project_config.spot_arbitrage_price if project_config.spot_arbitrage_price is not None else default_prices['spot_arbitrage_price'],
+                    'intraday_trading_price': project_config.intraday_trading_price if project_config.intraday_trading_price is not None else default_prices['intraday_trading_price'],
+                    'balancing_energy_price': project_config.balancing_energy_price if project_config.balancing_energy_price is not None else default_prices['balancing_energy_price'],
+                    'frequency_regulation_price': project_config.frequency_regulation_price if project_config.frequency_regulation_price is not None else default_prices['frequency_regulation_price'],
+                    'capacity_market_price': project_config.capacity_market_price if project_config.capacity_market_price is not None else default_prices['capacity_market_price'],
+                    'flexibility_market_price': project_config.flexibility_market_price if project_config.flexibility_market_price is not None else default_prices['flexibility_market_price'],
+                    'srl_negative_price': project_config.srl_negative_price if project_config.srl_negative_price is not None else default_prices['srl_negative_price'],
+                    'srl_positive_price': project_config.srl_positive_price if project_config.srl_positive_price is not None else default_prices['srl_positive_price'],
+                    'sre_negative_price': project_config.sre_negative_price if project_config.sre_negative_price is not None else default_prices['sre_negative_price'],
+                    'sre_positive_price': project_config.sre_positive_price if project_config.sre_positive_price is not None else default_prices['sre_positive_price'],
+                    'srl_negative_availability_share': project_config.srl_negative_availability_share if project_config.srl_negative_availability_share is not None else default_prices['srl_negative_availability_share'],
+                    'srl_positive_availability_share': project_config.srl_positive_availability_share if project_config.srl_positive_availability_share is not None else default_prices['srl_positive_availability_share'],
+                    'sre_negative_activation_share': project_config.sre_negative_activation_share if project_config.sre_negative_activation_share is not None else default_prices['sre_negative_activation_share'],
+                    'sre_positive_activation_share': project_config.sre_positive_activation_share if project_config.sre_positive_activation_share is not None else default_prices['sre_positive_activation_share'],
+                    # Override-Felder (NICHT mit Standardwerten füllen - nur wenn explizit gesetzt)
+                    'sre_activation_energy_mwh': project_config.sre_activation_energy_mwh,  # None wenn nicht gesetzt
+                    'srl_availability_hours': project_config.srl_availability_hours,  # None wenn nicht gesetzt
+                    'reference_year': project_config.reference_year if project_config.reference_year is not None else default_prices['reference_year']
                 }
         
         # Dann globale Standard-Konfiguration
         global_config = MarketPriceConfig.query.filter_by(project_id=None, is_default=True).first()
         if global_config:
             return {
-                'spot_arbitrage_price': global_config.spot_arbitrage_price or default_prices['spot_arbitrage_price'],
-                'intraday_trading_price': global_config.intraday_trading_price or default_prices['intraday_trading_price'],
-                'balancing_energy_price': global_config.balancing_energy_price or default_prices['balancing_energy_price'],
-                'frequency_regulation_price': global_config.frequency_regulation_price or default_prices['frequency_regulation_price'],
-                'capacity_market_price': global_config.capacity_market_price or default_prices['capacity_market_price'],
-                'flexibility_market_price': global_config.flexibility_market_price or default_prices['flexibility_market_price'],
-                'reference_year': global_config.reference_year or default_prices['reference_year']
+                'spot_arbitrage_price': global_config.spot_arbitrage_price if global_config.spot_arbitrage_price is not None else default_prices['spot_arbitrage_price'],
+                'intraday_trading_price': global_config.intraday_trading_price if global_config.intraday_trading_price is not None else default_prices['intraday_trading_price'],
+                'balancing_energy_price': global_config.balancing_energy_price if global_config.balancing_energy_price is not None else default_prices['balancing_energy_price'],
+                'frequency_regulation_price': global_config.frequency_regulation_price if global_config.frequency_regulation_price is not None else default_prices['frequency_regulation_price'],
+                'capacity_market_price': global_config.capacity_market_price if global_config.capacity_market_price is not None else default_prices['capacity_market_price'],
+                'flexibility_market_price': global_config.flexibility_market_price if global_config.flexibility_market_price is not None else default_prices['flexibility_market_price'],
+                'srl_negative_price': global_config.srl_negative_price if global_config.srl_negative_price is not None else default_prices['srl_negative_price'],
+                'srl_positive_price': global_config.srl_positive_price if global_config.srl_positive_price is not None else default_prices['srl_positive_price'],
+                'sre_negative_price': global_config.sre_negative_price if global_config.sre_negative_price is not None else default_prices['sre_negative_price'],
+                'sre_positive_price': global_config.sre_positive_price if global_config.sre_positive_price is not None else default_prices['sre_positive_price'],
+                'srl_negative_availability_share': global_config.srl_negative_availability_share if global_config.srl_negative_availability_share is not None else default_prices['srl_negative_availability_share'],
+                'srl_positive_availability_share': global_config.srl_positive_availability_share if global_config.srl_positive_availability_share is not None else default_prices['srl_positive_availability_share'],
+                'sre_negative_activation_share': global_config.sre_negative_activation_share if global_config.sre_negative_activation_share is not None else default_prices['sre_negative_activation_share'],
+                'sre_positive_activation_share': global_config.sre_positive_activation_share if global_config.sre_positive_activation_share is not None else default_prices['sre_positive_activation_share'],
+                # Override-Felder (NICHT mit Standardwerten füllen - nur wenn explizit gesetzt)
+                'sre_activation_energy_mwh': global_config.sre_activation_energy_mwh,  # None wenn nicht gesetzt
+                'srl_availability_hours': global_config.srl_availability_hours,  # None wenn nicht gesetzt
+                'reference_year': global_config.reference_year if global_config.reference_year is not None else default_prices['reference_year']
             }
     except Exception as e:
         print(f"⚠️ Fehler beim Laden der Marktpreis-Konfiguration: {e}")
@@ -6801,14 +6878,15 @@ def calculate_10_year_revenue_potential(project, use_case='hybrid'):
     sre_negative_ratio = 0.5
     sre_positive_ratio = 0.5
     
-    # SRR-Preise (€/MW/h) - basierend auf Dokumentation
-    srl_negative_price = 18.0  # €/MW/h
-    srl_positive_price = 18.0  # €/MW/h
-    sre_negative_price = 80.0  # €/MWh (Energiepreis)
-    sre_positive_price = 80.0  # €/MWh (Energiepreis)
+    # SRR-Preise aus Marktpreiskonfiguration laden (mit Fallback auf Standardwerte)
+    srl_negative_price = prices.get('srl_negative_price', 18.0)  # €/MW/h
+    srl_positive_price = prices.get('srl_positive_price', 18.0)  # €/MW/h
+    sre_negative_price = prices.get('sre_negative_price', 80.0)  # €/MWh (Energiepreis)
+    sre_positive_price = prices.get('sre_positive_price', 80.0)  # €/MWh (Energiepreis)
     
-    # Verfügbarkeitsstunden für SRR
-    availability_hours = 8000  # Stunden/Jahr
+    # Aktivierungsenergie und Verfügbarkeitsstunden aus Konfiguration
+    activation_energy_mwh_base = prices.get('sre_activation_energy_mwh', 250.0)  # MWh/Jahr
+    availability_hours = prices.get('srl_availability_hours', 8000.0)  # Stunden/Jahr
     
     # Ergebnisse für alle Jahre (10 Jahre ab Bezugsjahr)
     years = list(range(reference_year, reference_year + 11))  # Bezugsjahr bis Bezugsjahr+10
@@ -6842,18 +6920,49 @@ def calculate_10_year_revenue_potential(project, use_case='hybrid'):
         
         # === ERLÖSE SRR ===
         # SRL- (Sekundärregelenergie negativ - Leistungsvorhaltung)
-        srl_negative_revenue = bess_power_mw * availability_hours * srl_negative_price * srl_negative_ratio * degradation_factor
+        # Verfügbarkeitsanteile aus Konfiguration oder Override-Werte
+        hours_per_year = 8760
         
-        # SRL+ (Sekundärregelenergie positiv - Leistungsvorhaltung)
-        srl_positive_revenue = bess_power_mw * availability_hours * srl_positive_price * srl_positive_ratio * degradation_factor
+        # Prüfe ob Override-Werte (Verfügbarkeitsstunden) gesetzt sind
+        srl_availability_hours_override = prices.get('srl_availability_hours')
+        
+        if srl_availability_hours_override is not None and srl_availability_hours_override > 0:
+            # Override-Modus: Verwende feste Verfügbarkeitsstunden für beide
+            srl_negative_availability_hours = srl_availability_hours_override * degradation_factor
+            srl_positive_availability_hours = srl_availability_hours_override * degradation_factor
+        else:
+            # Dynamischer Modus: Verwende konfigurierbare Anteile
+            srl_negative_availability_share = prices.get('srl_negative_availability_share', 0.2347)  # ~23.5% der Zeit für SRL-
+            srl_positive_availability_share = prices.get('srl_positive_availability_share', 0.4506)  # ~45.1% der Zeit für SRL+
+            
+            srl_negative_availability_hours = hours_per_year * srl_negative_availability_share * degradation_factor
+            srl_positive_availability_hours = hours_per_year * srl_positive_availability_share * degradation_factor
+        
+        srl_negative_revenue = bess_power_mw * srl_negative_availability_hours * srl_negative_price * srl_negative_ratio
+        srl_positive_revenue = bess_power_mw * srl_positive_availability_hours * srl_positive_price * srl_positive_ratio
         
         # SRE- (Sekundärregelenergie negativ - Aktivierungen)
-        # Annahme: 250 MWh/Jahr Aktivierungen
-        activation_energy_mwh = 250 * degradation_factor
-        sre_negative_revenue = activation_energy_mwh * sre_negative_price * sre_negative_ratio
+        # Aktivierungsenergie wird dynamisch aus BESS-Leistung berechnet oder Override-Wert verwendet
+        hours_per_year = 8760
         
-        # SRE+ (Sekundärregelenergie positiv - Aktivierungen)
-        sre_positive_revenue = activation_energy_mwh * sre_positive_price * sre_positive_ratio
+        # Prüfe ob Override-Wert (Aktivierungsenergie) gesetzt ist
+        sre_activation_energy_override = prices.get('sre_activation_energy_mwh')
+        
+        if sre_activation_energy_override is not None and sre_activation_energy_override > 0:
+            # Override-Modus: Verwende feste Aktivierungsenergie für beide
+            activation_energy_negative_mwh = sre_activation_energy_override * degradation_factor
+            activation_energy_positive_mwh = sre_activation_energy_override * degradation_factor
+        else:
+            # Dynamischer Modus: Verwende konfigurierbare Aktivierungsanteile
+            sre_negative_activation_share = prices.get('sre_negative_activation_share', 0.4518)  # ~45% der Zeit für SRE-
+            sre_positive_activation_share = prices.get('sre_positive_activation_share', 0.2785)  # ~28% der Zeit für SRE+
+            
+            # Aktivierungsenergie für SRE- und SRE+ (unterschiedlich)
+            activation_energy_negative_mwh = bess_power_mw * sre_negative_activation_share * hours_per_year * degradation_factor
+            activation_energy_positive_mwh = bess_power_mw * sre_positive_activation_share * hours_per_year * degradation_factor
+        
+        sre_negative_revenue = activation_energy_negative_mwh * sre_negative_price * sre_negative_ratio
+        sre_positive_revenue = activation_energy_positive_mwh * sre_positive_price * sre_positive_ratio
         
         sum_srr_revenue = srl_negative_revenue + srl_positive_revenue + sre_negative_revenue + sre_positive_revenue
         

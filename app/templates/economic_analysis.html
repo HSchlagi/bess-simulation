@@ -141,6 +141,104 @@
                     </div>
                 </div>
                 
+                <!-- SRR-Preise (Sekundärregelreserve) -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h4 class="font-medium text-green-800 border-b border-green-200 pb-2 mb-4">SRR-Preise (Sekundärregelreserve)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- SRL-Preise (Leistungsvorhaltung) -->
+                        <div class="space-y-4">
+                            <h5 class="text-sm font-semibold text-gray-700 mb-3">SRL-Preise (Leistungsvorhaltung)</h5>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRL- Preis
+                                    <span class="text-xs text-gray-500 ml-1" title="Preis für Sekundärregelenergie negativ (Leistungsvorhaltung)">(Referenz: 18.0 €/MW/h)</span>
+                                </label>
+                                <input type="number" id="srlNegativePrice" step="0.1" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRL+ Preis
+                                    <span class="text-xs text-gray-500 ml-1" title="Preis für Sekundärregelenergie positiv (Leistungsvorhaltung)">(Referenz: 18.0 €/MW/h)</span>
+                                </label>
+                                <input type="number" id="srlPositivePrice" step="0.1" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRL- Verfügbarkeitsanteil
+                                    <span class="text-xs text-gray-500 ml-1" title="Anteil der Zeit für SRL- (z.B. 0.2347 = 23.47%)">(Referenz: 23.47%)</span>
+                                </label>
+                                <input type="number" id="srlNegativeAvailabilityShare" step="0.0001" min="0" max="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRL+ Verfügbarkeitsanteil
+                                    <span class="text-xs text-gray-500 ml-1" title="Anteil der Zeit für SRL+ (z.B. 0.4506 = 45.06%)">(Referenz: 45.06%)</span>
+                                </label>
+                                <input type="number" id="srlPositiveAvailabilityShare" step="0.0001" min="0" max="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Override-Option: Verfügbarkeitsstunden (optional) -->
+                            <div class="pt-2 border-t border-gray-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Verfügbarkeitsstunden (Override)
+                                    <span class="text-xs text-gray-500 ml-1" title="Wenn gesetzt, wird dieser Wert für beide SRL-Richtungen verwendet (überschreibt Anteile)">(Optional: Überschreibt Anteile)</span>
+                                </label>
+                                <input type="number" id="srlAvailabilityHours" step="100" min="0" placeholder="Leer lassen für dynamische Berechnung" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                            </div>
+                        </div>
+                        
+                        <!-- SRE-Preise (Aktivierungen) -->
+                        <div class="space-y-4">
+                            <h5 class="text-sm font-semibold text-gray-700 mb-3">SRE-Preise (Aktivierungen)</h5>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRE- Preis
+                                    <span class="text-xs text-gray-500 ml-1" title="Preis für Sekundärregelenergie negativ (Aktivierungen)">(Referenz: 80.0 €/MWh)</span>
+                                </label>
+                                <input type="number" id="sreNegativePrice" step="0.1" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRE+ Preis
+                                    <span class="text-xs text-gray-500 ml-1" title="Preis für Sekundärregelenergie positiv (Aktivierungen)">(Referenz: 80.0 €/MWh)</span>
+                                </label>
+                                <input type="number" id="srePositivePrice" step="0.1" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRE- Aktivierungsanteil
+                                    <span class="text-xs text-gray-500 ml-1" title="Aktivierungsanteil für SRE- (z.B. 0.4518 = 45.18%)">(Referenz: 45.18%)</span>
+                                </label>
+                                <input type="number" id="sreNegativeActivationShare" step="0.0001" min="0" max="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    SRE+ Aktivierungsanteil
+                                    <span class="text-xs text-gray-500 ml-1" title="Aktivierungsanteil für SRE+ (z.B. 0.2785 = 27.85%)">(Referenz: 27.85%)</span>
+                                </label>
+                                <input type="number" id="srePositiveActivationShare" step="0.0001" min="0" max="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <!-- Override-Option: Aktivierungsenergie (optional) -->
+                            <div class="pt-2 border-t border-gray-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Aktivierungsenergie (Override)
+                                    <span class="text-xs text-gray-500 ml-1" title="Wenn gesetzt, wird dieser Wert für beide SRE-Richtungen verwendet (überschreibt Anteile)">(Optional: Überschreibt Anteile, MWh/Jahr)</span>
+                                </label>
+                                <input type="number" id="sreActivationEnergyMwh" step="10" min="0" placeholder="Leer lassen für dynamische Berechnung" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Bezugsjahr-Auswahl -->
                 <div class="mt-6 pt-6 border-t border-gray-200">
                     <div class="mb-4">
@@ -1523,7 +1621,18 @@ function loadMarketPrices() {
                     balancing_energy_price: 0.0231,  // 0.25 * 0.0924 = 0.0231
                     frequency_regulation_price: 0.30,
                     capacity_market_price: 0.18,
-                    flexibility_market_price: 0.22
+                    flexibility_market_price: 0.22,
+                    srl_negative_price: 18.0,
+                    srl_positive_price: 18.0,
+                    sre_negative_price: 80.0,
+                    sre_positive_price: 80.0,
+                    srl_negative_availability_share: 0.2347,  // 23.47%
+                    srl_positive_availability_share: 0.4506,  // 45.06%
+                    sre_negative_activation_share: 0.4518,  // 45.18%
+                    sre_positive_activation_share: 0.2785,  // 27.85%
+                    // Legacy-Felder (für Rückwärtskompatibilität)
+                    sre_activation_energy_mwh: 250.0,
+                    srl_availability_hours: 8000.0
                 };
                 
                 // Werte in Formular eintragen (mit Standardwerten als Fallback)
@@ -1538,6 +1647,21 @@ function loadMarketPrices() {
                 document.getElementById('frequencyRegulationPrice').value = getValue(data.prices.frequency_regulation_price, defaultPrices.frequency_regulation_price);
                 document.getElementById('capacityMarketPrice').value = getValue(data.prices.capacity_market_price, defaultPrices.capacity_market_price);
                 document.getElementById('flexibilityMarketPrice').value = getValue(data.prices.flexibility_market_price, defaultPrices.flexibility_market_price);
+                document.getElementById('srlNegativePrice').value = getValue(data.prices.srl_negative_price, defaultPrices.srl_negative_price);
+                document.getElementById('srlPositivePrice').value = getValue(data.prices.srl_positive_price, defaultPrices.srl_positive_price);
+                document.getElementById('sreNegativePrice').value = getValue(data.prices.sre_negative_price, defaultPrices.sre_negative_price);
+                document.getElementById('srePositivePrice').value = getValue(data.prices.sre_positive_price, defaultPrices.sre_positive_price);
+                document.getElementById('srlNegativeAvailabilityShare').value = getValue(data.prices.srl_negative_availability_share, defaultPrices.srl_negative_availability_share);
+                document.getElementById('srlPositiveAvailabilityShare').value = getValue(data.prices.srl_positive_availability_share, defaultPrices.srl_positive_availability_share);
+                document.getElementById('sreNegativeActivationShare').value = getValue(data.prices.sre_negative_activation_share, defaultPrices.sre_negative_activation_share);
+                document.getElementById('srePositiveActivationShare').value = getValue(data.prices.sre_positive_activation_share, defaultPrices.sre_positive_activation_share);
+                // Override-Felder (optional)
+                if (document.getElementById('srlAvailabilityHours')) {
+                    document.getElementById('srlAvailabilityHours').value = getValue(data.prices.srl_availability_hours, '');
+                }
+                if (document.getElementById('sreActivationEnergyMwh')) {
+                    document.getElementById('sreActivationEnergyMwh').value = getValue(data.prices.sre_activation_energy_mwh, '');
+                }
                 
                 // Bezugsjahr setzen (Standard: aktuelles Jahr)
                 const referenceYearInput = document.getElementById('referenceYear');
@@ -1576,6 +1700,17 @@ document.getElementById('saveMarketPrices')?.addEventListener('click', function(
         frequency_regulation_price: parseFloat(document.getElementById('frequencyRegulationPrice').value) || null,
         capacity_market_price: parseFloat(document.getElementById('capacityMarketPrice').value) || null,
         flexibility_market_price: parseFloat(document.getElementById('flexibilityMarketPrice').value) || null,
+        srl_negative_price: parseFloat(document.getElementById('srlNegativePrice').value) || null,
+        srl_positive_price: parseFloat(document.getElementById('srlPositivePrice').value) || null,
+        sre_negative_price: parseFloat(document.getElementById('sreNegativePrice').value) || null,
+        sre_positive_price: parseFloat(document.getElementById('srePositivePrice').value) || null,
+        srl_negative_availability_share: parseFloat(document.getElementById('srlNegativeAvailabilityShare').value) || null,
+        srl_positive_availability_share: parseFloat(document.getElementById('srlPositiveAvailabilityShare').value) || null,
+        sre_negative_activation_share: parseFloat(document.getElementById('sreNegativeActivationShare').value) || null,
+        sre_positive_activation_share: parseFloat(document.getElementById('srePositiveActivationShare').value) || null,
+        // Override-Felder (optional - wenn gesetzt, überschreiben sie die Anteile)
+        srl_availability_hours: document.getElementById('srlAvailabilityHours')?.value ? parseFloat(document.getElementById('srlAvailabilityHours').value) : null,
+        sre_activation_energy_mwh: document.getElementById('sreActivationEnergyMwh')?.value ? parseFloat(document.getElementById('sreActivationEnergyMwh').value) : null,
         reference_year: referenceYear || null
     };
     
@@ -1626,6 +1761,21 @@ document.getElementById('resetMarketPrices')?.addEventListener('click', function
         document.getElementById('frequencyRegulationPrice').value = '0.30';
         document.getElementById('capacityMarketPrice').value = '0.18';
         document.getElementById('flexibilityMarketPrice').value = '0.22';
+        document.getElementById('srlNegativePrice').value = '18.0';
+        document.getElementById('srlPositivePrice').value = '18.0';
+        document.getElementById('sreNegativePrice').value = '80.0';
+        document.getElementById('srePositivePrice').value = '80.0';
+        document.getElementById('srlNegativeAvailabilityShare').value = '0.2347';
+        document.getElementById('srlPositiveAvailabilityShare').value = '0.4506';
+        document.getElementById('sreNegativeActivationShare').value = '0.4518';
+        document.getElementById('srePositiveActivationShare').value = '0.2785';
+        // Override-Felder zurücksetzen
+        if (document.getElementById('srlAvailabilityHours')) {
+            document.getElementById('srlAvailabilityHours').value = '';
+        }
+        if (document.getElementById('sreActivationEnergyMwh')) {
+            document.getElementById('sreActivationEnergyMwh').value = '';
+        }
         
         // Bezugsjahr auf aktuelles Jahr zurücksetzen
         const referenceYearInput = document.getElementById('referenceYear');
