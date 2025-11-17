@@ -82,6 +82,105 @@
             </div>
         </div>
 
+        <!-- Erweiterte Analyse (nur für Lastprofile) -->
+        <div id="advancedAnalysisContainer" class="hidden">
+            <!-- Basis-KPIs aus lastprofil_analyse -->
+            <div id="basicKPIsContainer" class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                    Erweiterte Kennzahlen
+                </h3>
+                <div id="basicKPIsGrid" class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <!-- Wird dynamisch gefüllt -->
+                </div>
+            </div>
+            
+            <!-- Tab-Navigation für verschiedene Analysen -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-wrap gap-2 mb-4 border-b border-gray-200">
+                    <button onclick="showAnalysisTab('ldc')" id="tab-ldc" class="px-4 py-2 bg-blue-600 text-white rounded-t-md hover:bg-blue-700 focus:outline-none">
+                        <i class="fas fa-chart-area mr-2"></i>Lastdauerlinie
+                    </button>
+                    <button onclick="showAnalysisTab('daily')" id="tab-daily" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-clock mr-2"></i>Tageslastgang
+                    </button>
+                    <button onclick="showAnalysisTab('weekday')" id="tab-weekday" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-calendar-week mr-2"></i>Wochentage
+                    </button>
+                    <button onclick="showAnalysisTab('seasonal')" id="tab-seasonal" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-calendar-alt mr-2"></i>Saisonal
+                    </button>
+                </div>
+                
+                <!-- Tab-Inhalte -->
+                <!-- Lastdauerlinie -->
+                <div id="content-ldc" class="analysis-tab-content">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-area text-indigo-600 mr-2"></i>
+                        Lastdauerlinie
+                    </h3>
+                    <div class="h-96">
+                        <canvas id="ldcChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Tageslastgang -->
+                <div id="content-daily" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-clock text-blue-600 mr-2"></i>
+                        Tageslastgang (24h-Profil)
+                    </h3>
+                    <div id="dailyProfileInfo" class="mb-4 text-sm text-gray-600">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <div class="h-96">
+                        <canvas id="dailyProfileChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Wochentags-Analyse -->
+                <div id="content-weekday" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-calendar-week text-green-600 mr-2"></i>
+                        Wochentags-Analyse
+                    </h3>
+                    <div id="weekdayInfo" class="mb-4 text-sm text-gray-600">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <div id="weekdayWeekSelector" class="mb-4 hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Woche auswählen:</label>
+                        <select id="weekSelect" onchange="updateWeekdayChart()" class="px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="all">Alle Wochen (Gesamt)</option>
+                        </select>
+                    </div>
+                    <div class="h-96">
+                        <canvas id="weekdayChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Saisonale Analyse -->
+                <div id="content-seasonal" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-calendar-alt text-orange-600 mr-2"></i>
+                        Saisonale Analyse
+                    </h3>
+                    <div id="seasonalInfo" class="mb-4 text-sm text-gray-600">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Ansicht:</label>
+                        <select id="seasonalViewSelect" onchange="updateSeasonalChart()" class="px-3 py-2 border border-gray-300 rounded-md">
+                            <option value="monthly">Monatlich</option>
+                            <option value="quarterly">Quartalsweise</option>
+                        </select>
+                    </div>
+                    <div class="h-96">
+                        <canvas id="seasonalChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Visualisierung -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <h3 class="text-lg font-semibold text-gray-800 mb-4">
@@ -221,21 +320,56 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadProjects() {
+    const select = document.getElementById('projectSelect');
+    if (!select) {
+        console.error('❌ projectSelect Element nicht gefunden!');
+        return;
+    }
+    
+    console.log('📡 Lade Projekte von /api/projects...');
+    
     fetch('/api/projects')
-        .then(response => response.json())
+        .then(response => {
+            console.log('📡 Response Status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(projects => {
-            const select = document.getElementById('projectSelect');
+            console.log('📡 Projekte erhalten:', projects);
+            if (!Array.isArray(projects)) {
+                console.error('❌ Projekte ist kein Array:', projects);
+                return;
+            }
+            
             select.innerHTML = '<option value="">Projekt auswählen...</option>';
             
-            projects.forEach(project => {
+            if (projects.length === 0) {
+                console.warn('⚠️ Keine Projekte gefunden');
                 const option = document.createElement('option');
-                option.value = project.id;
-                option.textContent = project.name;
+                option.value = '';
+                option.textContent = 'Keine Projekte verfügbar';
                 select.appendChild(option);
+                return;
+            }
+            
+            projects.forEach(project => {
+                if (project && project.id && project.name) {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    select.appendChild(option);
+                } else {
+                    console.warn('⚠️ Ungültiges Projekt-Objekt:', project);
+                }
             });
+            
+            console.log(`✅ ${projects.length} Projekt(e) geladen`);
         })
         .catch(error => {
-            console.error('Fehler beim Laden der Projekte:', error);
+            console.error('❌ Fehler beim Laden der Projekte:', error);
+            select.innerHTML = '<option value="">Fehler beim Laden</option>';
         });
 }
 
@@ -394,6 +528,13 @@ function loadDataPreview() {
             updateStatistics();
             updateChart();
             updateDataTable();
+            
+            // Erweiterte Analyse für Lastprofile laden
+            if (currentDataType === 'load_profile') {
+                loadAdvancedAnalysis();
+            } else {
+                hideAdvancedAnalysis();
+            }
         } else {
             console.log('❌ Keine Daten gefunden oder API-Fehler');
             console.log('❌ API Response:', result);
@@ -1147,6 +1288,668 @@ function hideLoadingIndicator() {
         button.innerHTML = '<i class="fas fa-search mr-2"></i>Daten laden';
         button.disabled = false;
     }
+}
+
+// Erweiterte Analyse für Lastprofile
+let ldcChart = null;
+let dailyProfileChart = null;
+let weekdayChart = null;
+let seasonalChart = null;
+let currentAnalysisData = null;
+
+async function loadAdvancedAnalysis() {
+    if (!currentProjectId || currentDataType !== 'load_profile') {
+        hideAdvancedAnalysis();
+        return;
+    }
+    
+    const timeParams = {};
+    const timeRange = document.getElementById('timeRangeSelect').value;
+    
+    if (timeRange === 'custom') {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (startDate && endDate) {
+            timeParams.start_date = startDate;
+            timeParams.end_date = endDate;
+        }
+    } else {
+        timeParams.time_range = timeRange;
+    }
+    
+    try {
+        const response = await fetch(`/api/projects/${currentProjectId}/data/load_profile/analysis`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                ...timeParams,
+                analysis_types: ['all']
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            displayAdvancedAnalysis(result.data);
+        } else {
+            console.warn('⚠️ Erweiterte Analyse nicht verfügbar:', result.error || 'Unbekannter Fehler');
+            hideAdvancedAnalysis();
+        }
+    } catch (error) {
+        console.error('❌ Fehler beim Laden der erweiterten Analyse:', error);
+        hideAdvancedAnalysis();
+    }
+}
+
+function displayAdvancedAnalysis(data) {
+    // Erweiterte Analyse-Sektion anzeigen
+    document.getElementById('advancedAnalysisContainer').classList.remove('hidden');
+    
+    // Daten speichern für Tab-Wechsel
+    currentAnalysisData = data;
+    
+    // Basis-KPIs anzeigen
+    if (data.basic_kpis) {
+        const kpis = data.basic_kpis;
+        const kpisGrid = document.getElementById('basicKPIsGrid');
+        kpisGrid.innerHTML = `
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${(kpis.E_jahr_kWh / 1000).toFixed(2)} MWh</div>
+                <div class="text-sm text-gray-600">Jahresenergie</div>
+                <div class="text-xs text-gray-500 mt-1">${kpis.E_jahr_kWh.toFixed(0)} kWh</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-600">${kpis.P_max_kW.toFixed(2)} kW</div>
+                <div class="text-sm text-gray-600">Max. Leistung</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">${kpis.P_mean_kW.toFixed(2)} kW</div>
+                <div class="text-sm text-gray-600">Ø Leistung</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">${(kpis.Lastfaktor * 100).toFixed(1)}%</div>
+                <div class="text-sm text-gray-600">Lastfaktor</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-orange-600">${kpis.Benutzungsdauer_h.toFixed(0)} h</div>
+                <div class="text-sm text-gray-600">Vollbenutzungsstunden</div>
+            </div>
+        `;
+    }
+    
+    // Standard-Tab: Lastdauerlinie
+    showAnalysisTab('ldc');
+    
+    // Alle verfügbaren Analysen rendern
+    if (data.load_duration_curve && data.load_duration_curve.length > 0) {
+        renderLoadDurationCurve(data.load_duration_curve);
+    }
+    
+    if (data.analyses && data.analyses.daily_profile) {
+        renderDailyProfileChart(data.analyses.daily_profile);
+    }
+    
+    if (data.analyses && data.analyses.weekday_analysis) {
+        renderWeekdayChart(data.analyses.weekday_analysis);
+    }
+    
+    if (data.analyses && data.analyses.seasonal_analysis) {
+        renderSeasonalChart(data.analyses.seasonal_analysis);
+    }
+}
+
+function showAnalysisTab(tabName) {
+    // Alle Tabs verstecken
+    document.querySelectorAll('.analysis-tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Alle Tab-Buttons zurücksetzen
+    document.querySelectorAll('[id^="tab-"]').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-gray-200', 'text-gray-700');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById(`content-${tabName}`).classList.remove('hidden');
+    const tabBtn = document.getElementById(`tab-${tabName}`);
+    if (tabBtn) {
+        tabBtn.classList.remove('bg-gray-200', 'text-gray-700');
+        tabBtn.classList.add('bg-blue-600', 'text-white');
+    }
+}
+
+function hideAdvancedAnalysis() {
+    document.getElementById('advancedAnalysisContainer').classList.add('hidden');
+    if (ldcChart) {
+        ldcChart.destroy();
+        ldcChart = null;
+    }
+    if (dailyProfileChart) {
+        dailyProfileChart.destroy();
+        dailyProfileChart = null;
+    }
+    if (weekdayChart) {
+        weekdayChart.destroy();
+        weekdayChart = null;
+    }
+    if (seasonalChart) {
+        seasonalChart.destroy();
+        seasonalChart = null;
+    }
+    currentAnalysisData = null;
+}
+
+function renderLoadDurationCurve(ldc) {
+    const ctx = document.getElementById('ldcChart');
+    if (!ctx) return;
+    
+    // Alten Chart zerstören falls vorhanden
+    if (ldcChart) {
+        ldcChart.destroy();
+    }
+    
+    const hours = ldc.map(p => p.hours);
+    const power = ldc.map(p => p.P_kW);
+    
+    ldcChart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: hours.map(h => h.toFixed(1)),
+            datasets: [{
+                label: 'Lastdauerlinie (kW)',
+                data: power,
+                borderColor: 'rgba(168, 85, 247, 1)',
+                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Stunden (kumuliert)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Leistung: ${context.parsed.y.toFixed(2)} kW`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderDailyProfileChart(data) {
+    const ctx = document.getElementById('dailyProfileChart');
+    if (!ctx) return;
+    
+    // Alten Chart zerstören falls vorhanden
+    if (dailyProfileChart) {
+        dailyProfileChart.destroy();
+    }
+    
+    const hours = data.hours.map(h => h.hour);
+    const power = data.hours.map(h => h.P_avg_kW);
+    
+    // Info-Box aktualisieren
+    const infoDiv = document.getElementById('dailyProfileInfo');
+    if (infoDiv) {
+        const peakHoursStr = data.peak_hours.map(h => `${h}:00`).join(', ');
+        const lowHoursStr = data.low_hours.map(h => `${h}:00`).join(', ');
+        const dayTypeInfo = data.day_type ? `<div class="col-span-2 md:col-span-4 mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
+            <span class="font-semibold text-blue-800">📅 Dargestellter Zeitraum:</span> 
+            <span class="text-blue-700">${data.day_type || 'Alle Tage'}</span>
+            ${data.num_days ? `<span class="text-blue-600 ml-2">(${data.num_days} ${data.num_days === 1 ? 'Tag' : 'Tage'})</span>` : ''}
+            ${data.date_range ? `<span class="text-blue-600 ml-2">• ${data.date_range}</span>` : ''}
+        </div>` : '';
+        
+        infoDiv.innerHTML = `
+            ${dayTypeInfo}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <span class="font-semibold">Peak-Zeit:</span> ${data.max_hour}:00 Uhr (${data.max_value_kW.toFixed(2)} kW)
+                </div>
+                <div>
+                    <span class="font-semibold">Tiefzeit:</span> ${data.min_hour}:00 Uhr (${data.min_value_kW.toFixed(2)} kW)
+                </div>
+                <div>
+                    <span class="font-semibold">Peak-Stunden:</span> ${peakHoursStr || 'Keine'}
+                </div>
+                <div>
+                    <span class="font-semibold">Tief-Stunden:</span> ${lowHoursStr || 'Keine'}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Gesamtdurchschnitt für Trendlinie
+    const overallAvg = data.overall_avg_kW || data.avg_value_kW || 0.0;
+    
+    dailyProfileChart = new Chart(ctx.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: hours.map(h => `${h}:00`),
+            datasets: [
+                {
+                    label: 'Durchschnittliche Last (kW)',
+                    data: power,
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                },
+                {
+                    label: 'Gesamtdurchschnitt',
+                    data: Array(24).fill(overallAvg),
+                    borderColor: 'rgba(99, 102, 241, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Stunde des Tages'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+}
+
+// Globale Variable für Wochentags-Daten (für Wochenauswahl)
+let weekdayAnalysisData = null;
+
+function renderWeekdayChart(data) {
+    const ctx = document.getElementById('weekdayChart');
+    if (!ctx) return;
+    
+    // Daten speichern für Wochenauswahl
+    weekdayAnalysisData = data;
+    
+    // Alten Chart zerstören falls vorhanden
+    if (weekdayChart) {
+        weekdayChart.destroy();
+    }
+    
+    // Wochenauswahl-Dropdown befüllen (wenn mehrere Wochen vorhanden)
+    const weekSelector = document.getElementById('weekdayWeekSelector');
+    const weekSelect = document.getElementById('weekSelect');
+    
+    if (weekSelector && weekSelect && data.weeks && Object.keys(data.weeks).length > 1) {
+        // Mehrere Wochen vorhanden - Dropdown anzeigen
+        weekSelector.classList.remove('hidden');
+        
+        // Optionen befüllen
+        weekSelect.innerHTML = '<option value="all">Alle Wochen (Gesamt)</option>';
+        Object.keys(data.weeks).forEach((weekKey, index) => {
+            const week = data.weeks[weekKey];
+            if (week && week.week_label) {
+                const option = document.createElement('option');
+                option.value = weekKey;
+                option.textContent = `Woche ${index + 1}: ${week.week_label}`;
+                weekSelect.appendChild(option);
+            }
+        });
+    } else if (weekSelector) {
+        // Nur eine Woche oder keine Wochen-Daten - Dropdown verstecken
+        weekSelector.classList.add('hidden');
+    }
+    
+    // Standard: Alle Wochen anzeigen
+    updateWeekdayChart();
+}
+
+function updateWeekdayChart() {
+    if (!weekdayAnalysisData) {
+        console.warn('⚠️ Keine Wochentags-Daten verfügbar für updateWeekdayChart()');
+        return;
+    }
+    
+    const ctx = document.getElementById('weekdayChart');
+    if (!ctx) {
+        console.warn('⚠️ weekdayChart Canvas-Element nicht gefunden');
+        return;
+    }
+    
+    const weekSelect = document.getElementById('weekSelect');
+    const selectedWeek = weekSelect ? weekSelect.value : 'all';
+    
+    const weekdayNames = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+    
+    let meanValues, maxValues, workdayAvg, weekendAvg, overallAvg;
+    
+    if (selectedWeek === 'all' || !weekdayAnalysisData.weeks || !weekdayAnalysisData.weeks[selectedWeek]) {
+        // Alle Wochen (Gesamt)
+        meanValues = weekdayNames.map(name => {
+            if (weekdayAnalysisData.weekdays && weekdayAnalysisData.weekdays[name]) {
+                return weekdayAnalysisData.weekdays[name].mean_kW || 0.0;
+            }
+            return 0.0;
+        });
+        
+        maxValues = weekdayNames.map(name => {
+            if (weekdayAnalysisData.weekdays && weekdayAnalysisData.weekdays[name]) {
+                return weekdayAnalysisData.weekdays[name].max_kW || 0.0;
+            }
+            return 0.0;
+        });
+        
+        workdayAvg = weekdayAnalysisData.workday_avg_kW || 0.0;
+        weekendAvg = weekdayAnalysisData.weekend_avg_kW || 0.0;
+        overallAvg = weekdayAnalysisData.overall_avg_kW || 0.0;
+    } else {
+        // Spezifische Woche
+        const weekData = weekdayAnalysisData.weeks[selectedWeek];
+        meanValues = weekdayNames.map(name => {
+            if (weekData.weekdays && weekData.weekdays[name]) {
+                return weekData.weekdays[name].mean_kW || 0.0;
+            }
+            return 0.0;
+        });
+        
+        maxValues = weekdayNames.map(name => {
+            if (weekData.weekdays && weekData.weekdays[name]) {
+                return weekData.weekdays[name].max_kW || 0.0;
+            }
+            return 0.0;
+        });
+        
+        workdayAvg = weekData.workday_avg_kW || 0.0;
+        weekendAvg = weekData.weekend_avg_kW || 0.0;
+        overallAvg = meanValues.reduce((a, b) => a + b, 0) / meanValues.length;
+    }
+    
+    // Info-Box aktualisieren
+    const infoDiv = document.getElementById('weekdayInfo');
+    if (infoDiv) {
+        const daysWithoutData = weekdayNames.filter((name, idx) => meanValues[idx] === 0 && maxValues[idx] === 0);
+        let missingDaysInfo = '';
+        if (daysWithoutData.length > 0) {
+            missingDaysInfo = `<div class="col-span-2 md:col-span-3 mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
+                <span class="font-semibold text-yellow-800">⚠️ Keine Daten für:</span> 
+                <span class="text-yellow-700">${daysWithoutData.join(', ')}</span>
+            </div>`;
+        }
+        
+        const weekendDrop = workdayAvg > 0 ? ((1 - weekendAvg / workdayAvg) * 100).toFixed(1) : 0.0;
+        infoDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                    <span class="font-semibold">Werktage Ø:</span> ${workdayAvg.toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Wochenende Ø:</span> ${weekendAvg.toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Wochenende-Drop:</span> ${weekendDrop}%
+                </div>
+            </div>
+            ${missingDaysInfo}
+        `;
+    }
+    
+    // Alten Chart zerstören falls vorhanden
+    if (weekdayChart) {
+        weekdayChart.destroy();
+    }
+    
+    weekdayChart = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: weekdayNames,
+            datasets: [
+                {
+                    label: 'Durchschnitt (kW)',
+                    data: meanValues,
+                    backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Maximum (kW)',
+                    data: maxValues,
+                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Gesamtdurchschnitt',
+                    data: Array(7).fill(overallAvg),
+                    type: 'line',
+                    borderColor: 'rgba(99, 102, 241, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Wochentag'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    },
+                    beginAtZero: true,
+                    // Sicherstellen, dass auch 0-Werte sichtbar sind
+                    ticks: {
+                        min: 0,
+                        stepSize: 10
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            if (value === 0) {
+                                return `${context.dataset.label}: 0 kW (keine Daten)`;
+                            }
+                            return `${context.dataset.label}: ${value.toFixed(2)} kW`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderSeasonalChart(data) {
+    updateSeasonalChart();
+}
+
+function updateSeasonalChart() {
+    if (!currentAnalysisData || !currentAnalysisData.analyses || !currentAnalysisData.analyses.seasonal_analysis) {
+        return;
+    }
+    
+    const data = currentAnalysisData.analyses.seasonal_analysis;
+    const ctx = document.getElementById('seasonalChart');
+    if (!ctx) return;
+    
+    // Alten Chart zerstören falls vorhanden
+    if (seasonalChart) {
+        seasonalChart.destroy();
+    }
+    
+    const seasonalViewSelect = document.getElementById('seasonalViewSelect');
+    if (!seasonalViewSelect) return;
+    const viewType = seasonalViewSelect.value;
+    
+    let labels, meanValues, maxValues, minValues;
+    
+    if (viewType === 'monthly') {
+        const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                           'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+        labels = monthNames;
+        meanValues = monthNames.map(name => (data.monthly && data.monthly[name]) ? data.monthly[name].mean_kW : 0.0);
+        maxValues = monthNames.map(name => (data.monthly && data.monthly[name]) ? data.monthly[name].max_kW : 0.0);
+        minValues = monthNames.map(name => (data.monthly && data.monthly[name]) ? data.monthly[name].min_kW : 0.0);
+    } else {
+        const quarterNames = ['Q1 (Jan-Mär)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Okt-Dez)'];
+        labels = quarterNames;
+        meanValues = quarterNames.map(name => (data.quarterly && data.quarterly[name]) ? data.quarterly[name].mean_kW : 0.0);
+        maxValues = quarterNames.map(name => (data.quarterly && data.quarterly[name]) ? data.quarterly[name].max_kW : 0.0);
+        minValues = quarterNames.map(name => (data.quarterly && data.quarterly[name]) ? data.quarterly[name].min_kW : 0.0);
+    }
+    
+    // Info-Box aktualisieren
+    const infoDiv = document.getElementById('seasonalInfo');
+    if (infoDiv && data) {
+        const winterAvg = data.winter_avg_kW || 0.0;
+        const summerAvg = data.summer_avg_kW || 0.0;
+        const seasonalVar = data.seasonal_variation_percent || 0.0;
+        infoDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div>
+                    <span class="font-semibold">Winter Ø:</span> ${winterAvg.toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Sommer Ø:</span> ${summerAvg.toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Saisonale Variation:</span> ${seasonalVar.toFixed(1)}%
+                </div>
+            </div>
+        `;
+    }
+    
+    // Gesamtdurchschnitt für Trendlinie
+    const overallAvg = data.overall_avg_kW || 0.0;
+    
+    // Alten Chart zerstören falls vorhanden
+    if (seasonalChart) {
+        seasonalChart.destroy();
+    }
+    
+    seasonalChart = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Durchschnitt (kW)',
+                    data: meanValues,
+                    backgroundColor: 'rgba(245, 158, 11, 0.6)',
+                    borderColor: 'rgba(245, 158, 11, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Maximum (kW)',
+                    data: maxValues,
+                    backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                    borderColor: 'rgba(239, 68, 68, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Minimum (kW)',
+                    data: minValues,
+                    backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                    borderColor: 'rgba(59, 130, 246, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Gesamtdurchschnitt',
+                    data: Array(labels.length).fill(overallAvg),
+                    type: 'line',
+                    borderColor: 'rgba(99, 102, 241, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    tension: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: viewType === 'monthly' ? 'Monat' : 'Quartal'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
 }
 </script>
 {% endblock %} 

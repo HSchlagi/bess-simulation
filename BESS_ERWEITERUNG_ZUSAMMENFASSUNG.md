@@ -651,6 +651,213 @@ class APGDataFetcher:
 
 ---
 
+---
+
+## 📊 **Lastprofil-Analyse Integration (Erweiterte Datenvorschau)**
+
+### **Ziel:**
+Integration des `lastprofil_analyse`-Pakets in die Datenvorschau (`/preview_data`) mit erweiterten Auswertungsfunktionen für Lastprofile.
+
+### **Vorhandene Komponenten (aus `lastprofil_analyse`):**
+- ✅ **CSV-Loader** (`analysis/loader.py`): Lädt Lastprofile aus CSV/Excel
+- ✅ **Basis-KPIs** (`analysis/kpi.py`):
+  - Jahresenergie `E_jahr_kWh`
+  - Maximale Leistung `P_max_kW`
+  - Mittlere Leistung `P_mean_kW`
+  - Lastfaktor
+  - Benutzungsdauer (Vollbenutzungsstunden)
+- ✅ **Lastdauerlinie** (`load_duration_curve`): Sortierte Leistungen für Visualisierung
+
+---
+
+## 🚀 **Implementierungsplan - Lastprofil-Analyse**
+
+### **Phase 1: Basis-Integration (1-2 Tage)**
+- [x] `lastprofil_analyse`-Module in Flask-Backend integrieren
+  - [x] Neue Datei `app/analysis/lastprofil_analysis.py` erstellen
+  - [x] Import-Pfade für `lastprofil_analyse`-Module konfigurieren
+  - [x] `calc_basic_kpis` und `load_duration_curve` importieren
+- [x] Basis-KPIs und Lastdauerlinie in Datenvorschau anzeigen
+  - [x] API-Endpunkt `/api/projects/<id>/data/load_profile/analysis` erstellen
+  - [x] Frontend: Basis-KPIs in bestehende Statistik-Sektion integrieren
+  - [x] Frontend: Lastdauerlinie als neues Chart hinzufügen
+- [ ] API-Endpunkt testen und validieren
+  - [ ] Unit-Tests für Analyse-Funktionen
+  - [ ] Integrationstests für API-Endpunkt
+
+---
+
+### **Phase 2: Zeitbasierte Analysen (2-3 Tage)**
+
+#### **2.1 Tageslastgang-Analyse (24h-Profil)**
+- [x] Backend: Funktion `calc_daily_profile()` implementieren
+  - [x] Durchschnittliche Last pro Stunde (0-23) berechnen
+  - [x] Peak- und Tiefzeiten identifizieren
+  - [x] JSON-Response für Frontend formatieren
+  - [x] Anzeige, welche Tage verwendet wurden (Werktage, Wochenende, alle)
+- [x] Frontend: Tageslastgang-Chart implementieren
+  - [x] Chart.js: Linienchart mit 24 Stunden auf X-Achse
+  - [x] Markierung von Peak-Zeiten (z.B. 8-10 Uhr, 18-20 Uhr)
+  - [x] Vergleich mit BESS-Lade-/Entladezeiten (optional)
+- [x] API-Integration: Tageslastgang in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `calc_daily_profile()`
+
+#### **2.2 Wochentags-Analyse**
+- [x] Backend: Funktion `calc_weekday_analysis()` implementieren
+  - [x] Durchschnittswerte pro Wochentag berechnen
+  - [x] Vergleich Werktage vs. Wochenende
+  - [x] JSON-Response formatieren
+  - [x] Sicherstellen, dass alle 7 Wochentage immer vorhanden sind (auch mit 0-Werten)
+- [x] Frontend: Wochentags-Chart implementieren
+  - [x] Chart.js: Balkendiagramm mit 7 Balken (Mo-So)
+  - [x] Vergleichs-Kennzahl: Werktage vs. Wochenende
+  - [x] Warnung, wenn keine Daten für einen Wochentag vorhanden sind
+  - [x] Y-Achse beginnt bei 0, Tooltip für 0-Werte
+- [x] API-Integration: Wochentags-Analyse in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `calc_weekday_analysis()`
+
+#### **2.3 Monatliche/Quartals-Analyse**
+- [x] Backend: Funktion `calc_seasonal_analysis()` implementieren
+  - [x] Durchschnittswerte pro Monat berechnen
+  - [x] Durchschnittswerte pro Quartal berechnen
+  - [x] Saisonale Muster (Winter vs. Sommer) identifizieren
+  - [x] JSON-Response formatieren
+- [x] Frontend: Saisonale Charts implementieren
+  - [x] Chart.js: Balkendiagramm mit 12 Monaten
+  - [x] Saisonale Vergleichs-Kennzahlen (Winter/Sommer)
+  - [x] Dropdown zum Wechseln zwischen Monats- und Quartalsansicht
+- [x] API-Integration: Saisonale Analyse in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `calc_seasonal_analysis()`
+
+---
+
+### **Phase 3: Statistische & BESS-spezifische Analysen (3-4 Tage)**
+
+#### **3.1 Lastspitzen-Analyse**
+- [ ] Backend: Funktion `calc_peak_analysis()` implementieren
+  - [ ] Top-N Lastspitzen identifizieren (Standard: Top 10)
+  - [ ] Peak-Dauer berechnen (wie lange über 90% des Maximums)
+  - [ ] Peak-Häufigkeit zählen
+  - [ ] JSON-Response mit Peak-Informationen formatieren
+- [ ] Frontend: Peak-Visualisierung implementieren
+  - [ ] Markierung der Top-10 Peaks im Hauptchart
+  - [ ] Kennzahl-Karte: Peak-Dauer in Stunden
+  - [ ] Tooltip: Zeigt Peak-Zeitpunkt beim Hover
+- [ ] API-Integration: Peak-Analyse in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `calc_peak_analysis()`
+
+#### **3.2 Energieverteilung (Histogramm)**
+- [ ] Backend: Funktion `calc_load_distribution()` implementieren
+  - [ ] Häufigkeitsverteilung der Lastwerte berechnen
+  - [ ] Perzentile berechnen (P10, P25, P50, P75, P90, P95, P99)
+  - [ ] Histogramm-Daten für Chart.js formatieren
+- [ ] Frontend: Histogramm-Chart implementieren
+  - [ ] Chart.js: Bar-Chart (Histogramm)
+  - [ ] Perzentil-Markierungen (P50, P90, P95)
+- [ ] API-Integration: Verteilungs-Analyse in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `calc_load_distribution()`
+
+#### **3.3 Erweiterte Lastfaktor-Analyse**
+- [ ] Backend: Funktion `calc_extended_load_factor()` implementieren
+  - [ ] Lastfaktor (Durchschnitt / Maximum) berechnen
+  - [ ] Auslastungsgrad (wie oft > 80% des Maximums) berechnen
+  - [ ] Vollbenutzungsstunden berechnen
+  - [ ] Variationskoeffizient berechnen
+- [ ] Frontend: Erweiterte Kennzahlen-Karten implementieren
+  - [ ] Vergleich: Lastfaktor vs. Auslastungsgrad
+  - [ ] Vollbenutzungsstunden anzeigen
+- [ ] API-Integration: Erweiterte Lastfaktor-Analyse einbinden
+- [ ] Tests: Unit-Tests für `calc_extended_load_factor()`
+
+#### **3.4 BESS-Potenzial-Analyse**
+- [ ] Backend: Funktion `calc_bess_potential()` implementieren
+  - [ ] Peak-Shaving-Potenzial berechnen (falls P_limit vorhanden)
+    - [ ] Überschreitungen identifizieren
+    - [ ] Überschuss-Energie berechnen
+    - [ ] Empfohlene BESS-Kapazität berechnen
+  - [ ] Arbitrage-Potenzial berechnen (falls Spot-Preise vorhanden)
+    - [ ] Preis-Spread identifizieren
+    - [ ] Geschätzter Arbitrage-Gewinn berechnen
+  - [ ] BESS-Empfehlungen generieren
+- [ ] Frontend: BESS-Potenzial-Visualisierung implementieren
+  - [ ] Kennzahlen-Karten: Peak-Shaving-Potenzial, Arbitrage-Potenzial
+  - [ ] Empfehlungs-Box: BESS-Konfiguration
+  - [ ] Visualisierung: Peak-Überschreitungen im Chart markieren
+- [ ] API-Integration: BESS-Potenzial-Analyse einbinden
+- [ ] Tests: Unit-Tests für `calc_bess_potential()`
+
+#### **3.5 Lastgang-Klassifikation**
+- [ ] Backend: Funktion `classify_load_profile()` implementieren
+  - [ ] Automatische Erkennung: Haushalt / Gewerbe / Industrie
+  - [ ] Charakteristik-Merkmale analysieren
+    - [ ] Kontinuierliche Last
+    - [ ] Morgen-/Abend-Peaks
+    - [ ] Wochenende-Drop
+  - [ ] Konfidenz-Score berechnen
+- [ ] Frontend: Klassifikations-Anzeige implementieren
+  - [ ] Badge/Info-Box: "Haushalt" / "Gewerbe" / "Industrie"
+  - [ ] Charakteristik-Liste: Merkmale des Lastprofils
+- [ ] API-Integration: Klassifikation in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `classify_load_profile()`
+
+#### **3.6 Kostenanalyse (optional)**
+- [ ] Backend: Funktion `calc_cost_analysis()` implementieren
+  - [ ] Energie-Kosten berechnen (basierend auf Energiepreis)
+  - [ ] Leistungs-Kosten berechnen (basierend auf Maximum)
+  - [ ] Gesamtkosten berechnen
+  - [ ] Extrapolation auf Jahr
+- [ ] Frontend: Kosten-Visualisierung implementieren
+  - [ ] Kosten-Kennzahlen-Karten
+  - [ ] Vergleich: Mit/ohne BESS (falls BESS-Konfiguration vorhanden)
+- [ ] API-Integration: Kostenanalyse in Analyse-Endpunkt einbinden
+- [ ] Tests: Unit-Tests für `calc_cost_analysis()`
+
+---
+
+### **Frontend-Integration (parallel zu Phase 2 & 3)**
+
+#### **UI-Erweiterungen in `/preview_data`:**
+- [x] Neue Sektion "Erweiterte Analyse" hinzufügen
+  - [x] Tab-Navigation: Lastdauerlinie, Tageslastgang, Wochentage, Saisonal
+  - [x] Tab-Inhalte: Chart-Container für jede Analyse
+- [x] Chart.js-Visualisierungen implementieren
+  - [x] Tageslastgang-Chart (Linienchart, 24h)
+  - [x] Wochentags-Chart (Balkendiagramm, 7 Balken)
+  - [x] Saisonales Chart (Balkendiagramm, 12 Monate)
+  - [x] Lastdauerlinie (Linienchart, aus `lastprofil_analyse`)
+  - [ ] Histogramm (Bar-Chart, Verteilung)
+- [ ] BESS-Empfehlungs-Box implementieren
+  - [ ] Empfohlene BESS-Kapazität anzeigen
+  - [ ] Empfohlene BESS-Leistung anzeigen
+  - [ ] Peak-Shaving-Potenzial anzeigen
+- [ ] Responsive Design optimieren
+  - [ ] Mobile Ansicht testen
+  - [ ] Tablet Ansicht testen
+
+---
+
+### **Testing & Dokumentation (1-2 Tage)**
+- [ ] Unit-Tests für alle Analyse-Funktionen
+  - [ ] Tageslastgang-Tests
+  - [ ] Wochentags-Analyse-Tests
+  - [ ] Saisonale Analyse-Tests
+  - [ ] Peak-Analyse-Tests
+  - [ ] Verteilungs-Analyse-Tests
+  - [ ] BESS-Potenzial-Tests
+  - [ ] Klassifikations-Tests
+- [ ] Performance-Optimierung
+  - [ ] Große Lastprofile testen (>10.000 Datenpunkte)
+  - [ ] Caching für wiederholte Analysen
+- [ ] Frontend-Tests
+  - [ ] Chart-Rendering testen
+  - [ ] Tab-Navigation testen
+- [ ] Dokumentation
+  - [ ] API-Dokumentation aktualisieren
+  - [ ] Frontend-Dokumentation aktualisieren
+  - [ ] Benutzer-Handbuch erweitern
+
+---
+
 ## 📞 **Nächste Schritte**
 
 1. **Review der Vorschläge** mit dem Entwicklungsteam

@@ -1,0 +1,22 @@
+{
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
+  "reportCallIssue": "none",
+  "reportArgumentType": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportOptionalSubscript": "none",
+  "reportUnknownMemberType": "none",
+  "reportUnknownArgumentType": "none",
+  "reportUnknownVariableType": "none",
+  "reportUnnecessaryIsInstance": "none",
+  "reportUnnecessaryCast": "none",
+  "reportAssertAlwaysTrue": "none",
+  "reportSelfClsParameterName": "none",
+  "reportUnusedImport": "none",
+  "reportUnusedClass": "none",
+  "reportUnusedFunction": "none",
+  "reportUnusedVariable": "none",
+  "typeCheckingMode": "off"
+}

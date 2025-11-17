@@ -3917,19 +3917,65 @@ def get_project_data(project_id, data_type):
             else:
                 start_date_sql = start_date_sql + ' 00:00:00'
             
-            end_date_sql = end_date.replace('T', ' ')
-            # Sicherstellen, dass Sekunden vorhanden sind
-            if ' ' in end_date_sql:
-                time_part = end_date_sql.split(' ')[1]
-                if time_part.count(':') == 1:
-                    end_date_sql = end_date_sql + ':00'
-                elif ':' not in time_part:
-                    end_date_sql = end_date_sql + ' 23:59:59'
-            else:
-                end_date_sql = end_date_sql + ' 23:59:59'
+            from datetime import datetime, timedelta
             
-            time_filter = f"AND timestamp BETWEEN '{start_date_sql}' AND '{end_date_sql}'"
-            print(f"🔍 Zeitfilter für benutzerdefinierten Zeitraum: {start_date_sql} bis {end_date_sql}")
+            end_date_sql = end_date.replace('T', ' ')
+            
+            # Vereinfachte Logik: Wenn nur Datum oder Datum mit 23:59, dann bis Ende des Tages (nächster Tag 00:00:00)
+            if ' ' in end_date_sql:
+                date_part = end_date_sql.split(' ')[0]
+                time_part = end_date_sql.split(' ')[1]
+                
+                # Prüfe ob Zeit 23:59 ist (egal ob mit oder ohne Sekunden)
+                is_end_of_day = False
+                if time_part.count(':') == 1:
+                    if time_part == '23:59':
+                        is_end_of_day = True
+                elif time_part.count(':') == 2:
+                    if time_part.startswith('23:59'):
+                        is_end_of_day = True
+                
+                # Wenn nur Datum ohne Zeit oder Zeit ist 23:59: bis Ende des Tages
+                if ':' not in time_part or is_end_of_day:
+                    try:
+                        end_dt = datetime.strptime(date_part, '%Y-%m-%d')
+                        end_dt = end_dt + timedelta(days=1)  # Nächster Tag
+                        end_date_sql = end_dt.strftime('%Y-%m-%d') + ' 00:00:00'
+                    except:
+                        if time_part.count(':') == 1:
+                            end_date_sql = end_date_sql + ':00'
+                        elif time_part.count(':') == 2:
+                            try:
+                                end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d %H:%M:%S')
+                                end_dt = end_dt + timedelta(seconds=1)
+                                end_date_sql = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                            except:
+                                end_date_sql = end_date_sql
+                        else:
+                            end_date_sql = end_date_sql + ' 23:59:59'
+                else:
+                    # Andere Zeit: +1 Sekunde/Minute für inklusives Ende
+                    if time_part.count(':') == 1:
+                        end_date_sql = end_date_sql + ':00'
+                    elif time_part.count(':') == 2:
+                        try:
+                            end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d %H:%M:%S')
+                            end_dt = end_dt + timedelta(seconds=1)
+                            end_date_sql = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                        except:
+                            end_date_sql = end_date_sql
+            else:
+                # Nur Datum ohne Zeit: bis Ende des Tages (nächster Tag 00:00:00)
+                try:
+                    end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d')
+                    end_dt = end_dt + timedelta(days=1)  # Nächster Tag
+                    end_date_sql = end_dt.strftime('%Y-%m-%d') + ' 00:00:00'
+                except:
+                    end_date_sql = end_date_sql + ' 23:59:59'
+            
+            # Verwende >= und < statt BETWEEN für inklusives Ende
+            time_filter = f"AND timestamp >= '{start_date_sql}' AND timestamp < '{end_date_sql}'"
+            print(f"🔍 Zeitfilter für benutzerdefinierten Zeitraum: {start_date_sql} bis {end_date_sql} (exklusiv)")
         
         # Spezielle Behandlung für Overlay-Daten
         if data_type == 'overlay':
@@ -4162,6 +4208,194 @@ def get_project_data(project_id, data_type):
         print(f"Fehler beim Laden der Daten: {e}")
         return jsonify({'success': False, 'error': str(e)})
 
+
+@main_bp.route('/api/projects/<int:project_id>/data/load_profile/analysis', methods=['POST'])
+def get_load_profile_analysis(project_id):
+    """
+    Erweiterte Lastprofil-Analyse für Datenvorschau.
+    Nutzt die lastprofil_analyse Module für Basis-KPIs und Lastdauerlinie.
+    """
+    try:
+        from app.analysis.lastprofil_analysis import analyze_load_profile
+        
+        data = request.get_json()
+        time_range = data.get('time_range', 'all')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        analysis_types = data.get('analysis_types', ['all'])  # ['daily', 'weekly', 'seasonal', 'peaks', 'bess']
+        
+        # Zeitbereich-Filter erstellen (wie in get_project_data)
+        time_filter = ""
+        if time_range == 'week':
+            time_filter = "AND timestamp >= datetime('now', '-7 days')"
+        elif time_range == 'month':
+            time_filter = "AND timestamp >= datetime('now', '-1 month')"
+        elif time_range == 'year':
+            time_filter = "AND timestamp >= '2024-01-01' AND timestamp <= '2024-12-31'"
+        elif start_date and end_date:
+            from datetime import datetime, timedelta
+            
+            start_date_sql = start_date.replace('T', ' ')
+            if ' ' in start_date_sql:
+                time_part = start_date_sql.split(' ')[1]
+                if time_part.count(':') == 1:
+                    start_date_sql = start_date_sql + ':00'
+                elif ':' not in time_part:
+                    start_date_sql = start_date_sql + ' 00:00:00'
+            else:
+                start_date_sql = start_date_sql + ' 00:00:00'
+            
+            end_date_sql = end_date.replace('T', ' ')
+            
+            # Vereinfachte Logik: Wenn nur Datum oder Datum mit 23:59, dann bis Ende des Tages (nächster Tag 00:00:00)
+            if ' ' in end_date_sql:
+                date_part = end_date_sql.split(' ')[0]
+                time_part = end_date_sql.split(' ')[1]
+                
+                # Prüfe ob Zeit 23:59 ist (egal ob mit oder ohne Sekunden)
+                is_end_of_day = False
+                if time_part.count(':') == 1:
+                    # Format: "23:59"
+                    if time_part == '23:59':
+                        is_end_of_day = True
+                elif time_part.count(':') == 2:
+                    # Format: "23:59:00" oder "23:59:59"
+                    if time_part.startswith('23:59'):
+                        is_end_of_day = True
+                
+                # Wenn nur Datum ohne Zeit oder Zeit ist 23:59: bis Ende des Tages
+                if ':' not in time_part or is_end_of_day:
+                    try:
+                        end_dt = datetime.strptime(date_part, '%Y-%m-%d')
+                        end_dt = end_dt + timedelta(days=1)  # Nächster Tag
+                        end_date_sql = end_dt.strftime('%Y-%m-%d') + ' 00:00:00'
+                    except:
+                        # Fallback: +1 Sekunde
+                        if time_part.count(':') == 1:
+                            end_date_sql = end_date_sql + ':00'
+                        elif time_part.count(':') == 2:
+                            try:
+                                end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d %H:%M:%S')
+                                end_dt = end_dt + timedelta(seconds=1)
+                                end_date_sql = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                            except:
+                                end_date_sql = end_date_sql
+                        else:
+                            end_date_sql = end_date_sql + ' 23:59:59'
+                else:
+                    # Andere Zeit: +1 Sekunde/Minute für inklusives Ende
+                    if time_part.count(':') == 1:
+                        end_date_sql = end_date_sql + ':00'
+                    elif time_part.count(':') == 2:
+                        try:
+                            end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d %H:%M:%S')
+                            end_dt = end_dt + timedelta(seconds=1)
+                            end_date_sql = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                        except:
+                            end_date_sql = end_date_sql
+            else:
+                # Nur Datum ohne Zeit: bis Ende des Tages (nächster Tag 00:00:00)
+                try:
+                    end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d')
+                    end_dt = end_dt + timedelta(days=1)  # Nächster Tag
+                    end_date_sql = end_dt.strftime('%Y-%m-%d') + ' 00:00:00'
+                except:
+                    end_date_sql = end_date_sql + ' 23:59:59'
+            
+            # Verwende >= und < statt BETWEEN für inklusives Ende
+            time_filter = f"AND timestamp >= '{start_date_sql}' AND timestamp < '{end_date_sql}'"
+            print(f"🔍 DEBUG Zeitfilter: {time_filter}")
+            print(f"   Start: {start_date_sql}")
+            print(f"   Ende (exklusiv): {end_date_sql}")
+        
+        # Lastprofil-Daten laden
+        query = f"""
+        SELECT lv.timestamp, lv.power_kw as value 
+        FROM load_value lv
+        JOIN load_profile lp ON lv.load_profile_id = lp.id
+        WHERE lp.project_id = ? {time_filter}
+        ORDER BY lv.timestamp
+        """
+        
+        print(f"🔍 DEBUG SQL-Query: {query}")
+        cursor = get_db().cursor()
+        cursor.execute(query, (project_id,))
+        rows = cursor.fetchall()
+        print(f"🔍 DEBUG SQL-Ergebnis: {len(rows)} Zeilen gefunden")
+        
+        if len(rows) == 0:
+            return jsonify({
+                'success': False,
+                'error': 'Keine Lastprofil-Daten für den gewählten Zeitraum gefunden'
+            })
+        
+        # Daten formatieren
+        load_data = []
+        for row in rows:
+            load_data.append({
+                'timestamp': row[0],
+                'value': float(row[1]) if row[1] is not None else 0.0
+            })
+        
+        # Debug: Prüfe geladene Daten
+        print(f"🔍 DEBUG: {len(load_data)} Datenpunkte geladen")
+        if len(load_data) > 0:
+            print(f"   Erster Timestamp: {load_data[0]['timestamp']}")
+            print(f"   Letzter Timestamp: {load_data[-1]['timestamp']}")
+            # Prüfe Sonntagsdaten
+            sunday_timestamps = [d['timestamp'] for d in load_data if '2024-04-28' in str(d['timestamp'])]
+            print(f"   Sonntagsdaten (28.04.2024): {len(sunday_timestamps)} gefunden")
+            if len(sunday_timestamps) > 0:
+                print(f"   Erste 3 Sonntags-Timestamps: {sunday_timestamps[:3]}")
+        
+        # Analyse durchführen
+        try:
+            results = analyze_load_profile(load_data, analysis_types)
+        except Exception as analyze_error:
+            print(f"❌ Fehler in analyze_load_profile: {analyze_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'error': f'Analyse-Fehler: {str(analyze_error)}'
+            }), 500
+        
+        # Sicherstellen, dass alle Werte JSON-serialisierbar sind
+        import json
+        try:
+            # Test-Serialisierung um Fehler früh zu erkennen
+            json.dumps(results, default=str)
+        except (TypeError, ValueError) as json_error:
+            print(f"❌ JSON-Serialisierungsfehler: {json_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'error': f'JSON-Serialisierungsfehler: {str(json_error)}'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'data': results,
+            'count': len(load_data)
+        })
+        
+    except ImportError as e:
+        print(f"⚠️ Fehler beim Import der Analyse-Module: {e}")
+        return jsonify({
+            'success': False,
+            'error': f'Analyse-Module nicht verfügbar: {str(e)}'
+        }), 500
+    except Exception as e:
+        print(f"❌ Fehler bei Lastprofil-Analyse: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 def get_overlay_data(project_id, time_range, start_date, end_date):
     """Lädt alle relevanten Daten für das Last & Erzeugung Overlay"""
     try:
@@ -4188,19 +4422,65 @@ def get_overlay_data(project_id, time_range, start_date, end_date):
             else:
                 start_date_sql = start_date_sql + ' 00:00:00'
             
-            end_date_sql = end_date.replace('T', ' ')
-            # Sicherstellen, dass Sekunden vorhanden sind
-            if ' ' in end_date_sql:
-                time_part = end_date_sql.split(' ')[1]
-                if time_part.count(':') == 1:
-                    end_date_sql = end_date_sql + ':00'
-                elif ':' not in time_part:
-                    end_date_sql = end_date_sql + ' 23:59:59'
-            else:
-                end_date_sql = end_date_sql + ' 23:59:59'
+            from datetime import datetime, timedelta
             
-            time_filter = f"AND timestamp BETWEEN '{start_date_sql}' AND '{end_date_sql}'"
-            print(f"🔍 Overlay Zeitfilter für benutzerdefinierten Zeitraum: {start_date_sql} bis {end_date_sql}")
+            end_date_sql = end_date.replace('T', ' ')
+            
+            # Vereinfachte Logik: Wenn nur Datum oder Datum mit 23:59, dann bis Ende des Tages (nächster Tag 00:00:00)
+            if ' ' in end_date_sql:
+                date_part = end_date_sql.split(' ')[0]
+                time_part = end_date_sql.split(' ')[1]
+                
+                # Prüfe ob Zeit 23:59 ist (egal ob mit oder ohne Sekunden)
+                is_end_of_day = False
+                if time_part.count(':') == 1:
+                    if time_part == '23:59':
+                        is_end_of_day = True
+                elif time_part.count(':') == 2:
+                    if time_part.startswith('23:59'):
+                        is_end_of_day = True
+                
+                # Wenn nur Datum ohne Zeit oder Zeit ist 23:59: bis Ende des Tages
+                if ':' not in time_part or is_end_of_day:
+                    try:
+                        end_dt = datetime.strptime(date_part, '%Y-%m-%d')
+                        end_dt = end_dt + timedelta(days=1)  # Nächster Tag
+                        end_date_sql = end_dt.strftime('%Y-%m-%d') + ' 00:00:00'
+                    except:
+                        if time_part.count(':') == 1:
+                            end_date_sql = end_date_sql + ':00'
+                        elif time_part.count(':') == 2:
+                            try:
+                                end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d %H:%M:%S')
+                                end_dt = end_dt + timedelta(seconds=1)
+                                end_date_sql = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                            except:
+                                end_date_sql = end_date_sql
+                        else:
+                            end_date_sql = end_date_sql + ' 23:59:59'
+                else:
+                    # Andere Zeit: +1 Sekunde/Minute für inklusives Ende
+                    if time_part.count(':') == 1:
+                        end_date_sql = end_date_sql + ':00'
+                    elif time_part.count(':') == 2:
+                        try:
+                            end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d %H:%M:%S')
+                            end_dt = end_dt + timedelta(seconds=1)
+                            end_date_sql = end_dt.strftime('%Y-%m-%d %H:%M:%S')
+                        except:
+                            end_date_sql = end_date_sql
+            else:
+                # Nur Datum ohne Zeit: bis Ende des Tages (nächster Tag 00:00:00)
+                try:
+                    end_dt = datetime.strptime(end_date_sql, '%Y-%m-%d')
+                    end_dt = end_dt + timedelta(days=1)  # Nächster Tag
+                    end_date_sql = end_dt.strftime('%Y-%m-%d') + ' 00:00:00'
+                except:
+                    end_date_sql = end_date_sql + ' 23:59:59'
+            
+            # Verwende >= und < statt BETWEEN für inklusives Ende
+            time_filter = f"AND timestamp >= '{start_date_sql}' AND timestamp < '{end_date_sql}'"
+            print(f"🔍 Overlay Zeitfilter für benutzerdefinierten Zeitraum: {start_date_sql} bis {end_date_sql} (exklusiv)")
         
         cursor = get_db().cursor()
         
