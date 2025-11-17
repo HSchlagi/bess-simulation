@@ -3404,6 +3404,14 @@ Das BESS-Simulationsprogramm bietet eine umfassende Plattform für die Planung, 
 2. Format: Zeitstempel, Verbrauch (kW)
 3. Upload über Web-Interface
 4. Datenvalidierung und -korrektur
+5. Erweiterte Analyse durchführen ⭐ NEU
+   - Grundlegende KPIs anzeigen
+   - Lastdauerlinie visualisieren
+   - Zeitbasierte Analysen (Tageslastgang, Wochentags-Analyse, Saisonale Analyse)
+   - Statistische Analysen (Lastspitzen, Energieverteilung, Lastfaktor)
+   - BESS-Potenzial bewerten (Peak-Shaving, Arbitrage)
+   - Lastgang klassifizieren (Haushalt/Gewerbe/Industrie)
+   - Kostenanalyse durchführen
 ```
 
 **Wetterdaten (PVGIS):**
@@ -4535,6 +4543,284 @@ X-CSRFToken: <csrf_token>
   ]
 }
 ```
+
+#### POST /api/import/load-profile
+**Beschreibung:** Lastprofil importieren
+
+#### POST /api/projects/{project_id}/data/load_profile/analysis ⭐ NEU
+**Beschreibung:** Umfassende Lastprofil-Analyse durchführen
+
+**Request Body:**
+```json
+{
+  "load_profile_id": 1,
+  "start_date": "2024-01-01T00:00:00",
+  "end_date": "2024-12-31T23:59:59",
+  "time_range": "custom",
+  "analysis_types": ["all"]
+}
+```
+
+**Parameter:**
+- `load_profile_id` (integer, erforderlich): ID des Lastprofils
+- `start_date` (string, optional): Startdatum im ISO-Format
+- `end_date` (string, optional): Enddatum im ISO-Format
+- `time_range` (string, optional): Vordefinierter Zeitraum ("last_7_days", "last_30_days", "last_year", "custom")
+- `analysis_types` (array, optional): Liste der gewünschten Analysen (Standard: ["all"])
+  - `"all"`: Alle Analysen durchführen
+  - `"basic_kpis"`: Grundlegende Kennzahlen
+  - `"ldc"`: Lastdauerlinie
+  - `"daily"`: Tageslastgang
+  - `"weekly"`: Wochentags-Analyse
+  - `"seasonal"`: Saisonale Analyse
+  - `"peak"`: Lastspitzen-Analyse
+  - `"distribution"`: Energieverteilung (Histogramm)
+  - `"load_factor"`: Erweiterte Lastfaktor-Analyse
+  - `"bess_potential"`: BESS-Potenzial (Peak-Shaving & Arbitrage)
+  - `"classification"`: Lastgang-Klassifikation
+  - `"cost"`: Kostenanalyse
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "basic_kpis": {
+      "mean_kw": 125.5,
+      "max_kw": 350.0,
+      "min_kw": 45.2,
+      "std_kw": 78.3,
+      "energy_kwh": 1099380.0
+    },
+    "load_duration_curve": {
+      "sorted_power": [350.0, 340.5, ...],
+      "cumulative_hours": [0.25, 0.5, ...]
+    },
+    "daily_profile": {
+      "hourly_average": [85.2, 90.5, ...],
+      "hourly_std": [12.3, 15.6, ...]
+    },
+    "weekday_analysis": {
+      "monday": {"mean": 130.5, "max": 320.0, ...},
+      "tuesday": {"mean": 128.3, "max": 315.0, ...},
+      ...
+    },
+    "seasonal_analysis": {
+      "spring": {"mean": 120.5, "max": 300.0, ...},
+      "summer": {"mean": 135.2, "max": 350.0, ...},
+      ...
+    },
+    "peak_analysis": {
+      "top_peaks": [
+        {"timestamp": "2024-07-15T14:30:00", "power_kW": 350.0},
+        ...
+      ],
+      "peak_duration_hours": 45.5,
+      "peak_frequency": 120,
+      "peak_threshold_90_percent": 315.0
+    },
+    "load_distribution": {
+      "histogram": {
+        "bins": [0, 50, 100, ...],
+        "frequencies": [1200, 3500, ...]
+      },
+      "percentiles": {
+        "P10": 65.2,
+        "P25": 85.5,
+        "P50": 125.0,
+        "P75": 165.3,
+        "P90": 210.5,
+        "P95": 245.0,
+        "P99": 300.2
+      }
+    },
+    "extended_load_factor": {
+      "load_factor": 0.358,
+      "utilization_rate": 0.15,
+      "full_load_hours": 3136.0,
+      "variation_coefficient": 0.624
+    },
+    "bess_potential": {
+      "peak_shaving": {
+        "exceedances_count": 150,
+        "excess_energy_kwh": 12500.0,
+        "recommended_capacity_mwh": 15.0,
+        "recommended_power_mw": 0.5
+      },
+      "arbitrage": {
+        "price_spread_eur_mwh": 45.2,
+        "estimated_revenue_eur": 12500.0,
+        "avg_buy_price_eur_mwh": 35.5,
+        "avg_sell_price_eur_mwh": 80.7
+      },
+      "recommendations": {
+        "bess_size_mwh": 15.0,
+        "bess_power_mw": 0.5,
+        "use_case": "peak_shaving"
+      }
+    },
+    "classification": {
+      "profile_type": "commercial",
+      "confidence_score": 0.75,
+      "characteristics": [
+        "morgen_abend_peaks",
+        "mittlere_leistung",
+        "wochenende_drop"
+      ]
+    },
+    "cost_analysis": {
+      "energy_costs_eur": 219876.0,
+      "power_costs_eur": 21000.0,
+      "total_costs_eur": 240876.0,
+      "costs_per_year_eur": 240876.0
+    }
+  }
+}
+```
+
+**Verfügbare Analysen im Detail:**
+
+1. **Grundlegende KPIs (`basic_kpis`):**
+   - Durchschnittliche Leistung (kW)
+   - Maximale/Minimale Leistung (kW)
+   - Standardabweichung (kW)
+   - Gesamtenergie (kWh)
+
+2. **Lastdauerlinie (`load_duration_curve`):**
+   - Sortierte Leistungswerte
+   - Kumulative Stunden
+   - Visualisierung der Lastverteilung
+
+3. **Tageslastgang (`daily_profile`):**
+   - Durchschnittliche Leistung pro Stunde
+   - Standardabweichung pro Stunde
+   - Tageskurve mit Durchschnittstrendlinie
+
+4. **Wochentags-Analyse (`weekday_analysis`):**
+   - Statistiken für jeden Wochentag
+   - Wochenvergleich mit Navigation
+   - Durchschnittstrendlinie
+
+5. **Saisonale Analyse (`seasonal_analysis`):**
+   - Statistiken für Frühling, Sommer, Herbst, Winter
+   - Saisonale Mustererkennung
+
+6. **Lastspitzen-Analyse (`peak_analysis`):**
+   - Top-N Peaks mit Zeitstempel
+   - Peak-Dauer (Zeit über 90% des Maximums)
+   - Peak-Frequenz
+   - Peak-Threshold (90% des Maximums)
+
+7. **Energieverteilung (`load_distribution`):**
+   - Histogramm der Leistungswerte
+   - Perzentile (P10, P25, P50, P75, P90, P95, P99)
+   - Statistische Verteilung
+
+8. **Erweiterte Lastfaktor-Analyse (`extended_load_factor`):**
+   - Lastfaktor (Mean/Max)
+   - Auslastungsgrad (Zeit über 80% des Maximums)
+   - Volllaststunden
+   - Variationskoeffizient (Std/Mean)
+
+9. **BESS-Potenzial (`bess_potential`):**
+   - **Peak-Shaving:**
+     - Anzahl Überschreitungen des Export-Limits
+     - Überschuss-Energie (kWh)
+     - Empfohlene BESS-Kapazität (MWh)
+     - Empfohlene BESS-Leistung (MW)
+   - **Arbitrage:**
+     - Preis-Spread (EUR/MWh)
+     - Geschätzter Arbitrage-Gewinn (EUR)
+     - Durchschnittliche Kauf-/Verkaufspreise
+   - **Empfehlungen:**
+     - BESS-Größe und -Leistung
+     - Identifizierter Use Case (peak_shaving, arbitrage, unknown)
+
+10. **Lastgang-Klassifikation (`classification`):**
+    - Automatische Erkennung: household, commercial, industrial, unknown
+    - Konfidenz-Score (0-1)
+    - Charakteristik-Merkmale:
+      - kontinuierliche_last
+      - morgen_abend_peaks
+      - wochenende_drop
+      - niedrige_leistung / mittlere_leistung / hohe_leistung
+
+11. **Kostenanalyse (`cost_analysis`):**
+    - Energie-Kosten (EUR)
+    - Leistungs-Kosten (EUR)
+    - Gesamtkosten (EUR)
+    - Extrapolierte Jahreskosten (EUR)
+
+**Hinweise:**
+- Die BESS-Potenzial-Analyse verwendet automatisch das `export_limit_kw` aus den Netzrestriktionen (falls vorhanden) oder schätzt es als 80% der BESS-Power
+- Für die Arbitrage-Analyse werden Spot-Preise aus der Datenbank geladen (falls verfügbar)
+- Alle Analysen unterstützen flexible Zeiträume und können einzeln oder kombiniert angefordert werden
+
+#### GET /api/projects/{project_id}/network-restrictions ⭐ NEU
+**Beschreibung:** Netzrestriktionen für Projekt abrufen
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "project_id": 1,
+    "max_discharge_kw": 500.0,
+    "max_charge_kw": 500.0,
+    "ramp_rate_percent": 10.0,
+    "export_limit_kw": 400.0,
+    "network_level": "NE6",
+    "grid_code_compliance": true
+  }
+}
+```
+
+#### PUT /api/projects/{project_id}/network-restrictions ⭐ NEU
+**Beschreibung:** Netzrestriktionen für Projekt speichern/aktualisieren
+
+**Request Body:**
+```json
+{
+  "max_discharge_kw": 500.0,
+  "max_charge_kw": 500.0,
+  "ramp_rate_percent": 10.0,
+  "export_limit_kw": 400.0,
+  "network_level": "NE6",
+  "grid_code_compliance": true
+}
+```
+
+**Parameter:**
+- `max_discharge_kw` (float): Maximale Entladeleistung (kW)
+- `max_charge_kw` (float): Maximale Ladeleistung (kW)
+- `ramp_rate_percent` (float): Ramp-Rate-Limit (% pro Minute)
+- `export_limit_kw` (float): Export-Limit am Netzanschlusspunkt (kW)
+- `network_level` (string): Netzebene (NE5, NE6, NE7)
+- `grid_code_compliance` (boolean): Grid Code Compliance aktiviert
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Netzrestriktionen erfolgreich gespeichert",
+  "data": {
+    "id": 1,
+    "project_id": 1,
+    "max_discharge_kw": 500.0,
+    "max_charge_kw": 500.0,
+    "ramp_rate_percent": 10.0,
+    "export_limit_kw": 400.0,
+    "network_level": "NE6",
+    "grid_code_compliance": true
+  }
+}
+```
+
+**Hinweise:**
+- Das `export_limit_kw` wird automatisch in der BESS-Potenzial-Analyse verwendet
+- Falls keine Netzrestriktionen vorhanden sind, wird `export_limit_kw` als 80% der BESS-Power geschätzt
+- Die Netzrestriktionen können über die Web-UI unter "Projekte → Netzrestriktionen" konfiguriert werden
 
 #### POST /api/import/load-profile
 **Beschreibung:** Lastprofil importieren

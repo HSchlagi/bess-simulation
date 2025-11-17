@@ -194,6 +194,26 @@ def analyze_load_profile(data: List[Dict], analysis_types: List[str] = None) -> 
     if 'all' in analysis_types or 'seasonal' in analysis_types:
         results['analyses']['seasonal_analysis'] = calc_seasonal_analysis(df)
     
+    # Phase 3: Statistische & BESS-spezifische Analysen
+    if 'all' in analysis_types or 'peak' in analysis_types:
+        results['analyses']['peak_analysis'] = calc_peak_analysis(df)
+    
+    if 'all' in analysis_types or 'distribution' in analysis_types:
+        results['analyses']['load_distribution'] = calc_load_distribution(df)
+    
+    if 'all' in analysis_types or 'load_factor' in analysis_types:
+        results['analyses']['extended_load_factor'] = calc_extended_load_factor(df)
+    
+    if 'all' in analysis_types or 'bess_potential' in analysis_types:
+        # BESS-Potenzial-Analyse (ohne Preis-Daten für jetzt)
+        results['analyses']['bess_potential'] = calc_bess_potential(df)
+    
+    if 'all' in analysis_types or 'classification' in analysis_types:
+        results['analyses']['classification'] = classify_load_profile(df)
+    
+    if 'all' in analysis_types or 'cost' in analysis_types:
+        results['analyses']['cost_analysis'] = calc_cost_analysis(df)
+    
     return results
 
 
@@ -605,5 +625,521 @@ def calc_seasonal_analysis(df: pd.DataFrame, power_col: str = "P") -> Dict:
         'summer_avg_kW': summer_avg_safe,
         'seasonal_variation_percent': seasonal_var,
         'overall_avg_kW': float(overall_avg)  # Für Trendlinie
+    }
+
+
+def calc_peak_analysis(df: pd.DataFrame, power_col: str = "P", top_n: int = 10) -> Dict:
+    """
+    Analysiert Lastspitzen im Lastprofil.
+    
+    Args:
+        df: DataFrame mit timestamp als Index und power_col als Leistung
+        power_col: Name der Leistungsspalte (Standard: "P")
+        top_n: Anzahl der Top-Peaks zu identifizieren (Standard: 10)
+    
+    Returns:
+        Dict mit Peak-Informationen:
+        - top_peaks: Liste der Top-N Peaks mit timestamp, power_kW
+        - peak_duration_hours: Dauer über 90% des Maximums (Stunden)
+        - peak_frequency: Anzahl der Peaks über 90% des Maximums
+        - peak_threshold_90_percent: Schwellenwert (90% des Maximums)
+    """
+    if power_col not in df.columns:
+        raise ValueError(f"Spalte '{power_col}' nicht im DataFrame.")
+    
+    power_series = df[power_col].fillna(0.0)
+    
+    if len(power_series) == 0:
+        return {
+            'top_peaks': [],
+            'peak_duration_hours': 0.0,
+            'peak_frequency': 0,
+            'peak_threshold_90_percent': 0.0
+        }
+    
+    # Maximum und 90%-Schwellenwert
+    p_max = float(power_series.max())
+    peak_threshold = p_max * 0.9
+    
+    # Top-N Peaks identifizieren
+    top_peaks_raw = power_series.nlargest(top_n)
+    top_peaks = []
+    
+    for timestamp, power_kw in top_peaks_raw.items():
+        power_val = float(power_kw) if not pd.isna(power_kw) and np.isfinite(power_kw) else 0.0
+        timestamp_str = timestamp.strftime('%Y-%m-%d %H:%M:%S') if hasattr(timestamp, 'strftime') else str(timestamp)
+        
+        top_peaks.append({
+            'timestamp': timestamp_str,
+            'power_kW': power_val
+        })
+    
+    # Peak-Dauer: Wie lange über 90% des Maximums
+    peak_mask = power_series >= peak_threshold
+    peak_duration_hours = 0.0
+    
+    if peak_mask.sum() > 0:
+        # Zeitdifferenz zwischen Datenpunkten berechnen
+        dt_hours = _get_dt_hours(df) if LASTPROFIL_ANALYSE_AVAILABLE else (
+            (df.index[1] - df.index[0]).total_seconds() / 3600.0 if len(df.index) > 1 else 1.0
+        )
+        peak_duration_hours = float(peak_mask.sum() * dt_hours)
+    
+    # Peak-Häufigkeit: Anzahl der Peaks über 90%
+    peak_frequency = int(peak_mask.sum())
+    
+    # Sicherstellen, dass alle Werte JSON-serialisierbar sind
+    peak_threshold_safe = float(peak_threshold) if not pd.isna(peak_threshold) and np.isfinite(peak_threshold) else 0.0
+    peak_duration_safe = float(peak_duration_hours) if not pd.isna(peak_duration_hours) and np.isfinite(peak_duration_hours) else 0.0
+    
+    return {
+        'top_peaks': top_peaks,
+        'peak_duration_hours': peak_duration_safe,
+        'peak_frequency': peak_frequency,
+        'peak_threshold_90_percent': peak_threshold_safe
+    }
+
+
+def calc_load_distribution(df: pd.DataFrame, power_col: str = "P", bins: int = 20) -> Dict:
+    """
+    Berechnet die Häufigkeitsverteilung der Lastwerte (Histogramm).
+    
+    Args:
+        df: DataFrame mit timestamp als Index und power_col als Leistung
+        power_col: Name der Leistungsspalte (Standard: "P")
+        bins: Anzahl der Histogramm-Bins (Standard: 20)
+    
+    Returns:
+        Dict mit Verteilungs-Informationen:
+        - histogram: Liste mit {bin_center, frequency, bin_min, bin_max}
+        - percentiles: Dict mit P10, P25, P50, P75, P90, P95, P99
+        - mean: Durchschnittswert
+        - std: Standardabweichung
+    """
+    if power_col not in df.columns:
+        raise ValueError(f"Spalte '{power_col}' nicht im DataFrame.")
+    
+    power_series = df[power_col].fillna(0.0)
+    
+    if len(power_series) == 0:
+        return {
+            'histogram': [],
+            'percentiles': {},
+            'mean': 0.0,
+            'std': 0.0
+        }
+    
+    # Histogramm berechnen
+    hist_counts, bin_edges = np.histogram(power_series, bins=bins)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+    
+    histogram = []
+    for i in range(len(hist_counts)):
+        bin_center = float(bin_centers[i]) if not pd.isna(bin_centers[i]) and np.isfinite(bin_centers[i]) else 0.0
+        frequency = int(hist_counts[i])
+        bin_min = float(bin_edges[i]) if not pd.isna(bin_edges[i]) and np.isfinite(bin_edges[i]) else 0.0
+        bin_max = float(bin_edges[i+1]) if not pd.isna(bin_edges[i+1]) and np.isfinite(bin_edges[i+1]) else 0.0
+        
+        histogram.append({
+            'bin_center': bin_center,
+            'frequency': frequency,
+            'bin_min': bin_min,
+            'bin_max': bin_max
+        })
+    
+    # Perzentile berechnen
+    percentiles_raw = power_series.quantile([0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99])
+    
+    percentiles = {}
+    for p_name, p_value in zip(['P10', 'P25', 'P50', 'P75', 'P90', 'P95', 'P99'], percentiles_raw.values):
+        p_val = float(p_value) if not pd.isna(p_value) and np.isfinite(p_value) else 0.0
+        percentiles[p_name] = p_val
+    
+    # Mittelwert und Standardabweichung
+    mean_val = float(power_series.mean()) if not pd.isna(power_series.mean()) and np.isfinite(power_series.mean()) else 0.0
+    std_val = float(power_series.std()) if not pd.isna(power_series.std()) and np.isfinite(power_series.std()) else 0.0
+    
+    return {
+        'histogram': histogram,
+        'percentiles': percentiles,
+        'mean': mean_val,
+        'std': std_val
+    }
+
+
+def calc_extended_load_factor(df: pd.DataFrame, power_col: str = "P") -> Dict:
+    """
+    Berechnet erweiterte Lastfaktor-Kennzahlen.
+    
+    Args:
+        df: DataFrame mit timestamp als Index und power_col als Leistung
+        power_col: Name der Leistungsspalte (Standard: "P")
+    
+    Returns:
+        Dict mit erweiterten Lastfaktor-Kennzahlen:
+        - load_factor: Lastfaktor (Durchschnitt / Maximum)
+        - utilization_rate: Auslastungsgrad (% der Zeit > 80% des Maximums)
+        - full_load_hours: Vollbenutzungsstunden
+        - variation_coefficient: Variationskoeffizient (Std / Mean)
+    """
+    if power_col not in df.columns:
+        raise ValueError(f"Spalte '{power_col}' nicht im DataFrame.")
+    
+    power_series = df[power_col].fillna(0.0)
+    
+    if len(power_series) == 0:
+        return {
+            'load_factor': 0.0,
+            'utilization_rate': 0.0,
+            'full_load_hours': 0.0,
+            'variation_coefficient': 0.0
+        }
+    
+    p_max = float(power_series.max())
+    p_mean = float(power_series.mean())
+    
+    # Lastfaktor
+    load_factor = float(p_mean / p_max) if p_max > 0 else 0.0
+    if pd.isna(load_factor) or not np.isfinite(load_factor):
+        load_factor = 0.0
+    
+    # Auslastungsgrad: % der Zeit über 80% des Maximums
+    threshold_80 = p_max * 0.8
+    utilization_mask = power_series >= threshold_80
+    utilization_rate = float(utilization_mask.sum() / len(power_series) * 100) if len(power_series) > 0 else 0.0
+    if pd.isna(utilization_rate) or not np.isfinite(utilization_rate):
+        utilization_rate = 0.0
+    
+    # Vollbenutzungsstunden (bereits in calc_basic_kpis vorhanden, hier nochmal)
+    dt_hours = _get_dt_hours(df) if LASTPROFIL_ANALYSE_AVAILABLE else (
+        (df.index[1] - df.index[0]).total_seconds() / 3600.0 if len(df.index) > 1 else 1.0
+    )
+    energy_kwh = float((power_series * dt_hours).sum())
+    full_load_hours = float(energy_kwh / p_max) if p_max > 0 else 0.0
+    if pd.isna(full_load_hours) or not np.isfinite(full_load_hours):
+        full_load_hours = 0.0
+    
+    # Variationskoeffizient
+    std_val = float(power_series.std())
+    variation_coefficient = float(std_val / p_mean) if p_mean > 0 else 0.0
+    if pd.isna(variation_coefficient) or not np.isfinite(variation_coefficient):
+        variation_coefficient = 0.0
+    
+    return {
+        'load_factor': load_factor,
+        'utilization_rate': utilization_rate,
+        'full_load_hours': full_load_hours,
+        'variation_coefficient': variation_coefficient
+    }
+
+
+def calc_bess_potential(df: pd.DataFrame, power_col: str = "P", 
+                        p_limit_kw: Optional[float] = None,
+                        price_data: Optional[pd.DataFrame] = None) -> Dict:
+    """
+    Berechnet BESS-Potenzial für Peak-Shaving und Arbitrage.
+    
+    Args:
+        df: DataFrame mit timestamp als Index und power_col als Leistung
+        power_col: Name der Leistungsspalte (Standard: "P")
+        p_limit_kw: Optional: Leistungslimit für Peak-Shaving (kW)
+        price_data: Optional: DataFrame mit Spot-Preisen (Spalten: timestamp, price_eur_mwh)
+    
+    Returns:
+        Dict mit BESS-Potenzial-Informationen:
+        - peak_shaving: Dict mit Überschreitungen, Überschuss-Energie, empfohlene BESS-Kapazität
+        - arbitrage: Dict mit Preis-Spread, geschätzter Arbitrage-Gewinn
+        - recommendations: Dict mit empfohlener BESS-Konfiguration
+    """
+    if power_col not in df.columns:
+        raise ValueError(f"Spalte '{power_col}' nicht im DataFrame.")
+    
+    power_series = df[power_col].fillna(0.0)
+    
+    peak_shaving = {
+        'exceedances_count': 0,
+        'excess_energy_kwh': 0.0,
+        'recommended_capacity_mwh': 0.0,
+        'recommended_power_mw': 0.0
+    }
+    
+    arbitrage = {
+        'price_spread_eur_mwh': 0.0,
+        'estimated_revenue_eur': 0.0,
+        'avg_buy_price_eur_mwh': 0.0,
+        'avg_sell_price_eur_mwh': 0.0
+    }
+    
+    recommendations = {
+        'bess_size_mwh': 0.0,
+        'bess_power_mw': 0.0,
+        'use_case': 'unknown'
+    }
+    
+    # Peak-Shaving-Analyse (falls P_limit vorhanden)
+    if p_limit_kw is not None and p_limit_kw > 0:
+        exceedances = power_series[power_series > p_limit_kw]
+        exceedances_count = len(exceedances)
+        
+        if exceedances_count > 0:
+            # Überschuss-Energie berechnen
+            dt_hours = _get_dt_hours(df) if LASTPROFIL_ANALYSE_AVAILABLE else (
+                (df.index[1] - df.index[0]).total_seconds() / 3600.0 if len(df.index) > 1 else 1.0
+            )
+            excess_power = exceedances - p_limit_kw
+            excess_energy_kwh = float((excess_power * dt_hours).sum())
+            
+            # Empfohlene BESS-Kapazität: Überschuss-Energie mit Sicherheitsfaktor 1.2
+            recommended_capacity_mwh = float(excess_energy_kwh * 1.2 / 1000.0)  # kWh -> MWh
+            
+            # Empfohlene BESS-Leistung: Maximaler Überschuss
+            max_excess = float(excess_power.max())
+            recommended_power_mw = float(max_excess / 1000.0)  # kW -> MW
+            
+            peak_shaving = {
+                'exceedances_count': int(exceedances_count),
+                'excess_energy_kwh': excess_energy_kwh if not pd.isna(excess_energy_kwh) and np.isfinite(excess_energy_kwh) else 0.0,
+                'recommended_capacity_mwh': recommended_capacity_mwh if not pd.isna(recommended_capacity_mwh) and np.isfinite(recommended_capacity_mwh) else 0.0,
+                'recommended_power_mw': recommended_power_mw if not pd.isna(recommended_power_mw) and np.isfinite(recommended_power_mw) else 0.0
+            }
+    
+    # Arbitrage-Analyse (falls Preis-Daten vorhanden)
+    if price_data is not None and len(price_data) > 0:
+        # Preis-Daten mit Lastprofil zusammenführen
+        if 'timestamp' in price_data.columns:
+            price_data_indexed = price_data.set_index('timestamp')
+        else:
+            price_data_indexed = price_data
+        
+        # Gemeinsame Zeitstempel finden
+        common_timestamps = df.index.intersection(price_data_indexed.index)
+        
+        if len(common_timestamps) > 0:
+            # Preis-Spalte identifizieren
+            price_col = None
+            for col in ['price_eur_mwh', 'price', 'Price', 'PRICE']:
+                if col in price_data_indexed.columns:
+                    price_col = col
+                    break
+            
+            if price_col:
+                prices = price_data_indexed.loc[common_timestamps, price_col]
+                
+                # Preis-Spread: Differenz zwischen Min und Max
+                min_price = float(prices.min())
+                max_price = float(prices.max())
+                price_spread = max_price - min_price
+                
+                # Durchschnittliche Kauf- und Verkaufspreise (vereinfacht: untere/obere 25%)
+                price_25 = float(prices.quantile(0.25))
+                price_75 = float(prices.quantile(0.75))
+                
+                # Geschätzter Arbitrage-Gewinn (vereinfacht)
+                # Annahme: Kauf bei niedrigen Preisen, Verkauf bei hohen Preisen
+                # Durchschnittliche Energie pro Periode
+                dt_hours = _get_dt_hours(df) if LASTPROFIL_ANALYSE_AVAILABLE else (
+                    (df.index[1] - df.index[0]).total_seconds() / 3600.0 if len(df.index) > 1 else 1.0
+                )
+                avg_energy_per_period = float(power_series.mean() * dt_hours)  # kWh
+                
+                # Geschätzter Gewinn: (Verkaufspreis - Kaufpreis) * Energie
+                estimated_revenue = (price_75 - price_25) * avg_energy_per_period / 1000.0  # EUR
+                
+                arbitrage = {
+                    'price_spread_eur_mwh': price_spread if not pd.isna(price_spread) and np.isfinite(price_spread) else 0.0,
+                    'estimated_revenue_eur': estimated_revenue if not pd.isna(estimated_revenue) and np.isfinite(estimated_revenue) else 0.0,
+                    'avg_buy_price_eur_mwh': price_25 if not pd.isna(price_25) and np.isfinite(price_25) else 0.0,
+                    'avg_sell_price_eur_mwh': price_75 if not pd.isna(price_75) and np.isfinite(price_75) else 0.0
+                }
+    
+    # Empfehlungen generieren
+    if peak_shaving['recommended_capacity_mwh'] > 0:
+        recommendations['bess_size_mwh'] = peak_shaving['recommended_capacity_mwh']
+        recommendations['bess_power_mw'] = peak_shaving['recommended_power_mw']
+        recommendations['use_case'] = 'peak_shaving'
+    elif arbitrage['price_spread_eur_mwh'] > 20.0:  # > 20 EUR/MWh Spread
+        # Empfehlung basierend auf Arbitrage-Potenzial
+        recommendations['bess_size_mwh'] = 1.0  # Standard-Empfehlung
+        recommendations['bess_power_mw'] = 0.5  # Standard-Empfehlung
+        recommendations['use_case'] = 'arbitrage'
+    else:
+        recommendations['use_case'] = 'unknown'
+    
+    return {
+        'peak_shaving': peak_shaving,
+        'arbitrage': arbitrage,
+        'recommendations': recommendations
+    }
+
+
+def classify_load_profile(df: pd.DataFrame, power_col: str = "P") -> Dict:
+    """
+    Klassifiziert das Lastprofil automatisch (Haushalt / Gewerbe / Industrie).
+    
+    Args:
+        df: DataFrame mit timestamp als Index und power_col als Leistung
+        power_col: Name der Leistungsspalte (Standard: "P")
+    
+    Returns:
+        Dict mit Klassifikations-Informationen:
+        - profile_type: "household", "commercial", "industrial", "unknown"
+        - confidence_score: Konfidenz-Score (0-1)
+        - characteristics: Liste der erkannten Merkmale
+    """
+    if power_col not in df.columns:
+        raise ValueError(f"Spalte '{power_col}' nicht im DataFrame.")
+    
+    power_series = df[power_col].fillna(0.0)
+    
+    if len(power_series) == 0:
+        return {
+            'profile_type': 'unknown',
+            'confidence_score': 0.0,
+            'characteristics': []
+        }
+    
+    characteristics = []
+    score = 0.0
+    
+    # Merkmale analysieren
+    p_max = float(power_series.max())
+    p_mean = float(power_series.mean())
+    p_std = float(power_series.std())
+    
+    # 1. Kontinuierliche Last (niedrige Varianz)
+    cv = float(p_std / p_mean) if p_mean > 0 else 0.0
+    if cv < 0.3:
+        characteristics.append('kontinuierliche_last')
+        score += 0.2
+    
+    # 2. Morgen-/Abend-Peaks
+    if hasattr(df.index, 'hour'):
+        df['hour'] = df.index.hour
+    else:
+        df['hour'] = pd.to_datetime(df.index).hour
+    
+    morning_peak = df[(df['hour'] >= 6) & (df['hour'] <= 10)][power_col].mean()
+    evening_peak = df[(df['hour'] >= 17) & (df['hour'] <= 21)][power_col].mean()
+    avg_power = df[power_col].mean()
+    
+    if morning_peak > avg_power * 1.2 or evening_peak > avg_power * 1.2:
+        characteristics.append('morgen_abend_peaks')
+        score += 0.3
+    
+    # 3. Wochenende-Drop
+    if hasattr(df.index, 'weekday'):
+        df['weekday'] = df.index.weekday
+    else:
+        df['weekday'] = pd.to_datetime(df.index).weekday
+    
+    workday_avg = df[df['weekday'] < 5][power_col].mean()  # Mo-Fr
+    weekend_avg = df[df['weekday'] >= 5][power_col].mean()  # Sa-So
+    
+    if workday_avg > 0 and weekend_avg / workday_avg < 0.7:
+        characteristics.append('wochenende_drop')
+        score += 0.2
+    
+    # 4. Leistungsniveau
+    if p_max < 10.0:  # < 10 kW
+        characteristics.append('niedrige_leistung')
+        score += 0.1
+        profile_type = 'household'
+    elif p_max < 100.0:  # 10-100 kW
+        characteristics.append('mittlere_leistung')
+        score += 0.1
+        profile_type = 'commercial'
+    else:  # > 100 kW
+        characteristics.append('hohe_leistung')
+        score += 0.1
+        profile_type = 'industrial'
+    
+    # Konfidenz-Score normalisieren (0-1)
+    confidence_score = min(1.0, score)
+    
+    # Wenn keine Merkmale erkannt, dann "unknown"
+    if len(characteristics) == 0:
+        profile_type = 'unknown'
+        confidence_score = 0.0
+    
+    return {
+        'profile_type': profile_type,
+        'confidence_score': float(confidence_score) if not pd.isna(confidence_score) and np.isfinite(confidence_score) else 0.0,
+        'characteristics': characteristics
+    }
+
+
+def calc_cost_analysis(df: pd.DataFrame, power_col: str = "P",
+                       energy_price_eur_kwh: float = 0.20,
+                       power_price_eur_kw_month: float = 5.0) -> Dict:
+    """
+    Berechnet Kostenanalyse für das Lastprofil.
+    
+    Args:
+        df: DataFrame mit timestamp als Index und power_col als Leistung
+        power_col: Name der Leistungsspalte (Standard: "P")
+        energy_price_eur_kwh: Energiepreis in EUR/kWh (Standard: 0.20)
+        power_price_eur_kw_month: Leistungspreis in EUR/kW/Monat (Standard: 5.0)
+    
+    Returns:
+        Dict mit Kosten-Informationen:
+        - energy_costs_eur: Energie-Kosten (EUR)
+        - power_costs_eur: Leistungs-Kosten (EUR)
+        - total_costs_eur: Gesamtkosten (EUR)
+        - costs_per_year_eur: Extrapolierte Kosten pro Jahr (EUR)
+    """
+    if power_col not in df.columns:
+        raise ValueError(f"Spalte '{power_col}' nicht im DataFrame.")
+    
+    power_series = df[power_col].fillna(0.0)
+    
+    if len(power_series) == 0:
+        return {
+            'energy_costs_eur': 0.0,
+            'power_costs_eur': 0.0,
+            'total_costs_eur': 0.0,
+            'costs_per_year_eur': 0.0
+        }
+    
+    # Zeitdifferenz berechnen
+    dt_hours = _get_dt_hours(df) if LASTPROFIL_ANALYSE_AVAILABLE else (
+        (df.index[1] - df.index[0]).total_seconds() / 3600.0 if len(df.index) > 1 else 1.0
+    )
+    
+    # Energie-Kosten
+    energy_kwh = float((power_series * dt_hours).sum())
+    energy_costs = energy_kwh * energy_price_eur_kwh
+    
+    # Leistungs-Kosten (basierend auf Maximum)
+    p_max = float(power_series.max())
+    
+    # Zeitraum in Monaten schätzen
+    if len(df.index) > 1:
+        time_span_days = (df.index[-1] - df.index[0]).total_seconds() / 86400.0
+        time_span_months = time_span_days / 30.0
+    else:
+        time_span_months = 1.0
+    
+    power_costs = p_max * power_price_eur_kw_month * time_span_months
+    
+    # Gesamtkosten
+    total_costs = energy_costs + power_costs
+    
+    # Extrapolation auf Jahr
+    if time_span_months > 0:
+        costs_per_year = total_costs * (12.0 / time_span_months)
+    else:
+        costs_per_year = total_costs * 12.0
+    
+    # Sicherstellen, dass alle Werte JSON-serialisierbar sind
+    energy_costs_safe = float(energy_costs) if not pd.isna(energy_costs) and np.isfinite(energy_costs) else 0.0
+    power_costs_safe = float(power_costs) if not pd.isna(power_costs) and np.isfinite(power_costs) else 0.0
+    total_costs_safe = float(total_costs) if not pd.isna(total_costs) and np.isfinite(total_costs) else 0.0
+    costs_per_year_safe = float(costs_per_year) if not pd.isna(costs_per_year) and np.isfinite(costs_per_year) else 0.0
+    
+    return {
+        'energy_costs_eur': energy_costs_safe,
+        'power_costs_eur': power_costs_safe,
+        'total_costs_eur': total_costs_safe,
+        'costs_per_year_eur': costs_per_year_safe
     }
 

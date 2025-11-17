@@ -734,83 +734,85 @@ Integration des `lastprofil_analyse`-Pakets in die Datenvorschau (`/preview_data
 ### **Phase 3: Statistische & BESS-spezifische Analysen (3-4 Tage)**
 
 #### **3.1 Lastspitzen-Analyse**
-- [ ] Backend: Funktion `calc_peak_analysis()` implementieren
-  - [ ] Top-N Lastspitzen identifizieren (Standard: Top 10)
-  - [ ] Peak-Dauer berechnen (wie lange über 90% des Maximums)
-  - [ ] Peak-Häufigkeit zählen
-  - [ ] JSON-Response mit Peak-Informationen formatieren
-- [ ] Frontend: Peak-Visualisierung implementieren
-  - [ ] Markierung der Top-10 Peaks im Hauptchart
-  - [ ] Kennzahl-Karte: Peak-Dauer in Stunden
-  - [ ] Tooltip: Zeigt Peak-Zeitpunkt beim Hover
-- [ ] API-Integration: Peak-Analyse in Analyse-Endpunkt einbinden
-- [ ] Tests: Unit-Tests für `calc_peak_analysis()`
+- [x] Backend: Funktion `calc_peak_analysis()` implementieren
+  - [x] Top-N Lastspitzen identifizieren (Standard: Top 10)
+  - [x] Peak-Dauer berechnen (wie lange über 90% des Maximums)
+  - [x] Peak-Häufigkeit zählen
+  - [x] JSON-Response mit Peak-Informationen formatieren
+- [x] Frontend: Peak-Visualisierung implementieren
+  - [x] Markierung der Top-10 Peaks im Hauptchart
+  - [x] Kennzahl-Karte: Peak-Dauer in Stunden
+  - [x] Tooltip: Zeigt Peak-Zeitpunkt beim Hover
+- [x] API-Integration: Peak-Analyse in Analyse-Endpunkt einbinden
+- [x] Tests: Unit-Tests für `calc_peak_analysis()`
 
 #### **3.2 Energieverteilung (Histogramm)**
-- [ ] Backend: Funktion `calc_load_distribution()` implementieren
-  - [ ] Häufigkeitsverteilung der Lastwerte berechnen
-  - [ ] Perzentile berechnen (P10, P25, P50, P75, P90, P95, P99)
-  - [ ] Histogramm-Daten für Chart.js formatieren
-- [ ] Frontend: Histogramm-Chart implementieren
-  - [ ] Chart.js: Bar-Chart (Histogramm)
-  - [ ] Perzentil-Markierungen (P50, P90, P95)
-- [ ] API-Integration: Verteilungs-Analyse in Analyse-Endpunkt einbinden
-- [ ] Tests: Unit-Tests für `calc_load_distribution()`
+- [x] Backend: Funktion `calc_load_distribution()` implementieren
+  - [x] Häufigkeitsverteilung der Lastwerte berechnen
+  - [x] Perzentile berechnen (P10, P25, P50, P75, P90, P95, P99)
+  - [x] Histogramm-Daten für Chart.js formatieren
+- [x] Frontend: Histogramm-Chart implementieren
+  - [x] Chart.js: Bar-Chart (Histogramm)
+  - [x] Perzentil-Markierungen (P50, P90, P95)
+- [x] API-Integration: Verteilungs-Analyse in Analyse-Endpunkt einbinden
+- [x] Tests: Unit-Tests für `calc_load_distribution()`
 
 #### **3.3 Erweiterte Lastfaktor-Analyse**
-- [ ] Backend: Funktion `calc_extended_load_factor()` implementieren
-  - [ ] Lastfaktor (Durchschnitt / Maximum) berechnen
-  - [ ] Auslastungsgrad (wie oft > 80% des Maximums) berechnen
-  - [ ] Vollbenutzungsstunden berechnen
-  - [ ] Variationskoeffizient berechnen
-- [ ] Frontend: Erweiterte Kennzahlen-Karten implementieren
-  - [ ] Vergleich: Lastfaktor vs. Auslastungsgrad
-  - [ ] Vollbenutzungsstunden anzeigen
-- [ ] API-Integration: Erweiterte Lastfaktor-Analyse einbinden
-- [ ] Tests: Unit-Tests für `calc_extended_load_factor()`
+- [x] Backend: Funktion `calc_extended_load_factor()` implementieren
+  - [x] Lastfaktor (Durchschnitt / Maximum) berechnen
+  - [x] Auslastungsgrad (wie oft > 80% des Maximums) berechnen
+  - [x] Vollbenutzungsstunden berechnen
+  - [x] Variationskoeffizient berechnen
+- [x] Frontend: Erweiterte Kennzahlen-Karten implementieren
+  - [x] Vergleich: Lastfaktor vs. Auslastungsgrad
+  - [x] Vollbenutzungsstunden anzeigen
+- [x] API-Integration: Erweiterte Lastfaktor-Analyse einbinden
+- [x] Tests: Unit-Tests für `calc_extended_load_factor()`
 
 #### **3.4 BESS-Potenzial-Analyse**
-- [ ] Backend: Funktion `calc_bess_potential()` implementieren
-  - [ ] Peak-Shaving-Potenzial berechnen (falls P_limit vorhanden)
-    - [ ] Überschreitungen identifizieren
-    - [ ] Überschuss-Energie berechnen
-    - [ ] Empfohlene BESS-Kapazität berechnen
-  - [ ] Arbitrage-Potenzial berechnen (falls Spot-Preise vorhanden)
-    - [ ] Preis-Spread identifizieren
-    - [ ] Geschätzter Arbitrage-Gewinn berechnen
-  - [ ] BESS-Empfehlungen generieren
-- [ ] Frontend: BESS-Potenzial-Visualisierung implementieren
-  - [ ] Kennzahlen-Karten: Peak-Shaving-Potenzial, Arbitrage-Potenzial
-  - [ ] Empfehlungs-Box: BESS-Konfiguration
-  - [ ] Visualisierung: Peak-Überschreitungen im Chart markieren
-- [ ] API-Integration: BESS-Potenzial-Analyse einbinden
-- [ ] Tests: Unit-Tests für `calc_bess_potential()`
+- [x] Backend: Funktion `calc_bess_potential()` implementieren
+  - [x] Peak-Shaving-Potenzial berechnen (falls P_limit vorhanden)
+    - [x] Überschreitungen identifizieren
+    - [x] Überschuss-Energie berechnen
+    - [x] Empfohlene BESS-Kapazität berechnen
+  - [x] Arbitrage-Potenzial berechnen (falls Spot-Preise vorhanden)
+    - [x] Preis-Spread identifizieren
+    - [x] Geschätzter Arbitrage-Gewinn berechnen
+  - [x] BESS-Empfehlungen generieren
+- [x] Frontend: BESS-Potenzial-Visualisierung implementieren
+  - [x] Kennzahlen-Karten: Peak-Shaving-Potenzial, Arbitrage-Potenzial
+  - [x] Empfehlungs-Box: BESS-Konfiguration
+  - [x] Visualisierung: Peak-Überschreitungen im Chart markieren
+- [x] API-Integration: BESS-Potenzial-Analyse einbinden
+- [x] Export-Limit aus NetworkRestrictions laden und verwenden
+- [x] Spot-Preise für Arbitrage-Analyse laden
+- [x] Tests: Unit-Tests für `calc_bess_potential()`
 
 #### **3.5 Lastgang-Klassifikation**
-- [ ] Backend: Funktion `classify_load_profile()` implementieren
-  - [ ] Automatische Erkennung: Haushalt / Gewerbe / Industrie
-  - [ ] Charakteristik-Merkmale analysieren
-    - [ ] Kontinuierliche Last
-    - [ ] Morgen-/Abend-Peaks
-    - [ ] Wochenende-Drop
-  - [ ] Konfidenz-Score berechnen
-- [ ] Frontend: Klassifikations-Anzeige implementieren
-  - [ ] Badge/Info-Box: "Haushalt" / "Gewerbe" / "Industrie"
-  - [ ] Charakteristik-Liste: Merkmale des Lastprofils
-- [ ] API-Integration: Klassifikation in Analyse-Endpunkt einbinden
-- [ ] Tests: Unit-Tests für `classify_load_profile()`
+- [x] Backend: Funktion `classify_load_profile()` implementieren
+  - [x] Automatische Erkennung: Haushalt / Gewerbe / Industrie
+  - [x] Charakteristik-Merkmale analysieren
+    - [x] Kontinuierliche Last
+    - [x] Morgen-/Abend-Peaks
+    - [x] Wochenende-Drop
+  - [x] Konfidenz-Score berechnen
+- [x] Frontend: Klassifikations-Anzeige implementieren
+  - [x] Badge/Info-Box: "Haushalt" / "Gewerbe" / "Industrie"
+  - [x] Charakteristik-Liste: Merkmale des Lastprofils
+- [x] API-Integration: Klassifikation in Analyse-Endpunkt einbinden
+- [x] Tests: Unit-Tests für `classify_load_profile()`
 
 #### **3.6 Kostenanalyse (optional)**
-- [ ] Backend: Funktion `calc_cost_analysis()` implementieren
-  - [ ] Energie-Kosten berechnen (basierend auf Energiepreis)
-  - [ ] Leistungs-Kosten berechnen (basierend auf Maximum)
-  - [ ] Gesamtkosten berechnen
-  - [ ] Extrapolation auf Jahr
-- [ ] Frontend: Kosten-Visualisierung implementieren
-  - [ ] Kosten-Kennzahlen-Karten
-  - [ ] Vergleich: Mit/ohne BESS (falls BESS-Konfiguration vorhanden)
-- [ ] API-Integration: Kostenanalyse in Analyse-Endpunkt einbinden
-- [ ] Tests: Unit-Tests für `calc_cost_analysis()`
+- [x] Backend: Funktion `calc_cost_analysis()` implementieren
+  - [x] Energie-Kosten berechnen (basierend auf Energiepreis)
+  - [x] Leistungs-Kosten berechnen (basierend auf Maximum)
+  - [x] Gesamtkosten berechnen
+  - [x] Extrapolation auf Jahr
+- [x] Frontend: Kosten-Visualisierung implementieren
+  - [x] Kosten-Kennzahlen-Karten
+  - [x] Vergleich: Mit/ohne BESS (falls BESS-Konfiguration vorhanden)
+- [x] API-Integration: Kostenanalyse in Analyse-Endpunkt einbinden
+- [x] Tests: Unit-Tests für `calc_cost_analysis()`
 
 ---
 
@@ -818,18 +820,25 @@ Integration des `lastprofil_analyse`-Pakets in die Datenvorschau (`/preview_data
 
 #### **UI-Erweiterungen in `/preview_data`:**
 - [x] Neue Sektion "Erweiterte Analyse" hinzufügen
-  - [x] Tab-Navigation: Lastdauerlinie, Tageslastgang, Wochentage, Saisonal
+  - [x] Tab-Navigation: Lastdauerlinie, Tageslastgang, Wochentage, Saisonal, Lastspitzen, Verteilung, BESS-Potenzial, Lastfaktor, Klassifikation, Kostenanalyse
   - [x] Tab-Inhalte: Chart-Container für jede Analyse
 - [x] Chart.js-Visualisierungen implementieren
   - [x] Tageslastgang-Chart (Linienchart, 24h)
   - [x] Wochentags-Chart (Balkendiagramm, 7 Balken)
   - [x] Saisonales Chart (Balkendiagramm, 12 Monate)
   - [x] Lastdauerlinie (Linienchart, aus `lastprofil_analyse`)
-  - [ ] Histogramm (Bar-Chart, Verteilung)
-- [ ] BESS-Empfehlungs-Box implementieren
-  - [ ] Empfohlene BESS-Kapazität anzeigen
-  - [ ] Empfohlene BESS-Leistung anzeigen
-  - [ ] Peak-Shaving-Potenzial anzeigen
+  - [x] Histogramm (Bar-Chart, Verteilung)
+  - [x] Peak-Analyse-Chart (Balkendiagramm, Top-N Peaks)
+- [x] BESS-Empfehlungs-Box implementieren
+  - [x] Empfohlene BESS-Kapazität anzeigen
+  - [x] Empfohlene BESS-Leistung anzeigen
+  - [x] Peak-Shaving-Potenzial anzeigen
+  - [x] Arbitrage-Potenzial anzeigen
+- [x] Netzrestriktionen-Konfiguration implementieren
+  - [x] Neue Seite `/network_restrictions` erstellt
+  - [x] API-Endpunkte GET/PUT für NetworkRestrictions
+  - [x] Button "Netzrestriktionen" auf Projekte-Seite
+  - [x] Automatisches Laden von Export-Limit für BESS-Potenzial-Analyse
 - [ ] Responsive Design optimieren
   - [ ] Mobile Ansicht testen
   - [ ] Tablet Ansicht testen

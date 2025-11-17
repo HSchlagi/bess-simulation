@@ -92,6 +92,30 @@
   - PSLL-Constraints (Österreich)
   - ROI-optimierte Systemgröße
 
+- **Erweiterte Lastprofil-Analyse** ⭐ NEU
+  - **Grundlegende KPIs:** Durchschnitt, Maximum, Minimum, Standardabweichung, Energie
+  - **Lastdauerlinie:** Visualisierung der Lastverteilung über die Zeit
+  - **Zeitbasierte Analysen:**
+    - Tageslastgang mit durchschnittlicher Tageskurve
+    - Wochentags-Analyse mit Wochenvergleich
+    - Saisonale Analyse (Frühling, Sommer, Herbst, Winter)
+  - **Statistische Analysen:**
+    - Lastspitzen-Analyse (Top-N Peaks, Peak-Dauer, Peak-Frequenz)
+    - Energieverteilung (Histogramm mit Perzentilen P10, P25, P50, P75, P90, P95, P99)
+    - Erweiterte Lastfaktor-Analyse (Lastfaktor, Auslastungsgrad, Volllaststunden, Variationskoeffizient)
+  - **BESS-Potenzial-Analyse:**
+    - Peak-Shaving-Potenzial (Überschreitungen, Überschuss-Energie, empfohlene BESS-Kapazität/Leistung)
+    - Arbitrage-Potenzial (Preis-Spread, geschätzter Arbitrage-Gewinn)
+    - BESS-Empfehlungen basierend auf identifiziertem Use Case
+  - **Lastgang-Klassifikation:**
+    - Automatische Erkennung: Haushalt / Gewerbe / Industrie
+    - Konfidenz-Score und Charakteristik-Merkmale
+    - Erkennung von Morgen-/Abend-Peaks, Wochenende-Drop, kontinuierlicher Last
+  - **Kostenanalyse:**
+    - Energie-Kosten (basierend auf Energiepreis)
+    - Leistungs-Kosten (basierend auf Maximum)
+    - Gesamtkosten und extrapolierte Jahreskosten
+
 ### 3. **Advanced Dispatch & Grid Services** ⭐
 
 - **Multi-Markt-Arbitrage**
@@ -624,6 +648,55 @@ GET /api/economic-analysis/{project_id}/export-10year-pdf?use_case=hybrid
 
 # 10-Jahres-Report als Excel exportieren
 GET /api/economic-analysis/{project_id}/export-10year-excel?use_case=hybrid
+```
+
+### Lastprofil-Analyse ⭐ NEU
+
+```bash
+# Lastprofil-Analyse durchführen
+POST /api/projects/{project_id}/data/load_profile/analysis
+Content-Type: application/json
+
+{
+  "load_profile_id": 1,
+  "start_date": "2024-01-01T00:00:00",
+  "end_date": "2024-12-31T23:59:59",
+  "time_range": "custom",  # "last_7_days" | "last_30_days" | "last_year" | "custom"
+  "analysis_types": ["all"]  # oder spezifisch: ["basic_kpis", "ldc", "daily", "weekly", "seasonal", "peak", "distribution", "load_factor", "bess_potential", "classification", "cost"]
+}
+
+# Antwort enthält:
+# - basic_kpis: Grundlegende Kennzahlen
+# - load_duration_curve: Lastdauerlinie
+# - daily_profile: Tageslastgang
+# - weekday_analysis: Wochentags-Analyse
+# - seasonal_analysis: Saisonale Analyse
+# - peak_analysis: Lastspitzen-Analyse
+# - load_distribution: Energieverteilung (Histogramm)
+# - extended_load_factor: Erweiterte Lastfaktor-Analyse
+# - bess_potential: BESS-Potenzial (Peak-Shaving & Arbitrage)
+# - classification: Lastgang-Klassifikation
+# - cost_analysis: Kostenanalyse
+```
+
+### Netzrestriktionen ⭐ NEU
+
+```bash
+# Netzrestriktionen für Projekt abrufen
+GET /api/projects/{project_id}/network-restrictions
+
+# Netzrestriktionen für Projekt speichern/aktualisieren
+PUT /api/projects/{project_id}/network-restrictions
+Content-Type: application/json
+
+{
+  "max_discharge_kw": 500.0,
+  "max_charge_kw": 500.0,
+  "ramp_rate_percent": 10.0,
+  "export_limit_kw": 400.0,
+  "network_level": "NE6",
+  "grid_code_compliance": true
+}
 ```
 
 ### Marktpreise konfigurieren

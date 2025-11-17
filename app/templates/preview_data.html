@@ -110,6 +110,24 @@
                     <button onclick="showAnalysisTab('seasonal')" id="tab-seasonal" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
                         <i class="fas fa-calendar-alt mr-2"></i>Saisonal
                     </button>
+                    <button onclick="showAnalysisTab('peaks')" id="tab-peaks" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-mountain mr-2"></i>Lastspitzen
+                    </button>
+                    <button onclick="showAnalysisTab('distribution')" id="tab-distribution" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-chart-bar mr-2"></i>Verteilung
+                    </button>
+                    <button onclick="showAnalysisTab('bess')" id="tab-bess" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-battery-half mr-2"></i>BESS-Potenzial
+                    </button>
+                    <button onclick="showAnalysisTab('loadfactor')" id="tab-loadfactor" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-percentage mr-2"></i>Lastfaktor
+                    </button>
+                    <button onclick="showAnalysisTab('classification')" id="tab-classification" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-tags mr-2"></i>Klassifikation
+                    </button>
+                    <button onclick="showAnalysisTab('cost')" id="tab-cost" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-t-md hover:bg-gray-300 focus:outline-none">
+                        <i class="fas fa-euro-sign mr-2"></i>Kostenanalyse
+                    </button>
                 </div>
                 
                 <!-- Tab-Inhalte -->
@@ -176,6 +194,81 @@
                     </div>
                     <div class="h-96">
                         <canvas id="seasonalChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Lastspitzen-Analyse -->
+                <div id="content-peaks" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-mountain text-red-600 mr-2"></i>
+                        Lastspitzen-Analyse
+                    </h3>
+                    <div id="peakInfo" class="mb-4 text-sm text-gray-600">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <div class="h-96">
+                        <canvas id="peakChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Energieverteilung (Histogramm) -->
+                <div id="content-distribution" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+                        Energieverteilung (Histogramm)
+                    </h3>
+                    <div id="distributionInfo" class="mb-4 text-sm text-gray-600">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <div class="h-96">
+                        <canvas id="distributionChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- BESS-Potenzial -->
+                <div id="content-bess" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-battery-half text-green-600 mr-2"></i>
+                        BESS-Potenzial-Analyse
+                    </h3>
+                    <div id="bessInfo" class="mb-4">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                    <div id="bessRecommendations" class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                </div>
+                
+                <!-- Erweiterte Lastfaktor-Analyse -->
+                <div id="content-loadfactor" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-percentage text-indigo-600 mr-2"></i>
+                        Erweiterte Lastfaktor-Analyse
+                    </h3>
+                    <div id="loadFactorInfo" class="mb-4">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                </div>
+                
+                <!-- Klassifikation -->
+                <div id="content-classification" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-tags text-teal-600 mr-2"></i>
+                        Lastgang-Klassifikation
+                    </h3>
+                    <div id="classificationInfo" class="mb-4">
+                        <!-- Wird dynamisch gefüllt -->
+                    </div>
+                </div>
+                
+                <!-- Kostenanalyse -->
+                <div id="content-cost" class="analysis-tab-content hidden">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-euro-sign text-yellow-600 mr-2"></i>
+                        Kostenanalyse
+                    </h3>
+                    <div id="costInfo" class="mb-4">
+                        <!-- Wird dynamisch gefüllt -->
                     </div>
                 </div>
             </div>
@@ -1295,6 +1388,8 @@ let ldcChart = null;
 let dailyProfileChart = null;
 let weekdayChart = null;
 let seasonalChart = null;
+let peakChart = null;
+let distributionChart = null;
 let currentAnalysisData = null;
 
 async function loadAdvancedAnalysis() {
@@ -1417,6 +1512,23 @@ function showAnalysisTab(tabName) {
         tabBtn.classList.remove('bg-gray-200', 'text-gray-700');
         tabBtn.classList.add('bg-blue-600', 'text-white');
     }
+    
+    // Charts rendern basierend auf Tab
+    if (currentAnalysisData && currentAnalysisData.analyses) {
+        if (tabName === 'peaks' && currentAnalysisData.analyses.peak_analysis) {
+            renderPeakAnalysis(currentAnalysisData.analyses.peak_analysis);
+        } else if (tabName === 'distribution' && currentAnalysisData.analyses.load_distribution) {
+            renderDistributionChart(currentAnalysisData.analyses.load_distribution);
+        } else if (tabName === 'bess' && currentAnalysisData.analyses.bess_potential) {
+            renderBESSPotential(currentAnalysisData.analyses.bess_potential);
+        } else if (tabName === 'loadfactor' && currentAnalysisData.analyses.extended_load_factor) {
+            renderLoadFactorAnalysis(currentAnalysisData.analyses.extended_load_factor);
+        } else if (tabName === 'classification' && currentAnalysisData.analyses.classification) {
+            renderClassification(currentAnalysisData.analyses.classification);
+        } else if (tabName === 'cost' && currentAnalysisData.analyses.cost_analysis) {
+            renderCostAnalysis(currentAnalysisData.analyses.cost_analysis);
+        }
+    }
 }
 
 function hideAdvancedAnalysis() {
@@ -1436,6 +1548,14 @@ function hideAdvancedAnalysis() {
     if (seasonalChart) {
         seasonalChart.destroy();
         seasonalChart = null;
+    }
+    if (peakChart) {
+        peakChart.destroy();
+        peakChart = null;
+    }
+    if (distributionChart) {
+        distributionChart.destroy();
+        distributionChart = null;
     }
     currentAnalysisData = null;
 }
@@ -1950,6 +2070,533 @@ function updateSeasonalChart() {
             }
         }
     });
+}
+
+// Phase 3: Rendering-Funktionen für neue Analysen
+
+function renderPeakAnalysis(data) {
+    const ctx = document.getElementById('peakChart');
+    if (!ctx || !data) {
+        console.warn('⚠️ Peak-Analyse-Daten nicht verfügbar');
+        return;
+    }
+    
+    // Info-Box aktualisieren
+    const infoDiv = document.getElementById('peakInfo');
+    if (infoDiv) {
+        infoDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <span class="font-semibold">Peak-Dauer:</span> ${(data.peak_duration_hours || 0).toFixed(2)} h
+                </div>
+                <div>
+                    <span class="font-semibold">Peak-Häufigkeit:</span> ${data.peak_frequency || 0}
+                </div>
+                <div>
+                    <span class="font-semibold">Schwellenwert (90%):</span> ${(data.peak_threshold_90_percent || 0).toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Top Peaks:</span> ${(data.top_peaks || []).length}
+                </div>
+            </div>
+        `;
+    }
+    
+    // Alten Chart zerstören
+    if (peakChart) {
+        peakChart.destroy();
+    }
+    
+    // Top Peaks für Chart vorbereiten
+    const topPeaks = data.top_peaks || [];
+    const labels = topPeaks.map((p, idx) => `Peak ${idx + 1}`);
+    const values = topPeaks.map(p => p.power_kW || 0);
+    
+    peakChart = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Leistung (kW)',
+                data: values,
+                backgroundColor: 'rgba(239, 68, 68, 0.6)',
+                borderColor: 'rgba(239, 68, 68, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    },
+                    beginAtZero: true
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Top Peaks'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            const idx = context.dataIndex;
+                            if (topPeaks[idx] && topPeaks[idx].timestamp) {
+                                return `Zeitpunkt: ${topPeaks[idx].timestamp}`;
+                            }
+                            return '';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderDistributionChart(data) {
+    const ctx = document.getElementById('distributionChart');
+    if (!ctx || !data) {
+        console.warn('⚠️ Verteilungs-Daten nicht verfügbar');
+        return;
+    }
+    
+    // Info-Box aktualisieren
+    const infoDiv = document.getElementById('distributionInfo');
+    if (infoDiv && data.percentiles) {
+        const p50 = (data.percentiles.P50 || 0).toFixed(2);
+        const p90 = (data.percentiles.P90 || 0).toFixed(2);
+        const p95 = (data.percentiles.P95 || 0).toFixed(2);
+        infoDiv.innerHTML = `
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <span class="font-semibold">Mittelwert:</span> ${(data.mean || 0).toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Std-Abw.:</span> ${(data.std || 0).toFixed(2)} kW
+                </div>
+                <div>
+                    <span class="font-semibold">Median (P50):</span> ${p50} kW
+                </div>
+                <div>
+                    <span class="font-semibold">P90:</span> ${p90} kW | <span class="font-semibold">P95:</span> ${p95} kW
+                </div>
+            </div>
+        `;
+    }
+    
+    // Alten Chart zerstören
+    if (distributionChart) {
+        distributionChart.destroy();
+    }
+    
+    // Histogramm-Daten vorbereiten
+    const histogram = data.histogram || [];
+    const labels = histogram.map(h => `${(h.bin_min || 0).toFixed(1)}-${(h.bin_max || 0).toFixed(1)}`);
+    const frequencies = histogram.map(h => h.frequency || 0);
+    
+    // Perzentil-Linien für Chart
+    const percentiles = data.percentiles || {};
+    const p50 = percentiles.P50 || 0;
+    const p90 = percentiles.P90 || 0;
+    const p95 = percentiles.P95 || 0;
+    
+    distributionChart = new Chart(ctx.getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Häufigkeit',
+                    data: frequencies,
+                    backgroundColor: 'rgba(147, 51, 234, 0.6)',
+                    borderColor: 'rgba(147, 51, 234, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Häufigkeit'
+                    },
+                    beginAtZero: true
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Leistung (kW)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                annotation: {
+                    annotations: {
+                        p50: {
+                            type: 'line',
+                            yMin: 0,
+                            yMax: Math.max(...frequencies),
+                            xMin: p50,
+                            xMax: p50,
+                            borderColor: 'rgba(59, 130, 246, 0.8)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            label: {
+                                content: 'P50',
+                                enabled: true,
+                                position: 'end'
+                            }
+                        },
+                        p90: {
+                            type: 'line',
+                            yMin: 0,
+                            yMax: Math.max(...frequencies),
+                            xMin: p90,
+                            xMax: p90,
+                            borderColor: 'rgba(245, 158, 11, 0.8)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            label: {
+                                content: 'P90',
+                                enabled: true,
+                                position: 'end'
+                            }
+                        },
+                        p95: {
+                            type: 'line',
+                            yMin: 0,
+                            yMax: Math.max(...frequencies),
+                            xMin: p95,
+                            xMax: p95,
+                            borderColor: 'rgba(239, 68, 68, 0.8)',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            label: {
+                                content: 'P95',
+                                enabled: true,
+                                position: 'end'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function renderBESSPotential(data) {
+    const infoDiv = document.getElementById('bessInfo');
+    const recDiv = document.getElementById('bessRecommendations');
+    
+    if (!data) {
+        console.warn('⚠️ BESS-Potenzial-Daten nicht verfügbar');
+        return;
+    }
+    
+    // Info-Box: Peak-Shaving
+    if (infoDiv) {
+        const peakShaving = data.peak_shaving || {};
+        const arbitrage = data.arbitrage || {};
+        
+        let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+        
+        // Peak-Shaving-Info
+        html += '<div class="p-4 bg-red-50 border border-red-200 rounded-lg">';
+        html += '<h4 class="font-semibold text-red-800 mb-2">Peak-Shaving-Potenzial</h4>';
+        html += `<p class="text-sm text-gray-700">Überschreitungen: <span class="font-semibold">${peakShaving.exceedances_count || 0}</span></p>`;
+        html += `<p class="text-sm text-gray-700">Überschuss-Energie: <span class="font-semibold">${(peakShaving.excess_energy_kwh || 0).toFixed(2)} kWh</span></p>`;
+        html += '</div>';
+        
+        // Arbitrage-Info
+        html += '<div class="p-4 bg-green-50 border border-green-200 rounded-lg">';
+        html += '<h4 class="font-semibold text-green-800 mb-2">Arbitrage-Potenzial</h4>';
+        html += `<p class="text-sm text-gray-700">Preis-Spread: <span class="font-semibold">${(arbitrage.price_spread_eur_mwh || 0).toFixed(2)} EUR/MWh</span></p>`;
+        html += `<p class="text-sm text-gray-700">Geschätzter Gewinn: <span class="font-semibold">${(arbitrage.estimated_revenue_eur || 0).toFixed(2)} EUR</span></p>`;
+        html += '</div>';
+        
+        html += '</div>';
+        infoDiv.innerHTML = html;
+    }
+    
+    // Empfehlungen
+    if (recDiv) {
+        const recommendations = data.recommendations || {};
+        const useCase = recommendations.use_case || 'unknown';
+        const useCaseNames = {
+            'peak_shaving': 'Peak-Shaving',
+            'arbitrage': 'Arbitrage',
+            'unknown': 'Keine spezifische Empfehlung'
+        };
+        
+        let html = '<h4 class="font-semibold text-blue-800 mb-2">BESS-Empfehlung</h4>';
+        html += `<p class="text-sm text-gray-700 mb-2">Use Case: <span class="font-semibold">${useCaseNames[useCase] || useCase}</span></p>`;
+        
+        if (recommendations.bess_size_mwh > 0) {
+            html += `<p class="text-sm text-gray-700">Empfohlene BESS-Kapazität: <span class="font-semibold">${recommendations.bess_size_mwh.toFixed(2)} MWh</span></p>`;
+        }
+        if (recommendations.bess_power_mw > 0) {
+            html += `<p class="text-sm text-gray-700">Empfohlene BESS-Leistung: <span class="font-semibold">${recommendations.bess_power_mw.toFixed(2)} MW</span></p>`;
+        }
+        
+        if (recommendations.bess_size_mwh === 0 && recommendations.bess_power_mw === 0) {
+            html += '<p class="text-sm text-gray-500 italic">Keine spezifische BESS-Empfehlung möglich (keine Peak-Shaving-Daten oder Arbitrage-Potenzial verfügbar).</p>';
+        }
+        
+        recDiv.innerHTML = html;
+    }
+}
+
+function renderLoadFactorAnalysis(data) {
+    const infoDiv = document.getElementById('loadFactorInfo');
+    
+    if (!data || !infoDiv) {
+        console.warn('⚠️ Lastfaktor-Daten nicht verfügbar');
+        return;
+    }
+    
+    const loadFactor = (data.load_factor || 0) * 100; // In Prozent
+    const utilizationRate = data.utilization_rate || 0;
+    const fullLoadHours = data.full_load_hours || 0;
+    const variationCoeff = (data.variation_coefficient || 0) * 100; // In Prozent
+    
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    
+    // Lastfaktor-Karte
+    html += '<div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-blue-800 mb-2">Lastfaktor</h4>';
+    html += `<p class="text-2xl font-bold text-blue-600">${loadFactor.toFixed(2)}%</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Durchschnitt / Maximum</p>';
+    html += '</div>';
+    
+    // Auslastungsgrad-Karte
+    html += '<div class="p-4 bg-green-50 border border-green-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-green-800 mb-2">Auslastungsgrad</h4>';
+    html += `<p class="text-2xl font-bold text-green-600">${utilizationRate.toFixed(2)}%</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">% der Zeit > 80% des Maximums</p>';
+    html += '</div>';
+    
+    // Vollbenutzungsstunden-Karte
+    html += '<div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-purple-800 mb-2">Vollbenutzungsstunden</h4>';
+    html += `<p class="text-2xl font-bold text-purple-600">${fullLoadHours.toFixed(2)} h</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Energie / Maximalleistung</p>';
+    html += '</div>';
+    
+    // Variationskoeffizient-Karte
+    html += '<div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-orange-800 mb-2">Variationskoeffizient</h4>';
+    html += `<p class="text-2xl font-bold text-orange-600">${variationCoeff.toFixed(2)}%</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Standardabweichung / Mittelwert</p>';
+    html += '</div>';
+    
+    html += '</div>';
+    
+    // Vergleichs-Info
+    html += '<div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-gray-800 mb-2">Interpretation</h4>';
+    
+    if (loadFactor < 30) {
+        html += '<p class="text-sm text-gray-700">⚡ <strong>Niedriger Lastfaktor:</strong> Hohe Lastspitzen, aber geringe durchschnittliche Auslastung. Gutes Potenzial für Peak-Shaving.</p>';
+    } else if (loadFactor < 60) {
+        html += '<p class="text-sm text-gray-700">⚡ <strong>Mittlerer Lastfaktor:</strong> Ausgewogene Lastverteilung mit moderaten Spitzen.</p>';
+    } else {
+        html += '<p class="text-sm text-gray-700">⚡ <strong>Hoher Lastfaktor:</strong> Gleichmäßige Lastverteilung, geringe Spitzen.</p>';
+    }
+    
+    if (utilizationRate < 5) {
+        html += '<p class="text-sm text-gray-700 mt-2">📊 <strong>Niedrige Auslastung:</strong> Nur selten über 80% des Maximums. Geringes Peak-Shaving-Potenzial.</p>';
+    } else if (utilizationRate < 20) {
+        html += '<p class="text-sm text-gray-700 mt-2">📊 <strong>Moderate Auslastung:</strong> Gelegentliche Spitzen über 80% des Maximums.</p>';
+    } else {
+        html += '<p class="text-sm text-gray-700 mt-2">📊 <strong>Hohe Auslastung:</strong> Häufig über 80% des Maximums. Hohes Peak-Shaving-Potenzial.</p>';
+    }
+    
+    html += '</div>';
+    
+    infoDiv.innerHTML = html;
+}
+
+function renderClassification(data) {
+    const infoDiv = document.getElementById('classificationInfo');
+    
+    if (!data || !infoDiv) {
+        console.warn('⚠️ Klassifikations-Daten nicht verfügbar');
+        return;
+    }
+    
+    const profileType = data.profile_type || 'unknown';
+    const confidenceScore = (data.confidence_score || 0) * 100; // In Prozent
+    const characteristics = data.characteristics || [];
+    
+    // Profil-Typ-Namen
+    const typeNames = {
+        'household': 'Haushalt',
+        'commercial': 'Gewerbe',
+        'industrial': 'Industrie',
+        'unknown': 'Unbekannt'
+    };
+    
+    // Profil-Typ-Farben
+    const typeColors = {
+        'household': { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-800', badge: 'bg-blue-600' },
+        'commercial': { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-800', badge: 'bg-green-600' },
+        'industrial': { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', badge: 'bg-purple-600' },
+        'unknown': { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-800', badge: 'bg-gray-600' }
+    };
+    
+    const colors = typeColors[profileType] || typeColors['unknown'];
+    
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    
+    // Profil-Typ-Badge
+    html += `<div class="p-4 ${colors.bg} border ${colors.border} rounded-lg">`;
+    html += '<h4 class="font-semibold mb-2">Erkanntes Profil</h4>';
+    html += `<span class="inline-block px-4 py-2 ${colors.badge} text-white rounded-full text-lg font-semibold">${typeNames[profileType] || profileType}</span>`;
+    html += `<p class="text-sm text-gray-600 mt-2">Konfidenz: <span class="font-semibold">${confidenceScore.toFixed(1)}%</span></p>`;
+    html += '</div>';
+    
+    // Charakteristiken
+    html += '<div class="p-4 bg-white border border-gray-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-gray-800 mb-2">Erkannte Merkmale</h4>';
+    
+    if (characteristics.length === 0) {
+        html += '<p class="text-sm text-gray-500 italic">Keine spezifischen Merkmale erkannt.</p>';
+    } else {
+        html += '<ul class="list-disc list-inside space-y-1">';
+        const charNames = {
+            'kontinuierliche_last': 'Kontinuierliche Last',
+            'morgen_abend_peaks': 'Morgen-/Abend-Peaks',
+            'wochenende_drop': 'Wochenende-Drop',
+            'niedrige_leistung': 'Niedrige Leistung (< 10 kW)',
+            'mittlere_leistung': 'Mittlere Leistung (10-100 kW)',
+            'hohe_leistung': 'Hohe Leistung (> 100 kW)'
+        };
+        
+        characteristics.forEach(char => {
+            const charName = charNames[char] || char;
+            html += `<li class="text-sm text-gray-700">${charName}</li>`;
+        });
+        html += '</ul>';
+    }
+    
+    html += '</div>';
+    html += '</div>';
+    
+    // Interpretation
+    html += '<div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-gray-800 mb-2">Interpretation</h4>';
+    
+    if (profileType === 'household') {
+        html += '<p class="text-sm text-gray-700">🏠 <strong>Haushaltsprofil:</strong> Typisch für private Haushalte mit Morgen- und Abendspitzen, niedriger Grundlast und deutlichem Wochenende-Drop.</p>';
+    } else if (profileType === 'commercial') {
+        html += '<p class="text-sm text-gray-700">🏢 <strong>Gewerbeprofil:</strong> Typisch für Gewerbebetriebe mit moderaten Lastspitzen während der Geschäftszeiten.</p>';
+    } else if (profileType === 'industrial') {
+        html += '<p class="text-sm text-gray-700">🏭 <strong>Industrieprofil:</strong> Typisch für Industriebetriebe mit hoher Grundlast und kontinuierlichem Betrieb.</p>';
+    } else {
+        html += '<p class="text-sm text-gray-700">❓ <strong>Unbekanntes Profil:</strong> Das Lastprofil konnte nicht eindeutig klassifiziert werden. Möglicherweise ungewöhnliche Lastcharakteristik oder unzureichende Daten.</p>';
+    }
+    
+    if (confidenceScore < 50) {
+        html += '<p class="text-sm text-yellow-700 mt-2">⚠️ <strong>Niedrige Konfidenz:</strong> Die Klassifikation ist unsicher. Weitere Daten könnten die Genauigkeit verbessern.</p>';
+    }
+    
+    html += '</div>';
+    
+    infoDiv.innerHTML = html;
+}
+
+function renderCostAnalysis(data) {
+    const infoDiv = document.getElementById('costInfo');
+    
+    if (!data || !infoDiv) {
+        console.warn('⚠️ Kosten-Daten nicht verfügbar');
+        return;
+    }
+    
+    const energyCosts = data.energy_costs_eur || 0;
+    const powerCosts = data.power_costs_eur || 0;
+    const totalCosts = data.total_costs_eur || 0;
+    const costsPerYear = data.costs_per_year_eur || 0;
+    
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    
+    // Energie-Kosten
+    html += '<div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-blue-800 mb-2">Energie-Kosten</h4>';
+    html += `<p class="text-2xl font-bold text-blue-600">${energyCosts.toFixed(2)} EUR</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Basierend auf Energieverbrauch</p>';
+    html += '</div>';
+    
+    // Leistungs-Kosten
+    html += '<div class="p-4 bg-green-50 border border-green-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-green-800 mb-2">Leistungs-Kosten</h4>';
+    html += `<p class="text-2xl font-bold text-green-600">${powerCosts.toFixed(2)} EUR</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Basierend auf Maximalleistung</p>';
+    html += '</div>';
+    
+    // Gesamtkosten
+    html += '<div class="p-4 bg-purple-50 border border-purple-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-purple-800 mb-2">Gesamtkosten</h4>';
+    html += `<p class="text-2xl font-bold text-purple-600">${totalCosts.toFixed(2)} EUR</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Energie + Leistung</p>';
+    html += '</div>';
+    
+    // Kosten pro Jahr
+    html += '<div class="p-4 bg-orange-50 border border-orange-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-orange-800 mb-2">Kosten pro Jahr (extrapoliert)</h4>';
+    html += `<p class="text-2xl font-bold text-orange-600">${costsPerYear.toFixed(2)} EUR</p>`;
+    html += '<p class="text-sm text-gray-600 mt-1">Hochgerechnet auf 12 Monate</p>';
+    html += '</div>';
+    
+    html += '</div>';
+    
+    // Kostenaufschlüsselung
+    html += '<div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">';
+    html += '<h4 class="font-semibold text-gray-800 mb-2">Kostenaufschlüsselung</h4>';
+    
+    const energyPercent = totalCosts > 0 ? (energyCosts / totalCosts * 100) : 0;
+    const powerPercent = totalCosts > 0 ? (powerCosts / totalCosts * 100) : 0;
+    
+    html += '<div class="space-y-2">';
+    html += `<div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700">Energie-Kosten:</span>
+        <span class="text-sm font-semibold text-gray-800">${energyPercent.toFixed(1)}%</span>
+    </div>`;
+    html += `<div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-blue-600 h-2 rounded-full" style="width: ${energyPercent}%"></div>
+    </div>`;
+    
+    html += `<div class="flex items-center justify-between mt-2">
+        <span class="text-sm text-gray-700">Leistungs-Kosten:</span>
+        <span class="text-sm font-semibold text-gray-800">${powerPercent.toFixed(1)}%</span>
+    </div>`;
+    html += `<div class="w-full bg-gray-200 rounded-full h-2">
+        <div class="bg-green-600 h-2 rounded-full" style="width: ${powerPercent}%"></div>
+    </div>`;
+    html += '</div>';
+    
+    html += '<p class="text-xs text-gray-500 mt-4 italic">Hinweis: Die Kostenanalyse basiert auf Standardpreisen (0.20 EUR/kWh für Energie, 5.00 EUR/kW/Monat für Leistung). Diese können in den Projekteinstellungen angepasst werden.</p>';
+    
+    html += '</div>';
+    
+    infoDiv.innerHTML = html;
 }
 </script>
 {% endblock %} 

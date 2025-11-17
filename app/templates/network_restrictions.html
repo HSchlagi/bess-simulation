@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Netzrestriktionen - BESS Simulation{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-network-wired text-blue-600 mr-3"></i>
+            Netzrestriktionen konfigurieren
+        </h1>
+        <p class="text-gray-600">Konfigurieren Sie die Netzrestriktionen für Ihre BESS-Projekte, einschließlich Export-Limits und Leistungsbeschränkungen.</p>
+    </div>
+
+    <!-- Projekt-Auswahl -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-filter text-green-600 mr-2"></i>
+            Projekt auswählen
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Projekt</label>
+                <select id="projectSelect" onchange="loadNetworkRestrictions()" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Projekt auswählen...</option>
+                </select>
+            </div>
+            <div id="projectInfo" class="hidden">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="text-sm text-gray-600">BESS-Leistung:</div>
+                    <div class="font-semibold text-lg" id="projectBessPower">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Netzrestriktionen-Formular -->
+    <div id="restrictionsForm" class="hidden">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-sliders-h text-purple-600 mr-2"></i>
+                Netzrestriktionen
+            </h2>
+
+            <form id="networkRestrictionsForm" onsubmit="saveNetworkRestrictions(event)">
+                <!-- Leistungsrestriktionen -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Leistungsrestriktionen</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Max. Entladeleistung (kW)
+                            </label>
+                            <input type="number" id="maxDischargeKw" step="0.1" min="0" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Maximale Entladeleistung der BESS</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Max. Ladeleistung (kW)
+                            </label>
+                            <input type="number" id="maxChargeKw" step="0.1" min="0" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Maximale Ladeleistung der BESS</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <span class="text-red-600">*</span> Export-Limit (kW)
+                            </label>
+                            <input type="number" id="exportLimitKw" step="0.1" min="0" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Exportlimit am Netzanschlusspunkt (für Peak-Shaving-Analyse)</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Ramp-Rate (%/Min)
+                            </label>
+                            <input type="number" id="rampRatePercent" step="0.1" min="0" max="100" value="10.0"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Maximale Leistungsänderung pro Minute</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Netzebene -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Netzebene</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Netzebene</label>
+                            <select id="networkLevel" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="NE5">NE5 - Niederspannung</option>
+                                <option value="NE6">NE6 - Mittelspannung</option>
+                                <option value="NE7">NE7 - Hochspannung</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Netzebene des Anschlusses</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 100-h-Regel (EEG/DE) -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">100-h-Regel (EEG/DE)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="eeg100hRuleEnabled" 
+                                       class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <span class="text-sm font-medium text-gray-700">100-h-Regel aktiviert</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mt-1 ml-6">Begrenzung der Einspeisestunden pro Jahr</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Max. Stunden/Jahr
+                            </label>
+                            <input type="number" id="eeg100hHoursPerYear" step="1" min="0" value="100"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Bereits genutzte Stunden
+                            </label>
+                            <input type="number" id="eeg100hUsedHours" step="1" min="0" value="0"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hüllkurvenregelung -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Hüllkurvenregelung</h3>
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="hullCurveEnabled" 
+                                   class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <span class="text-sm font-medium text-gray-700">Hüllkurvenregelung aktiviert</span>
+                        </label>
+                        <p class="text-xs text-gray-500 mt-1 ml-6">Zeitabhängige Leistungsbegrenzung</p>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button type="button" onclick="resetForm()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                        <i class="fas fa-undo mr-2"></i>Zurücksetzen
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-save mr-2"></i>Speichern
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Info-Box -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-blue-800 mb-2">
+                <i class="fas fa-info-circle mr-2"></i>Hinweise
+            </h3>
+            <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                <li>Das <strong>Export-Limit</strong> wird für die Peak-Shaving-Analyse in der Lastprofil-Analyse verwendet.</li>
+                <li>Wenn kein Export-Limit definiert ist, wird automatisch 80% der BESS-Leistung verwendet.</li>
+                <li>Die Netzebene bestimmt die Standardwerte für Export-Limits (NE5: 100%, NE6: 80%, NE7: 60%).</li>
+                <li>Änderungen werden sofort für alle Analysen wirksam.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Ladeanzeige -->
+    <div id="loadingIndicator" class="hidden text-center py-8">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p class="text-gray-600 mt-2">Lade Daten...</p>
+    </div>
+
+    <!-- Erfolgs-/Fehlermeldung -->
+    <div id="messageBox" class="hidden fixed top-4 right-4 z-50 max-w-md"></div>
+</div>
+
+<script>
+let currentProjectId = null;
+
+// Projekte laden
+async function loadProjects() {
+    try {
+        const response = await fetch('/api/projects');
+        const projects = await response.json();
+        
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = '<option value="">Projekt auswählen...</option>';
+        
+        projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der Projekte:', error);
+        showMessage('Fehler beim Laden der Projekte', 'error');
+    }
+}
+
+// Netzrestriktionen laden
+async function loadNetworkRestrictions() {
+    const projectId = document.getElementById('projectSelect').value;
+    
+    if (!projectId) {
+        document.getElementById('restrictionsForm').classList.add('hidden');
+        document.getElementById('projectInfo').classList.add('hidden');
+        return;
+    }
+    
+    currentProjectId = projectId;
+    
+    // Ladeanzeige anzeigen
+    document.getElementById('loadingIndicator').classList.remove('hidden');
+    document.getElementById('restrictionsForm').classList.add('hidden');
+    
+    try {
+        // Projekt-Details laden
+        const projectResponse = await fetch(`/api/projects/${projectId}`);
+        const project = await projectResponse.json();
+        
+        if (project.bess_power) {
+            document.getElementById('projectBessPower').textContent = `${project.bess_power} kW`;
+            document.getElementById('projectInfo').classList.remove('hidden');
+        }
+        
+        // Netzrestriktionen laden
+        const response = await fetch(`/api/projects/${projectId}/network-restrictions`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const restrictions = data.data;
+            
+            // Formular ausfüllen
+            document.getElementById('maxDischargeKw').value = restrictions.max_discharge_kw || '';
+            document.getElementById('maxChargeKw').value = restrictions.max_charge_kw || '';
+            document.getElementById('exportLimitKw').value = restrictions.export_limit_kw || '';
+            document.getElementById('rampRatePercent').value = restrictions.ramp_rate_percent || 10.0;
+            document.getElementById('networkLevel').value = restrictions.network_level || 'NE5';
+            document.getElementById('eeg100hRuleEnabled').checked = restrictions.eeg_100h_rule_enabled || false;
+            document.getElementById('eeg100hHoursPerYear').value = restrictions.eeg_100h_hours_per_year || 100;
+            document.getElementById('eeg100hUsedHours').value = restrictions.eeg_100h_used_hours || 0;
+            document.getElementById('hullCurveEnabled').checked = restrictions.hull_curve_enabled || false;
+            
+            // Wenn kein Export-Limit vorhanden, Fallback berechnen
+            if (!restrictions.export_limit_kw && project.bess_power) {
+                const fallbackLimit = project.bess_power * 0.8;
+                document.getElementById('exportLimitKw').value = fallbackLimit.toFixed(1);
+                document.getElementById('exportLimitKw').placeholder = `Empfohlen: ${fallbackLimit.toFixed(1)} kW (80% von BESS-Power)`;
+            }
+            
+            document.getElementById('restrictionsForm').classList.remove('hidden');
+        } else {
+            // Neue Netzrestriktionen mit Standardwerten erstellen
+            if (project.bess_power) {
+                document.getElementById('maxDischargeKw').value = project.bess_power;
+                document.getElementById('maxChargeKw').value = project.bess_power;
+                document.getElementById('exportLimitKw').value = (project.bess_power * 0.8).toFixed(1);
+            }
+            document.getElementById('restrictionsForm').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Fehler beim Laden der Netzrestriktionen:', error);
+        showMessage('Fehler beim Laden der Netzrestriktionen', 'error');
+    } finally {
+        document.getElementById('loadingIndicator').classList.add('hidden');
+    }
+}
+
+// Netzrestriktionen speichern
+async function saveNetworkRestrictions(event) {
+    event.preventDefault();
+    
+    if (!currentProjectId) {
+        showMessage('Bitte wählen Sie zuerst ein Projekt aus', 'error');
+        return;
+    }
+    
+    const formData = {
+        max_discharge_kw: parseFloat(document.getElementById('maxDischargeKw').value) || 0,
+        max_charge_kw: parseFloat(document.getElementById('maxChargeKw').value) || 0,
+        export_limit_kw: parseFloat(document.getElementById('exportLimitKw').value) || 0,
+        ramp_rate_percent: parseFloat(document.getElementById('rampRatePercent').value) || 10.0,
+        network_level: document.getElementById('networkLevel').value,
+        eeg_100h_rule_enabled: document.getElementById('eeg100hRuleEnabled').checked,
+        eeg_100h_hours_per_year: parseInt(document.getElementById('eeg100hHoursPerYear').value) || 100,
+        eeg_100h_used_hours: parseInt(document.getElementById('eeg100hUsedHours').value) || 0,
+        hull_curve_enabled: document.getElementById('hullCurveEnabled').checked
+    };
+    
+    // Validierung
+    if (!formData.export_limit_kw || formData.export_limit_kw <= 0) {
+        showMessage('Bitte geben Sie ein gültiges Export-Limit ein', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/projects/${currentProjectId}/network-restrictions`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('Netzrestriktionen erfolgreich gespeichert', 'success');
+        } else {
+            showMessage(`Fehler: ${result.error || 'Unbekannter Fehler'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error);
+        showMessage('Fehler beim Speichern der Netzrestriktionen', 'error');
+    }
+}
+
+// Formular zurücksetzen
+function resetForm() {
+    if (currentProjectId) {
+        loadNetworkRestrictions();
+    }
+}
+
+// Nachricht anzeigen
+function showMessage(message, type) {
+    const messageBox = document.getElementById('messageBox');
+    messageBox.className = `fixed top-4 right-4 z-50 max-w-md p-4 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
+    }`;
+    messageBox.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    messageBox.classList.remove('hidden');
+    
+    setTimeout(() => {
+        messageBox.classList.add('hidden');
+    }, 5000);
+}
+
+// Seite initialisieren
+document.addEventListener('DOMContentLoaded', function() {
+    loadProjects();
+    
+    // Prüfe ob Projekt-ID in URL vorhanden ist
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('project_id');
+    
+    if (projectId) {
+        // Warte kurz, bis Projekte geladen sind
+        setTimeout(() => {
+            const projectSelect = document.getElementById('projectSelect');
+            if (projectSelect) {
+                projectSelect.value = projectId;
+                loadNetworkRestrictions();
+            }
+        }, 500);
+    }
+});
+</script>
+{% endblock %}
+

@@ -343,6 +343,12 @@ def view_project():
 def edit_project():
     return render_template('edit_project.html')
 
+@main_bp.route('/network_restrictions')
+@login_required
+def network_restrictions():
+    """Seite zur Konfiguration von Netzrestriktionen"""
+    return render_template('network_restrictions.html')
+
 @main_bp.route('/view_customer')
 def view_customer():
     return render_template('view_customer.html')
@@ -4348,9 +4354,87 @@ def get_load_profile_analysis(project_id):
             if len(sunday_timestamps) > 0:
                 print(f"   Erste 3 Sonntags-Timestamps: {sunday_timestamps[:3]}")
         
+        # Zusätzliche Daten für BESS-Potenzial-Analyse laden
+        p_limit_kw = None
+        price_data_df = None
+        
+        # 1. Export-Limit aus NetworkRestrictions holen
+        try:
+            from models import NetworkRestrictions as NetworkRestrictionsModel
+            network_restrictions = NetworkRestrictionsModel.query.filter_by(project_id=project_id).first()
+            if network_restrictions and network_restrictions.export_limit_kw:
+                p_limit_kw = float(network_restrictions.export_limit_kw)
+                print(f"🔍 Export-Limit gefunden: {p_limit_kw} kW")
+            else:
+                # Fallback: Aus Projekt-Power schätzen (80% der BESS-Power)
+                project = Project.query.get(project_id)
+                if project and project.bess_power:
+                    p_limit_kw = float(project.bess_power) * 0.8
+                    print(f"🔍 Export-Limit geschätzt (80% BESS-Power): {p_limit_kw} kW")
+        except Exception as e:
+            print(f"⚠️ Fehler beim Laden des Export-Limits: {e}")
+        
+        # 2. Spot-Preise für den gleichen Zeitraum laden
+        try:
+            import pandas as pd
+            from models import SpotPrice
+            
+            # Zeitstempel aus Lastprofil-Daten extrahieren
+            if len(load_data) > 0:
+                first_timestamp = load_data[0]['timestamp']
+                last_timestamp = load_data[-1]['timestamp']
+                
+                # Spot-Preise aus Datenbank laden
+                spot_prices = SpotPrice.query.filter(
+                    SpotPrice.timestamp >= first_timestamp,
+                    SpotPrice.timestamp <= last_timestamp
+                ).order_by(SpotPrice.timestamp).all()
+                
+                if spot_prices and len(spot_prices) > 0:
+                    # DataFrame erstellen
+                    price_data = []
+                    for sp in spot_prices:
+                        price_data.append({
+                            'timestamp': sp.timestamp,
+                            'price_eur_mwh': float(sp.price_eur_mwh) if sp.price_eur_mwh else 0.0
+                        })
+                    
+                    price_data_df = pd.DataFrame(price_data)
+                    if 'timestamp' in price_data_df.columns:
+                        price_data_df['timestamp'] = pd.to_datetime(price_data_df['timestamp'])
+                        price_data_df = price_data_df.set_index('timestamp')
+                    
+                    print(f"🔍 {len(spot_prices)} Spot-Preise für Zeitraum geladen")
+                else:
+                    print(f"⚠️ Keine Spot-Preise für Zeitraum gefunden ({first_timestamp} bis {last_timestamp})")
+        except Exception as e:
+            print(f"⚠️ Fehler beim Laden der Spot-Preise: {e}")
+            import traceback
+            traceback.print_exc()
+        
         # Analyse durchführen
         try:
             results = analyze_load_profile(load_data, analysis_types)
+            
+            # BESS-Potenzial-Analyse mit zusätzlichen Daten erweitern
+            if 'all' in analysis_types or 'bess_potential' in analysis_types:
+                if results.get('analyses') and results['analyses'].get('bess_potential'):
+                    from app.analysis.lastprofil_analysis import calc_bess_potential, load_profile_from_data
+                    
+                    # DataFrame aus Lastprofil-Daten erstellen
+                    df = load_profile_from_data(load_data)
+                    
+                    # BESS-Potenzial mit p_limit_kw und price_data neu berechnen
+                    bess_potential = calc_bess_potential(
+                        df, 
+                        power_col="P",
+                        p_limit_kw=p_limit_kw,
+                        price_data=price_data_df
+                    )
+                    
+                    # Ergebnisse aktualisieren
+                    results['analyses']['bess_potential'] = bess_potential
+                    print(f"✅ BESS-Potenzial-Analyse mit p_limit_kw={p_limit_kw} und {len(price_data_df) if price_data_df is not None else 0} Preis-Datenpunkten aktualisiert")
         except Exception as analyze_error:
             print(f"❌ Fehler in analyze_load_profile: {analyze_error}")
             import traceback
@@ -4388,6 +4472,129 @@ def get_load_profile_analysis(project_id):
         }), 500
     except Exception as e:
         print(f"❌ Fehler bei Lastprofil-Analyse: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@main_bp.route('/api/projects/<int:project_id>/network-restrictions', methods=['GET'])
+@login_required
+def get_network_restrictions(project_id):
+    """
+    Lädt Netzrestriktionen für ein Projekt.
+    """
+    try:
+        from models import NetworkRestrictions
+        
+        network_restrictions = NetworkRestrictions.query.filter_by(project_id=project_id).first()
+        
+        if network_restrictions:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'id': network_restrictions.id,
+                    'project_id': network_restrictions.project_id,
+                    'max_discharge_kw': float(network_restrictions.max_discharge_kw) if network_restrictions.max_discharge_kw else 0.0,
+                    'max_charge_kw': float(network_restrictions.max_charge_kw) if network_restrictions.max_charge_kw else 0.0,
+                    'ramp_rate_percent': float(network_restrictions.ramp_rate_percent) if network_restrictions.ramp_rate_percent else 10.0,
+                    'export_limit_kw': float(network_restrictions.export_limit_kw) if network_restrictions.export_limit_kw else 0.0,
+                    'network_level': network_restrictions.network_level or 'NE5',
+                    'eeg_100h_rule_enabled': bool(network_restrictions.eeg_100h_rule_enabled),
+                    'eeg_100h_hours_per_year': int(network_restrictions.eeg_100h_hours_per_year) if network_restrictions.eeg_100h_hours_per_year else 100,
+                    'eeg_100h_used_hours': int(network_restrictions.eeg_100h_used_hours) if network_restrictions.eeg_100h_used_hours else 0,
+                    'hull_curve_enabled': bool(network_restrictions.hull_curve_enabled),
+                    'hull_curve_data': network_restrictions.hull_curve_data,
+                    'created_at': network_restrictions.created_at.isoformat() if network_restrictions.created_at else None,
+                    'updated_at': network_restrictions.updated_at.isoformat() if network_restrictions.updated_at else None
+                }
+            })
+        else:
+            # Keine Netzrestriktionen vorhanden
+            return jsonify({
+                'success': False,
+                'message': 'Keine Netzrestriktionen für dieses Projekt gefunden'
+            })
+            
+    except Exception as e:
+        print(f"❌ Fehler beim Laden der Netzrestriktionen: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@main_bp.route('/api/projects/<int:project_id>/network-restrictions', methods=['PUT'])
+@login_required
+def update_network_restrictions(project_id):
+    """
+    Aktualisiert oder erstellt Netzrestriktionen für ein Projekt.
+    """
+    try:
+        from models import NetworkRestrictions, Project
+        
+        # Prüfe ob Projekt existiert
+        project = Project.query.get(project_id)
+        if not project:
+            return jsonify({
+                'success': False,
+                'error': 'Projekt nicht gefunden'
+            }), 404
+        
+        data = request.get_json()
+        
+        # Netzrestriktionen laden oder erstellen
+        network_restrictions = NetworkRestrictions.query.filter_by(project_id=project_id).first()
+        
+        if network_restrictions:
+            # Aktualisieren
+            network_restrictions.max_discharge_kw = float(data.get('max_discharge_kw', 0)) if data.get('max_discharge_kw') is not None else network_restrictions.max_discharge_kw
+            network_restrictions.max_charge_kw = float(data.get('max_charge_kw', 0)) if data.get('max_charge_kw') is not None else network_restrictions.max_charge_kw
+            network_restrictions.ramp_rate_percent = float(data.get('ramp_rate_percent', 10.0)) if data.get('ramp_rate_percent') is not None else network_restrictions.ramp_rate_percent
+            network_restrictions.export_limit_kw = float(data.get('export_limit_kw', 0)) if data.get('export_limit_kw') is not None else network_restrictions.export_limit_kw
+            network_restrictions.network_level = data.get('network_level', 'NE5') if data.get('network_level') else network_restrictions.network_level
+            network_restrictions.eeg_100h_rule_enabled = bool(data.get('eeg_100h_rule_enabled', False)) if 'eeg_100h_rule_enabled' in data else network_restrictions.eeg_100h_rule_enabled
+            network_restrictions.eeg_100h_hours_per_year = int(data.get('eeg_100h_hours_per_year', 100)) if data.get('eeg_100h_hours_per_year') is not None else network_restrictions.eeg_100h_hours_per_year
+            network_restrictions.eeg_100h_used_hours = int(data.get('eeg_100h_used_hours', 0)) if data.get('eeg_100h_used_hours') is not None else network_restrictions.eeg_100h_used_hours
+            network_restrictions.hull_curve_enabled = bool(data.get('hull_curve_enabled', False)) if 'hull_curve_enabled' in data else network_restrictions.hull_curve_enabled
+            network_restrictions.updated_at = datetime.utcnow()
+        else:
+            # Neu erstellen
+            network_restrictions = NetworkRestrictions(
+                project_id=project_id,
+                max_discharge_kw=float(data.get('max_discharge_kw', 0)) or (project.bess_power if project.bess_power else 0),
+                max_charge_kw=float(data.get('max_charge_kw', 0)) or (project.bess_power if project.bess_power else 0),
+                ramp_rate_percent=float(data.get('ramp_rate_percent', 10.0)),
+                export_limit_kw=float(data.get('export_limit_kw', 0)) or (project.bess_power * 0.8 if project.bess_power else 0),
+                network_level=data.get('network_level', 'NE5'),
+                eeg_100h_rule_enabled=bool(data.get('eeg_100h_rule_enabled', False)),
+                eeg_100h_hours_per_year=int(data.get('eeg_100h_hours_per_year', 100)),
+                eeg_100h_used_hours=int(data.get('eeg_100h_used_hours', 0)),
+                hull_curve_enabled=bool(data.get('hull_curve_enabled', False))
+            )
+            db.session.add(network_restrictions)
+        
+        db.session.commit()
+        
+        print(f"✅ Netzrestriktionen für Projekt {project_id} gespeichert: export_limit_kw={network_restrictions.export_limit_kw} kW")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Netzrestriktionen erfolgreich gespeichert',
+            'data': {
+                'id': network_restrictions.id,
+                'project_id': network_restrictions.project_id,
+                'export_limit_kw': float(network_restrictions.export_limit_kw)
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Fehler beim Speichern der Netzrestriktionen: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({
