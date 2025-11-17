@@ -41,6 +41,7 @@
         mask-composite: exclude;
         opacity: 0;
         transition: opacity 0.3s;
+        pointer-events: none; /* Wichtig: Erlaubt Klicks durch das Overlay */
     }
     
     .glow-effect:hover::before {
@@ -154,7 +155,7 @@
     }
 </style>
 
-<div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-1">
     <!-- Hero Section mit modernem Design - Kompakt -->
     <div class="relative overflow-hidden rounded-2xl tech-gradient p-6 mb-6 text-white">
         <div class="absolute inset-0 grid-pattern opacity-20"></div>
@@ -365,7 +366,7 @@
                 <p class="text-gray-600 mb-6 text-sm leading-relaxed">
                     Importieren Sie Lastprofile, Wetterdaten, PVSol-Exporte, Wasserkraft- und Windkraftdaten
                 </p>
-                <a href="{{ url_for('main.data_import_center') }}" 
+                <a href="/data_import_center" 
                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                     <i class="fas fa-arrow-right mr-2"></i>
                     Zum Import Center
@@ -383,7 +384,7 @@
                 <p class="text-gray-600 mb-6 text-sm leading-relaxed">
                     Tageshandel mit Spread- und Schwellenwert-Modellen für optimale Erlöse
                 </p>
-                <a href="{{ url_for('main.data_import_center') }}?tab=intraday" 
+                <a href="/data_import_center?tab=intraday" 
                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                     <i class="fas fa-cog mr-2"></i>
                     Konfigurieren
@@ -401,7 +402,7 @@
                 <p class="text-gray-600 mb-6 text-sm leading-relaxed">
                     APG Regelenergie und EPEX Intraday für österreichische Marktdaten
                 </p>
-                <a href="{{ url_for('main.data_import_center') }}?tab=austrian" 
+                <a href="/data_import_center?tab=austrian" 
                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                     <i class="fas fa-cog mr-2"></i>
                     Konfigurieren
@@ -419,7 +420,7 @@
                 <p class="text-gray-600 mb-6 text-sm leading-relaxed">
                     Erweiterte Erlösberechnung mit allen neuen Einnahmequellen
                 </p>
-                <a href="{{ url_for('main.economic_analysis') }}" 
+                <a href="/economic_analysis" 
                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                     <i class="fas fa-chart-bar mr-2"></i>
                     Analysieren
@@ -447,7 +448,7 @@
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200 hover:shadow-lg transition-all">
+            <a href="/dispatch" class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200 hover:shadow-lg transition-all cursor-pointer hover:from-blue-100 hover:to-blue-200">
                 <div class="flex items-center mb-3">
                     <div class="bg-blue-600 p-3 rounded-lg mr-3">
                         <i class="fas fa-clock text-white"></i>
@@ -455,9 +456,9 @@
                     <h3 class="font-bold text-blue-900">15-Minuten-Auflösung</h3>
                 </div>
                 <p class="text-sm text-blue-700">Hochauflösende Simulation für präzise Marktteilnahme</p>
-            </div>
+            </a>
             
-            <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200 hover:shadow-lg transition-all">
+            <a href="/dispatch" class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200 hover:shadow-lg transition-all cursor-pointer hover:from-purple-100 hover:to-purple-200">
                 <div class="flex items-center mb-3">
                     <div class="bg-purple-600 p-3 rounded-lg mr-3">
                         <i class="fas fa-exchange-alt text-white"></i>
@@ -465,9 +466,9 @@
                     <h3 class="font-bold text-purple-900">Redispatch-Analyse</h3>
                 </div>
                 <p class="text-sm text-purple-700">Professionelle Redispatch-Simulation mit CSV-Upload</p>
-            </div>
+            </a>
             
-            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200 hover:shadow-lg transition-all">
+            <a href="/economic_analysis" class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 border border-green-200 hover:shadow-lg transition-all cursor-pointer hover:from-green-100 hover:to-green-200">
                 <div class="flex items-center mb-3">
                     <div class="bg-green-600 p-3 rounded-lg mr-3">
                         <i class="fas fa-chart-line text-white"></i>
@@ -475,7 +476,7 @@
                     <h3 class="font-bold text-green-900">Cashflow-Optimierung</h3>
                 </div>
                 <p class="text-sm text-green-700">Detaillierte Wirtschaftlichkeitsanalyse und SoC-Tracking</p>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -491,8 +492,8 @@
             </h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a href="{{ url_for('main.projects') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all border border-purple-200 hover:shadow-md">
+                <a href="/projects" 
+                   class="flex items-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all border border-purple-200 hover:shadow-md cursor-pointer">
                     <div class="bg-purple-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-list text-white"></i>
                     </div>
@@ -502,8 +503,8 @@
                     </div>
                 </a>
 
-                <a href="{{ url_for('main.new_project') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:from-green-100 hover:to-green-200 transition-all border border-green-200 hover:shadow-md">
+                <a href="/new_project" 
+                   class="flex items-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:from-green-100 hover:to-green-200 transition-all border border-green-200 hover:shadow-md cursor-pointer">
                     <div class="bg-green-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-plus text-white"></i>
                     </div>
@@ -513,8 +514,8 @@
                     </div>
                 </a>
 
-                <a href="{{ url_for('main.customers') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-all border border-blue-200 hover:shadow-md">
+                <a href="/customers" 
+                   class="flex items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-200 transition-all border border-blue-200 hover:shadow-md cursor-pointer">
                     <div class="bg-blue-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-users text-white"></i>
                     </div>
@@ -524,8 +525,8 @@
                     </div>
                 </a>
 
-                <a href="{{ url_for('main.use_case_manager') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl hover:from-indigo-100 hover:to-indigo-200 transition-all border border-indigo-200 hover:shadow-md">
+                <a href="/use-case-manager" 
+                   class="flex items-center p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl hover:from-indigo-100 hover:to-indigo-200 transition-all border border-indigo-200 hover:shadow-md cursor-pointer">
                     <div class="bg-indigo-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-lightbulb text-white"></i>
                     </div>
@@ -547,8 +548,8 @@
             </h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a href="{{ url_for('main.bess_simulation_enhanced') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:from-green-100 hover:to-green-200 transition-all border border-green-200 hover:shadow-md">
+                <a href="/bess-simulation-enhanced" 
+                   class="flex items-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:from-green-100 hover:to-green-200 transition-all border border-green-200 hover:shadow-md cursor-pointer">
                     <div class="bg-green-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-play text-white"></i>
                     </div>
@@ -558,8 +559,8 @@
                     </div>
                 </a>
 
-                <a href="{{ url_for('main.data_import_center') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all border border-purple-200 hover:shadow-md">
+                <a href="/data_import_center" 
+                   class="flex items-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:from-purple-100 hover:to-purple-200 transition-all border border-purple-200 hover:shadow-md cursor-pointer">
                     <div class="bg-purple-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-upload text-white"></i>
                     </div>
@@ -569,8 +570,8 @@
                     </div>
                 </a>
 
-                <a href="{{ url_for('main.economic_analysis') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl hover:from-orange-100 hover:to-orange-200 transition-all border border-orange-200 hover:shadow-md">
+                <a href="/economic_analysis" 
+                   class="flex items-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl hover:from-orange-100 hover:to-orange-200 transition-all border border-orange-200 hover:shadow-md cursor-pointer">
                     <div class="bg-orange-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-chart-bar text-white"></i>
                     </div>
@@ -580,8 +581,8 @@
                     </div>
                 </a>
 
-                <a href="{{ url_for('main.battery_crate_config') }}" 
-                   class="flex items-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl hover:from-yellow-100 hover:to-yellow-200 transition-all border border-yellow-200 hover:shadow-md">
+                <a href="/battery-crate-config" 
+                   class="flex items-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl hover:from-yellow-100 hover:to-yellow-200 transition-all border border-yellow-200 hover:shadow-md cursor-pointer">
                     <div class="bg-yellow-600 p-3 rounded-xl mr-4 shadow-lg">
                         <i class="fas fa-battery-three-quarters text-white"></i>
                     </div>
@@ -595,7 +596,7 @@
     </div>
 
     <!-- Letzte Projekte - Modernisiert -->
-    <div class="tech-card rounded-xl p-6 glow-effect">
+    <div class="tech-card rounded-xl p-6 glow-effect" style="position: relative; z-index: 1;">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-gray-900 flex items-center">
                 <div class="bg-gradient-to-br from-blue-500 to-blue-700 p-2 rounded-lg mr-3">
@@ -603,7 +604,7 @@
                 </div>
                 Letzte Projekte
             </h2>
-            <a href="{{ url_for('multi_user.projects') }}" class="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center space-x-2 hover:underline">
+            <a href="/multi-user/projects" class="text-blue-600 hover:text-blue-800 text-sm font-semibold flex items-center space-x-2 hover:underline" style="position: relative; z-index: 2;">
                 <span>Alle anzeigen</span>
                 <i class="fas fa-arrow-right"></i>
             </a>
@@ -624,22 +625,24 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         {% for project in recent_projects %}
                         <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-semibold text-gray-900">{{ project.name }}</div>
-                                <div class="text-sm text-gray-500">{{ project.description[:50] }}{% if project.description|length > 50 %}...{% endif %}</div>
+                            <td class="px-6 py-4 whitespace-nowrap" style="position: relative; z-index: 2;">
+                                <a href="/multi-user/projects/{{ project['id'] }}" class="block hover:text-blue-600 transition-colors" style="position: relative; z-index: 2;">
+                                    <div class="text-sm font-semibold text-gray-900 hover:text-blue-600">{{ project['name'] }}</div>
+                                    <div class="text-sm text-gray-500">{{ project.get('description', '')[:50] }}{% if project.get('description', '')|length > 50 %}...{% endif %}</div>
+                                </a>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ project.bess_size|default(0, true) }} kWh
+                                {{ project.get('bess_size', 0)|default(0, true) }} kWh
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ project.pv_power|default(0, true) }} kW
+                                {{ project.get('pv_power', 0)|default(0, true) }} kW
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {{ project.hydro_power|default(0, true) }} kW
+                                {{ project.get('hydro_power', 0)|default(0, true) }} kW
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <a href="{{ url_for('multi_user.view_project', project_id=project.id) }}" class="text-blue-600 hover:text-blue-900 mr-4 font-semibold hover:underline">Anzeigen</a>
-                                <a href="{{ url_for('multi_user.edit_project', project_id=project.id) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold hover:underline">Bearbeiten</a>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" style="position: relative; z-index: 2;">
+                                <a href="/multi-user/projects/{{ project['id'] }}" class="text-blue-600 hover:text-blue-900 mr-4 font-semibold hover:underline" style="position: relative; z-index: 2;">Anzeigen</a>
+                                <a href="/multi-user/projects/{{ project['id'] }}/edit" class="text-indigo-600 hover:text-indigo-900 font-semibold hover:underline" style="position: relative; z-index: 2;">Bearbeiten</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -654,7 +657,7 @@
                 <h3 class="mt-2 text-lg font-bold text-gray-900">Keine Projekte</h3>
                 <p class="mt-1 text-sm text-gray-500">Erstellen Sie Ihr erstes BESS-Projekt.</p>
                 <div class="mt-6">
-                    <a href="{{ url_for('main.new_project') }}" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                    <a href="/new_project" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                         <i class="fas fa-plus mr-2"></i>
                         Neues Projekt
                     </a>
