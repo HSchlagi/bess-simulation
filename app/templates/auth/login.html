@@ -132,24 +132,45 @@
       pointer-events: none;
     }
     
-    /* Sicherstellen, dass Input-Felder sichtbar sind */
+    /* Sicherstellen, dass Input-Felder sichtbar sind - !important für Priorität */
     input[type="email"],
     input[type="password"] {
-      display: block;
-      width: 100%;
-      padding: 0.75rem 1rem;
-      background-color: rgba(31, 41, 55, 0.5);
-      border: 1px solid #4b5563;
-      border-radius: 0.75rem;
-      color: white;
-      font-size: 1rem;
+      display: block !important;
+      width: 100% !important;
+      min-width: 250px !important;
+      padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+      background-color: rgba(31, 41, 55, 0.5) !important;
+      border: 1px solid #4b5563 !important;
+      border-radius: 0.75rem !important;
+      color: white !important;
+      font-size: 1rem !important;
+      box-sizing: border-box !important;
     }
     
     input[type="email"]:focus,
     input[type="password"]:focus {
-      outline: none;
-      border-color: #22c55e;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+      outline: none !important;
+      border-color: #22c55e !important;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2) !important;
+    }
+    
+    /* Relative Container für Input-Felder */
+    .relative {
+      position: relative !important;
+      width: 100% !important;
+    }
+    
+    /* Icon-Container */
+    .absolute.inset-y-0.left-0 {
+      position: absolute !important;
+      top: 0 !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      width: auto !important;
+      display: flex !important;
+      align-items: center !important;
+      padding-left: 0.75rem !important;
+      pointer-events: none !important;
     }
     
     /* Labels */
@@ -211,8 +232,8 @@
           </svg>
         </div>
         
-        <!-- BESS Container -->
-        <div class="relative">
+        <!-- BESS Container - Versteckt, da es stört -->
+        <div class="relative" style="display: none;">
           <div class="w-40 h-40 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center pulse-glow overflow-hidden">
             <!-- BESS Container Image -->
             <img src="{{ url_for('static', filename='img/bess_bat.jpg') }}" 
