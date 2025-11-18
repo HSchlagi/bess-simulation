@@ -848,12 +848,16 @@ function updateStatistics() {
             .reduce((a, b) => a + b, 0);
         
         // Berechne Jahresertrag (extrapoliert basierend auf Zeitraum)
+        // WICHTIG: GeoSphere-Daten sind in 15-Minuten-Intervallen (Δt = 0,25 h)
         if (currentData.length > 0) {
-            const firstDate = new Date(currentData[0].timestamp);
-            const lastDate = new Date(currentData[currentData.length - 1].timestamp);
-            const daysInData = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
-            if (daysInData > 0) {
-                annualWindEnergy = (totalWindEnergy / daysInData) * 365;
+            // Dauer in Stunden berechnen: Anzahl_Datensätze × 0,25 h (für 15-Minuten-Daten)
+            const durationHours = currentData.length * 0.25; // 15 Minuten = 0,25 Stunden
+            
+            if (durationHours > 0) {
+                // Jahresertrag = (Gesamtenergie / Dauer_in_Stunden) × 8760 h
+                // Oder alternativ: Durchschnittsleistung × 8760 h
+                const avgPowerKw = totalWindEnergy / durationHours; // Durchschnittsleistung in kW
+                annualWindEnergy = avgPowerKw * 8760; // Jahresertrag in kWh
             }
         }
     }
