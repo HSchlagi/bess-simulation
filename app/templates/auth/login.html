@@ -91,6 +91,92 @@
     .glass-effect > div {
       min-height: 100%;
     }
+    
+    /* Icon-Größen explizit begrenzen */
+    svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    /* Input-Felder mit Icons */
+    .relative {
+      position: relative;
+    }
+    
+    .absolute {
+      position: absolute;
+    }
+    
+    .inset-y-0 {
+      top: 0;
+      bottom: 0;
+    }
+    
+    .left-0 {
+      left: 0;
+    }
+    
+    .pl-3 {
+      padding-left: 0.75rem;
+    }
+    
+    .pl-10 {
+      padding-left: 2.5rem;
+    }
+    
+    .pr-4 {
+      padding-right: 1rem;
+    }
+    
+    .pointer-events-none {
+      pointer-events: none;
+    }
+    
+    /* Sicherstellen, dass Input-Felder sichtbar sind */
+    input[type="email"],
+    input[type="password"] {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background-color: rgba(31, 41, 55, 0.5);
+      border: 1px solid #4b5563;
+      border-radius: 0.75rem;
+      color: white;
+      font-size: 1rem;
+    }
+    
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      outline: none;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+    
+    /* Labels */
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      color: #d1d5db;
+    }
+    
+    /* Button */
+    button[type="submit"] {
+      width: 100%;
+      padding: 0.75rem 1.5rem;
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      border: none;
+      border-radius: 0.75rem;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    button[type="submit"]:hover {
+      background: linear-gradient(to right, #16a34a, #15803d);
+      transform: scale(1.02);
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-gray-900 to-black min-h-screen flex items-center justify-center text-white relative overflow-hidden">
@@ -205,32 +291,36 @@
       <!-- Login Form -->
       <form class="space-y-6" action="{{ url_for('auth_local.login') }}" method="POST">
         <div class="space-y-2">
-          <label class="block text-sm font-semibold text-gray-300" for="email">
-            <div class="flex items-center">
-              <svg class="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+          <label class="block text-sm font-semibold text-gray-300 mb-2" for="email">
+            E-Mail-Adresse
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20" style="max-width: 20px; max-height: 20px;">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
               </svg>
-              E-Mail-Adresse
             </div>
-          </label>
-          <input type="email" name="email" id="email" required 
-                 class="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent input-focus text-white placeholder-gray-400"
-                 placeholder="ihre.email@beispiel.com">
+            <input type="email" name="email" id="email" required 
+                   class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent input-focus text-white placeholder-gray-400"
+                   placeholder="ihre.email@beispiel.com">
+          </div>
         </div>
         
         <div class="space-y-2">
-          <label class="block text-sm font-semibold text-gray-300" for="password">
-            <div class="flex items-center">
-              <svg class="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+          <label class="block text-sm font-semibold text-gray-300 mb-2" for="password">
+            Passwort
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20" style="max-width: 20px; max-height: 20px;">
                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
               </svg>
-              Passwort
             </div>
-          </label>
-          <input type="password" name="password" id="password" required 
-                 class="w-full px-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent input-focus text-white placeholder-gray-400"
-                 placeholder="Ihr Passwort">
+            <input type="password" name="password" id="password" required 
+                   class="w-full pl-10 pr-4 py-3 rounded-xl bg-gray-800/50 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent input-focus text-white placeholder-gray-400"
+                   placeholder="Ihr Passwort">
+          </div>
         </div>
         
         <button type="submit" 
