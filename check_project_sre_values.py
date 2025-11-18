@@ -30,11 +30,12 @@ def check_project_sre_values(project_name_filter=None):
         print("Projekte und SRE-Werte in der Datenbank")
         print("=" * 60)
         
-        # Alle Projekte abfragen
+        # Alle Projekte abfragen (mit JOIN zu customer Tabelle)
         cursor.execute("""
-            SELECT id, name, customer_name 
-            FROM project 
-            ORDER BY id
+            SELECT p.id, p.name, c.name as customer_name 
+            FROM project p
+            LEFT JOIN customer c ON p.customer_id = c.id
+            ORDER BY p.id
         """)
         
         projects = cursor.fetchall()
@@ -46,7 +47,8 @@ def check_project_sre_values(project_name_filter=None):
         print("\nVerfuegbare Projekte:")
         print("-" * 60)
         for project_id, project_name, customer_name in projects:
-            print(f"ID: {project_id} - {project_name} ({customer_name})")
+            customer_display = customer_name if customer_name else "Kein Kunde"
+            print(f"ID: {project_id} - {project_name} ({customer_display})")
         
         # Für jedes Projekt die SRE-Werte abfragen
         print("\n" + "=" * 60)
@@ -73,8 +75,9 @@ def check_project_sre_values(project_name_filter=None):
                 config_id, sre_neg_price, sre_pos_price, \
                 sre_neg_share, sre_pos_share, srl_neg_share, srl_pos_share = config
                 
+                customer_display = customer_name if customer_name else "Kein Kunde"
                 print(f"\n[Projekt] ID: {project_id} - {project_name}")
-                print(f"          Kunde: {customer_name}")
+                print(f"          Kunde: {customer_display}")
                 print("-" * 60)
                 print(f"SRE- Preis:        {sre_neg_price or 'NULL (Standard: 80.0)'} EUR/MWh")
                 print(f"SRE+ Preis:         {sre_pos_price or 'NULL (Standard: 80.0)'} EUR/MWh")
@@ -99,8 +102,9 @@ def check_project_sre_values(project_name_filter=None):
                 if srl_pos_share is not None:
                     print(f"UPDATE market_price_config SET srl_positive_availability_share = {srl_pos_share} WHERE project_id = {project_id};")
             else:
+                customer_display = customer_name if customer_name else "Kein Kunde"
                 print(f"\n[Projekt] ID: {project_id} - {project_name}")
-                print(f"          Kunde: {customer_name}")
+                print(f"          Kunde: {customer_display}")
                 print("          [INFO] Keine spezifische Konfiguration gefunden - verwendet Standardwerte")
         
         print("\n" + "=" * 60)
