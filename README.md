@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-2.6-blue)
+![Version](https://img.shields.io/badge/version-2.5.1-blue)
 ![Python](https://img.shields.io/badge/python-3.10+-green)
 ![Flask](https://img.shields.io/badge/flask-2.3.3-lightgrey)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
@@ -1070,6 +1070,28 @@ Diese Software und die zugehörige Dokumentation sind urheberrechtlich geschütz
 ---
 
 ## 🗺️ Roadmap
+
+### Version 2.5.1 (18. November 2025) ✅ IMPLEMENTIERT
+
+**Bugfixes und Verbesserungen:**
+
+- **Carbon Credits Dashboard:**
+  - ✅ Kritischer Syntaxfehler behoben: "missing catch or finally after try" bei Zeile 1760
+  - ✅ Code-Struktur korrigiert: try-catch-Blöcke korrekt strukturiert
+  - ✅ Handelshistorie-Chart wird jetzt korrekt angezeigt
+  - ✅ Marktpreis-Trend-Chart funktioniert vollständig
+  - ✅ Verbesserte Fehlerbehandlung und Chart-Rendering-Logik
+
+- **CO2-Optimierung Dashboard:**
+  - ✅ API-Route-Fehler behoben: 404-Fehler für `/climate/api/co2-data/` korrigiert
+  - ✅ Korrekte Route: `/climate/api/climate/co2-data/` implementiert
+  - ✅ CO2-Daten werden jetzt korrekt geladen und angezeigt
+
+**Technische Verbesserungen:**
+- Code-Einrückung und Struktur optimiert
+- Globale Funktion-Verfügbarkeit verbessert (`window.loadProjectData`, `window.switchTab`)
+- Robuste Chart-Initialisierung mit Retry-Logik
+- Verbesserte Fehlerbehandlung in JavaScript-Funktionen
 
 ### Version 2.5 (Januar 2025) ✅ IMPLEMENTIERT
 

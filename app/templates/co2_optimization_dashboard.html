@@ -1587,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // CO2-Daten laden
     async function loadCO2Data(projectId) {
         try {
-            const response = await fetch(`/climate/api/co2-data/${projectId}`);
+            const response = await fetch(`/climate/api/climate/co2-data/${projectId}`);
             const result = await response.json();
             
             if (result.success) {

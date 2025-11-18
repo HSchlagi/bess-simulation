@@ -13,7 +13,7 @@
 ### **Teil I: Einführung und Grundlagen**
 1. [Überblick](#überblick)
    - 1.1 Was ist BESS Simulation?
-   - 1.2 Kernfunktionalitäten im Detail
+   - 1.2 Kernfunktionaitäten im Detail
    - 1.3 Hauptfunktionen
    - 1.4 Zielgruppe und Anwendungsbereiche
    - 1.5 Marktposition und Wettbewerbsvorteile
@@ -5822,6 +5822,50 @@ time curl -s http://localhost:5000/api/health
 ---
 
 ## 📝 Changelog
+
+### Version 2.5.1 - 18. November 2025
+
+**Bugfixes und Verbesserungen:**
+
+#### **Carbon Credits Dashboard - Kritische Fehlerbehebungen** 🔧
+
+**Syntaxfehler behoben:**
+- ✅ **Kritischer JavaScript-Syntaxfehler behoben:** "missing catch or finally after try" bei Zeile 1760
+  - Problem: Code-Block ab Zeile 899 war außerhalb des try-Blocks, was zu einem Syntaxfehler führte
+  - Lösung: Code-Struktur korrigiert, alle Code-Blöcke korrekt innerhalb des try-catch-Blocks platziert
+  - Auswirkung: Dashboard stürzt nicht mehr ab, alle Funktionen sind wieder verfügbar
+
+**Chart-Rendering verbessert:**
+- ✅ **Handelshistorie-Chart:** Wird jetzt korrekt angezeigt und mit Daten befüllt
+  - Chart wird auch erstellt, wenn der Tab versteckt ist (mit Retry-Logik)
+  - Korrekte Datenvisualisierung für verkaufte Credits über Monate
+- ✅ **Marktpreis-Trend-Chart:** Funktioniert vollständig im Markt-Tab
+  - Automatische Chart-Erstellung beim Tab-Wechsel
+  - Retry-Mechanismus für Canvas-Element-Verfügbarkeit
+
+**Code-Verbesserungen:**
+- Globale Funktion-Verfügbarkeit verbessert (`window.loadProjectData`, `window.switchTab`)
+- Robuste Chart-Initialisierung mit `setTimeout` und Retry-Logik
+- Verbesserte Fehlerbehandlung in allen JavaScript-Funktionen
+- Code-Einrückung und Struktur optimiert
+
+#### **CO2-Optimierung Dashboard - API-Route-Korrektur** 🔧
+
+**API-Integration behoben:**
+- ✅ **404-Fehler behoben:** Falsche API-Route `/climate/api/co2-data/` korrigiert
+  - Problem: Frontend rief falsche Route auf, die nicht existierte
+  - Lösung: Route korrigiert zu `/climate/api/climate/co2-data/` (mit doppeltem "climate")
+  - Auswirkung: CO2-Daten werden jetzt korrekt vom Backend geladen und angezeigt
+
+**Betroffene Dateien:**
+- `app/templates/carbon_credits_dashboard.html` - Syntaxfehler behoben, Chart-Logik verbessert
+- `app/templates/co2_optimization_dashboard.html` - API-Route korrigiert
+
+**Technische Details:**
+- JavaScript try-catch-Struktur korrigiert
+- Globale Funktion-Verfügbarkeit sichergestellt
+- Chart.js-Integration mit Retry-Mechanismen
+- API-Route-Konsistenz zwischen Frontend und Backend
 
 ### Version 2.5 - Januar 2025
 
