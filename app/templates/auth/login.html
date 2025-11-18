@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Phoenyra BESS Studio – Anmeldung</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Fallback: Wenn Tailwind CDN nicht lädt, verwende lokale Styles
+    window.addEventListener('load', function() {
+      if (!window.tailwind) {
+        console.warn('Tailwind CDN nicht geladen, verwende Fallback-Styles');
+        const style = document.createElement('style');
+        style.textContent = `
+          * { box-sizing: border-box; margin: 0; padding: 0; }
+          body { font-family: system-ui, -apple-system, sans-serif; }
+          .min-h-screen { min-height: 100vh; }
+          .flex { display: flex; }
+          .items-center { align-items: center; }
+          .justify-center { justify-content: center; }
+        `;
+        document.head.appendChild(style);
+      }
+    });
+  </script>
   <style>
     @keyframes float {
       0%, 100% { transform: translateY(0px); }
@@ -35,6 +53,43 @@
     .input-focus:focus {
       transform: scale(1.02);
       transition: all 0.2s ease;
+    }
+    
+    /* Fallback Styles für den Fall, dass Tailwind nicht lädt */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+    /* Sicherstellen, dass der Container sichtbar ist */
+    .max-w-6xl {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    
+    /* Flexbox Fallback */
+    .flex {
+      display: flex;
+    }
+    
+    .flex-col {
+      flex-direction: column;
+    }
+    
+    @media (min-width: 1024px) {
+      .lg\:flex-row {
+        flex-direction: row;
+      }
+      .lg\:w-1\/2 {
+        width: 50%;
+      }
+    }
+    
+    /* Sicherstellen, dass beide Bereiche sichtbar sind */
+    .glass-effect > div {
+      min-height: 100%;
     }
   </style>
 </head>
