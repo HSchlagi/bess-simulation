@@ -216,3 +216,4 @@ def calculate_revenue_loss_from_restrictions(restrictions_history: list,
 
 
 
+
